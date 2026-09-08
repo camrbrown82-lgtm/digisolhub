@@ -5,7 +5,10 @@ import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 export async function POST(request: Request) {
   if (!hasAdminClient()) {
     return NextResponse.json(
-      { error: "Supabase is not configured" },
+      {
+        error:
+          "Supabase is not connected. On Vercel set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY, then redeploy.",
+      },
       { status: 503 },
     );
   }

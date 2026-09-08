@@ -1,3 +1,11 @@
+function firstEnv(...names: string[]) {
+  for (const name of names) {
+    const value = process.env[name]?.trim();
+    if (value) return value;
+  }
+  return "";
+}
+
 function normalizeSupabaseUrl(raw?: string | null) {
   if (!raw) return "";
   return raw
@@ -7,9 +15,19 @@ function normalizeSupabaseUrl(raw?: string | null) {
 }
 
 export function getSupabaseUrl() {
-  return normalizeSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  return normalizeSupabaseUrl(
+    firstEnv("NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_URL"),
+  );
 }
 
 export function getSupabaseAnonKey() {
-  return (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "").trim();
+  return firstEnv(
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+    "SUPABASE_ANON_KEY",
+  );
+}
+
+export function getSupabaseServiceRoleKey() {
+  return firstEnv("SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY");
 }

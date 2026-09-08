@@ -1,9 +1,9 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { getSupabaseUrl } from "@/lib/supabase/env";
+import { getSupabaseServiceRoleKey, getSupabaseUrl } from "@/lib/supabase/env";
 
 export function createAdminClient(): SupabaseClient {
   const url = getSupabaseUrl();
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = getSupabaseServiceRoleKey();
   if (!url || !key) {
     throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
   }
@@ -13,5 +13,5 @@ export function createAdminClient(): SupabaseClient {
 }
 
 export function hasAdminClient() {
-  return Boolean(getSupabaseUrl() && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  return Boolean(getSupabaseUrl() && getSupabaseServiceRoleKey());
 }
