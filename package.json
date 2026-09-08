@@ -1,0 +1,37 @@
+{
+  "name": "digisol",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "pages:deploy": "echo Use Vercel for the hub. Cloudflare static export is no longer the app target."
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.6",
+    "@supabase/supabase-js": "^2.116.0",
+    "@xyflow/react": "^12.11.6",
+    "grapesjs": "^0.23.6",
+    "grapesjs-preset-newsletter": "^1.0.2",
+    "inngest": "^4.20.0",
+    "lucide-react": "^0.468.0",
+    "next": "^14.2.35",
+    "openai": "^7.10.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "resend": "^6.26.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.10",
+    "@types/react": "^18.3.16",
+    "@types/react-dom": "^18.3.5",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.35",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.16",
+    "typescript": "^5.7.2"
+  }
+}

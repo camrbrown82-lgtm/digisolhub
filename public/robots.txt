@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /confirmation
+Disallow: /hub
+Disallow: /hub/
+Disallow: /auth/
+Disallow: /unsubscribe
+
+Sitemap: https://wwwdigisol.com/sitemap.xml
