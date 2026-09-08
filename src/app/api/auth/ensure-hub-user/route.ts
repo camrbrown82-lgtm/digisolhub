@@ -1,13 +1,22 @@
 import { NextResponse } from "next/server";
 import { isAllowedEmail } from "@/lib/allowlist";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
+import { supabaseEnvStatus } from "@/lib/supabase/env";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   if (!hasAdminClient()) {
+    const status = supabaseEnvStatus();
+    const missing = [
+      !status.url ? "NEXT_PUBLIC_SUPABASE_URL or SUPABASE_URL" : null,
+      !status.serviceRole ? "SUPABASE_SERVICE_ROLE_KEY" : null,
+    ].filter(Boolean);
     return NextResponse.json(
       {
-        error:
-          "Supabase is not connected. On Vercel set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY, then redeploy.",
+        error: `Supabase is not connected. Missing on this deploy: ${missing.join(", ")}. Redeploy after adding them to Production and Preview.`,
+        missing,
       },
       { status: 503 },
     );

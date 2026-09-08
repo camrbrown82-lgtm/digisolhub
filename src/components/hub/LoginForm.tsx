@@ -25,6 +25,18 @@ export function LoginForm() {
     if (!isAllowedEmail(email)) {
       throw new Error("That account is not allowed to access the hub.");
     }
+
+    const supabase = createBrowserSupabase();
+    const firstTry = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (!firstTry.error) {
+      router.push(nextPath());
+      router.refresh();
+      return;
+    }
+
     const ensure = await fetch("/api/auth/ensure-hub-user", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -32,15 +44,18 @@ export function LoginForm() {
     });
     const ensureResult = (await ensure.json()) as { error?: string };
     if (!ensure.ok) {
-      throw new Error(ensureResult.error || "Could not prepare the hub account.");
+      throw new Error(
+        ensureResult.error ||
+          firstTry.error.message ||
+          "Could not prepare the hub account.",
+      );
     }
 
-    const supabase = createBrowserSupabase();
-    const { error: authError } = await supabase.auth.signInWithPassword({
+    const secondTry = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     });
-    if (authError) throw authError;
+    if (secondTry.error) throw secondTry.error;
     router.push(nextPath());
     router.refresh();
   }
