@@ -9,7 +9,7 @@ export default function HubLoginPage() {
         <Logo href="/" size="hub" />
         <h1 className="mt-6 text-2xl font-semibold text-white">Sign in to DigiSol Hub</h1>
         <p className="mt-2 text-sm text-zinc-400">
-          Owner password for the CRM. The public site stays at /.
+          Sign in with cam.r.brown82@gmail.com. The public site stays at /.
         </p>
         <div className="mt-6">
           <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
