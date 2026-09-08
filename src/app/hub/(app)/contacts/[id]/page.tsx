@@ -9,6 +9,7 @@ export default async function ContactDetailPage({
   params: { id: string };
 }) {
   const supabase = await createClient();
+  const { data: clients } = await supabase.from("clients").select("id, name").order("name");
   const { data: contact } = await supabase
     .from("contacts")
     .select("*")
@@ -41,7 +42,7 @@ export default async function ContactDetailPage({
           {contact.unsubscribed_at ? " · unsubscribed" : ""}
         </p>
       </div>
-      <ContactForm contactId={contact.id} initial={contact} />
+      <ContactForm contactId={contact.id} initial={contact} clients={clients ?? []} />
       <section>
         <h2 className="mb-3 text-lg font-semibold text-white">Notes</h2>
         <ContactNotes contactId={contact.id} notes={notes ?? []} />

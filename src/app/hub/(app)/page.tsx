@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { createClient } from "@/lib/supabase/server";
+import { contactIdsForClient, getActiveClient } from "@/lib/workspace";
 
 export default async function HubHomePage() {
   let contacts = 0;
@@ -7,22 +9,46 @@ export default async function HubHomePage() {
   let opened = 0;
   let templates = 0;
   let recent: { id: string; name: string | null; email: string; created_at: string }[] = [];
+  let companyName: string | null = null;
 
   try {
     const supabase = await createClient();
+    const active = await getActiveClient(supabase);
+    companyName = active?.name ?? null;
+    const scopedIds = active ? await contactIdsForClient(supabase, active.id) : null;
+
+    let contactsQuery = supabase.from("contacts").select("id", { count: "exact", head: true });
+    let sendsQuery = supabase.from("sends").select("id", { count: "exact", head: true });
+    let openedQuery = supabase
+      .from("sends")
+      .select("id", { count: "exact", head: true })
+      .not("opened_at", "is", null);
+    let templatesQuery = supabase
+      .from("email_templates")
+      .select("id", { count: "exact", head: true });
+    let recentQuery = supabase
+      .from("contacts")
+      .select("id, name, email, created_at")
+      .order("created_at", { ascending: false })
+      .limit(6);
+
+    if (active) {
+      contactsQuery = contactsQuery.eq("client_id", active.id);
+      templatesQuery = templatesQuery.eq("client_id", active.id);
+      recentQuery = recentQuery.eq("client_id", active.id);
+      if (scopedIds && scopedIds.length > 0) {
+        sendsQuery = sendsQuery.in("contact_id", scopedIds);
+        openedQuery = openedQuery.in("contact_id", scopedIds);
+      }
+    }
+
+    const emptySends = Boolean(active && scopedIds && scopedIds.length === 0);
     const [c, s, o, t, r] = await Promise.all([
-      supabase.from("contacts").select("id", { count: "exact", head: true }),
-      supabase.from("sends").select("id", { count: "exact", head: true }),
-      supabase
-        .from("sends")
-        .select("id", { count: "exact", head: true })
-        .not("opened_at", "is", null),
-      supabase.from("email_templates").select("id", { count: "exact", head: true }),
-      supabase
-        .from("contacts")
-        .select("id, name, email, created_at")
-        .order("created_at", { ascending: false })
-        .limit(6),
+      contactsQuery,
+      emptySends ? Promise.resolve({ count: 0 }) : sendsQuery,
+      emptySends ? Promise.resolve({ count: 0 }) : openedQuery,
+      templatesQuery,
+      recentQuery,
     ]);
     contacts = c.count ?? 0;
     sends = s.count ?? 0;
@@ -44,9 +70,7 @@ export default async function HubHomePage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight text-white">Overview</h1>
-        <p className="mt-2 text-sm text-zinc-400">
-          DigiSol ops hub. Public landing page is unchanged at /.
-        </p>
+        <WorkspaceScope companyName={companyName} noun="work" />
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((card) => (

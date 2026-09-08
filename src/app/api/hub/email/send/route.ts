@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { sendEmailToContact } from "@/lib/email";
+import { getActiveClientId } from "@/lib/workspace";
 
 export async function POST(request: Request) {
   const { supabase, error } = await requireHubSession();
@@ -23,13 +24,30 @@ export async function POST(request: Request) {
 
   let contactIds: string[] = [];
 
+  const clientId = await getActiveClientId();
+
   if (body.contactId) {
+    if (clientId) {
+      const { data: scoped } = await supabase
+        .from("contacts")
+        .select("id")
+        .eq("id", body.contactId)
+        .eq("client_id", clientId)
+        .maybeSingle();
+      if (!scoped) {
+        return NextResponse.json(
+          { error: "That contact is not in the selected company" },
+          { status: 400 },
+        );
+      }
+    }
     contactIds = [body.contactId];
   } else {
     let query = supabase
       .from("contacts")
       .select("id")
       .is("unsubscribed_at", null);
+    if (clientId) query = query.eq("client_id", clientId);
 
     if (body.segment === "tag" && body.tag) {
       query = query.contains("tags", [body.tag]);
@@ -60,6 +78,7 @@ export async function POST(request: Request) {
         service: body.service,
       },
       status: "sending",
+      client_id: clientId || null,
     })
     .select("id")
     .single();

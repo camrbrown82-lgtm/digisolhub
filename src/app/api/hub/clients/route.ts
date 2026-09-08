@@ -1,24 +1,19 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
-import { getActiveClientId } from "@/lib/workspace";
 
 export async function GET() {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
-  const clientId = await getActiveClientId();
-  let query = supabase
-    .from("email_templates")
+  const { data, error: queryError } = await supabase
+    .from("clients")
     .select("*")
-    .order("updated_at", { ascending: false });
-  if (clientId) query = query.eq("client_id", clientId);
-
-  const { data, error: queryError } = await query;
+    .order("name");
 
   if (queryError) {
     return NextResponse.json({ error: queryError.message }, { status: 400 });
   }
-  return NextResponse.json({ templates: data });
+  return NextResponse.json({ clients: data ?? [] });
 }
 
 export async function POST(request: Request) {
@@ -27,19 +22,20 @@ export async function POST(request: Request) {
 
   const body = (await request.json()) as {
     name?: string;
-    subject?: string;
-    html?: string;
-    grapes_json?: unknown;
+    domain?: string;
+    notes?: string;
   };
+  const name = body.name?.trim();
+  if (!name) {
+    return NextResponse.json({ error: "Company name is required" }, { status: 400 });
+  }
 
   const { data, error: insertError } = await supabase
-    .from("email_templates")
+    .from("clients")
     .insert({
-      name: body.name?.trim() || "Untitled template",
-      subject: body.subject ?? "Hello from DigiSol",
-      html: body.html ?? "",
-      grapes_json: body.grapes_json ?? null,
-      client_id: (await getActiveClientId()) || null,
+      name,
+      domain: body.domain?.trim() || null,
+      notes: body.notes?.trim() || null,
     })
     .select("id")
     .single();

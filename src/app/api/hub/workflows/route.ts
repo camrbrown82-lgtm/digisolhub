@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
+import { getActiveClientId } from "@/lib/workspace";
 
 const emptyGraph = {
   nodes: [
@@ -17,10 +18,13 @@ export async function GET() {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
-  const { data, error: queryError } = await supabase
+  const clientId = await getActiveClientId();
+  let query = supabase
     .from("workflows")
     .select("*")
     .order("updated_at", { ascending: false });
+  if (clientId) query = query.eq("client_id", clientId);
+  const { data, error: queryError } = await query;
 
   if (queryError) {
     return NextResponse.json({ error: queryError.message }, { status: 400 });
@@ -44,6 +48,7 @@ export async function POST(request: Request) {
       trigger: body.trigger || "new_lead",
       graph: emptyGraph,
       enabled: false,
+      client_id: (await getActiveClientId()) || null,
     })
     .select("id")
     .single();

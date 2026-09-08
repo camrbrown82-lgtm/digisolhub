@@ -1,16 +1,44 @@
+import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { createClient } from "@/lib/supabase/server";
+import { contactIdsForClient, getActiveClient } from "@/lib/workspace";
 
 export default async function AnalyticsPage() {
   const supabase = await createClient();
+  const active = await getActiveClient(supabase);
+  const scopedIds = active ? await contactIdsForClient(supabase, active.id) : null;
+  const emptySends = Boolean(active && scopedIds && scopedIds.length === 0);
+
+  let contactsQuery = supabase.from("contacts").select("id", { count: "exact", head: true });
+  let unsubQuery = supabase
+    .from("contacts")
+    .select("id", { count: "exact", head: true })
+    .not("unsubscribed_at", "is", null);
+  let sendsQuery = supabase.from("sends").select("id", { count: "exact", head: true });
+  let openedQuery = supabase
+    .from("sends")
+    .select("id", { count: "exact", head: true })
+    .not("opened_at", "is", null);
+  let clickedQuery = supabase
+    .from("sends")
+    .select("id", { count: "exact", head: true })
+    .not("clicked_at", "is", null);
+
+  if (active) {
+    contactsQuery = contactsQuery.eq("client_id", active.id);
+    unsubQuery = unsubQuery.eq("client_id", active.id);
+    if (scopedIds && scopedIds.length > 0) {
+      sendsQuery = sendsQuery.in("contact_id", scopedIds);
+      openedQuery = openedQuery.in("contact_id", scopedIds);
+      clickedQuery = clickedQuery.in("contact_id", scopedIds);
+    }
+  }
+
   const [contacts, sends, opened, clicked, unsubscribed] = await Promise.all([
-    supabase.from("contacts").select("id", { count: "exact", head: true }),
-    supabase.from("sends").select("id", { count: "exact", head: true }),
-    supabase.from("sends").select("id", { count: "exact", head: true }).not("opened_at", "is", null),
-    supabase.from("sends").select("id", { count: "exact", head: true }).not("clicked_at", "is", null),
-    supabase
-      .from("contacts")
-      .select("id", { count: "exact", head: true })
-      .not("unsubscribed_at", "is", null),
+    contactsQuery,
+    emptySends ? Promise.resolve({ count: 0 }) : sendsQuery,
+    emptySends ? Promise.resolve({ count: 0 }) : openedQuery,
+    emptySends ? Promise.resolve({ count: 0 }) : clickedQuery,
+    unsubQuery,
   ]);
 
   const cards = [
@@ -25,9 +53,7 @@ export default async function AnalyticsPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-semibold text-white">Analytics</h1>
-        <p className="mt-1 text-sm text-zinc-400">
-          Hub metrics from your CRM and Resend webhooks. Site traffic stays in GA4.
-        </p>
+        <WorkspaceScope companyName={active?.name} noun="metrics" />
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {cards.map((card) => (

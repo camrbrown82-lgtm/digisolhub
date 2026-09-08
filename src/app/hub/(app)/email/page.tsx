@@ -1,27 +1,34 @@
 import Link from "next/link";
 import { NewTemplateButton } from "@/components/hub/NewTemplateButton";
+import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { createClient } from "@/lib/supabase/server";
+import { getActiveClient } from "@/lib/workspace";
 
 export default async function EmailPage() {
   const supabase = await createClient();
-  const { data: templates } = await supabase
+  const active = await getActiveClient(supabase);
+  let templatesQuery = supabase
     .from("email_templates")
     .select("id, name, subject, updated_at")
     .order("updated_at", { ascending: false });
-  const { data: campaigns } = await supabase
+  let campaignsQuery = supabase
     .from("campaigns")
     .select("id, name, status, sent_at")
     .order("created_at", { ascending: false })
     .limit(8);
+  if (active) {
+    templatesQuery = templatesQuery.eq("client_id", active.id);
+    campaignsQuery = campaignsQuery.eq("client_id", active.id);
+  }
+  const { data: templates } = await templatesQuery;
+  const { data: campaigns } = await campaignsQuery;
 
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold text-white">Email</h1>
-          <p className="mt-1 text-sm text-zinc-400">
-            Visual templates, Resend delivery, unsubscribe footer on every campaign.
-          </p>
+          <WorkspaceScope companyName={active?.name} noun="templates" />
         </div>
         <NewTemplateButton />
       </div>

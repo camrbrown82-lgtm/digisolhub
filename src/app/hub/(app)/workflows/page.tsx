@@ -1,22 +1,25 @@
 import Link from "next/link";
 import { NewWorkflowButton } from "@/components/hub/NewWorkflowButton";
+import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { createClient } from "@/lib/supabase/server";
+import { getActiveClient } from "@/lib/workspace";
 
 export default async function WorkflowsPage() {
   const supabase = await createClient();
-  const { data: workflows } = await supabase
+  const active = await getActiveClient(supabase);
+  let query = supabase
     .from("workflows")
     .select("id, name, trigger, enabled, updated_at")
     .order("updated_at", { ascending: false });
+  if (active) query = query.eq("client_id", active.id);
+  const { data: workflows } = await query;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold text-white">Workflows</h1>
-          <p className="mt-1 text-sm text-zinc-400">
-            Triggers and actions run on Inngest, not inside a single HTTP request.
-          </p>
+          <WorkspaceScope companyName={active?.name} noun="workflows" />
         </div>
         <NewWorkflowButton />
       </div>

@@ -1,13 +1,19 @@
 import Link from "next/link";
+import { ContactImportExport } from "@/components/hub/ContactImportExport";
+import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { createClient } from "@/lib/supabase/server";
+import { getActiveClient } from "@/lib/workspace";
 
 export default async function ContactsPage() {
   const supabase = await createClient();
-  const { data } = await supabase
+  const active = await getActiveClient(supabase);
+  let query = supabase
     .from("contacts")
-    .select("id, name, email, company, service, source, tags, unsubscribed_at, created_at")
+    .select("id, name, email, company, service, source, tags, unsubscribed_at, created_at, client_id")
     .order("created_at", { ascending: false });
+  if (active) query = query.eq("client_id", active.id);
 
+  const { data } = await query;
   const contacts = data ?? [];
 
   return (
@@ -15,14 +21,13 @@ export default async function ContactsPage() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold text-white">Contacts</h1>
-          <p className="mt-1 text-sm text-zinc-400">
-            Leads from the consult form land here via /api/leads.
-          </p>
+          <WorkspaceScope companyName={active?.name} noun="contacts" />
         </div>
         <Link href="/hub/contacts/new" className="hub-btn">
           New contact
         </Link>
       </div>
+      <ContactImportExport />
       <div className="overflow-x-auto rounded-2xl border border-zinc-800">
         <table className="min-w-full text-left text-sm">
           <thead className="bg-zinc-900 text-zinc-400">

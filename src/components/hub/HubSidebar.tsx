@@ -5,8 +5,9 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
   Bot,
+  Building2,
   Contact,
-  Image as ImageIcon,
+  Files,
   LayoutDashboard,
   LogOut,
   Mail,
@@ -14,20 +15,28 @@ import {
   Workflow,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { ClientSwitcher, type HubClient } from "@/components/hub/ClientSwitcher";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 
 const nav = [
   { href: "/hub", label: "Overview", icon: LayoutDashboard },
+  { href: "/hub/clients", label: "Companies", icon: Building2 },
   { href: "/hub/contacts", label: "Contacts", icon: Contact },
   { href: "/hub/email", label: "Email", icon: Mail },
-  { href: "/hub/assets", label: "Assets", icon: ImageIcon },
+  { href: "/hub/assets", label: "Files", icon: Files },
   { href: "/hub/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/hub/workflows", label: "Workflows", icon: Workflow },
   { href: "/hub/ai", label: "AI posters", icon: Bot },
   { href: "/hub/integrations", label: "Integrations", icon: Plug },
 ];
 
-export function HubSidebar() {
+export function HubSidebar({
+  clients = [],
+  activeClientId = "",
+}: {
+  clients?: HubClient[];
+  activeClientId?: string;
+}) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -45,6 +54,7 @@ export function HubSidebar() {
         <p className="mt-2 text-xs uppercase tracking-wider text-zinc-500">
           Marketing hub
         </p>
+        <ClientSwitcher clients={clients} activeClientId={activeClientId} />
       </div>
       <nav className="flex-1 space-y-1 p-3">
         {nav.map((item) => {

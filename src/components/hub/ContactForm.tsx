@@ -8,6 +8,8 @@ const field = "hub-field";
 export function ContactForm({
   initial,
   contactId,
+  clients = [],
+  defaultClientId = "",
 }: {
   initial?: {
     name?: string | null;
@@ -17,8 +19,11 @@ export function ContactForm({
     phone?: string | null;
     service?: string | null;
     tags?: string[] | null;
+    client_id?: string | null;
   };
   contactId?: string;
+  clients?: { id: string; name: string }[];
+  defaultClientId?: string;
 }) {
   const router = useRouter();
   const [error, setError] = useState("");
@@ -36,6 +41,7 @@ export function ContactForm({
       domain: String(data.get("domain") ?? ""),
       phone: String(data.get("phone") ?? ""),
       service: String(data.get("service") ?? ""),
+      client_id: String(data.get("client_id") ?? "") || null,
       tags: String(data.get("tags") ?? "")
         .split(",")
         .map((tag) => tag.trim())
@@ -74,6 +80,21 @@ export function ContactForm({
           defaultValue={initial?.email ?? ""}
           className={field}
         />
+      </label>
+      <label className="text-sm sm:col-span-2">
+        Company workspace
+        <select
+          name="client_id"
+          defaultValue={initial?.client_id ?? defaultClientId}
+          className={field}
+        >
+          <option value="">Unassigned</option>
+          {clients.map((client) => (
+            <option key={client.id} value={client.id}>
+              {client.name}
+            </option>
+          ))}
+        </select>
       </label>
       <label className="text-sm">
         Company

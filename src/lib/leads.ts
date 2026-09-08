@@ -1,5 +1,6 @@
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { emitHubEvent } from "@/lib/events";
+import { findOrCreateClient } from "@/lib/workspace";
 
 export type LeadPayload = {
   name?: string | null;
@@ -60,6 +61,11 @@ export async function upsertLead(payload: LeadPayload) {
   }
 
   const admin = createAdminClient();
+  const clientId = await findOrCreateClient(admin, {
+    name: payload.company,
+    domain: payload.domain,
+  });
+
   const { data: existing } = await admin
     .from("contacts")
     .select("id, tags")
@@ -80,6 +86,7 @@ export async function upsertLead(payload: LeadPayload) {
     source: payload.source ?? "web3forms",
     tags,
     notes_preview: payload.message?.slice(0, 280) ?? null,
+    client_id: clientId,
   };
 
   let contactId = existing?.id as string | undefined;

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { requireHubSession } from "@/lib/auth";
+import { getActiveClientId } from "@/lib/workspace";
 
 export async function POST(request: Request) {
   const { supabase, error } = await requireHubSession();
@@ -59,6 +60,8 @@ export async function POST(request: Request) {
       public_url: publicUrl,
       filename: `poster-${Date.now()}.png`,
       mime_type: "image/png",
+      kind: "image",
+      client_id: (await getActiveClientId()) || null,
     })
     .select("*")
     .single();

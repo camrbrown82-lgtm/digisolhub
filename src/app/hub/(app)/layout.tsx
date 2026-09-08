@@ -3,6 +3,7 @@ import { HubSidebar } from "@/components/hub/HubSidebar";
 import { isAllowedEmail } from "@/lib/allowlist";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
+import { getActiveClientId, listClients } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
 
@@ -23,9 +24,12 @@ export default async function HubAppLayout({
     redirect("/hub/login");
   }
 
+  const clients = await listClients(supabase);
+  const activeClientId = await getActiveClientId();
+
   return (
     <div className="flex min-h-screen bg-zinc-950">
-      <HubSidebar />
+      <HubSidebar clients={clients} activeClientId={activeClientId} />
       <div className="min-w-0 flex-1 overflow-y-auto p-6 lg:p-10">{children}</div>
     </div>
   );
