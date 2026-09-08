@@ -26,7 +26,7 @@ export function LoginForm() {
       throw new Error("That account is not allowed to access the hub.");
     }
 
-    const supabase = createBrowserSupabase();
+    const supabase = await createBrowserSupabase();
     const firstTry = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
@@ -64,7 +64,7 @@ export function LoginForm() {
     if (!isAllowedEmail(email)) {
       throw new Error("That account is not allowed to access the hub.");
     }
-    const supabase = createBrowserSupabase();
+    const supabase = await createBrowserSupabase();
     const origin = window.location.origin;
     const { error: authError } = await supabase.auth.signInWithOtp({
       email: email.trim(),

@@ -32,7 +32,7 @@ export function HubSidebar() {
   const router = useRouter();
 
   async function signOut() {
-    const supabase = createBrowserSupabase();
+    const supabase = await createBrowserSupabase();
     await supabase.auth.signOut();
     router.push("/hub/login");
     router.refresh();

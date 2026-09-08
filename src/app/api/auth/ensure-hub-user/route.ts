@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   if (!hasAdminClient()) {
     const status = supabaseEnvStatus();
     const missing = [
-      !status.url ? "NEXT_PUBLIC_SUPABASE_URL or SUPABASE_URL" : null,
+      !status.url ? "SUPABASE_URL" : null,
       !status.serviceRole ? "SUPABASE_SERVICE_ROLE_KEY" : null,
     ].filter(Boolean);
     return NextResponse.json(

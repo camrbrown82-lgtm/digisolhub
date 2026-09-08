@@ -4,11 +4,11 @@ function status(ok: boolean) {
 
 export default function IntegrationsPage() {
   const rows = [
-    { name: "Supabase", ok: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) },
+    { name: "Supabase", ok: Boolean(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) },
     { name: "Resend", ok: Boolean(process.env.RESEND_API_KEY) },
     { name: "OpenAI", ok: Boolean(process.env.OPENAI_API_KEY) },
     { name: "Inngest", ok: Boolean(process.env.INNGEST_EVENT_KEY) },
-    { name: "Web3Forms (public form)", ok: Boolean(process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY) },
+    { name: "Web3Forms", ok: Boolean(process.env.WEB3FORMS_ACCESS_KEY || process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY) },
   ];
 
   return (

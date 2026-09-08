@@ -8,9 +8,4 @@ export function isAllowedEmail(email?: string | null) {
   return (email ?? "").trim().toLowerCase() === allowedEmail();
 }
 
-export function siteUrl() {
-  return (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(
-    /\/$/,
-    "",
-  );
-}
+export { getSiteUrl as siteUrl } from "@/lib/supabase/env";

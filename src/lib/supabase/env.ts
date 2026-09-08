@@ -21,15 +21,15 @@ function looksLikeJwt(value: string) {
 
 export function getSupabaseUrl() {
   return normalizeSupabaseUrl(
-    firstEnv("NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_URL"),
+    firstEnv("SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL"),
   );
 }
 
 export function getSupabaseAnonKey() {
   return firstEnv(
+    "SUPABASE_ANON_KEY",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY",
     "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-    "SUPABASE_ANON_KEY",
   );
 }
 
@@ -44,12 +44,22 @@ export function getSupabaseServiceRoleKey() {
   for (const name of [
     "SUPABASE_SECRET",
     "SUPABASE_SERVICE_ROLE_SECRET",
-    "SUPABASE_JWT_SECRET",
   ]) {
     const value = firstEnv(name);
     if (value && looksLikeJwt(value)) return value;
   }
   return "";
+}
+
+export function getSiteUrl() {
+  const explicit = firstEnv("SITE_URL", "NEXT_PUBLIC_SITE_URL");
+  if (explicit) return explicit.replace(/\/$/, "");
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "http://localhost:3000";
+}
+
+export function getWeb3FormsAccessKey() {
+  return firstEnv("WEB3FORMS_ACCESS_KEY", "NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY");
 }
 
 export function supabaseEnvStatus() {

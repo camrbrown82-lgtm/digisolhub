@@ -6,7 +6,7 @@ export async function createClient() {
   const url = getSupabaseUrl();
   const key = getSupabaseAnonKey();
   if (!url || !key) {
-    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
+    throw new Error("Missing SUPABASE_URL or SUPABASE_ANON_KEY");
   }
 
   const cookieStore = await cookies();

@@ -9,7 +9,6 @@ import { trackEvent } from "@/lib/analytics";
 const fieldClass =
   "mt-1.5 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2.5 text-sm text-white placeholder:text-zinc-500 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30";
 
-const ACCESS_KEY = process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY ?? "";
 const OWNER_EMAIL = "cam.r.brown82@gmail.com";
 
 export function Contact() {
@@ -26,35 +25,7 @@ export function Contact() {
     const data = new FormData(form);
 
     try {
-      const response = await fetch("https://api.web3forms.com/submit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          access_key: ACCESS_KEY,
-          subject: "DigiSol consultation request",
-          from_name: "DigiSol Website",
-          name: data.get("fullName"),
-          email: data.get("email"),
-          replyto: data.get("email"),
-          business: data.get("business"),
-          service: data.get("service"),
-          message: data.get("details"),
-          to_notify: OWNER_EMAIL,
-          botcheck: data.get("botcheck"),
-        }),
-      });
-      const result = (await response.json()) as { success?: boolean; message?: string };
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || "Could not send the request.");
-      }
-      trackEvent("generate_lead", {
-        method: "web3forms",
-        service: String(data.get("service") ?? ""),
-      });
-      await fetch("/api/leads", {
+      const response = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -63,10 +34,16 @@ export function Contact() {
           company: data.get("business"),
           service: data.get("service"),
           message: data.get("details"),
-          source: "web3forms",
+          botcheck: data.get("botcheck"),
         }),
-      }).catch(() => {
-        // Confirmation still proceeds if CRM ingest is not configured yet.
+      });
+      const result = (await response.json()) as { ok?: boolean; error?: string };
+      if (!response.ok) {
+        throw new Error(result.error || "Could not send the request.");
+      }
+      trackEvent("generate_lead", {
+        method: "web3forms",
+        service: String(data.get("service") ?? ""),
       });
       router.push("/confirmation");
     } catch {

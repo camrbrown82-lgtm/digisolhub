@@ -6,7 +6,7 @@ export async function POST(request: Request) {
   const secret = process.env.HUB_INGEST_SECRET;
   const headerSecret = request.headers.get("x-hub-secret");
   const origin = request.headers.get("origin");
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const site = process.env.SITE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
   const sameOrigin =
     !origin ||
     origin.includes("localhost") ||
