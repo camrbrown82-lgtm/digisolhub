@@ -1,12 +1,27 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 import { allowedEmail, isAllowedEmail } from "@/lib/allowlist";
 
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string) {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 export function LoginForm() {
-  const router = useRouter();
   const params = useSearchParams();
   const [email, setEmail] = useState(allowedEmail());
   const [password, setPassword] = useState("");
@@ -21,27 +36,42 @@ export function LoginForm() {
     return params.get("next") || "/hub";
   }
 
+  function goToHub() {
+    window.location.assign(nextPath());
+  }
+
   async function signInWithPassword() {
     if (!isAllowedEmail(email)) {
       throw new Error("That account is not allowed to access the hub.");
     }
 
-    const supabase = await createBrowserSupabase();
-    const firstTry = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
+    const supabase = await withTimeout(
+      createBrowserSupabase(),
+      12000,
+      "Timed out connecting to Supabase. Check SUPABASE_URL on this deploy.",
+    );
+    const firstTry = await withTimeout(
+      supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      }),
+      20000,
+      "Sign-in timed out. Confirm Email auth is enabled in Supabase.",
+    );
     if (!firstTry.error) {
-      router.push(nextPath());
-      router.refresh();
+      goToHub();
       return;
     }
 
-    const ensure = await fetch("/api/auth/ensure-hub-user", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email.trim(), password }),
-    });
+    const ensure = await withTimeout(
+      fetch("/api/auth/ensure-hub-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
+      }),
+      20000,
+      "Timed out creating the hub user.",
+    );
     const ensureResult = (await ensure.json()) as { error?: string };
     if (!ensure.ok) {
       throw new Error(
@@ -51,27 +81,38 @@ export function LoginForm() {
       );
     }
 
-    const secondTry = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
+    const secondTry = await withTimeout(
+      supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      }),
+      20000,
+      "Account exists but sign-in timed out.",
+    );
     if (secondTry.error) throw secondTry.error;
-    router.push(nextPath());
-    router.refresh();
+    goToHub();
   }
 
   async function sendMagicLink() {
     if (!isAllowedEmail(email)) {
       throw new Error("That account is not allowed to access the hub.");
     }
-    const supabase = await createBrowserSupabase();
+    const supabase = await withTimeout(
+      createBrowserSupabase(),
+      12000,
+      "Timed out connecting to Supabase.",
+    );
     const origin = window.location.origin;
-    const { error: authError } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: {
-        emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(nextPath())}`,
-      },
-    });
+    const { error: authError } = await withTimeout(
+      supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: {
+          emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(nextPath())}`,
+        },
+      }),
+      20000,
+      "Magic link request timed out.",
+    );
     if (authError) throw authError;
     setStatus("sent");
   }

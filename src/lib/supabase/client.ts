@@ -11,7 +11,7 @@ export async function createBrowserSupabase() {
   if (loading) return loading;
 
   loading = (async () => {
-    const response = await fetch("/api/public/config");
+    const response = await fetch("/api/public/config", { cache: "no-store" });
     const config = (await response.json()) as {
       supabaseUrl?: string;
       supabaseAnonKey?: string;
