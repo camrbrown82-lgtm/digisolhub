@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { HubShell } from "@/components/hub/HubShell";
 import { HubSidebar } from "@/components/hub/HubSidebar";
 import { isAllowedEmail } from "@/lib/allowlist";
 import { createClient } from "@/lib/supabase/server";
@@ -28,9 +29,12 @@ export default async function HubAppLayout({
   const activeClientId = await getActiveClientId();
 
   return (
-    <div className="flex min-h-screen bg-zinc-950">
-      <HubSidebar clients={clients} activeClientId={activeClientId} />
-      <div className="min-w-0 flex-1 overflow-y-auto p-6 lg:p-10">{children}</div>
-    </div>
+    <HubShell
+      clients={clients}
+      activeClientId={activeClientId}
+      sidebar={<HubSidebar clients={clients} activeClientId={activeClientId} />}
+    >
+      {children}
+    </HubShell>
   );
 }

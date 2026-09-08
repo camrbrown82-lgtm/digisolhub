@@ -12,9 +12,11 @@ export type HubClient = {
 export function ClientSwitcher({
   clients,
   activeClientId,
+  compact = false,
 }: {
   clients: HubClient[];
   activeClientId: string;
+  compact?: boolean;
 }) {
   const router = useRouter();
   const [value, setValue] = useState(activeClientId);
@@ -35,12 +37,12 @@ export function ClientSwitcher({
   }
 
   return (
-    <label className="mt-3 block text-xs text-zinc-500">
-      Working on
+    <label className={compact ? "block min-w-0 text-xs text-zinc-500" : "mt-3 block text-xs text-zinc-500"}>
+      {compact ? <span className="sr-only">Working on</span> : "Working on"}
       <select
         value={value}
         onChange={(event) => void onChange(event.target.value)}
-        className="hub-field mt-1 text-sm"
+        className={compact ? "hub-field mt-0 py-1.5 text-sm" : "hub-field mt-1 text-sm"}
       >
         <option value="">All companies</option>
         {clients.map((client) => (
@@ -49,7 +51,7 @@ export function ClientSwitcher({
           </option>
         ))}
       </select>
-      {active?.domain ? (
+      {!compact && active?.domain ? (
         <span className="mt-1 block truncate text-[11px] text-zinc-600">
           {active.domain}
         </span>

@@ -33,7 +33,7 @@ export function WorkflowCanvas({ initialNodes, initialEdges, onChange }: Props) 
   }, [setEdges]);
 
   return (
-    <div className="h-[560px] overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900">
+    <div className="h-[calc(100dvh-12rem)] min-h-[28rem] w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900">
       <ReactFlow
         nodes={nodes}
         edges={edges}

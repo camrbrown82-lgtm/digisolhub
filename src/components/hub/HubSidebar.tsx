@@ -48,15 +48,21 @@ export function HubSidebar({
   }
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-zinc-800 bg-zinc-950">
-      <div className="border-b border-zinc-800 px-4 py-4">
+    <div className="flex h-full min-h-0 flex-col bg-zinc-950">
+      <div className="hidden border-b border-zinc-800 px-4 py-4 lg:block">
         <Logo href="/hub" size="hub" />
         <p className="mt-2 text-xs uppercase tracking-wider text-zinc-500">
           Marketing hub
         </p>
         <ClientSwitcher clients={clients} activeClientId={activeClientId} />
       </div>
-      <nav className="flex-1 space-y-1 p-3">
+      <div className="border-b border-zinc-800 px-4 py-4 lg:hidden">
+        <Logo href="/hub" size="hub" />
+        <p className="mt-2 text-xs uppercase tracking-wider text-zinc-500">
+          Marketing hub
+        </p>
+      </div>
+      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
         {nav.map((item) => {
           const active =
             item.href === "/hub"
@@ -73,7 +79,7 @@ export function HubSidebar({
                   : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
               }`}
             >
-              <Icon className="h-4 w-4" aria-hidden="true" />
+              <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
               {item.label}
             </Link>
           );
@@ -95,6 +101,6 @@ export function HubSidebar({
           Sign out
         </button>
       </div>
-    </aside>
+    </div>
   );
 }

@@ -35,3 +35,26 @@ body {
 .hub-btn-secondary {
   @apply inline-flex items-center justify-center rounded-full border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-200 transition hover:border-indigo-500 hover:text-white;
 }
+
+html.hub-lock,
+body.hub-lock {
+  height: 100%;
+  overflow: hidden;
+}
+
+.hub-email-editor .gjs-editor,
+.hub-email-editor .gjs-editor-cont,
+.hub-email-editor .gjs-cv-canvas {
+  width: 100% !important;
+}
+
+.hub-email-editor iframe,
+.hub-email-editor canvas,
+.hub-email-editor img,
+.hub-email-editor svg,
+.react-flow iframe,
+.react-flow canvas,
+.react-flow img,
+.react-flow svg {
+  max-width: none;
+}

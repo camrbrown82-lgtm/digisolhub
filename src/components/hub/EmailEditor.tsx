@@ -27,7 +27,8 @@ export function EmailEditor({ initialHtml, initialProject, onReady }: Props) {
 
       const editor = grapesjs.init({
         container: containerRef.current,
-        height: "640px",
+        height: "100%",
+        width: "auto",
         storageManager: false,
         fromElement: false,
         plugins: [newsletter],
@@ -59,8 +60,8 @@ export function EmailEditor({ initialHtml, initialProject, onReady }: Props) {
   }, []);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-zinc-800 bg-white">
-      <div ref={containerRef} />
+    <div className="hub-email-editor h-[calc(100dvh-11rem)] min-h-[28rem] w-full overflow-hidden rounded-xl border border-zinc-800 bg-white">
+      <div ref={containerRef} className="h-full w-full" />
     </div>
   );
 }
