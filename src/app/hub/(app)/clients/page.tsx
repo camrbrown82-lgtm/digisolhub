@@ -12,8 +12,8 @@ export default async function ClientsPage() {
       <div>
         <h1 className="text-3xl font-semibold text-white">Companies</h1>
         <p className="mt-1 text-sm text-zinc-400">
-          Each company is its own workspace. Open work or Files to keep contacts
-          and customer files separate.
+          Each company is its own workspace. Open work, files, or analytics for
+          that business.
         </p>
       </div>
       <ul className="divide-y divide-zinc-800 rounded-2xl border border-zinc-800">
@@ -31,6 +31,7 @@ export default async function ClientsPage() {
               <div className="flex gap-4">
                 <OpenClientButton clientId={client.id} />
                 <OpenClientButton clientId={client.id} href="/hub/assets" label="Files" />
+                <OpenClientButton clientId={client.id} href="/hub/analytics" label="Analytics" />
               </div>
             </li>
           ))

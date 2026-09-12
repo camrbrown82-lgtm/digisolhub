@@ -29,7 +29,7 @@ export async function getActiveClient(supabase: SupabaseClient) {
   if (!id) return null;
   const { data } = await supabase
     .from("clients")
-    .select("id, name, domain")
+    .select("id, name, domain, site_key")
     .eq("id", id)
     .maybeSingle();
   return data;

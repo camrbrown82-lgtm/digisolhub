@@ -45,6 +45,11 @@ export default function IntegrationsPage() {
           Inngest serve path:{" "}
           <code className="text-zinc-200">/api/inngest</code>
         </p>
+        <p className="mt-3">
+          Client website tracking: add the snippet from{" "}
+          <code className="text-zinc-200">/hub/analytics</code>. Events post to{" "}
+          <code className="text-zinc-200">/api/collect</code>.
+        </p>
       </div>
     </div>
   );
