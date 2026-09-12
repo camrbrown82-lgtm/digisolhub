@@ -18,10 +18,13 @@ export function AiImageForm() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prompt }),
     });
-    const result = (await response.json()) as {
-      error?: string;
-      asset?: { public_url?: string };
-    };
+    let result: { error?: string; asset?: { public_url?: string } } = {};
+    try {
+      result = (await response.json()) as typeof result;
+    } catch {
+      setStatus("Generation failed");
+      return;
+    }
     if (!response.ok) {
       setStatus(result.error || "Generation failed");
       return;

@@ -97,9 +97,16 @@ export function brandVoicePrompt(companyName: string, brand: CompanyBrand) {
 }
 
 export function brandImagePrompt(companyName: string, brand: CompanyBrand, userPrompt: string) {
-  return `${userPrompt}
+  const style = [
+    `Company: ${companyName}`,
+    brand.tagline ? `Mood line: ${brand.tagline}` : "",
+    `Palette: ${brand.primaryColor}, ${brand.secondaryColor}, ${brand.accentColor}, ${brand.backgroundColor}`,
+    brand.fonts ? `Clean ${brand.fonts.split(",")[0]}-like sans type` : "",
+    "Dark zinc background, indigo and blue glow, premium digital studio poster.",
+    "No photos of real people, no contact details, no copied trademarks, no tiny unreadable text.",
+  ]
+    .filter(Boolean)
+    .join(". ");
 
-Match this company brand exactly:
-${brandVoicePrompt(companyName, brand)}
-Use the brand colors as the dominant palette. Keep typography simple and poster-readable. Do not invent a different logo or company name.`;
+  return `${userPrompt.trim()}\n\nVisual style: ${style}`.slice(0, 3900);
 }
