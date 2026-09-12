@@ -1,5 +1,11 @@
 import { cookies } from "next/headers";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  DIGISOL_BRAND,
+  DIGISOL_HOUSE_DOMAIN,
+  DIGISOL_HOUSE_NAME,
+  isBrandEmpty,
+} from "@/lib/branding";
 
 export const HUB_CLIENT_COOKIE = "hub_client_id";
 
@@ -13,6 +19,52 @@ export function applyClientFilter<T extends { eq: (col: string, val: string) => 
   clientId: string,
 ) {
   return clientId ? query.eq("client_id", clientId) : query;
+}
+
+export async function ensureDigisolClient(supabase: SupabaseClient) {
+  const { data: existing } = await supabase
+    .from("clients")
+    .select("id, branding")
+    .ilike("name", DIGISOL_HOUSE_NAME)
+    .maybeSingle();
+
+  if (existing?.id) {
+    if (isBrandEmpty(existing.branding)) {
+      await supabase
+        .from("clients")
+        .update({
+          domain: DIGISOL_HOUSE_DOMAIN,
+          branding: DIGISOL_BRAND,
+          notes: "House brand for DigiSol.",
+        })
+        .eq("id", existing.id);
+    }
+    return existing.id as string;
+  }
+
+  const { data: created, error } = await supabase
+    .from("clients")
+    .insert({
+      name: DIGISOL_HOUSE_NAME,
+      domain: DIGISOL_HOUSE_DOMAIN,
+      notes: "House brand for DigiSol.",
+      branding: DIGISOL_BRAND,
+    })
+    .select("id")
+    .single();
+  if (error || !created) return "";
+  return created.id as string;
+}
+
+export async function getDigisolClient(supabase: SupabaseClient) {
+  const id = await ensureDigisolClient(supabase);
+  if (!id) return null;
+  const { data } = await supabase
+    .from("clients")
+    .select("id, name, domain, site_key, notes, branding")
+    .eq("id", id)
+    .maybeSingle();
+  return data;
 }
 
 export async function listClients(supabase: SupabaseClient) {

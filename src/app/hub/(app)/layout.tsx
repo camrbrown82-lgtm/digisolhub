@@ -4,7 +4,7 @@ import { HubSidebar } from "@/components/hub/HubSidebar";
 import { isAllowedEmail } from "@/lib/allowlist";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
-import { getActiveClientId, listClients } from "@/lib/workspace";
+import { ensureDigisolClient, getActiveClientId, listClients } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +25,7 @@ export default async function HubAppLayout({
     redirect("/hub/login");
   }
 
+  await ensureDigisolClient(supabase);
   const clients = await listClients(supabase);
   const activeClientId = await getActiveClientId();
 
