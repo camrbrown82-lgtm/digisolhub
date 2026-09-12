@@ -41,7 +41,7 @@ export function AiImageForm() {
           required
           rows={4}
           className="hub-field resize-y"
-          placeholder="DigiSol campaign poster, dark zinc background, indigo glow, Alberta growth studio…"
+          placeholder="Launch poster for the new homepage. Brand colors and tone are applied automatically."
         />
       </label>
       <button type="submit" className="hub-btn">

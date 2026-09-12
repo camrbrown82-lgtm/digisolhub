@@ -1,7 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildEmailHtml } from "@/lib/emailHtml";
-import { defaultEmailLogoUrl } from "@/lib/emailLogo";
+import { type CompanyBrand, DIGISOL_BRAND } from "@/lib/branding";
+import { buildEmailHtml, htmlToText } from "@/lib/emailHtml";
+import {
+  EMAIL_LOGO_CID,
+  publicEmailLogoUrl,
+  resolveEmailLogoFile,
+} from "@/lib/emailLogo";
 import { renderMergeFields } from "@/lib/emailTemplates";
 import { unsubscribeUrl, wrapCampaignHtml } from "@/lib/unsubscribe";
 import { Resend } from "resend";
@@ -46,6 +51,8 @@ export type SendEmailInput = {
   campaignId?: string | null;
   companyName?: string;
   logoSrc?: string;
+  clientId?: string | null;
+  brand?: CompanyBrand;
   db?: SupabaseClient;
   contact?: {
     id: string;
@@ -110,21 +117,47 @@ export async function sendEmailToContact(input: SendEmailInput) {
     name: contact.name || "there",
     company: companyName,
   });
+  const brand = input.brand || DIGISOL_BRAND;
+  const logo = await resolveEmailLogoFile(db, input.clientId);
+  const logoSrc = logo
+    ? `cid:${EMAIL_LOGO_CID}`
+    : input.logoSrc && !input.logoSrc.includes("localhost")
+      ? input.logoSrc
+      : publicEmailLogoUrl();
   const branded = buildEmailHtml(mergedBody, {
-    logoSrc: input.logoSrc || defaultEmailLogoUrl(),
+    logoSrc,
     companyName,
+    tagline: brand.tagline,
+    primaryColor: brand.primaryColor,
+    secondaryColor: brand.secondaryColor,
+    backgroundColor: brand.backgroundColor,
+    fonts: brand.fonts,
   });
   const personalized = wrapCampaignHtml(branded, contact.email);
+  const unsub = unsubscribeUrl(contact.email);
 
   const resend = new Resend(apiKey);
   const payload = {
     from,
     to: contact.email,
+    ...(firstEnv("RESEND_REPLY_TO") ? { replyTo: firstEnv("RESEND_REPLY_TO") } : {}),
     subject: mergedSubject || "Message from DigiSol",
     html: personalized,
+    text: htmlToText(personalized),
     headers: {
-      "List-Unsubscribe": `<${unsubscribeUrl(contact.email)}>`,
+      "List-Unsubscribe": `<${unsub}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
     },
+    attachments: logo
+      ? [
+          {
+            filename: logo.filename,
+            content: logo.buffer,
+            contentType: logo.contentType,
+            contentId: EMAIL_LOGO_CID,
+          },
+        ]
+      : undefined,
   };
   let { data, error } = await resend.emails.send(payload);
   if (

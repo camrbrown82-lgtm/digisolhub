@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { requireHubSession } from "@/lib/auth";
-import { getActiveClientId } from "@/lib/workspace";
+import { brandFromClient, brandImagePrompt } from "@/lib/branding";
+import { getActiveClient, getActiveClientId } from "@/lib/workspace";
 
 export async function POST(request: Request) {
   const { supabase, error } = await requireHubSession();
@@ -20,12 +21,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
   }
 
+  const active = await getActiveClient(supabase);
+  const { companyName, brand } = brandFromClient(active);
+  const brandedPrompt = brandImagePrompt(companyName, brand, prompt);
+
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const model = process.env.OPENAI_IMAGE_MODEL || "dall-e-3";
 
   const image = await openai.images.generate({
     model,
-    prompt,
+    prompt: brandedPrompt,
     size: "1024x1024",
     response_format: "b64_json",
   });

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { type CompanyBrand, DIGISOL_BRAND } from "@/lib/branding";
 import { buildEmailHtml } from "@/lib/emailHtml";
 import { STARTER_TEMPLATES, renderMergeFields, starterKeyOf } from "@/lib/emailTemplates";
 
@@ -41,10 +42,12 @@ function previewName(recipients: string) {
 
 export function EmailComposer({
   companyName,
+  brand = DIGISOL_BRAND,
   initialTemplateId,
   campaigns,
 }: {
   companyName: string;
+  brand?: CompanyBrand;
   initialTemplateId?: string;
   campaigns: Campaign[];
 }) {
@@ -128,9 +131,14 @@ export function EmailComposer({
       html: buildEmailHtml(renderMergeFields(body, vars), {
         logoSrc,
         companyName,
+        tagline: brand.tagline,
+        primaryColor: brand.primaryColor,
+        secondaryColor: brand.secondaryColor,
+        backgroundColor: brand.backgroundColor,
+        fonts: brand.fonts,
       }),
     };
-  }, [subject, body, recipients, companyName, logoSrc]);
+  }, [subject, body, recipients, companyName, logoSrc, brand]);
 
   async function save() {
     if (!active) return false;
@@ -294,8 +302,9 @@ export function EmailComposer({
       <div>
         <h1 className="text-3xl font-semibold text-white">Email</h1>
         <p className="mt-1 text-sm text-zinc-400">
-          Pick a template. The {companyName} logo is already in the header. Fill
-          subject, recipients, and body — or let AI draft it.
+          Pick a template. The {companyName} logo and brand colors are already
+          in the header. Fill subject, recipients, and body — or let AI draft
+          it in this company&apos;s voice.
         </p>
       </div>
 

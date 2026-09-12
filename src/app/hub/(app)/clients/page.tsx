@@ -30,6 +30,7 @@ export default async function ClientsPage() {
               </div>
               <div className="flex gap-4">
                 <OpenClientButton clientId={client.id} />
+                <OpenClientButton clientId={client.id} href="/hub/brand" label="Brand" />
                 <OpenClientButton clientId={client.id} href="/hub/assets" label="Files" />
                 <OpenClientButton clientId={client.id} href="/hub/analytics" label="Analytics" />
               </div>

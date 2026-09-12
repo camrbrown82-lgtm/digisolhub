@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { requireHubSession } from "@/lib/auth";
+import { brandFromClient, brandVoicePrompt } from "@/lib/branding";
 import { TEMPLATE_VARIABLES } from "@/lib/emailTemplates";
+import { getActiveClient } from "@/lib/workspace";
 
 type Mode = "generate" | "flare";
 
 export async function POST(request: Request) {
-  const { error } = await requireHubSession();
+  const { supabase, error } = await requireHubSession();
   if (error) return error;
 
   if (!process.env.OPENAI_API_KEY) {
@@ -40,7 +42,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const company = body.companyName?.trim() || "DigiSol";
+  const active = await getActiveClient(supabase);
+  const { companyName, brand } = brandFromClient(active);
+  const company = body.companyName?.trim() || companyName;
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const model = process.env.OPENAI_EMAIL_MODEL || "gpt-4o-mini";
 
@@ -51,10 +55,11 @@ export async function POST(request: Request) {
     messages: [
       {
         role: "system",
-        content: `You write high-open-rate emails for ${company}, a digital engineering and growth studio.
+        content: `You write high-open-rate emails that match this company brand.
+${brandVoicePrompt(company, brand)}
 Return JSON only: {"subject":"...","body":"..."}.
 Subject rules: 4-8 words, specific, curiosity or a clear benefit, never clickbait spam. No ALL CAPS, no "FREE", no fake urgency, no more than one punctuation mark.
-Body rules: 80-140 words, plain text with blank lines, one idea, one soft CTA, conversational, no HTML.
+Body rules: 80-140 words, plain text with blank lines, one idea, one soft CTA. Match the brand voice. No HTML.
 Start the body with "Hey {{name}}," when it fits. Sign off with ${company}.
 You may use these merge tags only: ${TEMPLATE_VARIABLES.join(", ")}.
 Do not invent invoices, prices, or legal claims.`,
@@ -63,13 +68,13 @@ Do not invent invoices, prices, or legal claims.`,
         role: "user",
         content:
           mode === "flare"
-            ? `Rewrite this email so the subject earns the open and the body has more flare, without changing the intent.
+            ? `Rewrite this email so the subject earns the open and the body has more flare, without changing the intent. Stay inside the brand voice.
 Template: ${body.templateName || "custom"}
 Current subject: ${body.subject || "(none)"}
 Current body:
 ${body.emailBody || "(none)"}
 Extra direction: ${prompt || "Make it sharper and more human."}`
-            : `Write a new email.
+            : `Write a new email in this brand voice.
 Template: ${body.templateName || "custom"}
 Company: ${company}
 Brief: ${prompt}`,

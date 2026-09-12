@@ -1,4 +1,5 @@
 import { EmailComposer } from "@/components/hub/EmailComposer";
+import { brandFromClient } from "@/lib/branding";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveClient } from "@/lib/workspace";
 
@@ -18,10 +19,12 @@ export default async function EmailPage({
     campaignsQuery = campaignsQuery.eq("client_id", active.id);
   }
   const { data: campaigns } = await campaignsQuery;
+  const { companyName, brand } = brandFromClient(active);
 
   return (
     <EmailComposer
-      companyName={active?.name || "DigiSol"}
+      companyName={companyName}
+      brand={brand}
       initialTemplateId={searchParams.template}
       campaigns={campaigns ?? []}
     />

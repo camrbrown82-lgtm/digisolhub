@@ -18,7 +18,7 @@ export function applyClientFilter<T extends { eq: (col: string, val: string) => 
 export async function listClients(supabase: SupabaseClient) {
   const { data, error } = await supabase
     .from("clients")
-    .select("id, name, domain, notes, created_at")
+    .select("id, name, domain, notes, branding, created_at")
     .order("name");
   if (error) return [];
   return data ?? [];
@@ -29,7 +29,7 @@ export async function getActiveClient(supabase: SupabaseClient) {
   if (!id) return null;
   const { data } = await supabase
     .from("clients")
-    .select("id, name, domain, site_key")
+    .select("id, name, domain, site_key, notes, branding")
     .eq("id", id)
     .maybeSingle();
   return data;

@@ -5,6 +5,7 @@ import {
   parseRecipientList,
   sendEmailToContact,
 } from "@/lib/email";
+import { brandFromClient } from "@/lib/branding";
 import { getEmailLogoUrl } from "@/lib/emailLogo";
 import { getActiveClient, getActiveClientId } from "@/lib/workspace";
 
@@ -51,7 +52,7 @@ async function sendCampaign(
 
   const clientId = await getActiveClientId();
   const active = await getActiveClient(supabase);
-  const companyName = active?.name || "DigiSol";
+  const { companyName, brand } = brandFromClient(active);
   const logoSrc = await getEmailLogoUrl(supabase, clientId || null);
   const contacts: Array<{
     id: string;
@@ -158,6 +159,8 @@ async function sendCampaign(
         campaignId: campaign?.id,
         companyName,
         logoSrc,
+        clientId: clientId || null,
+        brand,
       });
       results.push({ contactId: contact.id, ok: true });
     } catch (err) {

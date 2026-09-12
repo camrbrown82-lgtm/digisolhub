@@ -1,7 +1,10 @@
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { siteUrl } from "@/lib/allowlist";
+import { getOutboundSiteUrl, getSiteUrl } from "@/lib/supabase/env";
 
 export const EMAIL_LOGO_NOTE = "email-logo";
+export const EMAIL_LOGO_CID = "digisol-logo";
 
 export type EmailLogoAsset = {
   id: string;
@@ -10,8 +13,18 @@ export type EmailLogoAsset = {
   bucket: string;
 };
 
+export type EmailLogoFile = {
+  buffer: Buffer;
+  filename: string;
+  contentType: string;
+};
+
 export function defaultEmailLogoUrl() {
-  return `${siteUrl()}/logo.jpg`;
+  return `${getSiteUrl()}/logo.jpg`;
+}
+
+export function publicEmailLogoUrl() {
+  return `${getOutboundSiteUrl()}/logo.jpg`;
 }
 
 export async function getEmailLogoAsset(
@@ -36,5 +49,50 @@ export async function getEmailLogoUrl(
   clientId?: string | null,
 ) {
   const asset = await getEmailLogoAsset(supabase, clientId);
-  return asset?.public_url || defaultEmailLogoUrl();
+  if (asset?.public_url && !asset.public_url.includes("localhost")) {
+    return asset.public_url;
+  }
+  return publicEmailLogoUrl();
+}
+
+function readSiteLogoFile(): EmailLogoFile | null {
+  const publicDir = join(process.cwd(), "public");
+  for (const item of [
+    { file: "logo.jpg", contentType: "image/jpeg" },
+    { file: "logo.png", contentType: "image/png" },
+    { file: "logo.webp", contentType: "image/webp" },
+  ]) {
+    const path = join(publicDir, item.file);
+    if (existsSync(path)) {
+      return {
+        buffer: readFileSync(path),
+        filename: item.file,
+        contentType: item.contentType,
+      };
+    }
+  }
+  return null;
+}
+
+export async function resolveEmailLogoFile(
+  supabase: SupabaseClient,
+  clientId?: string | null,
+): Promise<EmailLogoFile | null> {
+  const asset = await getEmailLogoAsset(supabase, clientId);
+  if (asset?.public_url) {
+    try {
+      const response = await fetch(asset.public_url);
+      if (response.ok) {
+        const mime = response.headers.get("content-type") || "image/png";
+        return {
+          buffer: Buffer.from(await response.arrayBuffer()),
+          filename: asset.path.split("/").pop() || "logo.png",
+          contentType: mime.split(";")[0] || "image/png",
+        };
+      }
+    } catch {
+      // Fall back to the site logo on disk.
+    }
+  }
+  return readSiteLogoFile();
 }

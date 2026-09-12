@@ -20,6 +20,13 @@ export default async function AiPage() {
       <div>
         <h1 className="text-3xl font-semibold text-white">AI posters</h1>
         <WorkspaceScope companyName={active?.name} noun="posters" />
+        <p className="mt-2 text-sm text-zinc-400">
+          Generations pick up the selected company&apos;s brand kit from{" "}
+          <a href="/hub/brand" className="text-indigo-300 hover:text-indigo-200">
+            Brand
+          </a>
+          : colors, tone, and notes.
+        </p>
       </div>
       <AiImageForm />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

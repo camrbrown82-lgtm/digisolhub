@@ -1,5 +1,5 @@
 import { createHmac } from "crypto";
-import { siteUrl } from "@/lib/allowlist";
+import { getOutboundSiteUrl } from "@/lib/supabase/env";
 
 function secret() {
   return (
@@ -23,7 +23,7 @@ export function verifyUnsubscribeToken(email: string, token: string) {
 
 export function unsubscribeUrl(email: string) {
   const token = unsubscribeToken(email);
-  return `${siteUrl()}/unsubscribe?email=${encodeURIComponent(email)}&token=${token}`;
+  return `${getOutboundSiteUrl()}/unsubscribe?email=${encodeURIComponent(email)}&token=${token}`;
 }
 
 export function campaignFooterHtml(email: string) {

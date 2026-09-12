@@ -58,6 +58,14 @@ export function getSiteUrl() {
   return "http://localhost:3000";
 }
 
+export function getOutboundSiteUrl() {
+  const url = getSiteUrl();
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(url)) {
+    return "https://wwwdigisol.com";
+  }
+  return url;
+}
+
 export function getWeb3FormsAccessKey() {
   return firstEnv("WEB3FORMS_ACCESS_KEY", "NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY");
 }

@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   LogOut,
   Mail,
+  Palette,
   Plug,
   Workflow,
 } from "lucide-react";
@@ -19,6 +20,7 @@ import { createBrowserSupabase } from "@/lib/supabase/client";
 const nav = [
   { href: "/hub", label: "Overview", icon: LayoutDashboard },
   { href: "/hub/clients", label: "Companies", icon: Building2 },
+  { href: "/hub/brand", label: "Brand", icon: Palette },
   { href: "/hub/contacts", label: "Contacts", icon: Contact },
   { href: "/hub/email", label: "Email", icon: Mail },
   { href: "/hub/assets", label: "Files", icon: Files },
