@@ -14,8 +14,6 @@ import {
   Plug,
   Workflow,
 } from "lucide-react";
-import { Logo } from "@/components/Logo";
-import { ClientSwitcher, type HubClient } from "@/components/hub/ClientSwitcher";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 
 const nav = [
@@ -30,13 +28,7 @@ const nav = [
   { href: "/hub/integrations", label: "Integrations", icon: Plug },
 ];
 
-export function HubSidebar({
-  clients = [],
-  activeClientId = "",
-}: {
-  clients?: HubClient[];
-  activeClientId?: string;
-}) {
+export function HubSidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -49,19 +41,6 @@ export function HubSidebar({
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-zinc-950">
-      <div className="hidden border-b border-zinc-800 px-4 py-4 lg:block">
-        <Logo href="/hub" size="hub" />
-        <p className="mt-2 text-xs uppercase tracking-wider text-zinc-500">
-          Marketing hub
-        </p>
-        <ClientSwitcher clients={clients} activeClientId={activeClientId} />
-      </div>
-      <div className="border-b border-zinc-800 px-4 py-4 lg:hidden">
-        <Logo href="/hub" size="hub" />
-        <p className="mt-2 text-xs uppercase tracking-wider text-zinc-500">
-          Marketing hub
-        </p>
-      </div>
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
         {nav.map((item) => {
           const active =

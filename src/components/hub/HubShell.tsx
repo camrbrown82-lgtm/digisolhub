@@ -34,18 +34,19 @@ export function HubShell({
   }, []);
 
   return (
-    <div className="flex h-dvh max-h-dvh flex-col overflow-hidden bg-zinc-950 lg:flex-row">
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-zinc-800 bg-zinc-950 px-3 lg:hidden">
+    <div className="flex h-dvh max-h-dvh flex-col overflow-hidden bg-zinc-950">
+      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-zinc-800 bg-zinc-950 px-3 sm:px-4">
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-800 text-zinc-200"
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-800 text-zinc-200 hover:border-indigo-500 hover:text-white"
           aria-label="Open menu"
         >
           <Menu className="h-5 w-5" />
         </button>
         <Logo href="/hub" size="hub" />
-        <div className="min-w-0 flex-1">
+        <p className="hidden text-sm text-zinc-500 sm:block">Hub</p>
+        <div className="min-w-0 flex-1 sm:max-w-xs sm:ml-auto">
           <ClientSwitcher clients={clients} activeClientId={activeClientId} compact />
         </div>
       </header>
@@ -53,23 +54,23 @@ export function HubShell({
       {open ? (
         <button
           type="button"
-          className="fixed inset-0 z-40 bg-black/60 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/60"
           aria-label="Close menu"
           onClick={() => setOpen(false)}
         />
       ) : null}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 max-w-[min(18rem,90vw)] flex-col border-r border-zinc-800 bg-zinc-950 transition-transform lg:static lg:z-auto lg:h-full lg:w-64 lg:max-w-none lg:shrink-0 lg:translate-x-0 ${
-          open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 max-w-[min(18rem,90vw)] flex-col border-r border-zinc-800 bg-zinc-950 shadow-2xl transition-transform ${
+          open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between border-b border-zinc-800 px-3 py-3 lg:hidden">
+        <div className="flex items-center justify-between border-b border-zinc-800 px-3 py-3">
           <p className="text-sm text-white">Menu</p>
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 hover:text-white"
             aria-label="Close menu"
           >
             <X className="h-5 w-5" />

@@ -32,7 +32,7 @@ export default async function HubAppLayout({
     <HubShell
       clients={clients}
       activeClientId={activeClientId}
-      sidebar={<HubSidebar clients={clients} activeClientId={activeClientId} />}
+      sidebar={<HubSidebar />}
     >
       {children}
     </HubShell>
