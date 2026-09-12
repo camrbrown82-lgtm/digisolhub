@@ -35,7 +35,7 @@ export function posterSize(model: string, format: PosterFormat) {
 }
 
 export function imageGenerateBody(
-  model: string,
+  model: string | undefined,
   prompt: string,
   format: PosterFormat,
 ) {
