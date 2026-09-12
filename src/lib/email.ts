@@ -20,27 +20,61 @@ function firstEnv(...names: string[]) {
 }
 
 const TEST_FROM = "DigiSol <onboarding@resend.dev>";
+const PERSONAL_INBOX_DOMAINS = new Set([
+  "gmail.com",
+  "googlemail.com",
+  "yahoo.com",
+  "outlook.com",
+  "hotmail.com",
+  "live.com",
+  "icloud.com",
+  "me.com",
+]);
 
 export function getResendApiKey() {
   return firstEnv("RESEND_API_KEY");
 }
 
-export function getResendFrom() {
-  return firstEnv("RESEND_FROM", "RESEND_FROM_EMAIL", "EMAIL_FROM") || TEST_FROM;
+export function parseFromAddress(value: string) {
+  const raw = value.trim().replace(/^["']|["']$/g, "");
+  const angled = raw.match(/<([^>]+)>/);
+  const email = (angled?.[1] || raw.match(/[^\s<>]+@[^\s<>]+/)?.[0] || "").toLowerCase();
+  const domain = email.split("@")[1] || "";
+  const name = angled ? raw.replace(/<[^>]+>/, "").trim().replace(/^"|"$/g, "") : "";
+  return { raw, email, domain, name, isTest: domain === "resend.dev" };
 }
 
-export function explainResendError(message: string) {
+export function getResendFrom() {
+  const configured = firstEnv("RESEND_FROM", "RESEND_FROM_EMAIL", "EMAIL_FROM");
+  if (!configured) return TEST_FROM;
+  const parsed = parseFromAddress(configured);
+  if (!parsed.email) return configured;
+  return parsed.name ? `${parsed.name} <${parsed.email}>` : parsed.email;
+}
+
+export function assertSendableFrom(from = getResendFrom()) {
+  const parsed = parseFromAddress(from);
+  if (PERSONAL_INBOX_DOMAINS.has(parsed.domain)) {
+    throw new Error(
+      `RESEND_FROM is ${parsed.email}. Resend cannot send From a personal inbox. Use an address on the verified domain, for example DigiSol <hello@wwwdigisol.com>, and put ${parsed.email} in RESEND_REPLY_TO if you want replies there.`,
+    );
+  }
+}
+
+export function explainResendError(message: string, from = getResendFrom()) {
+  const parsed = parseFromAddress(from);
+  const using = parsed.email ? ` Sending as ${parsed.email}.` : "";
   const lower = message.toLowerCase();
-  if (lower.includes("only send testing emails")) {
-    return `${message} Verify wwwdigisol.com in Resend → Domains, then set RESEND_FROM to an address on that domain. Until then you can only send a test to the email on the Resend account.`;
+  if (parsed.isTest || lower.includes("only send testing emails")) {
+    return `${message}${using} RESEND_FROM is still the Resend test sender. Set it to an address on your verified domain, for example DigiSol <hello@wwwdigisol.com>, then redeploy.`;
   }
   if (lower.includes("not verified") || lower.includes("invalid `from`") || lower.includes("invalid from")) {
-    return `${message} RESEND_FROM must use a domain you verified at resend.com/domains. Example: DigiSol <hello@wwwdigisol.com>.`;
+    return `${message}${using} The From domain must match the domain that is green in the same Resend account as RESEND_API_KEY.`;
   }
   if (lower.includes("api key") || lower.includes("unauthorized")) {
     return "Resend rejected RESEND_API_KEY. Check the value in Vercel and .env.local.";
   }
-  return message;
+  return `${message}${using}`;
 }
 
 export type SendEmailInput = {
@@ -69,6 +103,7 @@ export async function sendEmailToContact(input: SendEmailInput) {
   if (!apiKey) {
     throw new Error("RESEND_API_KEY is not configured");
   }
+  assertSendableFrom(from);
 
   const db = input.db ?? createAdminClient();
   let contact = input.contact;
@@ -159,17 +194,10 @@ export async function sendEmailToContact(input: SendEmailInput) {
         ]
       : undefined,
   };
-  let { data, error } = await resend.emails.send(payload);
-  if (
-    error &&
-    from !== TEST_FROM &&
-    /not verified|invalid `from`|invalid from/i.test(error.message)
-  ) {
-    ({ data, error } = await resend.emails.send({ ...payload, from: TEST_FROM }));
-  }
+  const { data, error } = await resend.emails.send(payload);
 
   if (error) {
-    throw new Error(explainResendError(error.message));
+    throw new Error(explainResendError(error.message, from));
   }
 
   const { data: sendRow, error: sendError } = await db

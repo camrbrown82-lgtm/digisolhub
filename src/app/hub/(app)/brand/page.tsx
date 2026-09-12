@@ -16,8 +16,8 @@ export default async function BrandPage() {
         <WorkspaceScope companyName={active?.name} noun="brand settings" />
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">
           DigiSol is the house profile. Switch Working on to another company
-          to keep their colors, voice, and notes separate. Emails, AI copy,
-          and posters all read this kit.
+          to keep their colors, voice, visual style, and notes separate.
+          Emails, AI copy, and posters all read this kit.
         </p>
       </div>
       {active ? (

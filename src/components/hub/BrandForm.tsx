@@ -61,7 +61,7 @@ export function BrandForm({
       body: JSON.stringify({
         name: data.get("name"),
         domain: data.get("domain"),
-        branding: {
+          branding: {
           tagline: data.get("tagline"),
           voice: data.get("voice"),
           audience: data.get("audience"),
@@ -73,6 +73,7 @@ export function BrandForm({
           doSay: data.get("doSay"),
           dontSay: data.get("dontSay"),
           extra: data.get("extra"),
+          visualStyle: data.get("visualStyle"),
         },
       }),
     });
@@ -143,6 +144,16 @@ export function BrandForm({
         <label className="block text-sm sm:col-span-2">
           Fonts
           <input name="fonts" defaultValue={brand.fonts} className="hub-field" />
+        </label>
+        <label className="block text-sm sm:col-span-2">
+          Poster / visual style
+          <textarea
+            name="visualStyle"
+            defaultValue={brand.visualStyle}
+            rows={3}
+            className="hub-field resize-y"
+            placeholder="Materials, lighting, mood. Example: dark zinc, indigo glow, cinematic, lots of empty space."
+          />
         </label>
         <label className="block text-sm">
           Words to lean on

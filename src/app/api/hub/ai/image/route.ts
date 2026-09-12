@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { requireHubSession } from "@/lib/auth";
-import { brandFromClient, brandImagePrompt } from "@/lib/branding";
+import { brandFromClient } from "@/lib/branding";
+import {
+  imageGenerateBody,
+  parsePosterFormat,
+  writePosterArtDirection,
+} from "@/lib/poster";
 import { getActiveClient, getActiveClientId } from "@/lib/workspace";
 
 function openaiErrorMessage(err: unknown) {
@@ -24,9 +29,11 @@ export async function POST(request: Request) {
   }
 
   let prompt = "";
+  let format = parsePosterFormat(undefined);
   try {
-    const body = (await request.json()) as { prompt?: string };
+    const body = (await request.json()) as { prompt?: string; format?: string };
     prompt = body.prompt?.trim() || "";
+    format = parsePosterFormat(body.format);
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
@@ -37,18 +44,21 @@ export async function POST(request: Request) {
   try {
     const active = await getActiveClient(supabase);
     const { companyName, brand } = brandFromClient(active);
-    const brandedPrompt = brandImagePrompt(companyName, brand, prompt);
-
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const model = process.env.OPENAI_IMAGE_MODEL || "dall-e-3";
-    const gptImage = /gpt-image|chatgpt-image/i.test(model);
-
-    const image = await openai.images.generate({
-      model,
-      prompt: brandedPrompt,
-      size: "1024x1024",
-      ...(gptImage ? {} : { response_format: "b64_json" as const }),
+    const artDirection = await writePosterArtDirection(openai, {
+      companyName,
+      brand,
+      brief: prompt,
+      format,
     });
+
+    const image = await openai.images.generate(
+      imageGenerateBody(
+        process.env.OPENAI_IMAGE_MODEL,
+        artDirection,
+        format,
+      ),
+    );
 
     let buffer: Buffer | null = null;
     const first = image.data?.[0];
@@ -101,6 +111,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       asset,
+      prompt: artDirection,
       revisedPrompt: first?.revised_prompt,
     });
   } catch (err) {

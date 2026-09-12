@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import {
   findOrCreateContactForSend,
+  getResendFrom,
+  parseFromAddress,
   parseRecipientList,
   sendEmailToContact,
 } from "@/lib/email";
@@ -183,11 +185,13 @@ async function sendCampaign(
   }
 
   const failed = results.filter((item) => !item.ok);
+  const from = parseFromAddress(getResendFrom());
   return NextResponse.json({
     campaignId: campaign?.id,
     sent: results.filter((item) => item.ok).length,
     failed: failed.length,
     error: failed[0]?.error,
+    from: from.email,
     results,
   });
 }

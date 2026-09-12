@@ -1,12 +1,21 @@
+import { parseFromAddress } from "@/lib/email";
+
 function status(ok: boolean) {
   return ok ? "Configured" : "Missing";
 }
 
 export default function IntegrationsPage() {
+  const from = parseFromAddress(
+    process.env.RESEND_FROM || process.env.RESEND_FROM_EMAIL || "",
+  );
   const rows = [
     { name: "Supabase", ok: Boolean(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) },
     { name: "Resend", ok: Boolean(process.env.RESEND_API_KEY) },
-    { name: "Resend From", ok: Boolean(process.env.RESEND_FROM || process.env.RESEND_FROM_EMAIL) },
+    {
+      name: "Resend From",
+      ok: Boolean(from.email) && !from.isTest,
+      detail: from.email || "Missing",
+    },
     { name: "OpenAI", ok: Boolean(process.env.OPENAI_API_KEY) },
     { name: "Inngest", ok: Boolean(process.env.INNGEST_EVENT_KEY) },
     { name: "Web3Forms", ok: Boolean(process.env.WEB3FORMS_ACCESS_KEY || process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY) },
@@ -26,7 +35,7 @@ export default function IntegrationsPage() {
           <li key={row.name} className="flex items-center justify-between px-4 py-3 text-sm">
             <span className="text-white">{row.name}</span>
             <span className={row.ok ? "text-indigo-300" : "text-zinc-500"}>
-              {status(row.ok)}
+              {"detail" in row && row.detail ? row.detail : status(row.ok)}
             </span>
           </li>
         ))}

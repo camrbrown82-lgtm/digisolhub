@@ -190,9 +190,11 @@ export function EmailComposer({
       error?: string;
       sent?: number;
       failed?: number;
+      from?: string;
       results?: { error?: string }[];
     };
     setBusy("");
+    const via = json.from ? ` via ${json.from}` : "";
     const failReason =
       json.error || json.results?.find((row) => row.error)?.error || "Send failed";
     if (!response.ok) {
@@ -203,7 +205,7 @@ export function EmailComposer({
       setStatus(`Sent ${json.sent ?? 0} · failed ${json.failed}. ${failReason}`);
       return;
     }
-    setStatus(`Sent ${json.sent ?? 0}`);
+    setStatus(`Sent ${json.sent ?? 0}${via}`);
     router.refresh();
   }
 
@@ -486,16 +488,8 @@ export function EmailComposer({
           </button>
         </div>
         <p className="text-xs text-zinc-500">
-          Resend only delivers to other inboxes after you verify wwwdigisol.com at{" "}
-          <a
-            href="https://resend.com/domains"
-            target="_blank"
-            rel="noreferrer"
-            className="text-indigo-300 hover:text-indigo-200"
-          >
-            resend.com/domains
-          </a>{" "}
-          and set RESEND_FROM to an address on that domain.
+          Sends use RESEND_FROM on the server. Hub → Integrations shows the
+          address without revealing the API key.
         </p>
         {status ? <p className="text-sm text-indigo-300">{status}</p> : null}
       </section>
