@@ -8,22 +8,43 @@ import {
 import { getEmailLogoUrl } from "@/lib/emailLogo";
 import { getActiveClient, getActiveClientId } from "@/lib/workspace";
 
+type SendBody = {
+  templateId?: string;
+  contactId?: string;
+  to?: string;
+  segment?: "all" | "tag" | "service";
+  tag?: string;
+  service?: string;
+  subject?: string;
+  html?: string;
+  campaignName?: string;
+};
+
 export async function POST(request: Request) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
-  const body = (await request.json()) as {
-    templateId?: string;
-    contactId?: string;
-    to?: string;
-    segment?: "all" | "tag" | "service";
-    tag?: string;
-    service?: string;
-    subject?: string;
-    html?: string;
-    campaignName?: string;
-  };
+  let body: SendBody;
+  try {
+    body = (await request.json()) as SendBody;
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
 
+  try {
+    return await sendCampaign(supabase, body);
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Send failed" },
+      { status: 400 },
+    );
+  }
+}
+
+async function sendCampaign(
+  supabase: Awaited<ReturnType<typeof requireHubSession>>["supabase"],
+  body: SendBody,
+) {
   if (!body.templateId && !body.html) {
     return NextResponse.json({ error: "Template or HTML is required" }, { status: 400 });
   }
@@ -32,8 +53,13 @@ export async function POST(request: Request) {
   const active = await getActiveClient(supabase);
   const companyName = active?.name || "DigiSol";
   const logoSrc = await getEmailLogoUrl(supabase, clientId || null);
-
-  let contactIds: string[] = [];
+  const contacts: Array<{
+    id: string;
+    email: string;
+    name?: string | null;
+    company?: string | null;
+    unsubscribed_at?: string | null;
+  }> = [];
 
   if (body.to?.trim()) {
     const emails = parseRecipientList(body.to);
@@ -41,34 +67,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Add at least one valid email" }, { status: 400 });
     }
     for (const email of emails) {
-      const contact = await findOrCreateContactForSend({
+      const contact = await findOrCreateContactForSend(supabase, {
         email,
         clientId: clientId || null,
         companyName,
       });
       if (contact.unsubscribed_at) continue;
-      contactIds.push(contact.id);
+      contacts.push(contact);
     }
   } else if (body.contactId) {
-    if (clientId) {
-      const { data: scoped } = await supabase
-        .from("contacts")
-        .select("id")
-        .eq("id", body.contactId)
-        .eq("client_id", clientId)
-        .maybeSingle();
-      if (!scoped) {
-        return NextResponse.json(
-          { error: "That contact is not in the selected company" },
-          { status: 400 },
-        );
-      }
+    let query = supabase
+      .from("contacts")
+      .select("id, email, name, company, unsubscribed_at")
+      .eq("id", body.contactId);
+    if (clientId) query = query.eq("client_id", clientId);
+    const { data: scoped } = await query.maybeSingle();
+    if (!scoped) {
+      return NextResponse.json(
+        { error: "That contact is not in the selected company" },
+        { status: 400 },
+      );
     }
-    contactIds = [body.contactId];
+    contacts.push(scoped);
   } else {
     let query = supabase
       .from("contacts")
-      .select("id")
+      .select("id, email, name, company, unsubscribed_at")
       .is("unsubscribed_at", null);
     if (clientId) query = query.eq("client_id", clientId);
 
@@ -83,10 +107,10 @@ export async function POST(request: Request) {
     if (queryError) {
       return NextResponse.json({ error: queryError.message }, { status: 400 });
     }
-    contactIds = (data ?? []).map((row) => row.id);
+    contacts.push(...(data ?? []));
   }
 
-  if (contactIds.length === 0) {
+  if (contacts.length === 0) {
     return NextResponse.json({ error: "No matching contacts" }, { status: 400 });
   }
 
@@ -122,10 +146,12 @@ export async function POST(request: Request) {
     .single();
 
   const results: { contactId: string; ok: boolean; error?: string }[] = [];
-  for (const contactId of contactIds) {
+  for (const contact of contacts) {
     try {
       await sendEmailToContact({
-        contactId,
+        contactId: contact.id,
+        contact,
+        db: supabase,
         templateId: body.templateId,
         subject: body.subject,
         html: body.html,
@@ -133,10 +159,10 @@ export async function POST(request: Request) {
         companyName,
         logoSrc,
       });
-      results.push({ contactId, ok: true });
+      results.push({ contactId: contact.id, ok: true });
     } catch (err) {
       results.push({
-        contactId,
+        contactId: contact.id,
         ok: false,
         error: err instanceof Error ? err.message : "Send failed",
       });
@@ -153,10 +179,12 @@ export async function POST(request: Request) {
       .eq("id", campaign.id);
   }
 
+  const failed = results.filter((item) => !item.ok);
   return NextResponse.json({
     campaignId: campaign?.id,
     sent: results.filter((item) => item.ok).length,
-    failed: results.filter((item) => !item.ok).length,
+    failed: failed.length,
+    error: failed[0]?.error,
     results,
   });
 }

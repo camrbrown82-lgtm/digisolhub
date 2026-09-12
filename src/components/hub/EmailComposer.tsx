@@ -182,13 +182,20 @@ export function EmailComposer({
       error?: string;
       sent?: number;
       failed?: number;
+      results?: { error?: string }[];
     };
     setBusy("");
+    const failReason =
+      json.error || json.results?.find((row) => row.error)?.error || "Send failed";
     if (!response.ok) {
-      setStatus(json.error || "Send failed");
+      setStatus(failReason);
       return;
     }
-    setStatus(`Sent ${json.sent ?? 0} · failed ${json.failed ?? 0}`);
+    if (json.failed) {
+      setStatus(`Sent ${json.sent ?? 0} · failed ${json.failed}. ${failReason}`);
+      return;
+    }
+    setStatus(`Sent ${json.sent ?? 0}`);
     router.refresh();
   }
 
@@ -469,6 +476,18 @@ export function EmailComposer({
             {busy === "send" ? "Sending…" : "Send"}
           </button>
         </div>
+        <p className="text-xs text-zinc-500">
+          Resend only delivers to other inboxes after you verify wwwdigisol.com at{" "}
+          <a
+            href="https://resend.com/domains"
+            target="_blank"
+            rel="noreferrer"
+            className="text-indigo-300 hover:text-indigo-200"
+          >
+            resend.com/domains
+          </a>{" "}
+          and set RESEND_FROM to an address on that domain.
+        </p>
         {status ? <p className="text-sm text-indigo-300">{status}</p> : null}
       </section>
 

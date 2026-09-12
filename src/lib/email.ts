@@ -1,9 +1,42 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildEmailHtml } from "@/lib/emailHtml";
 import { defaultEmailLogoUrl } from "@/lib/emailLogo";
 import { renderMergeFields } from "@/lib/emailTemplates";
 import { unsubscribeUrl, wrapCampaignHtml } from "@/lib/unsubscribe";
 import { Resend } from "resend";
+
+function firstEnv(...names: string[]) {
+  for (const name of names) {
+    const value = process.env[name]?.trim().replace(/^["']|["']$/g, "");
+    if (value) return value;
+  }
+  return "";
+}
+
+const TEST_FROM = "DigiSol <onboarding@resend.dev>";
+
+export function getResendApiKey() {
+  return firstEnv("RESEND_API_KEY");
+}
+
+export function getResendFrom() {
+  return firstEnv("RESEND_FROM", "RESEND_FROM_EMAIL", "EMAIL_FROM") || TEST_FROM;
+}
+
+export function explainResendError(message: string) {
+  const lower = message.toLowerCase();
+  if (lower.includes("only send testing emails")) {
+    return `${message} Verify wwwdigisol.com in Resend → Domains, then set RESEND_FROM to an address on that domain. Until then you can only send a test to the email on the Resend account.`;
+  }
+  if (lower.includes("not verified") || lower.includes("invalid `from`") || lower.includes("invalid from")) {
+    return `${message} RESEND_FROM must use a domain you verified at resend.com/domains. Example: DigiSol <hello@wwwdigisol.com>.`;
+  }
+  if (lower.includes("api key") || lower.includes("unauthorized")) {
+    return "Resend rejected RESEND_API_KEY. Check the value in Vercel and .env.local.";
+  }
+  return message;
+}
 
 export type SendEmailInput = {
   contactId: string;
@@ -13,25 +46,37 @@ export type SendEmailInput = {
   campaignId?: string | null;
   companyName?: string;
   logoSrc?: string;
+  db?: SupabaseClient;
+  contact?: {
+    id: string;
+    email: string;
+    name?: string | null;
+    company?: string | null;
+    unsubscribed_at?: string | null;
+  };
 };
 
 export async function sendEmailToContact(input: SendEmailInput) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM;
-  if (!apiKey || !from) {
-    throw new Error("RESEND_API_KEY or RESEND_FROM is not configured");
+  const apiKey = getResendApiKey();
+  const from = getResendFrom();
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY is not configured");
   }
 
-  const admin = createAdminClient();
-  const { data: contact, error: contactError } = await admin
-    .from("contacts")
-    .select("id, email, name, company, unsubscribed_at")
-    .eq("id", input.contactId)
-    .single();
-
-  if (contactError || !contact) {
-    throw new Error("Contact not found");
+  const db = input.db ?? createAdminClient();
+  let contact = input.contact;
+  if (!contact) {
+    const { data, error: contactError } = await db
+      .from("contacts")
+      .select("id, email, name, company, unsubscribed_at")
+      .eq("id", input.contactId)
+      .single();
+    if (contactError || !data) {
+      throw new Error("Contact not found");
+    }
+    contact = data;
   }
+
   if (contact.unsubscribed_at) {
     throw new Error("Contact is unsubscribed");
   }
@@ -40,7 +85,7 @@ export async function sendEmailToContact(input: SendEmailInput) {
   let html = input.html ?? "";
 
   if (input.templateId) {
-    const { data: template, error: templateError } = await admin
+    const { data: template, error: templateError } = await db
       .from("email_templates")
       .select("id, subject, html")
       .eq("id", input.templateId)
@@ -72,7 +117,7 @@ export async function sendEmailToContact(input: SendEmailInput) {
   const personalized = wrapCampaignHtml(branded, contact.email);
 
   const resend = new Resend(apiKey);
-  const { data, error } = await resend.emails.send({
+  const payload = {
     from,
     to: contact.email,
     subject: mergedSubject || "Message from DigiSol",
@@ -80,13 +125,21 @@ export async function sendEmailToContact(input: SendEmailInput) {
     headers: {
       "List-Unsubscribe": `<${unsubscribeUrl(contact.email)}>`,
     },
-  });
-
-  if (error) {
-    throw new Error(error.message);
+  };
+  let { data, error } = await resend.emails.send(payload);
+  if (
+    error &&
+    from !== TEST_FROM &&
+    /not verified|invalid `from`|invalid from/i.test(error.message)
+  ) {
+    ({ data, error } = await resend.emails.send({ ...payload, from: TEST_FROM }));
   }
 
-  const { data: sendRow, error: sendError } = await admin
+  if (error) {
+    throw new Error(explainResendError(error.message));
+  }
+
+  const { data: sendRow, error: sendError } = await db
     .from("sends")
     .insert({
       campaign_id: input.campaignId ?? null,
@@ -116,21 +169,23 @@ export function parseRecipientList(value: string) {
   );
 }
 
-export async function findOrCreateContactForSend(input: {
-  email: string;
-  clientId?: string | null;
-  companyName?: string;
-}) {
-  const admin = createAdminClient();
+export async function findOrCreateContactForSend(
+  db: SupabaseClient,
+  input: {
+    email: string;
+    clientId?: string | null;
+    companyName?: string;
+  },
+) {
   const email = input.email.trim().toLowerCase();
-  const { data: existing } = await admin
+  const { data: existing } = await db
     .from("contacts")
-    .select("id, unsubscribed_at")
+    .select("id, email, name, company, unsubscribed_at")
     .ilike("email", email)
     .maybeSingle();
   if (existing) return existing;
 
-  const { data: created, error } = await admin
+  const { data: created, error } = await db
     .from("contacts")
     .insert({
       email,
@@ -138,10 +193,15 @@ export async function findOrCreateContactForSend(input: {
       source: "email-send",
       client_id: input.clientId || null,
     })
-    .select("id, unsubscribed_at")
+    .select("id, email, name, company, unsubscribed_at")
     .single();
-  if (error || !created) {
-    throw new Error(error?.message || "Could not add recipient");
-  }
-  return created;
+  if (created) return created;
+
+  const { data: again } = await db
+    .from("contacts")
+    .select("id, email, name, company, unsubscribed_at")
+    .ilike("email", email)
+    .maybeSingle();
+  if (again) return again;
+  throw new Error(error?.message || "Could not add recipient");
 }
