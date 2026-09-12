@@ -1,4 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { buildEmailHtml } from "@/lib/emailHtml";
+import { defaultEmailLogoUrl } from "@/lib/emailLogo";
+import { renderMergeFields } from "@/lib/emailTemplates";
 import { unsubscribeUrl, wrapCampaignHtml } from "@/lib/unsubscribe";
 import { Resend } from "resend";
 
@@ -8,6 +11,8 @@ export type SendEmailInput = {
   subject?: string;
   html?: string;
   campaignId?: string | null;
+  companyName?: string;
+  logoSrc?: string;
 };
 
 export async function sendEmailToContact(input: SendEmailInput) {
@@ -20,7 +25,7 @@ export async function sendEmailToContact(input: SendEmailInput) {
   const admin = createAdminClient();
   const { data: contact, error: contactError } = await admin
     .from("contacts")
-    .select("id, email, name, unsubscribed_at")
+    .select("id, email, name, company, unsubscribed_at")
     .eq("id", input.contactId)
     .single();
 
@@ -51,16 +56,26 @@ export async function sendEmailToContact(input: SendEmailInput) {
     throw new Error("Email HTML is empty");
   }
 
-  const personalized = wrapCampaignHtml(html, contact.email).replaceAll(
-    "{{name}}",
-    contact.name || "there",
-  );
+  const companyName = input.companyName?.trim() || contact.company || "DigiSol";
+  const mergedSubject = renderMergeFields(subject, {
+    name: contact.name || "there",
+    company: companyName,
+  });
+  const mergedBody = renderMergeFields(html, {
+    name: contact.name || "there",
+    company: companyName,
+  });
+  const branded = buildEmailHtml(mergedBody, {
+    logoSrc: input.logoSrc || defaultEmailLogoUrl(),
+    companyName,
+  });
+  const personalized = wrapCampaignHtml(branded, contact.email);
 
   const resend = new Resend(apiKey);
   const { data, error } = await resend.emails.send({
     from,
     to: contact.email,
-    subject: subject || "Message from DigiSol",
+    subject: mergedSubject || "Message from DigiSol",
     html: personalized,
     headers: {
       "List-Unsubscribe": `<${unsubscribeUrl(contact.email)}>`,
@@ -88,4 +103,45 @@ export async function sendEmailToContact(input: SendEmailInput) {
   }
 
   return { resendId: data?.id, sendId: sendRow?.id };
+}
+
+export function parseRecipientList(value: string) {
+  return Array.from(
+    new Set(
+      value
+        .split(/[,;\s]+/)
+        .map((email) => email.trim().toLowerCase())
+        .filter((email) => email.includes("@")),
+    ),
+  );
+}
+
+export async function findOrCreateContactForSend(input: {
+  email: string;
+  clientId?: string | null;
+  companyName?: string;
+}) {
+  const admin = createAdminClient();
+  const email = input.email.trim().toLowerCase();
+  const { data: existing } = await admin
+    .from("contacts")
+    .select("id, unsubscribed_at")
+    .ilike("email", email)
+    .maybeSingle();
+  if (existing) return existing;
+
+  const { data: created, error } = await admin
+    .from("contacts")
+    .insert({
+      email,
+      company: input.companyName || null,
+      source: "email-send",
+      client_id: input.clientId || null,
+    })
+    .select("id, unsubscribed_at")
+    .single();
+  if (error || !created) {
+    throw new Error(error?.message || "Could not add recipient");
+  }
+  return created;
 }
