@@ -53,6 +53,10 @@ export function AiImageForm({
       return;
     }
     setBusy(false);
+    if (response.status === 401) {
+      setStatus("Sign in again, then retry. Your hub session expired.");
+      return;
+    }
     if (!response.ok) {
       setStatus(result.error || "Generation failed");
       return;

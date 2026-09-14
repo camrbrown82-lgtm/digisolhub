@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
 import { requireHubSession } from "@/lib/auth";
 import { brandFromClient } from "@/lib/branding";
+import {
+  createOpenAIClient,
+  getOpenAIApiKey,
+  openaiErrorMessage,
+  shouldFallbackImageModel,
+} from "@/lib/openai";
 import {
   imageGenerateBody,
   parsePosterFormat,
@@ -9,21 +14,16 @@ import {
 } from "@/lib/poster";
 import { getActiveClient, getActiveClientId } from "@/lib/workspace";
 
-function openaiErrorMessage(err: unknown) {
-  if (err && typeof err === "object") {
-    const record = err as { error?: { message?: string }; message?: string };
-    return record.error?.message || record.message || "Image generation failed";
-  }
-  return "Image generation failed";
-}
-
 export async function POST(request: Request) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
-  if (!process.env.OPENAI_API_KEY) {
+  if (!getOpenAIApiKey()) {
     return NextResponse.json(
-      { error: "OPENAI_API_KEY is not configured" },
+      {
+        error:
+          "OPENAI_API_KEY is not configured. Add it in Vercel Production and .env.local, then redeploy.",
+      },
       { status: 503 },
     );
   }
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   try {
     const active = await getActiveClient(supabase);
     const { companyName, brand } = brandFromClient(active);
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const openai = createOpenAIClient();
     const artDirection = await writePosterArtDirection(openai, {
       companyName,
       brand,
@@ -52,13 +52,25 @@ export async function POST(request: Request) {
       format,
     });
 
-    const image = await openai.images.generate(
-      imageGenerateBody(
-        process.env.OPENAI_IMAGE_MODEL,
-        artDirection,
-        format,
-      ),
-    );
+    const preferred = process.env.OPENAI_IMAGE_MODEL;
+    let image;
+    try {
+      image = await openai.images.generate(
+        imageGenerateBody(preferred, artDirection, format),
+      );
+    } catch (err) {
+      const triedGptImage = /gpt-image|chatgpt-image/i.test(preferred?.trim() || "");
+      if (!triedGptImage && shouldFallbackImageModel(err)) {
+        throw err;
+      }
+      if (triedGptImage && shouldFallbackImageModel(err)) {
+        image = await openai.images.generate(
+          imageGenerateBody("dall-e-3", artDirection, format),
+        );
+      } else {
+        throw err;
+      }
+    }
 
     let buffer: Buffer | null = null;
     const first = image.data?.[0];

@@ -14,7 +14,10 @@ export async function requireHubSession() {
     return {
       user: null,
       supabase,
-      error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+      error: NextResponse.json(
+        { error: "Sign in again to use the hub." },
+        { status: 401 },
+      ),
     };
   }
 

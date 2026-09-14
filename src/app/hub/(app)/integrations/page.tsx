@@ -16,7 +16,7 @@ export default function IntegrationsPage() {
       ok: Boolean(from.email) && !from.isTest,
       detail: from.email || "Missing",
     },
-    { name: "OpenAI", ok: Boolean(process.env.OPENAI_API_KEY) },
+    { name: "OpenAI", ok: Boolean(process.env.OPENAI_API_KEY?.trim()) },
     { name: "Inngest", ok: Boolean(process.env.INNGEST_EVENT_KEY) },
     { name: "Web3Forms", ok: Boolean(process.env.WEB3FORMS_ACCESS_KEY || process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY) },
   ];
@@ -56,9 +56,10 @@ export default function IntegrationsPage() {
           <code className="text-zinc-200">/api/inngest</code>
         </p>
         <p className="mt-3">
-          Client website tracking: add the snippet from{" "}
-          <code className="text-zinc-200">/hub/analytics</code>. Events post to{" "}
-          <code className="text-zinc-200">/api/collect</code>.
+          AI posters need <code className="text-zinc-200">OPENAI_API_KEY</code> on
+          Vercel Production. Use a secret key from platform.openai.com. If
+          gpt-image-1 is unauthorized, set{" "}
+          <code className="text-zinc-200">OPENAI_IMAGE_MODEL=dall-e-3</code>.
         </p>
       </div>
     </div>

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
 import { requireHubSession } from "@/lib/auth";
 import { brandFromClient, brandVoicePrompt } from "@/lib/branding";
 import { TEMPLATE_VARIABLES } from "@/lib/emailTemplates";
+import { createOpenAIClient, getOpenAIApiKey } from "@/lib/openai";
 import { getActiveClient } from "@/lib/workspace";
 
 type Mode = "generate" | "flare";
@@ -11,9 +11,12 @@ export async function POST(request: Request) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
-  if (!process.env.OPENAI_API_KEY) {
+  if (!getOpenAIApiKey()) {
     return NextResponse.json(
-      { error: "OPENAI_API_KEY is not configured" },
+      {
+        error:
+          "OPENAI_API_KEY is not configured. Add it in Vercel Production and .env.local, then redeploy.",
+      },
       { status: 503 },
     );
   }
@@ -45,7 +48,7 @@ export async function POST(request: Request) {
   const active = await getActiveClient(supabase);
   const { companyName, brand } = brandFromClient(active);
   const company = body.companyName?.trim() || companyName;
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const openai = createOpenAIClient();
   const model = process.env.OPENAI_EMAIL_MODEL || "gpt-4o-mini";
 
   const completion = await openai.chat.completions.create({

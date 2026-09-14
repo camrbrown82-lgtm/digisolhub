@@ -17,8 +17,9 @@ export function parsePosterFormat(value: unknown): PosterFormat {
 }
 
 export function resolveImageModel(raw?: string) {
-  const model = raw?.trim() || "gpt-image-1";
-  if (/^dall-e/i.test(model)) return "gpt-image-1";
+  const model = raw?.trim() || "dall-e-3";
+  if (/^dall-e-2$/i.test(model)) return "dall-e-2";
+  if (/^dall-e/i.test(model)) return "dall-e-3";
   return model;
 }
 
