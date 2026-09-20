@@ -1,18 +1,12 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
+import {
+  WORKFLOW_TRIGGERS,
+  emptyWorkflowGraph,
+  sanitizeWorkflowGraph,
+  type WorkflowTrigger,
+} from "@/lib/workflowGraph";
 import { getActiveClientId } from "@/lib/workspace";
-
-const emptyGraph = {
-  nodes: [
-    {
-      id: "trigger",
-      type: "trigger",
-      position: { x: 80, y: 80 },
-      data: { label: "New lead", trigger: "new_lead" },
-    },
-  ],
-  edges: [],
-};
 
 export async function GET() {
   const { supabase, error } = await requireHubSession();
@@ -39,15 +33,24 @@ export async function POST(request: Request) {
   const body = (await request.json()) as {
     name?: string;
     trigger?: string;
+    graph?: unknown;
+    enabled?: boolean;
   };
+
+  const trigger = WORKFLOW_TRIGGERS.includes(body.trigger as WorkflowTrigger)
+    ? (body.trigger as WorkflowTrigger)
+    : "new_lead";
+  const graph = body.graph
+    ? sanitizeWorkflowGraph(body.graph, trigger)
+    : emptyWorkflowGraph(trigger);
 
   const { data, error: insertError } = await supabase
     .from("workflows")
     .insert({
       name: body.name?.trim() || "Untitled workflow",
-      trigger: body.trigger || "new_lead",
-      graph: emptyGraph,
-      enabled: false,
+      trigger,
+      graph,
+      enabled: Boolean(body.enabled),
       client_id: (await getActiveClientId()) || null,
     })
     .select("id")

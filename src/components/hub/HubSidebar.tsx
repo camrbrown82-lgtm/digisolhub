@@ -26,9 +26,9 @@ const nav = [
   { href: "/hub/contacts", label: "Contacts", icon: Contact },
   { href: "/hub/leads", label: "Leads", icon: Target },
   { href: "/hub/email", label: "Email", icon: Mail },
+  { href: "/hub/campaigns", label: "Campaigns", icon: Workflow },
   { href: "/hub/assets", label: "Files", icon: Files },
   { href: "/hub/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/hub/workflows", label: "Workflows", icon: Workflow },
   { href: "/hub/ai", label: "AI posters", icon: Bot },
   { href: "/hub/archives", label: "Archives", icon: Archive },
   { href: "/hub/integrations", label: "Integrations", icon: Plug },
@@ -52,7 +52,10 @@ export function HubSidebar() {
           const active =
             item.href === "/hub"
               ? pathname === "/hub"
-              : pathname === item.href || pathname.startsWith(`${item.href}/`);
+              : item.href === "/hub/campaigns"
+                ? pathname === "/hub/campaigns" ||
+                  pathname.startsWith("/hub/workflows")
+                : pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;
           return (
             <Link

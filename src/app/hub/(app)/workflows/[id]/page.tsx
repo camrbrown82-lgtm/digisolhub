@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { WorkflowEditor } from "@/components/hub/WorkflowEditor";
 import { createClient } from "@/lib/supabase/server";
@@ -23,7 +24,16 @@ export default async function WorkflowDetailPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-semibold text-white">Edit workflow</h1>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm text-indigo-300">
+            <Link href="/hub/campaigns" className="hover:text-indigo-200">
+              ← Campaigns
+            </Link>
+          </p>
+          <h1 className="mt-1 text-3xl font-semibold text-white">Edit workflow</h1>
+        </div>
+      </div>
       <WorkflowEditor
         workflow={workflow}
         contacts={contacts ?? []}
