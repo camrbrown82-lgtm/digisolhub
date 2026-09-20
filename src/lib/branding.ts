@@ -111,6 +111,8 @@ export function mergeBrand(existing: unknown, incoming: unknown, fallback?: Comp
   };
 }
 
+export type BrandPromptKind = "copy" | "visual" | "logo";
+
 export function brandLogoPromptLine(brand: CompanyBrand) {
   if (brand.logoDescription.trim()) {
     return `Official logo — reproduce this exact mark, do not invent a new one: ${brand.logoDescription.trim()}`;
@@ -130,7 +132,11 @@ export function brandFromClient(client?: { name?: string | null; branding?: unkn
   };
 }
 
-export function brandVoicePrompt(companyName: string, brand: CompanyBrand) {
+export function brandVoicePrompt(
+  companyName: string,
+  brand: CompanyBrand,
+  kind: BrandPromptKind = "copy",
+) {
   return [
     `Brand name: ${companyName}`,
     brand.tagline ? `Tagline: ${brand.tagline}` : "",
@@ -141,15 +147,19 @@ export function brandVoicePrompt(companyName: string, brand: CompanyBrand) {
     brand.doSay ? `Words and phrases to lean on: ${brand.doSay}` : "",
     brand.dontSay ? `Words and phrases to avoid: ${brand.dontSay}` : "",
     brand.visualStyle ? `Visual style: ${brand.visualStyle}` : "",
-    brandLogoPromptLine(brand),
-    brand.logoUrl ? `Official logo file is on record for ${companyName}.` : "",
+    kind === "visual"
+      ? `Official logo for ${companyName} is stamped on after generation. Do not describe, draw, or letter the company name.`
+      : brandLogoPromptLine(brand),
+    kind === "visual"
+      ? ""
+      : brand.logoUrl
+        ? `Official logo file is on record for ${companyName}.`
+        : "",
     brand.extra ? `Other brand notes: ${brand.extra}` : "",
   ]
     .filter(Boolean)
     .join("\n");
 }
-
-export type BrandPromptKind = "copy" | "visual" | "logo";
 
 export function brandLockRules(
   companyName: string,
@@ -160,7 +170,9 @@ export function brandLockRules(
   const lines = [
     `HARD BRAND LOCK — produce work only for ${companyName}.`,
     house
-      ? "This is the DigiSol house brand. Use DigiSol voice, palette, and mark."
+      ? kind === "visual"
+        ? "This is the DigiSol house brand. Use DigiSol voice and palette only."
+        : "This is the DigiSol house brand. Use DigiSol voice, palette, and mark."
       : `This is not DigiSol. Do not use DigiSol voice, indigo house look, tagline, claims, or logo. Only ${companyName}.`,
     `Voice: ${brand.voice || "Plain, specific, human. No agency filler."}`,
     `Audience: ${brand.audience || "this company's real customers"}`,
@@ -168,10 +180,12 @@ export function brandLockRules(
     brand.fonts ? `Typography: ${brand.fonts}` : "",
     brand.doSay ? `Lean on: ${brand.doSay}` : "",
     brand.dontSay ? `Never use: ${brand.dontSay}` : "",
-    brandLogoPromptLine(brand) ||
-      (kind === "logo"
-        ? `Create a new official mark for ${companyName} only. Spell the name exactly.`
-        : `No official logo on file. Do not invent one. If lettering appears, spell "${companyName}" exactly.`),
+    kind === "visual"
+      ? `Do not draw a logo, icon, or the letters of "${companyName}". The official logo is stamped on after generation.`
+      : brandLogoPromptLine(brand) ||
+        (kind === "logo"
+          ? `Create a new official mark for ${companyName} only. Spell the name exactly.`
+          : `No official logo on file. Do not invent one. If lettering appears, spell "${companyName}" exactly.`),
     "Do not invent offers, prices, cities, testimonials, partner marks, or a second slogan that are not in this kit.",
     "If a detail is missing, omit it. Never fill gaps with another company's brand.",
   ];
@@ -185,7 +199,8 @@ export function brandLockRules(
   }
   if (kind === "visual") {
     lines.push(
-      "If a logo appears, reproduce the official mark exactly. Do not redesign it.",
+      `Leave the top 20% as empty ${brand.backgroundColor} negative space for that official mark.`,
+      "Headline type may use the tagline or campaign line only — never the company name as a wordmark.",
       "Background must read as the brand background hex.",
     );
   }
@@ -197,7 +212,7 @@ export function brandKitPrompt(
   brand: CompanyBrand,
   kind: BrandPromptKind,
 ) {
-  return [brandVoicePrompt(companyName, brand), brandLockRules(companyName, brand, kind)]
+  return [brandVoicePrompt(companyName, brand, kind), brandLockRules(companyName, brand, kind)]
     .filter(Boolean)
     .join("\n\n");
 }
@@ -255,9 +270,11 @@ export function brandImagePrompt(
     brand.voice ? `Tone to translate into composition, lighting, and type: ${brand.voice}` : "",
     brand.audience ? `Made for this audience: ${brand.audience}` : "",
     `Dominant palette only: primary ${brand.primaryColor}, secondary ${brand.secondaryColor}, accent ${brand.accentColor}, background ${brand.backgroundColor}.`,
-    `Typography feel like ${font}. If the company name appears, spell "${companyName}" exactly.`,
-    brandLogoPromptLine(brand) ||
-      `If lettering is needed, set "${companyName}" as a custom wordmark. Do not invent a logo.`,
+    `Typography feel like ${font}.`,
+    `Do not draw a logo or the letters of "${companyName}". The official mark is stamped on afterwards. Leave the top fifth empty ${brand.backgroundColor} space.`,
+    brand.tagline
+      ? `If a headline is needed, use this tagline exactly: "${brand.tagline}".`
+      : "If a headline is needed, use the job line only. Do not invent a wordmark.",
     `Art direction: ${inferVisualStyle(brand)}`,
     brand.doSay ? `Headline vocabulary: ${brand.doSay}` : "",
     brand.dontSay ? `Do not depict or write: ${brand.dontSay}` : "",

@@ -7,7 +7,7 @@ import {
   brandKitPrompt,
   parseBrand,
 } from "@/lib/branding";
-import { EMAIL_LOGO_NOTE, defaultEmailLogoUrl } from "@/lib/emailLogo";
+import { EMAIL_LOGO_NOTE, defaultEmailLogoUrl, readSiteLogoFile } from "@/lib/emailLogo";
 import { getSiteUrl } from "@/lib/supabase/env";
 import { LOGO_STYLES, type LogoStyle, parseLogoStyle } from "@/lib/logoStyles";
 
@@ -82,13 +82,34 @@ export async function getBrandLogoUrl(
 
 export async function fetchLogoBuffer(url: string) {
   const resolved = url.startsWith("/") ? `${getSiteUrl()}${url}` : url;
-  const response = await fetch(resolved);
-  if (!response.ok) return null;
-  return {
-    buffer: Buffer.from(await response.arrayBuffer()),
-    contentType: response.headers.get("content-type")?.split(";")[0] || "image/png",
-    filename: resolved.split("/").pop()?.split("?")[0] || "logo.png",
-  };
+  try {
+    const response = await fetch(resolved);
+    if (!response.ok) return null;
+    return {
+      buffer: Buffer.from(await response.arrayBuffer()),
+      contentType: response.headers.get("content-type")?.split(";")[0] || "image/png",
+      filename: resolved.split("/").pop()?.split("?")[0] || "logo.png",
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function resolveOfficialLogoFile(
+  supabase: SupabaseClient,
+  client: { id?: string | null; name?: string | null; branding?: unknown } | null,
+) {
+  const url = await getBrandLogoUrl(supabase, client);
+  if (url) {
+    const fetched = await fetchLogoBuffer(url);
+    if (fetched?.buffer.length) return fetched;
+  }
+  const house =
+    (client?.name || DIGISOL_HOUSE_NAME).toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase();
+  if (!house) return null;
+  const disk = readSiteLogoFile();
+  if (disk) return disk;
+  return fetchLogoBuffer("https://wwwdigisol.com/logo.jpg");
 }
 
 export async function describeLogoFromImage(

@@ -2,7 +2,9 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { PosterExport } from "@/components/hub/PosterExport";
 import { type PosterFormat } from "@/lib/poster";
+import { type PosterSocialPack } from "@/lib/posterSocial";
 
 const FORMATS: { id: PosterFormat; label: string; hint: string }[] = [
   { id: "portrait", label: "Portrait", hint: "Stories, print posters" },
@@ -16,12 +18,14 @@ export function AiImageForm({
   voice,
   colors,
   logoUrl,
+  fonts,
 }: {
   companyName: string;
   tagline: string;
   voice: string;
   colors: string[];
   logoUrl?: string;
+  fonts?: string;
 }) {
   const router = useRouter();
   const [prompt, setPrompt] = useState("");
@@ -29,14 +33,16 @@ export function AiImageForm({
   const [status, setStatus] = useState("");
   const [url, setUrl] = useState("");
   const [artDirection, setArtDirection] = useState("");
+  const [social, setSocial] = useState<PosterSocialPack | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
-        setStatus("Building a brand-locked poster…");
+    setStatus("Building a brand-locked poster with the official logo…");
     setUrl("");
     setArtDirection("");
+    setSocial(null);
     const response = await fetch("/api/hub/ai/image", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -46,6 +52,8 @@ export function AiImageForm({
       error?: string;
       asset?: { public_url?: string };
       prompt?: string;
+      social?: PosterSocialPack;
+      logoStamped?: boolean;
     } = {};
     try {
       result = (await response.json()) as typeof result;
@@ -65,7 +73,12 @@ export function AiImageForm({
     }
     setUrl(result.asset?.public_url ?? "");
     setArtDirection(result.prompt ?? "");
-    setStatus("Saved to ai-posters");
+    setSocial(result.social ?? null);
+    setStatus(
+      result.logoStamped
+        ? "Saved. Official logo stamped from Brand."
+        : "Saved. Add a logo on Brand so the real mark can be stamped on.",
+    );
     router.refresh();
   }
 
@@ -81,22 +94,29 @@ export function AiImageForm({
             <img
               src={logoUrl}
               alt={`${companyName} logo`}
-              className="h-10 w-10 rounded-lg object-contain"
+              className="h-12 w-auto max-w-[10rem] rounded-lg object-contain"
             />
           ) : null}
-          <p className="text-sm font-medium text-white">
-            Using {companyName} brand
-            {logoUrl ? " and official logo" : " — add a logo on Brand so posters stay on-mark"}
-          </p>
+          <div>
+            <p className="text-sm font-medium text-white">
+              Using {companyName} Brand kit
+            </p>
+            <p className="text-xs text-zinc-400">
+              {logoUrl
+                ? "Official logo will be stamped on after generation."
+                : "Upload a logo on Brand first so posters stay on-mark."}
+            </p>
+          </div>
         </div>
         {tagline ? (
-          <p className="mt-1 text-sm" style={{ color: colors[2] || "#a1a1aa" }}>
+          <p className="mt-2 text-sm" style={{ color: colors[2] || "#a1a1aa" }}>
             {tagline}
           </p>
         ) : null}
         {voice ? (
           <p className="mt-2 line-clamp-2 text-xs text-zinc-400">{voice}</p>
         ) : null}
+        {fonts ? <p className="mt-1 text-[11px] text-zinc-500">{fonts}</p> : null}
         <div className="mt-3 flex gap-2">
           {colors.map((color) => (
             <span
@@ -152,12 +172,14 @@ export function AiImageForm({
       </button>
       {status ? <p className="text-sm text-zinc-400">{status}</p> : null}
       {url ? (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={url}
           alt={`Generated ${format} poster for ${companyName}`}
           className="max-w-lg rounded-xl border border-zinc-800"
         />
       ) : null}
+      {social ? <PosterExport pack={social} companyName={companyName} /> : null}
       {artDirection ? (
         <details className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3 text-xs text-zinc-400">
           <summary className="cursor-pointer text-sm text-zinc-300">

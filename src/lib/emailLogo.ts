@@ -59,7 +59,7 @@ export async function getEmailLogoUrl(
   return publicEmailLogoUrl();
 }
 
-function readSiteLogoFile(): EmailLogoFile | null {
+export function readSiteLogoFile(): EmailLogoFile | null {
   const publicDir = join(process.cwd(), "public");
   for (const item of [
     { file: "logo.jpg", contentType: "image/jpeg" },

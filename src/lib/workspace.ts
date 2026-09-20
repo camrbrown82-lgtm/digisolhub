@@ -87,6 +87,10 @@ export async function getActiveClient(supabase: SupabaseClient) {
   return data;
 }
 
+export async function getWorkspaceClient(supabase: SupabaseClient) {
+  return (await getActiveClient(supabase)) ?? (await getDigisolClient(supabase));
+}
+
 export async function contactIdsForClient(
   supabase: SupabaseClient,
   clientId: string,

@@ -3,7 +3,6 @@ import {
   type CompanyBrand,
   brandImagePrompt,
   brandKitPrompt,
-  brandLogoPromptLine,
   enforceVisualBrandLock,
   inferVisualStyle,
   sanitizeVisualNotes,
@@ -110,14 +109,14 @@ export async function writePosterArtDirection(
           role: "system",
           content: `You are a creative director. Write one image-generation prompt for a print-quality marketing poster. Output the prompt only — no title, no markdown, no quotes.
 
-You must keep the brand lock intact. Do not genericize the palette, invent a logo, or drift to another company.
+The official logo will be composited on afterwards. You must not describe or request any logo, wordmark, or company-name lettering.
 
 Rules:
 - Look like a paid campaign, not AI collage or generic stock.
 - Translate brand voice into composition, lighting, materials, and type hierarchy.
 - Use only the given hex colors as the dominant palette. Background must read as the brand background.
-- If the company name appears, spell it exactly. No misspellings.
-- If an official logo description is provided, reproduce that exact mark. Never invent a substitute logo.
+- Leave the top 20% empty negative space in the brand background color for the official logo stamp.
+- Headline copy may use the tagline or job line only. Never write the company name.
 - One focal idea, generous negative space, tactile surfaces, realistic light.
 - No real people, no contact details, no QR codes, no watermarks, no unreadably small type.`,
         },
@@ -129,7 +128,7 @@ Job: ${input.brief}
 ${brandKitPrompt(input.companyName, input.brand, "visual")}
 Art direction: ${inferVisualStyle(input.brand)}
 Safe extra notes: ${sanitizeVisualNotes(input.brand.extra) || "(none)"}
-${brandLogoPromptLine(input.brand) || "No official logo on file — do not invent one."}`,
+Official logo is stamped after generation. Do not describe a wordmark.`,
         },
       ],
     });
