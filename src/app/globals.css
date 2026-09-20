@@ -27,6 +27,14 @@ html {
   scroll-padding-top: var(--header-h);
 }
 
+html.home-locked,
+html.home-locked body {
+  height: 100%;
+  max-height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 body {
   @apply bg-zinc-950 text-zinc-100 antialiased;
 }
