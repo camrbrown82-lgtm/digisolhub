@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
 import { DIGISOL_CITY, DIGISOL_FACEBOOK_URL, DIGISOL_GOOGLE_LISTING_URL, DIGISOL_PHONE, DIGISOL_POSTAL_CODE, DIGISOL_SITE_URL, DIGISOL_STREET_ADDRESS } from "@/lib/site";
+import { GOOGLE_ADS_ID } from "@/lib/ads";
 import "./globals.css";
 
 const inter = Inter({
@@ -136,6 +137,7 @@ export default function RootLayout({
             gtag('js', new Date());
             gtag('config', 'G-4ZBG4VPC9C');
             gtag('config', 'G-DCKSJLNE4T');
+            ${GOOGLE_ADS_ID ? `gtag('config', '${GOOGLE_ADS_ID}');` : ""}
           `}
         </Script>
         <script

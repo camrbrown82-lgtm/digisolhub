@@ -19,6 +19,7 @@ export default function IntegrationsPage() {
     { name: "OpenAI", ok: Boolean(process.env.OPENAI_API_KEY?.trim()) },
     { name: "Inngest", ok: Boolean(process.env.INNGEST_EVENT_KEY) },
     { name: "Web3Forms", ok: Boolean(process.env.WEB3FORMS_ACCESS_KEY || process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY) },
+    { name: "Google Ads", ok: Boolean(process.env.NEXT_PUBLIC_GOOGLE_ADS_ID?.trim()) },
   ];
 
   return (
@@ -54,6 +55,21 @@ export default function IntegrationsPage() {
         <p className="mt-3">
           Inngest serve path:{" "}
           <code className="text-zinc-200">/api/inngest</code>
+        </p>
+        <p className="mt-3">
+          Google Ads: set <code className="text-zinc-200">NEXT_PUBLIC_GOOGLE_ADS_ID</code>{" "}
+          to the <code className="text-zinc-200">AW-***********</code> ID, and{" "}
+          <code className="text-zinc-200">NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL</code>{" "}
+          to the consult conversion label. Then open{" "}
+          <a
+            href="https://ads.google.com/"
+            className="text-indigo-300 underline-offset-2 hover:underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            ads.google.com
+          </a>{" "}
+          and link that account to Analytics property G-4ZBG4VPC9C.
         </p>
         <p className="mt-3">
           AI posters need <code className="text-zinc-200">OPENAI_API_KEY</code> on

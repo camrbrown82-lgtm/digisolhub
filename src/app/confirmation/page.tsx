@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { CheckCircle2, Mail, Phone } from "lucide-react";
+import { AdsLeadConversion } from "@/components/AdsLeadConversion";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { TrackedLink } from "@/components/TrackedLink";
@@ -21,6 +22,7 @@ export default function ConfirmationPage() {
   return (
     <>
       <Navbar />
+      <AdsLeadConversion />
       <main id="main" className="px-4 py-20 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl rounded-2xl border border-zinc-800 bg-zinc-900/50 p-8 text-center backdrop-blur-md sm:p-12">
           <CheckCircle2
