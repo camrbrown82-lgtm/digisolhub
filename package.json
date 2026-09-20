@@ -10,6 +10,7 @@
     "pages:deploy": "echo Use Vercel for the hub. Cloudflare static export is no longer the app target."
   },
   "dependencies": {
+    "@google-analytics/data": "^7.1.0",
     "@supabase/ssr": "^0.12.6",
     "@supabase/supabase-js": "^2.116.0",
     "@xyflow/react": "^12.11.6",

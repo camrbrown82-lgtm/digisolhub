@@ -2,6 +2,7 @@ import { Globe } from "lucide-react";
 import { ContactInfo } from "@/components/ContactInfo";
 import { GoogleRating, ListingLinks } from "@/components/LocalListings";
 import { Logo } from "@/components/Logo";
+import { LOCATION_PAGES, locationPath } from "@/lib/locations";
 import { DIGISOL_ADDRESS_LINE, DIGISOL_REGION, DIGISOL_SERVICE_CITIES } from "@/lib/site";
 
 const jumps = [
@@ -10,6 +11,7 @@ const jumps = [
   { href: "/#services", label: "Services" },
   { href: "/#audience", label: "Who We Help" },
   { href: "/#dispatch", label: "Dispatch" },
+  { href: "/locations", label: "Locations" },
   { href: "/#contact", label: "Contact" },
   { href: "/hub", label: "Admin" },
 ];
@@ -47,6 +49,21 @@ export function Footer() {
                 <li key={link.href}>
                   <a href={link.href} className={linkClass}>
                     {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <nav aria-label="Service cities">
+            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              Alberta cities
+            </p>
+            <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+              {LOCATION_PAGES.map((city) => (
+                <li key={city.slug}>
+                  <a href={locationPath(city.slug)} className={linkClass}>
+                    {city.name}
                   </a>
                 </li>
               ))}

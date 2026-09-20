@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
+import { DigiSolSiteBeacon } from "@/components/DigiSolSiteBeacon";
 import { DIGISOL_CITY, DIGISOL_FACEBOOK_URL, DIGISOL_GOOGLE_LISTING_URL, DIGISOL_LINKEDIN_URL, DIGISOL_PHONE, DIGISOL_POSTAL_CODE, DIGISOL_SITE_URL, DIGISOL_STREET_ADDRESS } from "@/lib/site";
 import { GOOGLE_ADS_ID } from "@/lib/ads";
 import "./globals.css";
@@ -14,7 +15,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "DigiSol | Website Design, Development & Marketing in Alberta",
   description:
-    "Alberta-first website design, custom web development, and digital marketing for local companies. Custom sites, local SEO, Google Ads, and Meta campaigns in Airdrie, Calgary, Edmonton, and across Alberta.",
+    "Alberta-first website design, custom web development, and digital marketing for local companies. Custom sites, local SEO, Google Ads, and Meta campaigns in Airdrie, Calgary, Edmonton, Red Deer, Cochrane, and across Alberta.",
   metadataBase: new URL(DIGISOL_SITE_URL),
   verification: {
     google: "QwmR9VlADhodbnOuBT3FM-XaaBAyM9BLcz5bLfRdi8Y",
@@ -60,7 +61,7 @@ const organizationJsonLd = {
   },
   image: `${DIGISOL_SITE_URL}/logo.jpg`,
   description:
-    "Alberta website design, web development, and digital marketing studio based in Airdrie. Custom websites, local SEO, Google Ads, and Meta campaigns for local companies in Airdrie, Calgary, Edmonton, and across Alberta.",
+    "Alberta website design, web development, and digital marketing studio based in Airdrie. Custom websites, local SEO, Google Ads, and Meta campaigns for local companies in Airdrie, Calgary, Edmonton, Red Deer, Cochrane, and across Alberta.",
   email: "cam.r.brown82@gmail.com",
   telephone: DIGISOL_PHONE,
   address: {
@@ -76,6 +77,7 @@ const organizationJsonLd = {
     { "@type": "City", name: "Calgary" },
     { "@type": "City", name: "Edmonton" },
     { "@type": "City", name: "Red Deer" },
+    { "@type": "City", name: "Cochrane" },
     { "@type": "AdministrativeArea", name: "Alberta" },
     { "@type": "Country", name: "Canada" },
   ],
@@ -150,6 +152,7 @@ export default function RootLayout({
           }}
         />
         {children}
+        <DigiSolSiteBeacon />
       </body>
     </html>
   );

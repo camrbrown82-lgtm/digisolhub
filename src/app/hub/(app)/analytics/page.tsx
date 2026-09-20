@@ -1,11 +1,13 @@
 import { headers } from "next/headers";
 import { CopySnippet } from "@/components/hub/CopySnippet";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
+import { fetchDigisolGa4Summary, ga4ConfigStatus } from "@/lib/ga4";
 import {
   LEAD_STAGES,
   type LeadRecord,
   summarizeLeadPerformance,
 } from "@/lib/lead-pipeline";
+import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
 import { contactIdsForClient, getActiveClient } from "@/lib/workspace";
 import { newSiteKey, summarizeSiteEvents, trackingSnippet } from "@/lib/site-analytics";
 import { createClient } from "@/lib/supabase/server";
@@ -24,6 +26,8 @@ export default async function AnalyticsPage() {
   let active = await getActiveClient(supabase);
   const scopedIds = active ? await contactIdsForClient(supabase, active.id) : null;
   const emptySends = Boolean(active && scopedIds && scopedIds.length === 0);
+  const isDigisol =
+    (active?.name || "").toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase();
 
   if (active && !active.site_key) {
     const siteKey = newSiteKey();
@@ -77,18 +81,21 @@ export default async function AnalyticsPage() {
     .limit(2000);
   if (active) leadsQuery = leadsQuery.eq("client_id", active.id);
 
-  const [contacts, sends, opened, clicked, unsubscribed, site, leadsResult] = await Promise.all([
-    contactsQuery,
-    emptySends ? Promise.resolve({ count: 0 }) : sendsQuery,
-    emptySends ? Promise.resolve({ count: 0 }) : openedQuery,
-    emptySends ? Promise.resolve({ count: 0 }) : clickedQuery,
-    unsubQuery,
-    siteQuery,
-    leadsQuery,
-  ]);
+  const [contacts, sends, opened, clicked, unsubscribed, site, leadsResult, ga4] =
+    await Promise.all([
+      contactsQuery,
+      emptySends ? Promise.resolve({ count: 0 }) : sendsQuery,
+      emptySends ? Promise.resolve({ count: 0 }) : openedQuery,
+      emptySends ? Promise.resolve({ count: 0 }) : clickedQuery,
+      unsubQuery,
+      siteQuery,
+      leadsQuery,
+      fetchDigisolGa4Summary(14),
+    ]);
 
   const website = summarizeSiteEvents(site.data ?? [], active?.domain);
   const maxDaily = Math.max(1, ...website.daily.map((item) => item.count));
+  const maxGaDaily = Math.max(1, ...ga4.daily.map((item) => item.sessions));
   const pipeline = summarizeLeadPerformance((leadsResult.data ?? []) as LeadRecord[]);
   const maxStage = Math.max(1, ...LEAD_STAGES.map((stage) => pipeline.byStage[stage.id]));
   const money = (value: number) =>
@@ -104,6 +111,7 @@ export default async function AnalyticsPage() {
     { label: "Clicks (Resend)", value: clicked.count ?? 0 },
     { label: "Unsubscribed", value: unsubscribed.count ?? 0 },
   ];
+  const gaStatus = ga4ConfigStatus();
 
   return (
     <div className="space-y-8">
@@ -113,7 +121,171 @@ export default async function AnalyticsPage() {
       </div>
 
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-white">Website</h2>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-white">
+              DigiSol Google Analytics
+            </h2>
+            <p className="mt-1 text-sm text-zinc-400">
+              Live GA4 numbers for wwwdigisol.com (last 14 days) — on-page SEO,
+              city landers, Dispatch, and CRO traffic in one place.
+            </p>
+          </div>
+          <a
+            href="https://analytics.google.com/"
+            className="text-sm text-indigo-400 hover:text-indigo-300"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open Google Analytics
+          </a>
+        </div>
+
+        {!gaStatus.ready ? (
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm text-amber-100/90">
+            <p className="font-medium text-amber-50">Connect the GA4 Data API</p>
+            <p className="mt-2 text-amber-100/80">
+              The public site already sends hits to{" "}
+              <code className="text-amber-50">G-4ZBG4VPC9C</code>. To pull those
+              stats into DigiSol Hub, add these Vercel Production secrets, then
+              grant the service account Viewer on that GA4 property:
+            </p>
+            <ul className="mt-3 list-inside list-disc space-y-1 text-amber-100/80">
+              <li>
+                <code className="text-amber-50">GA4_PROPERTY_ID</code> — numeric
+                property ID (Admin → Property settings), not the G- measurement ID
+              </li>
+              <li>
+                <code className="text-amber-50">GA4_CLIENT_EMAIL</code> — Google
+                Cloud service account email
+              </li>
+              <li>
+                <code className="text-amber-50">GA4_PRIVATE_KEY</code> — service
+                account private key (keep newlines as{" "}
+                <code className="text-amber-50">\n</code>)
+              </li>
+            </ul>
+            <p className="mt-3 text-amber-100/70">
+              Until that is set, DigiSol pageviews still collect first-party below
+              (Working on → DigiSol). City landers start showing as soon as they
+              get traffic.
+            </p>
+          </div>
+        ) : ga4.error ? (
+          <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-5 text-sm text-rose-100">
+            Could not load GA4: {ga4.error}
+          </div>
+        ) : null}
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[
+            { label: "Sessions (GA4)", value: ga4.sessions },
+            { label: "Users (GA4)", value: ga4.users },
+            { label: "Pageviews (GA4)", value: ga4.pageviews },
+          ].map((card) => (
+            <div
+              key={card.label}
+              className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5"
+            >
+              <p className="text-sm text-zinc-400">{card.label}</p>
+              <p className="mt-2 text-3xl font-semibold text-white">
+                {gaStatus.ready && !ga4.error ? card.value : "—"}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+          <p className="text-sm text-zinc-400">Daily sessions (GA4)</p>
+          <div className="mt-4 flex h-28 items-end gap-1">
+            {ga4.daily.map((item) => (
+              <div key={item.day} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+                <div
+                  className="w-full rounded-t bg-blue-500/80"
+                  style={{
+                    height: `${Math.max(
+                      6,
+                      gaStatus.ready && !ga4.error
+                        ? (item.sessions / maxGaDaily) * 100
+                        : 6,
+                    )}%`,
+                  }}
+                  title={`${item.day}: ${item.sessions}`}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="mt-2 flex justify-between text-[11px] text-zinc-500">
+            <span>{ga4.daily[0]?.day}</span>
+            <span>{ga4.daily.at(-1)?.day}</span>
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+            <h3 className="text-sm font-semibold text-white">Top pages (GA4)</h3>
+            <ul className="mt-3 space-y-2 text-sm">
+              {!gaStatus.ready || ga4.pages.length === 0 ? (
+                <li className="text-zinc-500">No GA4 page data yet.</li>
+              ) : (
+                ga4.pages.map((page) => (
+                  <li key={page.label} className="flex justify-between gap-3">
+                    <span className="truncate text-zinc-300">{page.label}</span>
+                    <span className="text-zinc-500">{page.pageviews}</span>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+            <h3 className="text-sm font-semibold text-white">
+              City landers (GA4)
+            </h3>
+            <ul className="mt-3 space-y-2 text-sm">
+              {!gaStatus.ready || ga4.locations.length === 0 ? (
+                <li className="text-zinc-500">
+                  No /locations traffic yet — Calgary, Edmonton, Red Deer,
+                  Cochrane, Airdrie will appear here.
+                </li>
+              ) : (
+                ga4.locations.map((row) => (
+                  <li key={row.label} className="flex justify-between gap-3">
+                    <span className="truncate text-zinc-300">{row.label}</span>
+                    <span className="text-zinc-500">{row.pageviews}</span>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+            <h3 className="text-sm font-semibold text-white">
+              Channels (GA4)
+            </h3>
+            <ul className="mt-3 space-y-2 text-sm">
+              {!gaStatus.ready || ga4.sources.length === 0 ? (
+                <li className="text-zinc-500">No channel data yet.</li>
+              ) : (
+                ga4.sources.map((row) => (
+                  <li key={row.label} className="flex justify-between gap-3">
+                    <span className="truncate text-zinc-300">{row.label}</span>
+                    <span className="text-zinc-500">{row.sessions}</span>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-white">
+          {isDigisol ? "DigiSol first-party website" : "Website"}
+        </h2>
+        <p className="text-sm text-zinc-400">
+          {isDigisol
+            ? "Pageviews DigiSol Hub records directly on wwwdigisol.com (including new city landers)."
+            : "First-party pageviews for the company you are Working on — install the snippet on that client site."}
+        </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
             <p className="text-sm text-zinc-400">Pageviews (14 days)</p>
@@ -182,6 +354,9 @@ export default async function AnalyticsPage() {
                 Paste this once before <code className="text-zinc-200">&lt;/head&gt;</code> or{" "}
                 <code className="text-zinc-200">&lt;/body&gt;</code> on the site you built for{" "}
                 {active.name}. Pageviews show up here, scoped to this company.
+                {isDigisol
+                  ? " DigiSol’s public site already loads this automatically."
+                  : null}
               </p>
               <div className="mt-4">
                 <CopySnippet value={trackingSnippet(origin, active.site_key)} />
@@ -262,21 +437,6 @@ export default async function AnalyticsPage() {
               <p className="mt-2 text-3xl font-semibold text-white">{card.value}</p>
             </div>
           ))}
-        </div>
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 text-sm">
-          <h3 className="font-semibold text-white">DigiSol Google Analytics</h3>
-          <p className="mt-2 text-zinc-400">
-            The public DigiSol site still reports to GA4. Client sites use the
-            snippet above so each company stays separate in this hub.
-          </p>
-          <a
-            href="https://analytics.google.com/"
-            className="mt-4 inline-flex text-indigo-400 hover:text-indigo-300"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Open Google Analytics
-          </a>
         </div>
       </section>
     </div>

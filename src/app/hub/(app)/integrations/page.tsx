@@ -22,6 +22,14 @@ export default function IntegrationsPage() {
     { name: "Dispatch cron secret", ok: Boolean(process.env.CRON_SECRET?.trim()) },
     { name: "Web3Forms", ok: Boolean(process.env.WEB3FORMS_ACCESS_KEY || process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY) },
     { name: "Google Ads", ok: Boolean(process.env.NEXT_PUBLIC_GOOGLE_ADS_ID?.trim()) },
+    {
+      name: "GA4 Data API",
+      ok: Boolean(
+        process.env.GA4_PROPERTY_ID?.trim() &&
+          (process.env.GA4_CLIENT_EMAIL?.trim() || process.env.GOOGLE_CLIENT_EMAIL?.trim()) &&
+          (process.env.GA4_PRIVATE_KEY?.trim() || process.env.GOOGLE_PRIVATE_KEY?.trim()),
+      ),
+    },
   ];
 
   return (
@@ -76,6 +84,14 @@ export default function IntegrationsPage() {
             ads.google.com
           </a>{" "}
           and link that account to Analytics property G-4ZBG4VPC9C.
+        </p>
+        <p className="mt-3">
+          GA4 into Hub Analytics: set{" "}
+          <code className="text-zinc-200">GA4_PROPERTY_ID</code> (numeric ID),{" "}
+          <code className="text-zinc-200">GA4_CLIENT_EMAIL</code>, and{" "}
+          <code className="text-zinc-200">GA4_PRIVATE_KEY</code>. Create a Google
+          Cloud service account, enable the Google Analytics Data API, download a
+          JSON key, and add that email as a Viewer on the DigiSol GA4 property.
         </p>
         <p className="mt-3">
           AI posters need <code className="text-zinc-200">OPENAI_API_KEY</code> on

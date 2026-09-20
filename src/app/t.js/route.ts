@@ -4,9 +4,14 @@ export const dynamic = "force-dynamic";
 
 const script = `(() => {
   try {
-    var script = document.currentScript;
+    var nodes = document.querySelectorAll('script[src*="/t.js"]');
+    var script = document.currentScript || nodes[nodes.length - 1];
     var key = script && script.getAttribute("data-key");
+    if (!key && script && script.src) {
+      try { key = new URL(script.src).searchParams.get("k"); } catch (e) {}
+    }
     if (!key) return;
+    if (location.pathname.indexOf("/hub") === 0) return;
     var origin = script.src ? new URL(script.src).origin : location.origin;
     var storageKey = "ds_vid_" + key;
     var visitor = null;

@@ -19,4 +19,5 @@ export const DIGISOL_SERVICE_CITIES = [
   "Calgary",
   "Edmonton",
   "Red Deer",
+  "Cochrane",
 ] as const;

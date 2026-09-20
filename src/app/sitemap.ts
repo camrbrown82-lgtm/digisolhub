@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { DISPATCH_ISSUES, dispatchUrl } from "@/lib/dispatch";
+import { LOCATION_PAGES, locationUrl } from "@/lib/locations";
 import { DIGISOL_SITE_URL } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -16,6 +17,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.8,
     },
+    {
+      url: `${DIGISOL_SITE_URL}/locations`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.85,
+    },
+    ...LOCATION_PAGES.map((page) => ({
+      url: locationUrl(page.slug),
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    })),
     ...DISPATCH_ISSUES.map((issue) => ({
       url: dispatchUrl(issue.slug),
       lastModified: new Date(issue.publishedAt),
