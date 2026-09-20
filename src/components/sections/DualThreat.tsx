@@ -58,7 +58,7 @@ const columns: Advantage[] = [
       },
       {
         icon: MapPin,
-        text: "Local SEO that wins the Calgary, Edmonton, and Alberta map pack",
+        text: "Local SEO that wins the Airdrie, Calgary, Edmonton, and Alberta map pack",
       },
       {
         icon: LineChart,

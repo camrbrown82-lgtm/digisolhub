@@ -73,7 +73,8 @@ export function Contact() {
           </h2>
           <p className="mt-4 text-zinc-400">
             Get a project quote or free strategy consult for local SEO, web
-            development, and campaigns in Calgary, Edmonton, and across Alberta.
+            development, and campaigns in Airdrie, Calgary, Edmonton, and across
+            Alberta.
           </p>
         </div>
         <BrandCard

@@ -41,9 +41,10 @@ export function Hero() {
           companies
         </p>
         <p className="mx-auto mt-6 max-w-2xl text-pretty text-base leading-relaxed text-zinc-300 sm:text-lg">
-          We start with local businesses. Custom web platforms, local SEO, Google
-          Ads, and Meta campaigns built for Calgary, Edmonton, and companies
-          across Alberta — so nearby customers can find you and convert.
+          We start with local businesses. Based in Airdrie, we build custom
+          web platforms, local SEO, Google Ads, and Meta campaigns for Calgary,
+          Edmonton, and companies across Alberta — so nearby customers can find
+          you and convert.
         </p>
         <p className="mx-auto mt-4 max-w-2xl text-sm font-medium tracking-wide text-indigo-300">
           {DIGISOL_SERVICE_CITIES.join(" · ")} · Across Alberta

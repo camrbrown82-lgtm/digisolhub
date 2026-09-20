@@ -2,7 +2,7 @@ import { Globe } from "lucide-react";
 import { ContactInfo } from "@/components/ContactInfo";
 import { GoogleRating, ListingLinks } from "@/components/LocalListings";
 import { Logo } from "@/components/Logo";
-import { DIGISOL_REGION, DIGISOL_SERVICE_CITIES } from "@/lib/site";
+import { DIGISOL_ADDRESS_LINE, DIGISOL_REGION, DIGISOL_SERVICE_CITIES } from "@/lib/site";
 
 const jumps = [
   { href: "/#top", label: "Top" },
@@ -23,7 +23,10 @@ export function Footer() {
         <div>
           <Logo size="footer" />
           <p className="mt-3 max-w-sm text-sm text-zinc-500">
-            {`Web development, local SEO, and digital marketing for Alberta companies. Serving ${DIGISOL_SERVICE_CITIES.slice(0, 3).join(", ")}, and local businesses across the province.`}
+            {`Web development, local SEO, and digital marketing for Alberta companies. Based in Airdrie. Serving ${DIGISOL_SERVICE_CITIES.join(", ")}, and local businesses across the province.`}
+          </p>
+          <p className="mt-2 max-w-sm text-sm text-zinc-500">
+            {DIGISOL_ADDRESS_LINE}
           </p>
           <a href="https://wwwdigisol.com" className={`mt-3 ${linkClass}`}>
             <Globe className="h-4 w-4 shrink-0" aria-hidden="true" />

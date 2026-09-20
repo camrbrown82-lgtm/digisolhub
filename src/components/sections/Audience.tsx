@@ -46,7 +46,7 @@ export function Audience() {
           </h2>
           <p className="mt-4 text-zinc-400">
             Local Alberta companies first. Startups and established businesses
-            in Calgary, Edmonton, and across the province get the same
+            in Airdrie, Calgary, Edmonton, and across the province get the same
             dual-threat playbook: code that converts, and marketing that ships.
           </p>
         </div>

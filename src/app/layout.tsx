@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
-import { DIGISOL_FACEBOOK_URL, DIGISOL_GOOGLE_LISTING_URL, DIGISOL_PHONE, DIGISOL_SITE_URL } from "@/lib/site";
+import { DIGISOL_CITY, DIGISOL_FACEBOOK_URL, DIGISOL_GOOGLE_LISTING_URL, DIGISOL_PHONE, DIGISOL_POSTAL_CODE, DIGISOL_SITE_URL, DIGISOL_STREET_ADDRESS } from "@/lib/site";
 import "./globals.css";
 
 const inter = Inter({
@@ -13,7 +13,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "DigiSol | Web Development & Digital Marketing in Alberta",
   description:
-    "Alberta-first web development and digital marketing for local companies. Custom websites, local SEO, Google Ads, and Meta campaigns in Calgary, Edmonton, and across Alberta.",
+    "Alberta-first web development and digital marketing for local companies. Custom websites, local SEO, Google Ads, and Meta campaigns in Airdrie, Calgary, Edmonton, and across Alberta.",
   metadataBase: new URL(DIGISOL_SITE_URL),
   verification: {
     google: "QwmR9VlADhodbnOuBT3FM-XaaBAyM9BLcz5bLfRdi8Y",
@@ -59,22 +59,22 @@ const organizationJsonLd = {
   },
   image: `${DIGISOL_SITE_URL}/logo.jpg`,
   description:
-    "Alberta web development and digital marketing studio. Custom websites, local SEO, Google Ads, and Meta campaigns for local companies in Calgary, Edmonton, and across Alberta.",
+    "Alberta web development and digital marketing studio based in Airdrie. Custom websites, local SEO, Google Ads, and Meta campaigns for local companies in Airdrie, Calgary, Edmonton, and across Alberta.",
   email: "cam.r.brown82@gmail.com",
   telephone: DIGISOL_PHONE,
   address: {
     "@type": "PostalAddress",
-    addressLocality: "Carstairs",
+    streetAddress: DIGISOL_STREET_ADDRESS,
+    addressLocality: DIGISOL_CITY,
     addressRegion: "AB",
-    postalCode: "T0M 0N0",
+    postalCode: DIGISOL_POSTAL_CODE,
     addressCountry: "CA",
   },
   areaServed: [
+    { "@type": "City", name: "Airdrie" },
     { "@type": "City", name: "Calgary" },
     { "@type": "City", name: "Edmonton" },
     { "@type": "City", name: "Red Deer" },
-    { "@type": "City", name: "Airdrie" },
-    { "@type": "City", name: "Carstairs" },
     { "@type": "AdministrativeArea", name: "Alberta" },
     { "@type": "Country", name: "Canada" },
   ],

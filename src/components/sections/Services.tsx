@@ -16,7 +16,7 @@ const services: {
   {
     icon: Megaphone,
     title: "Search & Paid Media Campaigns",
-    body: "Google Ads, Meta Ads, and local SEO for Calgary, Edmonton, and nearby Alberta markets — so local searches turn into customers.",
+    body: "Google Ads, Meta Ads, and local SEO for Airdrie, Calgary, Edmonton, and nearby Alberta markets — so local searches turn into customers.",
     accent: "indigo",
   },
   {
