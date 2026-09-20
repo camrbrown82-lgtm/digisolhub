@@ -1,6 +1,7 @@
 import {
   Code2,
   Megaphone,
+  Palette,
   Zap,
   LayoutTemplate,
   Plug,
@@ -8,6 +9,9 @@ import {
   Target,
   MapPin,
   LineChart,
+  Type,
+  MousePointerClick,
+  Layers,
   type LucideIcon,
 } from "lucide-react";
 import { BrandCard, brandAccent, type BrandAccent } from "@/components/BrandCard";
@@ -20,6 +24,29 @@ type Advantage = {
 };
 
 const columns: Advantage[] = [
+  {
+    icon: Palette,
+    title: "The Design Craft",
+    accent: "sky",
+    items: [
+      {
+        icon: Palette,
+        text: "Custom website design from your brand — not a template with a logo dropped on",
+      },
+      {
+        icon: Type,
+        text: "Layout, type, and color so the next step is obvious",
+      },
+      {
+        icon: MousePointerClick,
+        text: "Pages built around how Alberta customers actually book",
+      },
+      {
+        icon: Layers,
+        text: "A visual system ads and email can reuse, not a one-off mockup",
+      },
+    ],
+  },
   {
     icon: Code2,
     title: "The Developer Advantage",
@@ -78,7 +105,7 @@ export function DualThreat() {
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
-            Why Code + Marketing
+            Design. Build. Grow.
           </p>
           <h2
             id="why-heading"
@@ -87,12 +114,12 @@ export function DualThreat() {
             The DigiSol Advantage for Alberta
           </h2>
           <p className="mt-4 text-zinc-400">
-            Engineering that converts local search into booked work. Marketing
-            that can actually ship. Built first for Alberta companies.
+            We design the website, engineer it to convert, and market it locally
+            — one partner, not a designer, a developer, and an agency.
           </p>
         </div>
 
-        <div className="mt-12 grid gap-6 lg:grid-cols-2">
+        <div className="mt-12 grid gap-6 lg:grid-cols-3">
           {columns.map((column) => {
             const styles = brandAccent[column.accent];
             const Icon = column.icon;
@@ -104,7 +131,7 @@ export function DualThreat() {
                   >
                     <Icon className="h-6 w-6" aria-hidden="true" />
                   </span>
-                  <h3 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
+                  <h3 className="text-lg font-semibold tracking-tight text-white sm:text-xl">
                     {column.title}
                   </h3>
                 </div>
@@ -115,7 +142,7 @@ export function DualThreat() {
                         className={`mt-0.5 h-5 w-5 shrink-0 ${styles.bullet}`}
                         aria-hidden="true"
                       />
-                      <span className="text-base leading-relaxed text-zinc-200">
+                      <span className="text-sm leading-relaxed text-zinc-200">
                         {text}
                       </span>
                     </li>

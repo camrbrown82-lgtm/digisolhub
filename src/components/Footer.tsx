@@ -24,7 +24,7 @@ export function Footer() {
         <div>
           <Logo size="footer" />
           <p className="mt-3 max-w-sm text-sm text-zinc-500">
-            {`Web development, local SEO, and digital marketing for Alberta companies. Based in Airdrie. Serving ${DIGISOL_SERVICE_CITIES.join(", ")}, and local businesses across the province.`}
+            {`Website design, custom development, local SEO, and digital marketing for Alberta companies. Based in Airdrie. Serving ${DIGISOL_SERVICE_CITIES.join(", ")}, and local businesses across the province.`}
           </p>
           <p className="mt-2 max-w-sm text-sm text-zinc-500">
             {DIGISOL_ADDRESS_LINE}

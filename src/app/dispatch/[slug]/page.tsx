@@ -137,8 +137,8 @@ export default function DispatchIssuePage({ params }: PageProps) {
               Ready to apply this in Alberta?
             </h2>
             <p className="mt-2 text-sm text-zinc-400">
-              Book a free consultation for local SEO, Next.js engineering, and
-              full-funnel CRO.
+              Book a free consultation for website design, Next.js engineering,
+              and full-funnel CRO.
             </p>
             <TrackedLink
               href="/#contact"

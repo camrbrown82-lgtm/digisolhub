@@ -6,8 +6,9 @@ const audiences = [
     icon: Rocket,
     title: "For Startups",
     accent: "blue" as BrandAccent,
-    body: "Rapid deployment, cost-effective full-stack MVP builds, launch strategy, and local Alberta market positioning—so you ship, get found nearby, and learn in weeks, not quarters.",
+    body: "A designed site and a lean custom build so you launch looking real — then local Alberta positioning so nearby customers can find you.",
     points: [
+      "Brand-true website design without a template look",
       "Rapid deployment and lean launch timelines",
       "Cost-effective full-stack MVP builds",
       "Launch strategy and Alberta market positioning",
@@ -17,8 +18,9 @@ const audiences = [
     icon: Building2,
     title: "For Established Companies",
     accent: "indigo" as BrandAccent,
-    body: "Site performance overhauls, local marketing integration, conversion optimization, and modernizing legacy web platforms for established Alberta companies.",
+    body: "Redesign the site customers actually use, then modernize the platform under it — with local marketing and conversion work wired in for established Alberta companies.",
     points: [
+      "Website redesign that matches how you sell today",
       "Site performance overhauls that restore speed and local SEO",
       "Advanced marketing integration across campaigns and product",
       "CRO and modernization of legacy web platforms",
@@ -47,7 +49,8 @@ export function Audience() {
           <p className="mt-4 text-zinc-400">
             Local Alberta companies first. Startups and established businesses
             in Airdrie, Calgary, Edmonton, and across the province get the same
-            dual-threat playbook: code that converts, and marketing that ships.
+            playbook: a designed website, code that converts, and marketing
+            that ships.
           </p>
         </div>
         <div className="mt-12 grid gap-6 lg:grid-cols-2">

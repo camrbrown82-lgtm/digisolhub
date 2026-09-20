@@ -1,6 +1,6 @@
 import type { ElementType, ReactNode } from "react";
 
-export type BrandAccent = "blue" | "indigo";
+export type BrandAccent = "blue" | "indigo" | "sky";
 
 export const brandAccent = {
   blue: {
@@ -15,6 +15,12 @@ export const brandAccent = {
     icon: "bg-indigo-500/15 text-indigo-300",
     heading: "text-indigo-300",
     bullet: "text-indigo-400",
+  },
+  sky: {
+    shell: "bg-gradient-to-br from-sky-400/60 via-sky-500/20 to-zinc-800/40",
+    icon: "bg-sky-500/15 text-sky-300",
+    heading: "text-sky-300",
+    bullet: "text-sky-400",
   },
 } as const;
 

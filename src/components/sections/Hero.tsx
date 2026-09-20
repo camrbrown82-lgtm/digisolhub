@@ -21,30 +21,30 @@ export function Hero() {
       <div className="relative mx-auto max-w-5xl text-center">
         <p className="mb-8 inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1.5 text-xs font-medium tracking-wide text-indigo-300 sm:text-sm">
           <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          Alberta-first web engineering &amp; local digital growth
+          Alberta-first website design, engineering &amp; local growth
         </p>
         <h1
           id="hero-heading"
           className="text-balance text-5xl font-bold tracking-tight text-white sm:text-6xl md:text-7xl lg:text-8xl"
         >
-          Digital Marketing{" "}
+          Website Design,{" "}
           <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-            &amp; Web Development
+            Development &amp; Marketing
           </span>{" "}
           in Alberta
         </h1>
         <p className="mx-auto mt-8 max-w-3xl text-balance text-2xl font-semibold tracking-tight text-zinc-100 sm:text-3xl">
-          Where Engineering Meets Growth
+          Where Design, Engineering, and Growth Meet
         </p>
         <p className="mx-auto mt-4 max-w-3xl text-balance text-lg font-medium tracking-tight text-zinc-300 sm:text-xl">
-          High-converting websites and local growth marketing for Alberta
-          companies
+          Custom websites we design and build — then local marketing that fills
+          them
         </p>
         <p className="mx-auto mt-6 max-w-2xl text-pretty text-base leading-relaxed text-zinc-300 sm:text-lg">
-          We start with local businesses. Based in Airdrie, we build custom
-          web platforms, local SEO, Google Ads, and Meta campaigns for Calgary,
-          Edmonton, and companies across Alberta — so nearby customers can find
-          you and convert.
+          We start with local businesses. Based in Airdrie, we design the site,
+          engineer the platform, and run local SEO, Google Ads, and Meta
+          campaigns for Calgary, Edmonton, and companies across Alberta — so
+          nearby customers can find you and convert.
         </p>
         <p className="mx-auto mt-4 max-w-2xl text-sm font-medium tracking-wide text-indigo-300">
           {DIGISOL_SERVICE_CITIES.join(" · ")} · Across Alberta

@@ -72,9 +72,9 @@ export function Contact() {
             Ready to Scale Your Alberta Business?
           </h2>
           <p className="mt-4 text-zinc-400">
-            Get a project quote or free strategy consult for local SEO, web
-            development, and campaigns in Airdrie, Calgary, Edmonton, and across
-            Alberta.
+            Get a project quote or free strategy consult for website design,
+            custom development, local SEO, and campaigns in Airdrie, Calgary,
+            Edmonton, and across Alberta.
           </p>
         </div>
         <BrandCard
@@ -164,10 +164,11 @@ export function Contact() {
                   <option value="" disabled>
                     Select a service
                   </option>
+                  <option value="website-design">Website Design</option>
                   <option value="custom-web-dev">Custom Web Dev</option>
                   <option value="digital-marketing">Digital Marketing</option>
                   <option value="combined-full-package">
-                    Combined Full Package
+                    Design + Build + Marketing
                   </option>
                 </select>
               </div>
