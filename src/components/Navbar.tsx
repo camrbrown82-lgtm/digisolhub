@@ -11,11 +11,7 @@ const links = [
   { href: "/#why-us", label: "Why Us" },
 ];
 
-type NavbarProps = {
-  pinned?: boolean;
-};
-
-export function Navbar({ pinned = false }: NavbarProps) {
+export function Navbar() {
   const [open, setOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
 
@@ -39,11 +35,7 @@ export function Navbar({ pinned = false }: NavbarProps) {
   return (
     <header
       ref={headerRef}
-      className={
-        pinned
-          ? "shrink-0 border-b border-white/10 bg-zinc-950/80 backdrop-blur-xl"
-          : "sticky top-0 z-50 border-b border-white/10 bg-zinc-950/80 backdrop-blur-xl"
-      }
+      className="sticky top-0 z-50 border-b border-white/10 bg-zinc-950/80 backdrop-blur-xl"
     >
       <a
         href="#main"
