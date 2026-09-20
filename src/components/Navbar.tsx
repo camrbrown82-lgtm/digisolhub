@@ -43,12 +43,22 @@ export function Navbar() {
       >
         Skip to content
       </a>
-      <div className="flex w-full items-center justify-between gap-4 px-4 py-5 sm:px-6 lg:px-8">
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-5 gap-y-2">
+      <div className="grid w-full items-center gap-x-6 gap-y-3 px-4 py-4 sm:px-6 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:px-8 lg:py-5">
+        <div className="flex items-center justify-between gap-3 lg:contents">
           <Logo />
-          <ContactInfo location="hero" />
+          <button
+            type="button"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 text-zinc-200 lg:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+            aria-expanded={open}
+            aria-controls="mobile-nav"
+            onClick={() => setOpen((v) => !v)}
+          >
+            <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
-        <nav className="hidden items-center gap-6 lg:flex xl:gap-8" aria-label="Primary">
+        <ContactInfo location="hero" />
+        <nav className="hidden items-center justify-end gap-6 lg:flex xl:gap-8" aria-label="Primary">
           {links.map((link) => (
             <a
               key={link.href}
@@ -73,16 +83,6 @@ export function Navbar() {
             Admin
           </a>
         </nav>
-        <button
-          type="button"
-          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 text-zinc-200 lg:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
-          aria-expanded={open}
-          aria-controls="mobile-nav"
-          onClick={() => setOpen((v) => !v)}
-        >
-          <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
       </div>
       {open && (
         <nav

@@ -50,7 +50,7 @@ function Identity({ location }: ContactInfoProps) {
       <span
         className={
           isHero
-            ? "mt-0.5 block text-[11px] leading-snug text-zinc-400 sm:text-xs"
+            ? "mt-0.5 block text-xs leading-snug text-zinc-400"
             : "mt-0.5 block text-zinc-500"
         }
       >
@@ -79,11 +79,11 @@ export function ContactInfo({ location }: ContactInfoProps) {
 
   if (isHero) {
     return (
-      <div className="min-w-0 flex-1 basis-52">
-        <p className="text-xs text-zinc-300 sm:text-sm">
+      <div className="min-w-0 w-full justify-self-center px-1 text-center lg:max-w-2xl">
+        <p className="text-sm leading-snug text-zinc-300 sm:text-base">
           <Identity location={location} />
         </p>
-        <div className="mt-1.5 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:gap-x-4 sm:gap-y-1">
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-x-5 gap-y-1">
           {links}
         </div>
       </div>
