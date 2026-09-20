@@ -1,5 +1,6 @@
 import { AiImageForm } from "@/components/hub/AiImageForm";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
+import { getBrandLogoUrl } from "@/lib/brandLogo";
 import { brandFromClient } from "@/lib/branding";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveClient, getDigisolClient } from "@/lib/workspace";
@@ -9,6 +10,7 @@ export default async function AiPage() {
   const selected = await getActiveClient(supabase);
   const brandSource = selected ?? (await getDigisolClient(supabase));
   const { companyName, brand } = brandFromClient(brandSource);
+  const logoUrl = brandSource ? await getBrandLogoUrl(supabase, brandSource) : brand.logoUrl;
   let query = supabase
     .from("assets")
     .select("*")
@@ -24,8 +26,8 @@ export default async function AiPage() {
         <h1 className="text-3xl font-semibold text-white">AI posters</h1>
         <WorkspaceScope companyName={selected?.name} noun="posters" />
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-          Describe the job of the poster. Color, tone, and visual style come
-          from the selected company&apos;s{" "}
+          Describe the job of the poster. Color, tone, visual style, and the
+          official logo come from the selected company&apos;s{" "}
           <a href="/hub/brand" className="text-indigo-300 hover:text-indigo-200">
             Brand
           </a>{" "}
@@ -36,6 +38,7 @@ export default async function AiPage() {
         companyName={companyName}
         tagline={brand.tagline}
         voice={brand.voice}
+        logoUrl={logoUrl}
         colors={[
           brand.primaryColor,
           brand.secondaryColor,

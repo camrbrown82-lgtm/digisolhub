@@ -4,7 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { type CompanyBrand, DIGISOL_BRAND } from "@/lib/branding";
 import { buildEmailHtml } from "@/lib/emailHtml";
-import { STARTER_TEMPLATES, renderMergeFields, starterKeyOf } from "@/lib/emailTemplates";
+import {
+  STARTER_TEMPLATES,
+  mergeVarsFromBrand,
+  renderMergeFields,
+  starterKeyOf,
+} from "@/lib/emailTemplates";
+import { MergeFieldBar } from "@/components/hub/MergeFieldBar";
 
 type Template = {
   id: string;
@@ -53,6 +59,9 @@ export function EmailComposer({
 }) {
   const router = useRouter();
   const logoInput = useRef<HTMLInputElement>(null);
+  const subjectRef = useRef<HTMLInputElement>(null);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const aiRef = useRef<HTMLTextAreaElement>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [activeId, setActiveId] = useState(initialTemplateId ?? "");
   const [subject, setSubject] = useState("");
@@ -63,6 +72,8 @@ export function EmailComposer({
   const [aiPrompt, setAiPrompt] = useState("");
   const [logoStamp, setLogoStamp] = useState(Date.now());
   const [logoSrc, setLogoSrc] = useState("/logo.jpg");
+  const [focusField, setFocusField] = useState<"subject" | "body" | "ai">("body");
+  const [dragOver, setDragOver] = useState(false);
 
   const active = templates.find((row) => row.id === activeId);
 
@@ -125,10 +136,10 @@ export function EmailComposer({
   }
 
   const preview = useMemo(() => {
-    const vars = { name: previewName(recipients), company: companyName };
+    const vars = mergeVarsFromBrand(companyName, brand, previewName(recipients));
     return {
-      subject: renderMergeFields(subject, vars),
-      html: buildEmailHtml(renderMergeFields(body, vars), {
+      subject: renderMergeFields(subject, vars, { logoAs: "company" }),
+      html: buildEmailHtml(renderMergeFields(body, vars, { logoAs: "token" }), {
         logoSrc,
         companyName,
         tagline: brand.tagline,
@@ -139,6 +150,39 @@ export function EmailComposer({
       }),
     };
   }, [subject, body, recipients, companyName, logoSrc, brand]);
+
+  function insertToken(token: string) {
+    if (focusField === "subject") {
+      insertAtCursor(subject, setSubject, subjectRef.current, token);
+      return;
+    }
+    if (focusField === "ai") {
+      insertAtCursor(aiPrompt, setAiPrompt, aiRef.current, token);
+      return;
+    }
+    insertAtCursor(body, setBody, bodyRef.current, token);
+  }
+
+  function insertAtCursor(
+    value: string,
+    setValue: (next: string) => void,
+    field: HTMLInputElement | HTMLTextAreaElement | null,
+    token: string,
+  ) {
+    if (!field) {
+      setValue(`${value}${value && !value.endsWith(" ") ? " " : ""}${token}`);
+      return;
+    }
+    const start = field.selectionStart ?? value.length;
+    const end = field.selectionEnd ?? value.length;
+    const next = `${value.slice(0, start)}${token}${value.slice(end)}`;
+    setValue(next);
+    requestAnimationFrame(() => {
+      field.focus();
+      const pos = start + token.length;
+      field.setSelectionRange(pos, pos);
+    });
+  }
 
   async function save() {
     if (!active) return false;
@@ -288,7 +332,7 @@ export function EmailComposer({
       body: JSON.stringify({
         name: "Custom",
         subject: "",
-        html: `Hey {{name}},\n\n\n\n${companyName}`,
+        html: `Hey {{name}},\n\n{{logo}}\n\n{{tagline}}\n\n{{company}}`,
       }),
     });
     const json = (await response.json()) as { id?: string; error?: string };
@@ -304,13 +348,29 @@ export function EmailComposer({
       <div>
         <h1 className="text-3xl font-semibold text-white">Email</h1>
         <p className="mt-1 text-sm text-zinc-400">
-          Pick a template. The {companyName} logo and brand colors are already
-          in the header. Fill subject, recipients, and body — or let AI draft
-          it in this company&apos;s voice.
+          Pick a template. The {companyName} logo, colors, tagline, and merge
+          fields are already wired. Fill subject, recipients, and body — or let
+          AI draft it locked to this company&apos;s brand kit.
         </p>
       </div>
 
-      <section className="grid gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 sm:grid-cols-[140px_1fr] sm:p-5">
+      <section
+        onDragOver={(event) => {
+          event.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(event) => {
+          event.preventDefault();
+          setDragOver(false);
+          void onLogoFile(event.dataTransfer.files?.[0]);
+        }}
+        className={`grid gap-4 rounded-2xl border p-4 sm:grid-cols-[140px_1fr] sm:p-5 ${
+          dragOver
+            ? "border-indigo-400 bg-indigo-500/10"
+            : "border-zinc-800 bg-zinc-900/40"
+        }`}
+      >
         <div className="flex items-center justify-center rounded-xl border border-zinc-800 bg-black p-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -320,11 +380,26 @@ export function EmailComposer({
           />
         </div>
         <div className="space-y-2">
-          <p className="text-sm font-medium text-white">Logo on every send</p>
+          <p className="text-sm font-medium text-white">Official {companyName} logo</p>
           <p className="text-sm text-zinc-400">
-            Defaults to the site mark. Upload this company&apos;s logo and it
-            lands on every example template automatically.
+            Drop a file here or choose one. This mark is used on every template,
+            send, and AI prompt for this company.
           </p>
+          <div className="mt-2 flex gap-2">
+            {[brand.primaryColor, brand.secondaryColor, brand.accentColor, brand.backgroundColor].map(
+              (color) => (
+                <span
+                  key={color}
+                  className="h-5 w-5 rounded-full border border-white/20"
+                  style={{ background: color }}
+                  title={color}
+                />
+              ),
+            )}
+          </div>
+          {brand.tagline ? (
+            <p className="text-xs text-zinc-500">{brand.tagline}</p>
+          ) : null}
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -388,10 +463,22 @@ export function EmailComposer({
       </section>
 
       <section className="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 sm:p-5">
+        <div>
+          <p className="text-sm font-medium text-white">Brand fields</p>
+          <p className="mt-1 text-xs text-zinc-500">
+            Click a token to insert it into the subject, body, or AI brief. AI
+            processes the same {companyName} logo and kit.
+          </p>
+          <div className="mt-2">
+            <MergeFieldBar onInsert={insertToken} disabled={busy === "ai"} />
+          </div>
+        </div>
         <label className="block text-sm">
           Subject
           <input
+            ref={subjectRef}
             value={subject}
+            onFocus={() => setFocusField("subject")}
             onChange={(event) => setSubject(event.target.value)}
             className="hub-field"
             placeholder="{{name}}, you're in — let's build"
@@ -416,7 +503,9 @@ export function EmailComposer({
         <label className="block text-sm">
           Body
           <textarea
+            ref={bodyRef}
             value={body}
+            onFocus={() => setFocusField("body")}
             onChange={(event) => setBody(event.target.value)}
             rows={12}
             className="hub-field resize-y font-mono text-sm"
@@ -427,11 +516,14 @@ export function EmailComposer({
         <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/5 p-4">
           <p className="text-sm font-medium text-white">AI draft</p>
           <p className="mt-1 text-xs text-zinc-400">
-            Generate a full email, or add flare to what you already wrote. Tuned
-            for opens: short subjects, one idea, one ask.
+            Locked to the {companyName} brand kit — voice, colors, tagline, and
+            official logo. Generate a full email, or add flare to what you
+            already wrote.
           </p>
           <textarea
+            ref={aiRef}
             value={aiPrompt}
+            onFocus={() => setFocusField("ai")}
             onChange={(event) => setAiPrompt(event.target.value)}
             rows={2}
             className="hub-field"

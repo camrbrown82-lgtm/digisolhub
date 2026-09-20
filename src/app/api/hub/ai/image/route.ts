@@ -2,14 +2,21 @@ import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { brandFromClient } from "@/lib/branding";
 import {
+  fetchLogoBuffer,
+  getBrandLogoAsset,
+  resolveBrandLogoUrl,
+} from "@/lib/brandLogo";
+import {
   createOpenAIClient,
   getOpenAIApiKey,
   openaiErrorMessage,
   shouldFallbackImageModel,
 } from "@/lib/openai";
 import {
+  imageEditBody,
   imageGenerateBody,
   parsePosterFormat,
+  resolveImageModel,
   writePosterArtDirection,
 } from "@/lib/poster";
 import { getActiveClient, getActiveClientId } from "@/lib/workspace";
@@ -53,20 +60,51 @@ export async function POST(request: Request) {
     });
 
     const preferred = process.env.OPENAI_IMAGE_MODEL;
+    const resolved = resolveImageModel(preferred);
+    const logoAsset = await getBrandLogoAsset(supabase, active?.id || null);
+    const logoUrl = resolveBrandLogoUrl({
+      brand,
+      companyName,
+      assetUrl: logoAsset?.public_url,
+    });
+    const logo = logoUrl ? await fetchLogoBuffer(logoUrl) : null;
+    const logoFile = logo
+      ? new File([new Uint8Array(logo.buffer)], logo.filename, {
+          type: logo.contentType,
+        })
+      : null;
+    const directed = logo
+      ? `${artDirection}\nUse the official ${companyName} logo exactly as described. Do not invent a replacement mark.`
+      : artDirection;
+
     let image;
+    const generate = (model?: string) =>
+      openai.images.generate(imageGenerateBody(model ?? preferred, directed, format));
+
     try {
-      image = await openai.images.generate(
-        imageGenerateBody(preferred, artDirection, format),
-      );
+      if (logoFile && /gpt-image|chatgpt-image/i.test(resolved)) {
+        try {
+          image = await openai.images.edit(
+            imageEditBody(
+              preferred,
+              `${directed}\nThe attached image is the official logo. Place that exact mark; do not redesign it.`,
+              format,
+              logoFile,
+            ),
+          );
+        } catch {
+          image = await generate();
+        }
+      } else {
+        image = await generate();
+      }
     } catch (err) {
       const triedGptImage = /gpt-image|chatgpt-image/i.test(preferred?.trim() || "");
       if (!triedGptImage && shouldFallbackImageModel(err)) {
         throw err;
       }
       if (triedGptImage && shouldFallbackImageModel(err)) {
-        image = await openai.images.generate(
-          imageGenerateBody("dall-e-3", artDirection, format),
-        );
+        image = await generate("dall-e-3");
       } else {
         throw err;
       }
@@ -123,7 +161,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       asset,
-      prompt: artDirection,
+      prompt: directed,
       revisedPrompt: first?.revised_prompt,
     });
   } catch (err) {

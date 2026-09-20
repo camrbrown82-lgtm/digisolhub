@@ -3,17 +3,29 @@
 import { useEffect, useRef } from "react";
 import type { Editor } from "grapesjs";
 import "grapesjs/dist/css/grapes.min.css";
+import { type CompanyBrand } from "@/lib/branding";
 
 type Props = {
   initialHtml?: string | null;
   initialProject?: unknown;
+  companyName?: string;
+  logoSrc?: string;
+  brand?: CompanyBrand;
   onReady?: (api: {
     getHtml: () => string;
     getProject: () => unknown;
+    insertHtml: (html: string) => void;
   }) => void;
 };
 
-export function EmailEditor({ initialHtml, initialProject, onReady }: Props) {
+export function EmailEditor({
+  initialHtml,
+  initialProject,
+  companyName,
+  logoSrc,
+  brand,
+  onReady,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<Editor | null>(null);
 
@@ -38,6 +50,19 @@ export function EmailEditor({ initialHtml, initialProject, onReady }: Props) {
         editor.loadProjectData(initialProject as object);
       } else if (initialHtml) {
         editor.setComponents(initialHtml);
+      } else if (logoSrc) {
+        const header = brand?.secondaryColor || "#09090b";
+        const name = companyName || "Company";
+        editor.setComponents(
+          `<div data-digisol-logo="1" style="text-align:center;padding:28px 24px;background:${header}">
+            <img src="${logoSrc}" alt="${name} logo" style="display:block;margin:0 auto;max-width:180px;height:auto;border:0" />
+          </div>
+          <div data-digisol-body="1" style="padding:28px;font-family:${brand?.fonts || "Inter, Arial, sans-serif"};color:#18181b">
+            <p>Hey {{name}},</p>
+            <p>{{tagline}}</p>
+            <p>{{company}}</p>
+          </div>`,
+        );
       }
 
       editorRef.current = editor;
@@ -45,6 +70,7 @@ export function EmailEditor({ initialHtml, initialProject, onReady }: Props) {
         getHtml: () =>
           (editor.runCommand("gjs-get-inlined-html") as string) || editor.getHtml(),
         getProject: () => editor.getProjectData(),
+        insertHtml: (html: string) => editor.addComponents(html),
       });
     }
 

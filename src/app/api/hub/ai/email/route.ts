@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
-import { brandFromClient, brandVoicePrompt } from "@/lib/branding";
+import { brandFromClient, brandKitPrompt } from "@/lib/branding";
 import { TEMPLATE_VARIABLES } from "@/lib/emailTemplates";
-import { createOpenAIClient, getOpenAIApiKey } from "@/lib/openai";
+import {
+  BRAND_COPY_TEMPERATURE,
+  createOpenAIClient,
+  getOpenAIApiKey,
+  getOpenAITextModel,
+} from "@/lib/openai";
 import { getActiveClient } from "@/lib/workspace";
 
 type Mode = "generate" | "flare";
@@ -49,37 +54,45 @@ export async function POST(request: Request) {
   const { companyName, brand } = brandFromClient(active);
   const company = body.companyName?.trim() || companyName;
   const openai = createOpenAIClient();
-  const model = process.env.OPENAI_EMAIL_MODEL || "gpt-4o-mini";
+  const kit = brandKitPrompt(company, brand, "copy");
 
   const completion = await openai.chat.completions.create({
-    model,
-    temperature: 0.8,
+    model: getOpenAITextModel(),
+    temperature: BRAND_COPY_TEMPERATURE,
     response_format: { type: "json_object" },
     messages: [
       {
         role: "system",
-        content: `You write high-open-rate emails that match this company brand.
-${brandVoicePrompt(company, brand)}
+        content: `You write high-open-rate emails that obey this company brand kit with no drift.
+
+${kit}
+
 Return JSON only: {"subject":"...","body":"..."}.
 Subject rules: 4-8 words, specific, curiosity or a clear benefit, never clickbait spam. No ALL CAPS, no "FREE", no fake urgency, no more than one punctuation mark.
-Body rules: 80-140 words, plain text with blank lines, one idea, one soft CTA. Match the brand voice. No HTML.
-Start the body with "Hey {{name}}," when it fits. Sign off with ${company}.
-You may use these merge tags only: ${TEMPLATE_VARIABLES.join(", ")}.
-Do not invent invoices, prices, or legal claims.`,
+Body rules: 80-140 words, plain text with blank lines, one idea, one soft CTA. Match the brand voice exactly. No HTML unless the brief asks for it.
+Start the body with "Hey {{name}}," when it fits.
+You may use these merge tags only, written exactly: ${TEMPLATE_VARIABLES.join(", ")}.
+If a logo belongs in the body, insert {{logo}} on its own line. Never describe a fake mark.
+Do not invent invoices, prices, legal claims, or another company's branding.`,
       },
       {
         role: "user",
         content:
           mode === "flare"
-            ? `Rewrite this email so the subject earns the open and the body has more flare, without changing the intent. Stay inside the brand voice.
+            ? `Rewrite this email so the subject earns the open and the body has more flare, without changing the intent. Stay inside the brand lock.
 Template: ${body.templateName || "custom"}
+Company: ${company}
+Official logo: ${brand.logoDescription || (brand.logoUrl ? "on file" : "none — do not invent")}
+Tagline: ${brand.tagline || "(none)"}
 Current subject: ${body.subject || "(none)"}
 Current body:
 ${body.emailBody || "(none)"}
 Extra direction: ${prompt || "Make it sharper and more human."}`
-            : `Write a new email in this brand voice.
+            : `Write a new email that could only belong to this company.
 Template: ${body.templateName || "custom"}
 Company: ${company}
+Official logo: ${brand.logoDescription || (brand.logoUrl ? "on file" : "none — do not invent")}
+Tagline: ${brand.tagline || "(none)"}
 Brief: ${prompt}`,
       },
     ],

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
-import { parseBrand } from "@/lib/branding";
+import { mergeBrand, parseBrand } from "@/lib/branding";
 
 type Params = { params: { id: string } };
 
@@ -35,7 +35,14 @@ export async function PATCH(request: Request, { params }: Params) {
   if (typeof body.name === "string" && body.name.trim()) update.name = body.name.trim();
   if (typeof body.domain === "string") update.domain = body.domain.trim() || null;
   if (typeof body.notes === "string") update.notes = body.notes.trim() || null;
-  if (body.branding !== undefined) update.branding = parseBrand(body.branding);
+  if (body.branding !== undefined) {
+    const { data: current } = await supabase
+      .from("clients")
+      .select("branding")
+      .eq("id", params.id)
+      .maybeSingle();
+    update.branding = mergeBrand(current?.branding, body.branding);
+  }
 
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });

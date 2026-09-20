@@ -14,7 +14,92 @@ export type StarterTemplate = {
   body: string;
 };
 
-export const TEMPLATE_VARIABLES = ["{{name}}", "{{company}}", "{{logo}}"] as const;
+export const TEMPLATE_VARIABLES = [
+  "{{name}}",
+  "{{company}}",
+  "{{logo}}",
+  "{{tagline}}",
+  "{{primary}}",
+  "{{secondary}}",
+  "{{accent}}",
+  "{{background}}",
+  "{{fonts}}",
+] as const;
+
+export const TEMPLATE_VARIABLE_HINTS: Record<(typeof TEMPLATE_VARIABLES)[number], string> = {
+  "{{name}}": "Contact name",
+  "{{company}}": "Company",
+  "{{logo}}": "Official logo",
+  "{{tagline}}": "Tagline",
+  "{{primary}}": "Primary color",
+  "{{secondary}}": "Secondary color",
+  "{{accent}}": "Accent color",
+  "{{background}}": "Background",
+  "{{fonts}}": "Fonts",
+};
+
+export type MergeVars = {
+  name?: string;
+  company?: string;
+  logo?: string;
+  tagline?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  accentColor?: string;
+  backgroundColor?: string;
+  fonts?: string;
+};
+
+export function mergeVarsFromBrand(
+  companyName: string,
+  brand: {
+    tagline?: string;
+    primaryColor?: string;
+    secondaryColor?: string;
+    accentColor?: string;
+    backgroundColor?: string;
+    fonts?: string;
+  },
+  name?: string,
+  logo?: string,
+): MergeVars {
+  return {
+    name: name?.trim() || "there",
+    company: companyName.trim() || "DigiSol",
+    logo,
+    tagline: brand.tagline?.trim() || "",
+    primaryColor: brand.primaryColor || "",
+    secondaryColor: brand.secondaryColor || "",
+    accentColor: brand.accentColor || "",
+    backgroundColor: brand.backgroundColor || "",
+    fonts: brand.fonts || "",
+  };
+}
+
+export function renderMergeFields(
+  text: string,
+  vars: MergeVars,
+  opts?: { logoAs?: "token" | "value" | "company" },
+) {
+  const logoMode = opts?.logoAs ?? "token";
+  const logoReplacement =
+    logoMode === "token"
+      ? "{{logo}}"
+      : logoMode === "company"
+        ? vars.company?.trim() || "DigiSol"
+        : vars.logo?.trim() || vars.company?.trim() || "";
+
+  return text
+    .replaceAll("{{name}}", vars.name?.trim() || "there")
+    .replaceAll("{{company}}", vars.company?.trim() || "DigiSol")
+    .replaceAll("{{tagline}}", vars.tagline?.trim() || "")
+    .replaceAll("{{primary}}", vars.primaryColor?.trim() || "")
+    .replaceAll("{{secondary}}", vars.secondaryColor?.trim() || "")
+    .replaceAll("{{accent}}", vars.accentColor?.trim() || "")
+    .replaceAll("{{background}}", vars.backgroundColor?.trim() || "")
+    .replaceAll("{{fonts}}", vars.fonts?.trim() || "")
+    .replaceAll("{{logo}}", logoReplacement);
+}
 
 export const STARTER_TEMPLATES: StarterTemplate[] = [
   {
@@ -26,7 +111,7 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
 
 Welcome to {{company}}. Glad you're here.
 
-We're the engineering-and-growth pair that takes a site from "looks fine" to something people actually use. No bloated templates. No mystery retainers.
+{{tagline}}
 
 Reply with the one thing you want working better in the next 30 days, and we'll come back with a tight plan.
 
@@ -121,13 +206,4 @@ export function starterKeyOf(value: unknown): StarterKey | null {
   return STARTER_TEMPLATES.some((row) => row.key === key)
     ? (key as StarterKey)
     : null;
-}
-
-export function renderMergeFields(
-  text: string,
-  vars: { name?: string; company?: string },
-) {
-  return text
-    .replaceAll("{{name}}", vars.name?.trim() || "there")
-    .replaceAll("{{company}}", vars.company?.trim() || "DigiSol");
 }

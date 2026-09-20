@@ -13,6 +13,13 @@ export function createOpenAIClient() {
   return new OpenAI({ apiKey });
 }
 
+export function getOpenAITextModel() {
+  return process.env.OPENAI_EMAIL_MODEL?.trim() || "gpt-4o-mini";
+}
+
+export const BRAND_COPY_TEMPERATURE = 0.35;
+export const BRAND_VISUAL_TEMPERATURE = 0.3;
+
 export function openaiErrorMessage(err: unknown) {
   const status =
     err && typeof err === "object" && "status" in err

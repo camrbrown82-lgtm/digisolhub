@@ -15,11 +15,13 @@ export function AiImageForm({
   tagline,
   voice,
   colors,
+  logoUrl,
 }: {
   companyName: string;
   tagline: string;
   voice: string;
   colors: string[];
+  logoUrl?: string;
 }) {
   const router = useRouter();
   const [prompt, setPrompt] = useState("");
@@ -32,7 +34,7 @@ export function AiImageForm({
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
-    setStatus("Building a brand-matched poster…");
+        setStatus("Building a brand-locked poster…");
     setUrl("");
     setArtDirection("");
     const response = await fetch("/api/hub/ai/image", {
@@ -73,9 +75,20 @@ export function AiImageForm({
         className="rounded-2xl border border-zinc-800 p-4"
         style={{ background: colors[3] || "#09090b" }}
       >
-        <p className="text-sm font-medium text-white">
-          Using {companyName} brand
-        </p>
+        <div className="flex items-center gap-3">
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={logoUrl}
+              alt={`${companyName} logo`}
+              className="h-10 w-10 rounded-lg object-contain"
+            />
+          ) : null}
+          <p className="text-sm font-medium text-white">
+            Using {companyName} brand
+            {logoUrl ? " and official logo" : " — add a logo on Brand so posters stay on-mark"}
+          </p>
+        </div>
         {tagline ? (
           <p className="mt-1 text-sm" style={{ color: colors[2] || "#a1a1aa" }}>
             {tagline}

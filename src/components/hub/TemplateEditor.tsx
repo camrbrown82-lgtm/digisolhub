@@ -3,6 +3,8 @@
 import dynamic from "next/dynamic";
 import { FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { type CompanyBrand } from "@/lib/branding";
+import { MergeFieldBar } from "@/components/hub/MergeFieldBar";
 
 const EmailEditor = dynamic(
   () => import("@/components/hub/EmailEditor").then((mod) => mod.EmailEditor),
@@ -17,17 +19,40 @@ type Template = {
   grapes_json: unknown;
 };
 
-export function TemplateEditor({ template }: { template: Template }) {
+export function TemplateEditor({
+  template,
+  companyName,
+  brand,
+  logoSrc,
+}: {
+  template: Template;
+  companyName?: string;
+  brand?: CompanyBrand;
+  logoSrc?: string;
+}) {
   const router = useRouter();
-  const apiRef = useRef<{ getHtml: () => string; getProject: () => unknown } | null>(
-    null,
-  );
+  const apiRef = useRef<{
+    getHtml: () => string;
+    getProject: () => unknown;
+    insertHtml: (html: string) => void;
+  } | null>(null);
   const [name, setName] = useState(template.name);
   const [subject, setSubject] = useState(template.subject ?? "");
   const [status, setStatus] = useState("");
   const [segment, setSegment] = useState<"all" | "tag" | "service">("all");
   const [tag, setTag] = useState("");
   const [service, setService] = useState("");
+
+  function insertToken(token: string) {
+    if (token === "{{logo}}" && logoSrc) {
+      const name = companyName || "Logo";
+      apiRef.current?.insertHtml(
+        `<img src="${logoSrc}" alt="${name}" style="display:block;margin:0 auto;max-width:180px;height:auto;border:0" />`,
+      );
+      return;
+    }
+    setSubject((current) => `${current}${current ? " " : ""}${token}`);
+  }
 
   async function save() {
     const html = apiRef.current?.getHtml() ?? template.html ?? "";
@@ -97,6 +122,12 @@ export function TemplateEditor({ template }: { template: Template }) {
             className="hub-field"
           />
         </label>
+        <label className="text-sm sm:col-span-2">
+          Brand fields
+          <div className="mt-1.5">
+            <MergeFieldBar onInsert={insertToken} />
+          </div>
+        </label>
         <div className="sm:col-span-2 flex flex-wrap gap-2">
           <button type="submit" className="hub-btn">
             Save template
@@ -106,6 +137,9 @@ export function TemplateEditor({ template }: { template: Template }) {
       <EmailEditor
         initialHtml={template.html}
         initialProject={template.grapes_json}
+        companyName={companyName}
+        brand={brand}
+        logoSrc={logoSrc}
         onReady={(api) => {
           apiRef.current = api;
         }}

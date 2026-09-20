@@ -1,13 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { type CompanyBrand, DIGISOL_BRAND } from "@/lib/branding";
+import { brandFromClient, type CompanyBrand, DIGISOL_BRAND } from "@/lib/branding";
 import { buildEmailHtml, htmlToText } from "@/lib/emailHtml";
 import {
   EMAIL_LOGO_CID,
   publicEmailLogoUrl,
   resolveEmailLogoFile,
 } from "@/lib/emailLogo";
-import { renderMergeFields } from "@/lib/emailTemplates";
+import { mergeVarsFromBrand, renderMergeFields } from "@/lib/emailTemplates";
 import { unsubscribeUrl, wrapCampaignHtml } from "@/lib/unsubscribe";
 import { Resend } from "resend";
 
@@ -110,7 +110,7 @@ export async function sendEmailToContact(input: SendEmailInput) {
   if (!contact) {
     const { data, error: contactError } = await db
       .from("contacts")
-      .select("id, email, name, company, unsubscribed_at")
+      .select("id, email, name, company, unsubscribed_at, client_id")
       .eq("id", input.contactId)
       .single();
     if (contactError || !data) {
@@ -122,6 +122,27 @@ export async function sendEmailToContact(input: SendEmailInput) {
   if (contact.unsubscribed_at) {
     throw new Error("Contact is unsubscribed");
   }
+
+  const clientId =
+    input.clientId ||
+    (contact as { client_id?: string | null }).client_id ||
+    null;
+  let brand = input.brand;
+  let companyName = input.companyName?.trim() || "";
+  if ((!brand || !companyName) && clientId) {
+    const { data: client } = await db
+      .from("clients")
+      .select("id, name, branding")
+      .eq("id", clientId)
+      .maybeSingle();
+    if (client) {
+      const resolved = brandFromClient(client);
+      companyName = companyName || resolved.companyName;
+      brand = brand || resolved.brand;
+    }
+  }
+  companyName = companyName || contact.company || "DigiSol";
+  brand = brand || DIGISOL_BRAND;
 
   let subject = input.subject ?? "";
   let html = input.html ?? "";
@@ -135,7 +156,7 @@ export async function sendEmailToContact(input: SendEmailInput) {
     if (templateError || !template) {
       throw new Error("Template not found");
     }
-    subject = subject || template.subject || "Message from DigiSol";
+    subject = subject || template.subject || `Message from ${companyName}`;
     html = html || template.html || "";
   }
 
@@ -143,17 +164,14 @@ export async function sendEmailToContact(input: SendEmailInput) {
     throw new Error("Email HTML is empty");
   }
 
-  const companyName = input.companyName?.trim() || contact.company || "DigiSol";
-  const mergedSubject = renderMergeFields(subject, {
-    name: contact.name || "there",
-    company: companyName,
-  });
-  const mergedBody = renderMergeFields(html, {
-    name: contact.name || "there",
-    company: companyName,
-  });
-  const brand = input.brand || DIGISOL_BRAND;
-  const logo = await resolveEmailLogoFile(db, input.clientId);
+  const mergeVars = mergeVarsFromBrand(
+    companyName,
+    brand,
+    contact.name || "there",
+  );
+  const mergedSubject = renderMergeFields(subject, mergeVars, { logoAs: "company" });
+  const mergedBody = renderMergeFields(html, mergeVars, { logoAs: "token" });
+  const logo = await resolveEmailLogoFile(db, clientId);
   const logoSrc = logo
     ? `cid:${EMAIL_LOGO_CID}`
     : input.logoSrc && !input.logoSrc.includes("localhost")
@@ -176,7 +194,7 @@ export async function sendEmailToContact(input: SendEmailInput) {
     from,
     to: contact.email,
     ...(firstEnv("RESEND_REPLY_TO") ? { replyTo: firstEnv("RESEND_REPLY_TO") } : {}),
-    subject: mergedSubject || "Message from DigiSol",
+    subject: mergedSubject || `Message from ${companyName}`,
     html: personalized,
     text: htmlToText(personalized),
     headers: {

@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { type CompanyBrand } from "@/lib/branding";
+import { BrandLogoKit } from "@/components/hub/BrandLogoKit";
 
 function ColorField({
   label,
@@ -74,6 +75,8 @@ export function BrandForm({
           dontSay: data.get("dontSay"),
           extra: data.get("extra"),
           visualStyle: data.get("visualStyle"),
+          logoUrl: brand.logoUrl,
+          logoDescription: brand.logoDescription,
         },
       }),
     });
@@ -83,19 +86,36 @@ export function BrandForm({
       setStatus(result.error || "Could not save brand");
       return;
     }
-    setStatus("Brand saved. Emails and AI posters will use this kit.");
+    setStatus("Brand saved. Emails, logos, and AI posters will use this kit.");
     router.refresh();
   }
 
   return (
+    <div className="space-y-6">
+      <BrandLogoKit
+        clientId={clientId}
+        companyName={companyName}
+        logoUrl={brand.logoUrl}
+        logoDescription={brand.logoDescription}
+        primaryColor={brand.primaryColor}
+      />
     <form onSubmit={onSubmit} className="space-y-6">
       <div
         className="flex items-center gap-4 rounded-2xl border border-zinc-800 p-4"
         style={{ background: brand.secondaryColor }}
       >
-        <div className="flex h-14 w-14 items-center justify-center rounded-full text-sm font-semibold" style={{ background: brand.primaryColor, color: "#fff" }}>
-          {companyName.slice(0, 2).toUpperCase()}
-        </div>
+        {brand.logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={brand.logoUrl}
+            alt={`${companyName} logo`}
+            className="h-14 w-14 rounded-full object-contain"
+          />
+        ) : (
+          <div className="flex h-14 w-14 items-center justify-center rounded-full text-sm font-semibold" style={{ background: brand.primaryColor, color: "#fff" }}>
+            {companyName.slice(0, 2).toUpperCase()}
+          </div>
+        )}
         <div>
           <p className="font-medium text-white">{companyName}</p>
           <p className="text-sm" style={{ color: brand.accentColor }}>
@@ -180,5 +200,6 @@ export function BrandForm({
       </button>
       {status ? <p className="text-sm text-indigo-300">{status}</p> : null}
     </form>
+    </div>
   );
 }

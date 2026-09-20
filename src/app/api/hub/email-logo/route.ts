@@ -5,6 +5,7 @@ import {
   defaultEmailLogoUrl,
   getEmailLogoAsset,
 } from "@/lib/emailLogo";
+import { persistClientLogo } from "@/lib/brandLogo";
 import { getActiveClientId } from "@/lib/workspace";
 
 export async function GET(request: Request) {
@@ -69,6 +70,14 @@ export async function POST(request: Request) {
 
   if (previous?.id) {
     await supabase.from("assets").delete().eq("id", previous.id);
+  }
+
+  if (clientId) {
+    try {
+      await persistClientLogo(supabase, clientId, { logoUrl: publicUrl });
+    } catch {
+      // Asset is already saved; branding write is best-effort.
+    }
   }
 
   return NextResponse.json({ ok: true, url: publicUrl });

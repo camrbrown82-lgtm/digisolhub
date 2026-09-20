@@ -2,7 +2,9 @@ import type OpenAI from "openai";
 import {
   type CompanyBrand,
   brandImagePrompt,
-  brandVoicePrompt,
+  brandKitPrompt,
+  brandLogoPromptLine,
+  enforceVisualBrandLock,
   inferVisualStyle,
   sanitizeVisualNotes,
 } from "@/lib/branding";
@@ -58,6 +60,31 @@ export function imageGenerateBody(
   };
 }
 
+export function imageEditBody(
+  model: string | undefined,
+  prompt: string,
+  format: PosterFormat,
+  image: File,
+) {
+  const resolved = resolveImageModel(model);
+  if (isGptImage(resolved)) {
+    return {
+      model: resolved,
+      prompt,
+      image,
+      size: posterSize(resolved, format),
+      quality: "high" as const,
+      input_fidelity: "high" as const,
+    };
+  }
+  return {
+    model: resolved,
+    prompt,
+    image,
+    size: posterSize(resolved, "square"),
+  };
+}
+
 export async function writePosterArtDirection(
   openai: OpenAI,
   input: {
@@ -77,17 +104,20 @@ export async function writePosterArtDirection(
   try {
     const completion = await openai.chat.completions.create({
       model: process.env.OPENAI_EMAIL_MODEL || "gpt-4o-mini",
-      temperature: 0.65,
+      temperature: 0.3,
       messages: [
         {
           role: "system",
-          content: `You are a creative director at a high-end studio. Write one image-generation prompt for a print-quality marketing poster. Output the prompt only — no title, no markdown, no quotes.
+          content: `You are a creative director. Write one image-generation prompt for a print-quality marketing poster. Output the prompt only — no title, no markdown, no quotes.
+
+You must keep the brand lock intact. Do not genericize the palette, invent a logo, or drift to another company.
 
 Rules:
 - Look like a paid campaign, not AI collage or generic stock.
 - Translate brand voice into composition, lighting, materials, and type hierarchy.
 - Use only the given hex colors as the dominant palette. Background must read as the brand background.
-- If the company name appears, spell it exactly. No invented marks, no misspellings.
+- If the company name appears, spell it exactly. No misspellings.
+- If an official logo description is provided, reproduce that exact mark. Never invent a substitute logo.
 - One focal idea, generous negative space, tactile surfaces, realistic light.
 - No real people, no contact details, no QR codes, no watermarks, no unreadably small type.`,
         },
@@ -96,15 +126,16 @@ Rules:
           content: `Format: ${input.format} poster
 Job: ${input.brief}
 
-${brandVoicePrompt(input.companyName, input.brand)}
+${brandKitPrompt(input.companyName, input.brand, "visual")}
 Art direction: ${inferVisualStyle(input.brand)}
-Safe extra notes: ${sanitizeVisualNotes(input.brand.extra) || "(none)"}`,
+Safe extra notes: ${sanitizeVisualNotes(input.brand.extra) || "(none)"}
+${brandLogoPromptLine(input.brand) || "No official logo on file — do not invent one."}`,
         },
       ],
     });
     const written = completion.choices[0]?.message?.content?.trim() || "";
-    return written.slice(0, 3900) || fallback;
+    return enforceVisualBrandLock(written || fallback, input.companyName, input.brand);
   } catch {
-    return fallback;
+    return enforceVisualBrandLock(fallback, input.companyName, input.brand);
   }
 }

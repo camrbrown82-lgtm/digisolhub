@@ -14,8 +14,8 @@ export function NewTemplateButton() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: "Untitled template",
-        subject: "Hello from DigiSol",
-        html: "<table width='100%'><tr><td style='font-family:Inter,Arial,sans-serif;padding:24px'><h1>DigiSol</h1><p>Where engineering meets growth.</p></td></tr></table>",
+        subject: "{{name}}, a note from {{company}}",
+        html: "Hey {{name}},\n\n{{logo}}\n\n{{tagline}}\n\n{{company}}",
       }),
     });
     const result = (await response.json()) as { id?: string };
