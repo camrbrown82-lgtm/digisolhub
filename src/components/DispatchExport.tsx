@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Copy, Download, Facebook, Linkedin, Share2 } from "lucide-react";
+import { Check, Copy, Download, Facebook, Instagram, Linkedin, Share2 } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 import {
   dispatchSocialPack,
   type DispatchIssue,
 } from "@/lib/dispatch";
+import { DIGISOL_INSTAGRAM_HANDLE, DIGISOL_INSTAGRAM_URL } from "@/lib/site";
 
 type PackKey = "facebook" | "linkedin" | "instagram";
 
@@ -39,8 +40,8 @@ export function DispatchExport({ issue }: { issue: DispatchIssue }) {
         Export to socials
       </p>
       <p className="mt-1 text-xs text-zinc-400">
-        Copy a ready caption or download the full pack. Every link points to
-        wwwdigisol.com.
+        Copy a ready caption or download the full pack. Instagram posts go to @
+        {DIGISOL_INSTAGRAM_HANDLE}. Every link points to wwwdigisol.com.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <button
@@ -75,7 +76,7 @@ export function DispatchExport({ issue }: { issue: DispatchIssue }) {
           {copied === "instagram" ? (
             <Check className="h-3.5 w-3.5" />
           ) : (
-            <Copy className="h-3.5 w-3.5" />
+            <Instagram className="h-3.5 w-3.5" />
           )}
           Copy Instagram caption
         </button>
@@ -102,6 +103,18 @@ export function DispatchExport({ issue }: { issue: DispatchIssue }) {
         >
           <Linkedin className="h-3.5 w-3.5" aria-hidden="true" />
           Share on LinkedIn
+        </a>
+        <a
+          href={DIGISOL_INSTAGRAM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() =>
+            trackEvent("dispatch_export", { format: "instagram_open", slug: issue.slug })
+          }
+          className="inline-flex items-center gap-2 rounded-full border border-indigo-400/40 px-3 py-2 text-xs font-semibold text-indigo-200 hover:bg-indigo-500/15"
+        >
+          <Instagram className="h-3.5 w-3.5" aria-hidden="true" />
+          Open Instagram @{DIGISOL_INSTAGRAM_HANDLE}
         </a>
         <button
           type="button"

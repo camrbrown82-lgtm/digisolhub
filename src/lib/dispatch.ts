@@ -1,4 +1,4 @@
-import { DIGISOL_SITE_URL } from "@/lib/site";
+import { DIGISOL_INSTAGRAM_HANDLE, DIGISOL_INSTAGRAM_URL, DIGISOL_SITE_URL } from "@/lib/site";
 
 export type DispatchSection = {
   heading: string;
@@ -142,7 +142,8 @@ export function dispatchSocialPack(issue: DispatchIssue) {
     "",
     issue.excerpt,
     "",
-    `Link in bio → ${url}`,
+    `Follow @${DIGISOL_INSTAGRAM_HANDLE} · Link in bio → ${url}`,
+    DIGISOL_INSTAGRAM_URL,
     "",
     hashtags.join(" "),
   ].join("\n");
@@ -155,6 +156,7 @@ export function dispatchSocialPack(issue: DispatchIssue) {
     `Canonical: ${url}`,
     `Home: ${DIGISOL_SITE_URL}`,
     `Contact: ${DIGISOL_SITE_URL}/#contact`,
+    `Instagram: ${DIGISOL_INSTAGRAM_URL}`,
     "",
     "FACEBOOK / THREADS",
     facebook,
@@ -167,5 +169,14 @@ export function dispatchSocialPack(issue: DispatchIssue) {
     "",
   ].join("\n");
 
-  return { url, facebook, linkedin, instagram, fileBody, hashtags };
+  return {
+    url,
+    facebook,
+    linkedin,
+    instagram,
+    fileBody,
+    hashtags,
+    instagramUrl: DIGISOL_INSTAGRAM_URL,
+    instagramHandle: DIGISOL_INSTAGRAM_HANDLE,
+  };
 }

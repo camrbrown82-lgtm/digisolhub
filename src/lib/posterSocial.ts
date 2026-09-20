@@ -1,4 +1,5 @@
-import { DIGISOL_SITE_URL } from "@/lib/site";
+import { DIGISOL_INSTAGRAM_HANDLE, DIGISOL_INSTAGRAM_URL, DIGISOL_SITE_URL } from "@/lib/site";
+import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
 import { type PosterSlide, shortPosterCaption } from "@/lib/posterBrief";
 
 export type PosterSocialPack = {
@@ -11,6 +12,8 @@ export type PosterSocialPack = {
   twitter: string;
   fileBody: string;
   hashtags: string[];
+  instagramUrl?: string;
+  instagramHandle?: string;
 };
 
 function clip(value: string, max: number) {
@@ -35,6 +38,7 @@ export function posterSocialPack(input: {
   const url = urls[0] || input.imageUrl;
   const hook = shortPosterCaption(input.slides || []) || input.tagline?.trim() || company;
   const carousel = urls.length > 1;
+  const isDigisol = company.toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase();
   const hashtags = [
     `#${company.replace(/[^A-Za-z0-9]+/g, "")}`,
     "#Alberta",
@@ -66,8 +70,11 @@ export function posterSocialPack(input: {
     hook,
     "",
     carousel ? "Swipe the carousel." : "",
+    isDigisol ? `Follow @${DIGISOL_INSTAGRAM_HANDLE}` : "",
     hashtags.join(" "),
-  ].join("\n");
+  ]
+    .filter((line) => line !== "")
+    .join("\n");
 
   const twitter = clip(`${hook}\n${site}\n${hashtags.slice(0, 3).join(" ")}`, 280);
 
@@ -76,6 +83,7 @@ export function posterSocialPack(input: {
     hook,
     "",
     `Site: ${site}`,
+    isDigisol ? `Instagram: ${DIGISOL_INSTAGRAM_URL}` : "",
     input.pdfUrl ? `PDF: ${input.pdfUrl}` : "",
     "",
     "SLIDES",
@@ -107,6 +115,12 @@ export function posterSocialPack(input: {
     twitter,
     fileBody,
     hashtags,
+    ...(isDigisol
+      ? {
+          instagramUrl: DIGISOL_INSTAGRAM_URL,
+          instagramHandle: DIGISOL_INSTAGRAM_HANDLE,
+        }
+      : {}),
   };
 }
 
@@ -153,6 +167,8 @@ export function socialPackFromAsset(
       ...pack,
       urls: pack.urls?.length ? pack.urls : [pack.url],
       twitter: pack.twitter || clip(`${pack.instagram}\n${input.siteUrl || DIGISOL_SITE_URL}`, 280),
+      instagramUrl: pack.instagramUrl || DIGISOL_INSTAGRAM_URL,
+      instagramHandle: pack.instagramHandle || DIGISOL_INSTAGRAM_HANDLE,
     };
   }
   const meta = parsePosterMeta(poster.notes);
@@ -162,6 +178,8 @@ export function socialPackFromAsset(
       ...pack,
       urls: pack.urls?.length ? pack.urls : [pack.url],
       twitter: pack.twitter || clip(`${pack.instagram}\n${input.siteUrl || DIGISOL_SITE_URL}`, 280),
+      instagramUrl: pack.instagramUrl || DIGISOL_INSTAGRAM_URL,
+      instagramHandle: pack.instagramHandle || DIGISOL_INSTAGRAM_HANDLE,
     };
   }
   return posterSocialPack({

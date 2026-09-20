@@ -5,8 +5,18 @@ export const DIGISOL_FACEBOOK_URL =
   "https://www.facebook.com/profile.php?id=61594465430522&sk=about";
 export const DIGISOL_LINKEDIN_URL =
   "https://www.linkedin.com/in/cameron-brown-digisol";
+export const DIGISOL_INSTAGRAM_HANDLE = "Digi.Sol2026";
+export const DIGISOL_INSTAGRAM_URL =
+  `https://www.instagram.com/${DIGISOL_INSTAGRAM_HANDLE}/`;
 export const DIGISOL_GOOGLE_LISTING_URL =
   "https://www.google.com/search?q=DigiSol+Airdrie+Alberta+website+designer";
+/** Profiles Google / schema can associate with DigiSol (NAP + sameAs). */
+export const DIGISOL_SAME_AS = [
+  DIGISOL_FACEBOOK_URL,
+  DIGISOL_LINKEDIN_URL,
+  DIGISOL_INSTAGRAM_URL,
+  DIGISOL_GOOGLE_LISTING_URL,
+] as const;
 export const DIGISOL_PHONE = "+1-587-577-0782";
 export const DIGISOL_REGION = "Alberta, Canada";
 export const DIGISOL_STREET_ADDRESS = "969 Channelside Rd SW";

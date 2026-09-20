@@ -13,10 +13,9 @@ import {
 import {
   DIGISOL_ADDRESS_LINE,
   DIGISOL_CITY,
-  DIGISOL_FACEBOOK_URL,
-  DIGISOL_LINKEDIN_URL,
   DIGISOL_PHONE,
   DIGISOL_POSTAL_CODE,
+  DIGISOL_SAME_AS,
   DIGISOL_SITE_URL,
   DIGISOL_STREET_ADDRESS,
 } from "@/lib/site";
@@ -87,7 +86,7 @@ export default function LocationCityPage({ params }: PageProps) {
       },
     },
     description: page.intro,
-    sameAs: [DIGISOL_FACEBOOK_URL, DIGISOL_LINKEDIN_URL],
+    sameAs: [...DIGISOL_SAME_AS],
   };
 
   return (

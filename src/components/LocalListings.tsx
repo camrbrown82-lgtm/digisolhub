@@ -1,10 +1,12 @@
 "use client";
 
-import { Facebook, Linkedin, Star } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Star } from "lucide-react";
 import { TrackedLink } from "@/components/TrackedLink";
 import {
   DIGISOL_FACEBOOK_URL,
   DIGISOL_GOOGLE_LISTING_URL,
+  DIGISOL_INSTAGRAM_HANDLE,
+  DIGISOL_INSTAGRAM_URL,
   DIGISOL_LINKEDIN_URL,
 } from "@/lib/site";
 
@@ -71,6 +73,17 @@ export function ListingLinks({ location }: { location: ListingLocation }) {
       >
         <Linkedin className="h-4 w-4 shrink-0" aria-hidden="true" />
         Connect on LinkedIn
+      </TrackedLink>
+      <TrackedLink
+        href={DIGISOL_INSTAGRAM_URL}
+        eventName="social_click"
+        eventParams={{ network: "instagram", location }}
+        target="_blank"
+        rel="noopener noreferrer me"
+        className={location === "footer" ? `mt-2 ${className}` : className}
+      >
+        <Instagram className="h-4 w-4 shrink-0" aria-hidden="true" />
+        Instagram @{DIGISOL_INSTAGRAM_HANDLE}
       </TrackedLink>
       <TrackedLink
         href={DIGISOL_GOOGLE_LISTING_URL}
