@@ -9,6 +9,7 @@ import { TrackedLink } from "@/components/TrackedLink";
 const links = [
   { href: "/#services", label: "Services" },
   { href: "/#why-us", label: "Why Us" },
+  { href: "/#dispatch", label: "Dispatch" },
 ];
 
 export function Navbar() {
