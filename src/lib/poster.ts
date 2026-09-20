@@ -1,10 +1,12 @@
 import type OpenAI from "openai";
 import {
   type CompanyBrand,
+  brandColorLock,
   brandImagePrompt,
   brandKitPrompt,
   enforceVisualBrandLock,
   inferVisualStyle,
+  isDarkBrand,
   sanitizeVisualNotes,
 } from "@/lib/branding";
 import { jsonSafeText } from "@/lib/jsonSafe";
@@ -134,11 +136,11 @@ You are a typesetter, not a copywriter.
 - Every MUST PRINT line must appear in the image, spelled exactly. Do not paraphrase, shorten, merge, or swap in a brand tagline.
 - If the visual idea conflicts with the copy, keep ALL required text readable and adapt the layout.
 - Do not invent extra slogans, stats, phone numbers, cities, or URLs.
-- Use only the given brand hex colors. Background is the brand background.
-- Premium dark infographic / carousel card. Thin accent glow is fine. No neon phone or device mockup unless the brief asks for a device.
-- Large high-contrast type. Generous margins. Infographic hierarchy, not a single floating paragraph.
-- Leave the top 20% empty in the background color for the official logo stamp. Do not draw a logo or a giant company wordmark.
-- Closing slides: a solid brand-colored button shape containing the exact URL from the copy.
+${brandColorLock(input.brand)}
+- ${isDarkBrand(input.brand) ? "DARK MODE poster. The page is the background hex, not a white newsletter or paper mock." : "LIGHT MODE poster. Keep the page on the background hex."}
+- Large high-contrast type in the text color. Highlights only for glow, rules, and buttons.
+- Fill the whole canvas with the layout. Do not leave a logo hole and do not draw a logo — a separate brand bar is added after generation so the mark never covers copy.
+- Closing slides: a solid highlight-colored button shape containing the exact URL from the copy.
 - Carousel slides must match each other: same background, same margins, same type style.
 - No photos of real people, no QR codes, no watermarks, no unreadably small type.`,
         },

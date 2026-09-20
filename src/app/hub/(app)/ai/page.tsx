@@ -44,10 +44,10 @@ export default async function AiPage() {
         logoUrl={logoUrl}
         fonts={brand.fonts}
         colors={[
-          brand.primaryColor,
-          brand.secondaryColor,
-          brand.accentColor,
           brand.backgroundColor,
+          brand.textColor,
+          brand.highlightColor,
+          brand.primaryColor,
         ]}
       />
       <div className="space-y-10">

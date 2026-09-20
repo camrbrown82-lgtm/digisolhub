@@ -6,6 +6,8 @@ export type CompanyBrand = {
   secondaryColor: string;
   accentColor: string;
   backgroundColor: string;
+  textColor: string;
+  highlightColor: string;
   fonts: string;
   doSay: string;
   dontSay: string;
@@ -28,6 +30,8 @@ export const DIGISOL_BRAND: CompanyBrand = {
   secondaryColor: "#09090b",
   accentColor: "#60a5fa",
   backgroundColor: "#09090b",
+  textColor: "#f4f4f5",
+  highlightColor: "#60a5fa",
   fonts: "Inter, Arial, Helvetica, sans-serif",
   doSay:
     "engineering meets growth, high-converting, custom build, no template bloat, one roof, first click to closed deal, ship, convert, clear next step",
@@ -50,6 +54,8 @@ export const NEUTRAL_BRAND: CompanyBrand = {
   secondaryColor: "#18181b",
   accentColor: "#a1a1aa",
   backgroundColor: "#09090b",
+  textColor: "#f4f4f5",
+  highlightColor: "#a1a1aa",
   fonts: "Inter, Arial, Helvetica, sans-serif",
   doSay: "",
   dontSay: "",
@@ -81,8 +87,38 @@ export function normalizeHex(value: string, fallback: string) {
   return fallback;
 }
 
+export function hexLuminance(hex: string) {
+  const raw = hex.replace("#", "");
+  const full = raw.length === 3 ? raw.split("").map((c) => c + c).join("") : raw;
+  const n = Number.parseInt(full, 16);
+  if (!Number.isFinite(n)) return 0;
+  const r = (n >> 16) / 255;
+  const g = ((n >> 8) & 255) / 255;
+  const b = (n & 255) / 255;
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function inferredTextColor(background: string) {
+  return hexLuminance(background) < 0.35 ? "#f4f4f5" : "#18181b";
+}
+
+export function isDarkBrand(brand: CompanyBrand) {
+  return hexLuminance(brand.backgroundColor) < 0.35;
+}
+
+export function brandColorLock(brand: CompanyBrand) {
+  const dark = isDarkBrand(brand);
+  return [
+    `BACKGROUND: ${brand.backgroundColor} full-bleed. ${dark ? "This is a DARK poster. Forbidden: white, cream, ivory, beige, paper, light gray." : "This is a LIGHT poster. Forbidden: black or navy fields as the page."}`,
+    `TEXT COLOR: ${brand.textColor}. Headlines, body, and captions use this (or a close tint). High contrast on the background.`,
+    `HIGHLIGHTS: ${brand.highlightColor}. Use for glow, rules, buttons, and key words only.`,
+    `PRIMARY: ${brand.primaryColor}. SECONDARY: ${brand.secondaryColor}. ACCENT: ${brand.accentColor}.`,
+  ].join("\n");
+}
+
 export function parseBrand(value: unknown, fallback: CompanyBrand = NEUTRAL_BRAND): CompanyBrand {
   const row = asRecord(value);
+  const backgroundColor = normalizeHex(text(row.backgroundColor, ""), fallback.backgroundColor);
   return {
     tagline: text(row.tagline, fallback.tagline),
     voice: text(row.voice, fallback.voice),
@@ -90,7 +126,15 @@ export function parseBrand(value: unknown, fallback: CompanyBrand = NEUTRAL_BRAN
     primaryColor: normalizeHex(text(row.primaryColor, ""), fallback.primaryColor),
     secondaryColor: normalizeHex(text(row.secondaryColor, ""), fallback.secondaryColor),
     accentColor: normalizeHex(text(row.accentColor, ""), fallback.accentColor),
-    backgroundColor: normalizeHex(text(row.backgroundColor, ""), fallback.backgroundColor),
+    backgroundColor,
+    textColor: normalizeHex(
+      text(row.textColor, ""),
+      fallback.textColor || inferredTextColor(backgroundColor),
+    ),
+    highlightColor: normalizeHex(
+      text(row.highlightColor, ""),
+      fallback.highlightColor || fallback.accentColor,
+    ),
     fonts: text(row.fonts, fallback.fonts),
     doSay: text(row.doSay, fallback.doSay),
     dontSay: text(row.dontSay, fallback.dontSay),
@@ -142,7 +186,7 @@ export function brandVoicePrompt(
     brand.tagline ? `Tagline: ${brand.tagline}` : "",
     brand.voice ? `Voice / tone: ${brand.voice}` : "",
     brand.audience ? `Audience: ${brand.audience}` : "",
-    `Colors: primary ${brand.primaryColor}, secondary ${brand.secondaryColor}, accent ${brand.accentColor}, background ${brand.backgroundColor}`,
+    `Colors: background ${brand.backgroundColor}, text ${brand.textColor}, highlights ${brand.highlightColor}, primary ${brand.primaryColor}, secondary ${brand.secondaryColor}, accent ${brand.accentColor}`,
     brand.fonts ? `Fonts: ${brand.fonts}` : "",
     brand.doSay ? `Words and phrases to lean on: ${brand.doSay}` : "",
     brand.dontSay ? `Words and phrases to avoid: ${brand.dontSay}` : "",
@@ -176,7 +220,7 @@ export function brandLockRules(
       : `This is not DigiSol. Do not use DigiSol voice, indigo house look, tagline, claims, or logo. Only ${companyName}.`,
     `Voice: ${brand.voice || "Plain, specific, human. No agency filler."}`,
     `Audience: ${brand.audience || "this company's real customers"}`,
-    `Palette only: ${brand.primaryColor}, ${brand.secondaryColor}, ${brand.accentColor}, ${brand.backgroundColor}. No other dominant colors.`,
+    `Palette: ${brandColorLock(brand)}`,
     brand.fonts ? `Typography: ${brand.fonts}` : "",
     brand.doSay ? `Lean on: ${brand.doSay}` : "",
     brand.dontSay ? `Never use: ${brand.dontSay}` : "",
@@ -191,7 +235,7 @@ export function brandLockRules(
   ];
   if (kind === "copy") {
     lines.push(
-      "Merge tags you may use exactly as written: {{name}}, {{company}}, {{logo}}, {{tagline}}, {{primary}}, {{secondary}}, {{accent}}, {{background}}, {{fonts}}.",
+      "Merge tags you may use exactly as written: {{name}}, {{company}}, {{logo}}, {{tagline}}, {{primary}}, {{secondary}}, {{accent}}, {{background}}, {{text}}, {{highlight}}, {{fonts}}.",
       "Leave those tags in place so they can be filled per contact. Do not replace {{logo}} with a made-up icon.",
       "The email chrome already stamps the official logo in the header. You may also put {{logo}} on its own line in the body.",
       `Sign off as {{company}} or ${companyName}, not a generic agency.`,
@@ -199,9 +243,9 @@ export function brandLockRules(
   }
   if (kind === "visual") {
     lines.push(
-      `Leave the top 20% as empty ${brand.backgroundColor} negative space for that official mark.`,
+      brandColorLock(brand),
+      "Fill the canvas with the layout. Do not leave a fake logo hole — the official logo is composited on a separate brand bar after generation, never over the copy.",
       "Typeset the supplied headline and body exactly. Do not replace them with the brand tagline or a shorter slogan.",
-      "Background must read as the brand background hex.",
     );
   }
   return lines.filter(Boolean).join("\n");
@@ -236,21 +280,10 @@ export function sanitizeVisualNotes(value: string) {
     .trim();
 }
 
-function hexLuminance(hex: string) {
-  const raw = hex.replace("#", "");
-  const full = raw.length === 3 ? raw.split("").map((c) => c + c).join("") : raw;
-  const n = Number.parseInt(full, 16);
-  if (!Number.isFinite(n)) return 0;
-  const r = (n >> 16) / 255;
-  const g = ((n >> 8) & 255) / 255;
-  const b = (n & 255) / 255;
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
 export function inferVisualStyle(brand: CompanyBrand) {
   const written = sanitizeVisualNotes(brand.visualStyle);
   if (written) return written;
-  return hexLuminance(brand.backgroundColor) < 0.35
+  return isDarkBrand(brand)
     ? "Premium dark campaign poster. Cinematic lighting, restrained glow, tactile surfaces, generous negative space."
     : "Premium light editorial poster. Clean paper or studio surface, sharp type, airy negative space, no clutter.";
 }
@@ -269,9 +302,9 @@ export function brandImagePrompt(
     brand.tagline ? `Tagline / mood: ${brand.tagline}` : "",
     brand.voice ? `Tone to translate into composition, lighting, and type: ${brand.voice}` : "",
     brand.audience ? `Made for this audience: ${brand.audience}` : "",
-    `Dominant palette only: primary ${brand.primaryColor}, secondary ${brand.secondaryColor}, accent ${brand.accentColor}, background ${brand.backgroundColor}.`,
-    `Typography feel like ${font}.`,
-    `Do not draw a logo or invent a wordmark for "${companyName}". The official mark is stamped on afterwards. Leave the top fifth empty ${brand.backgroundColor} space.`,
+    brandColorLock(brand),
+    `Typography feel like ${font}. Body and headlines in ${brand.textColor}.`,
+    `Do not draw a logo or invent a wordmark for "${companyName}". A brand bar with the official logo is added after generation — fill the canvas with the layout, do not cover copy with a fake mark.`,
     "Typeset the job copy exactly. Do not replace headlines with the brand tagline.",
     `Art direction: ${inferVisualStyle(brand)}`,
     brand.doSay ? `Headline vocabulary: ${brand.doSay}` : "",

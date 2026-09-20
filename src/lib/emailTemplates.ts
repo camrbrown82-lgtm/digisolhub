@@ -23,6 +23,8 @@ export const TEMPLATE_VARIABLES = [
   "{{secondary}}",
   "{{accent}}",
   "{{background}}",
+  "{{text}}",
+  "{{highlight}}",
   "{{fonts}}",
 ] as const;
 
@@ -35,6 +37,8 @@ export const TEMPLATE_VARIABLE_HINTS: Record<(typeof TEMPLATE_VARIABLES)[number]
   "{{secondary}}": "Secondary color",
   "{{accent}}": "Accent color",
   "{{background}}": "Background",
+  "{{text}}": "Text color",
+  "{{highlight}}": "Highlight color",
   "{{fonts}}": "Fonts",
 };
 
@@ -47,6 +51,8 @@ export type MergeVars = {
   secondaryColor?: string;
   accentColor?: string;
   backgroundColor?: string;
+  textColor?: string;
+  highlightColor?: string;
   fonts?: string;
 };
 
@@ -58,6 +64,8 @@ export function mergeVarsFromBrand(
     secondaryColor?: string;
     accentColor?: string;
     backgroundColor?: string;
+    textColor?: string;
+    highlightColor?: string;
     fonts?: string;
   },
   name?: string,
@@ -72,6 +80,8 @@ export function mergeVarsFromBrand(
     secondaryColor: brand.secondaryColor || "",
     accentColor: brand.accentColor || "",
     backgroundColor: brand.backgroundColor || "",
+    textColor: brand.textColor || "",
+    highlightColor: brand.highlightColor || "",
     fonts: brand.fonts || "",
   };
 }
@@ -97,6 +107,8 @@ export function renderMergeFields(
     .replaceAll("{{secondary}}", vars.secondaryColor?.trim() || "")
     .replaceAll("{{accent}}", vars.accentColor?.trim() || "")
     .replaceAll("{{background}}", vars.backgroundColor?.trim() || "")
+    .replaceAll("{{text}}", vars.textColor?.trim() || "")
+    .replaceAll("{{highlight}}", vars.highlightColor?.trim() || "")
     .replaceAll("{{fonts}}", vars.fonts?.trim() || "")
     .replaceAll("{{logo}}", logoReplacement);
 }

@@ -70,6 +70,8 @@ export function BrandForm({
           secondaryColor: data.get("secondaryColor"),
           accentColor: data.get("accentColor"),
           backgroundColor: data.get("backgroundColor"),
+          textColor: data.get("textColor"),
+          highlightColor: data.get("highlightColor"),
           fonts: data.get("fonts"),
           doSay: data.get("doSay"),
           dontSay: data.get("dontSay"),
@@ -123,7 +125,7 @@ export function BrandForm({
           </p>
         </div>
         <div className="ml-auto flex gap-2">
-          {[brand.primaryColor, brand.secondaryColor, brand.accentColor, brand.backgroundColor].map(
+          {[brand.primaryColor, brand.backgroundColor, brand.textColor, brand.highlightColor].map(
             (color) => (
               <span
                 key={color}
@@ -161,6 +163,8 @@ export function BrandForm({
         <ColorField label="Secondary / header" name="secondaryColor" value={brand.secondaryColor} />
         <ColorField label="Accent" name="accentColor" value={brand.accentColor} />
         <ColorField label="Background" name="backgroundColor" value={brand.backgroundColor} />
+        <ColorField label="Text color" name="textColor" value={brand.textColor} />
+        <ColorField label="Highlights" name="highlightColor" value={brand.highlightColor} />
         <label className="block text-sm sm:col-span-2">
           Fonts
           <input name="fonts" defaultValue={brand.fonts} className="hub-field" />

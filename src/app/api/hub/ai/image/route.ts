@@ -159,7 +159,10 @@ export async function POST(request: Request) {
       let stamped = buffer;
       if (logo?.buffer.length) {
         try {
-          stamped = await stampOfficialLogo(buffer, logo.buffer);
+          stamped = await stampOfficialLogo(buffer, logo.buffer, {
+            backgroundColor: brand.backgroundColor,
+            accentColor: brand.highlightColor || brand.accentColor,
+          });
         } catch (stampError) {
           console.error("Could not stamp official logo", stampError);
         }

@@ -98,7 +98,7 @@ export function AiImageForm({
     <form onSubmit={onSubmit} className="space-y-4">
       <div
         className="rounded-2xl border border-zinc-800 p-4"
-        style={{ background: colors[3] || "#09090b" }}
+        style={{ background: colors[0] || "#09090b" }}
       >
         <div className="flex items-center gap-3">
           {logoUrl ? (
@@ -115,13 +115,13 @@ export function AiImageForm({
             </p>
             <p className="text-xs text-zinc-400">
               {logoUrl
-                ? "Your copy is typeset as written. The official logo is stamped on after generation."
+                ? "Your copy is typeset as written. The official logo sits on a brand bar above the art, never over the text."
                 : "Upload a logo on Brand first so posters stay on-mark."}
             </p>
           </div>
         </div>
         {tagline ? (
-          <p className="mt-2 text-sm" style={{ color: colors[2] || "#a1a1aa" }}>
+          <p className="mt-2 text-sm" style={{ color: colors[1] || "#f4f4f5" }}>
             {tagline}
           </p>
         ) : null}
