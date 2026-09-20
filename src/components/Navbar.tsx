@@ -43,7 +43,7 @@ export function Navbar() {
       >
         Skip to content
       </a>
-      <div className="grid w-full items-center gap-x-6 gap-y-3 px-4 py-4 sm:px-6 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:px-8 lg:py-5">
+      <div className="grid w-full items-center gap-x-6 gap-y-3 px-4 py-4 sm:px-6 xl:grid-cols-[auto_minmax(0,1fr)_auto] lg:px-8 lg:py-5">
         <div className="flex items-center justify-between gap-3 lg:contents">
           <Logo />
           <button
@@ -57,7 +57,9 @@ export function Navbar() {
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
-        <ContactInfo location="hero" />
+        <div className="header-contact hidden min-w-0 w-full xl:block">
+          <ContactInfo location="hero" />
+        </div>
         <nav className="hidden items-center justify-end gap-6 lg:flex xl:gap-8" aria-label="Primary">
           {links.map((link) => (
             <a
