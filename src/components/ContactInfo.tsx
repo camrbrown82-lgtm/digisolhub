@@ -1,5 +1,6 @@
-import { Mail, Phone } from "lucide-react";
+import { Linkedin, Mail, Phone } from "lucide-react";
 import { TrackedLink } from "@/components/TrackedLink";
+import { DIGISOL_LINKEDIN_URL } from "@/lib/site";
 
 const contacts = [
   {
@@ -19,6 +20,12 @@ const contacts = [
     method: "email_yahoo",
     label: "digisol2026@yahoo.com",
     icon: Mail,
+  },
+  {
+    href: DIGISOL_LINKEDIN_URL,
+    method: "linkedin",
+    label: "LinkedIn",
+    icon: Linkedin,
   },
 ] as const;
 
@@ -71,6 +78,9 @@ export function ContactInfo({ location }: ContactInfoProps) {
       eventName="contact_click"
       eventParams={{ method, location }}
       className={linkClass[location]}
+      {...(method === "linkedin"
+        ? { target: "_blank", rel: "noopener noreferrer me" }
+        : {})}
     >
       <Icon className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" aria-hidden="true" />
       {label}

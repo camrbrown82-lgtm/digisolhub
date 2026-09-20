@@ -1,10 +1,11 @@
 "use client";
 
-import { Facebook, Star } from "lucide-react";
+import { Facebook, Linkedin, Star } from "lucide-react";
 import { TrackedLink } from "@/components/TrackedLink";
 import {
   DIGISOL_FACEBOOK_URL,
   DIGISOL_GOOGLE_LISTING_URL,
+  DIGISOL_LINKEDIN_URL,
 } from "@/lib/site";
 
 type ListingLocation = "hero" | "footer" | "contact";
@@ -46,7 +47,7 @@ export function ListingLinks({ location }: { location: ListingLocation }) {
       className={
         location === "footer"
           ? "mt-2 flex flex-col"
-          : "mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-6"
+          : "mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-6"
       }
     >
       <TrackedLink
@@ -59,6 +60,17 @@ export function ListingLinks({ location }: { location: ListingLocation }) {
       >
         <Facebook className="h-4 w-4 shrink-0" aria-hidden="true" />
         Follow us on Facebook
+      </TrackedLink>
+      <TrackedLink
+        href={DIGISOL_LINKEDIN_URL}
+        eventName="social_click"
+        eventParams={{ network: "linkedin", location }}
+        target="_blank"
+        rel="noopener noreferrer me"
+        className={location === "footer" ? `mt-2 ${className}` : className}
+      >
+        <Linkedin className="h-4 w-4 shrink-0" aria-hidden="true" />
+        Connect on LinkedIn
       </TrackedLink>
       <TrackedLink
         href={DIGISOL_GOOGLE_LISTING_URL}

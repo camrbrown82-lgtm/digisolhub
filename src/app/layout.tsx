@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
-import { DIGISOL_CITY, DIGISOL_FACEBOOK_URL, DIGISOL_GOOGLE_LISTING_URL, DIGISOL_PHONE, DIGISOL_POSTAL_CODE, DIGISOL_SITE_URL, DIGISOL_STREET_ADDRESS } from "@/lib/site";
+import { DIGISOL_CITY, DIGISOL_FACEBOOK_URL, DIGISOL_GOOGLE_LISTING_URL, DIGISOL_LINKEDIN_URL, DIGISOL_PHONE, DIGISOL_POSTAL_CODE, DIGISOL_SITE_URL, DIGISOL_STREET_ADDRESS } from "@/lib/site";
 import { GOOGLE_ADS_ID } from "@/lib/ads";
 import "./globals.css";
 
@@ -94,10 +94,12 @@ const organizationJsonLd = {
     "@type": "Person",
     name: "Cameron Brown",
     jobTitle: "Founder & CEO",
+    url: DIGISOL_LINKEDIN_URL,
+    sameAs: [DIGISOL_LINKEDIN_URL],
     description:
       "Certified Full Stack Developer and Digital Marketing and Social Media Specialist",
   },
-  sameAs: [DIGISOL_FACEBOOK_URL, DIGISOL_GOOGLE_LISTING_URL],
+  sameAs: [DIGISOL_FACEBOOK_URL, DIGISOL_LINKEDIN_URL, DIGISOL_GOOGLE_LISTING_URL],
 };
 
 export default function RootLayout({

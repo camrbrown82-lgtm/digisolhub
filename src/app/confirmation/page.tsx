@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { CheckCircle2, Mail, Phone } from "lucide-react";
+import { CheckCircle2, Linkedin, Mail, Phone } from "lucide-react";
 import { AdsLeadConversion } from "@/components/AdsLeadConversion";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { TrackedLink } from "@/components/TrackedLink";
+import { DIGISOL_LINKEDIN_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Confirmation | DigiSol",
@@ -57,6 +58,17 @@ export default function ConfirmationPage() {
             >
               <Mail className="h-4 w-4 text-indigo-400" aria-hidden="true" />
               cam.r.brown82@gmail.com
+            </TrackedLink>
+            <TrackedLink
+              href={DIGISOL_LINKEDIN_URL}
+              eventName="contact_click"
+              eventParams={{ method: "linkedin", location: "confirmation" }}
+              target="_blank"
+              rel="noopener noreferrer me"
+              className="inline-flex items-center gap-2 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+            >
+              <Linkedin className="h-4 w-4 text-indigo-400" aria-hidden="true" />
+              LinkedIn
             </TrackedLink>
           </div>
           <TrackedLink

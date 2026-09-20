@@ -10,7 +10,7 @@ import {
   dispatchUrl,
   getDispatchIssue,
 } from "@/lib/dispatch";
-import { DIGISOL_FACEBOOK_URL, DIGISOL_SITE_URL } from "@/lib/site";
+import { DIGISOL_FACEBOOK_URL, DIGISOL_LINKEDIN_URL, DIGISOL_SITE_URL } from "@/lib/site";
 
 type PageProps = {
   params: { slug: string };
@@ -71,7 +71,8 @@ export default function DispatchIssuePage({ params }: PageProps) {
       "@type": "Person",
       name: "Cameron Brown",
       jobTitle: "Founder & CEO",
-      url: DIGISOL_SITE_URL,
+      url: DIGISOL_LINKEDIN_URL,
+      sameAs: [DIGISOL_LINKEDIN_URL],
     },
     publisher: {
       "@type": "Organization",
@@ -81,7 +82,7 @@ export default function DispatchIssuePage({ params }: PageProps) {
         "@type": "ImageObject",
         url: `${DIGISOL_SITE_URL}/logo.jpg`,
       },
-      sameAs: [DIGISOL_FACEBOOK_URL],
+      sameAs: [DIGISOL_FACEBOOK_URL, DIGISOL_LINKEDIN_URL],
     },
     about: [
       "Off-page SEO",
