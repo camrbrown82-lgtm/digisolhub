@@ -118,9 +118,11 @@ export function parsePosterMeta(notes?: string | null) {
       brief?: string;
       prompt?: string;
       caption?: string;
+      pdfUrl?: string;
       seriesId?: string;
       slideIndex?: number;
       slideCount?: number;
+      archivedAt?: string | null;
       social?: PosterSocialPack;
     };
     if (parsed && typeof parsed === "object") return parsed;

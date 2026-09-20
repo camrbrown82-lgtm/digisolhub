@@ -12,9 +12,9 @@ import {
 import {
   imageGenerateBody,
   parsePosterFormat,
-  resolveImageModel,
   writePosterArtDirection,
 } from "@/lib/poster";
+import { jsonSafeText, jsonSafeValue } from "@/lib/jsonSafe";
 import {
   parsePosterSlides,
   withHouseCtaDetails,
@@ -35,14 +35,14 @@ async function generatePosterBuffer(
   format: ReturnType<typeof parsePosterFormat>,
   preferred: string | undefined,
 ) {
-  const resolved = resolveImageModel(preferred);
   let image;
   try {
     image = await openai.images.generate(imageGenerateBody(preferred, directed, format));
   } catch (err) {
-    const triedGptImage = /gpt-image|chatgpt-image/i.test(resolved);
-    if (triedGptImage && shouldFallbackImageModel(err)) {
-      image = await openai.images.generate(imageGenerateBody("dall-e-3", directed, format));
+    if (shouldFallbackImageModel(err)) {
+      image = await openai.images.generate(
+        imageGenerateBody("dall-e-3", jsonSafeText(directed).slice(0, 2500), format),
+      );
     } else {
       throw err;
     }
@@ -58,26 +58,35 @@ async function generatePosterBuffer(
 }
 
 async function saveAsset(supabase: SupabaseClient, row: Record<string, unknown>) {
+  const attempts: Record<string, unknown>[] = [
+    row,
+    Object.fromEntries(
+      Object.entries(row).filter(
+        ([key]) =>
+          !["prompt", "caption", "social_pack", "series_id", "slide_index", "slide_count", "archived_at"].includes(key),
+      ),
+    ),
+    {
+      bucket: row.bucket,
+      path: row.path,
+      public_url: row.public_url,
+      filename: row.filename,
+      mime_type: row.mime_type,
+      kind: row.kind,
+      client_id: row.client_id,
+      notes: "ai-poster",
+    },
+  ];
+
   let asset;
   let insertError;
-  ({ data: asset, error: insertError } = await supabase
-    .from("assets")
-    .insert(row)
-    .select("*")
-    .single());
-
-  if (insertError) {
-    delete row.prompt;
-    delete row.caption;
-    delete row.social_pack;
-    delete row.series_id;
-    delete row.slide_index;
-    delete row.slide_count;
+  for (const attempt of attempts) {
     ({ data: asset, error: insertError } = await supabase
       .from("assets")
-      .insert(row)
+      .insert(attempt)
       .select("*")
       .single());
+    if (!insertError && asset) return { asset, insertError: null };
   }
   return { asset, insertError };
 }
@@ -208,19 +217,32 @@ export async function POST(request: Request) {
     });
 
     const assets: Record<string, unknown>[] = [];
+    let saveWarning = "";
     for (let index = 0; index < uploaded.length; index += 1) {
       const image = uploaded[index];
-      const notes = JSON.stringify({
-        kind: "ai-poster",
-        brief: prompt,
-        prompt: image.directed,
-        caption: social.instagram,
-        social,
-        seriesId,
-        slideIndex: index + 1,
-        slideCount: uploaded.length,
-        pdfUrl: pdfUrl || undefined,
-      });
+      const notes = JSON.stringify(
+        jsonSafeValue({
+          kind: "ai-poster",
+          brief: jsonSafeText(prompt).slice(0, 1500),
+          prompt: jsonSafeText(image.directed).slice(0, 1500),
+          caption: social.instagram,
+          social: jsonSafeValue({
+            url: social.url,
+            urls: social.urls,
+            pdfUrl: social.pdfUrl || "",
+            facebook: social.facebook,
+            linkedin: social.linkedin,
+            instagram: social.instagram,
+            twitter: social.twitter,
+            fileBody: social.fileBody,
+            hashtags: social.hashtags,
+          }),
+          seriesId,
+          slideIndex: index + 1,
+          slideCount: uploaded.length,
+          pdfUrl: pdfUrl || "",
+        }),
+      );
       const row: Record<string, unknown> = {
         bucket: "ai-posters",
         path: image.path,
@@ -231,25 +253,29 @@ export async function POST(request: Request) {
         byte_size: image.buffer.length,
         notes,
         client_id: client?.id || null,
-        prompt: image.directed,
         caption: social.instagram,
-        social_pack: social,
+        social_pack: jsonSafeValue({
+          url: social.url,
+          urls: social.urls,
+          pdfUrl: social.pdfUrl || "",
+          facebook: social.facebook,
+          linkedin: social.linkedin,
+          instagram: social.instagram,
+          twitter: social.twitter,
+          fileBody: social.fileBody,
+          hashtags: social.hashtags,
+        }),
         series_id: seriesId,
         slide_index: index + 1,
         slide_count: uploaded.length,
       };
       const { asset, insertError } = await saveAsset(supabase, row);
-      if (insertError || !asset) {
-        return NextResponse.json(
-          { error: insertError?.message || "Could not save poster" },
-          { status: 400 },
-        );
-      }
-      assets.push(asset);
+      if (insertError) saveWarning = insertError.message;
+      if (asset) assets.push(asset);
     }
 
     return NextResponse.json({
-      asset: assets[0],
+      asset: assets[0] || { public_url: publicUrls[0] },
       assets,
       urls: publicUrls,
       pdfUrl: pdfUrl || undefined,
@@ -261,6 +287,7 @@ export async function POST(request: Request) {
       prompt: directedSlides.join("\n\n---\n\n"),
       social,
       logoStamped: Boolean(logo?.buffer.length),
+      warning: saveWarning || undefined,
     });
   } catch (err) {
     console.error("AI poster failed", err);

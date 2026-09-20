@@ -61,6 +61,8 @@ export function shouldFallbackImageModel(err: unknown) {
     message.includes("cannot use") ||
     message.includes("not found") ||
     message.includes("does not have access") ||
-    message.includes("must be verified")
+    message.includes("must be verified") ||
+    message.includes("failed to parse json") ||
+    message.includes("invalid body")
   );
 }

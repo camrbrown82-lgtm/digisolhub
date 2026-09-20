@@ -57,6 +57,7 @@ export function AiImageForm({
       social?: PosterSocialPack;
       logoStamped?: boolean;
       slides?: { label: string }[];
+      warning?: string;
     } = {};
     try {
       result = (await response.json()) as typeof result;
@@ -84,7 +85,9 @@ export function AiImageForm({
     setSocial(result.social ?? null);
     const slideCount = result.slides?.length || nextUrls.length || 1;
     setStatus(
-      result.logoStamped
+      result.warning
+        ? `Generated ${slideCount} slide${slideCount === 1 ? "" : "s"}, but saving the gallery row failed: ${result.warning}`
+        : result.logoStamped
         ? `Saved ${slideCount} branded slide${slideCount === 1 ? "" : "s"}. Official logo stamped from Brand.`
         : `Saved ${slideCount} slide${slideCount === 1 ? "" : "s"}. Add a logo on Brand so the real mark can be stamped on.`,
     );

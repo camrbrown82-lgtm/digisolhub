@@ -7,6 +7,7 @@ import {
   inferVisualStyle,
   sanitizeVisualNotes,
 } from "@/lib/branding";
+import { jsonSafeText } from "@/lib/jsonSafe";
 import { type PosterSlide, mustPrintBlock } from "@/lib/posterBrief";
 
 export const POSTER_FORMATS = ["portrait", "square", "landscape"] as const;
@@ -43,17 +44,18 @@ export function imageGenerateBody(
   format: PosterFormat,
 ) {
   const resolved = resolveImageModel(model);
+  const clean = jsonSafeText(prompt).slice(0, 3900);
   if (isGptImage(resolved)) {
     return {
       model: resolved,
-      prompt,
+      prompt: clean,
       size: posterSize(resolved, format),
       quality: "high" as const,
     };
   }
   return {
     model: resolved,
-    prompt,
+    prompt: clean,
     size: posterSize(resolved, format),
     quality: "hd" as const,
     style: "vivid" as const,
@@ -152,7 +154,7 @@ Official logo is stamped after generation.`,
         },
       ],
     });
-    const written = completion.choices[0]?.message?.content?.trim() || "";
+    const written = jsonSafeText(completion.choices[0]?.message?.content?.trim() || "");
     return enforceVisualBrandLock(written || fallback, input.companyName, input.brand);
   } catch {
     return enforceVisualBrandLock(fallback, input.companyName, input.brand);

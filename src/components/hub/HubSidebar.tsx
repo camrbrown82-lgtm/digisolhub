@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Archive,
   BarChart3,
   Bot,
   Building2,
@@ -29,6 +30,7 @@ const nav = [
   { href: "/hub/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/hub/workflows", label: "Workflows", icon: Workflow },
   { href: "/hub/ai", label: "AI posters", icon: Bot },
+  { href: "/hub/archives", label: "Archives", icon: Archive },
   { href: "/hub/integrations", label: "Integrations", icon: Plug },
 ];
 

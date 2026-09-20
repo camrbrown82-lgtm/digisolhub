@@ -1,8 +1,10 @@
 import { AiImageForm } from "@/components/hub/AiImageForm";
+import { PosterActions } from "@/components/hub/PosterActions";
 import { PosterExport } from "@/components/hub/PosterExport";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { getBrandLogoUrl } from "@/lib/brandLogo";
 import { brandFromClient } from "@/lib/branding";
+import { listPosterAssets } from "@/lib/posterArchive";
 import { groupPosterSeries, socialPackFromAsset } from "@/lib/posterSocial";
 import { createClient } from "@/lib/supabase/server";
 import { getOutboundSiteUrl } from "@/lib/supabase/env";
@@ -14,18 +16,12 @@ export default async function AiPage() {
   const brandSource = await getWorkspaceClient(supabase);
   const { companyName, brand } = brandFromClient(brandSource);
   const logoUrl = brandSource ? await getBrandLogoUrl(supabase, brandSource) : brand.logoUrl;
-  let query = supabase
-    .from("assets")
-    .select("*")
-    .eq("bucket", "ai-posters")
-    .like("mime_type", "image/%")
-    .order("created_at", { ascending: false })
-    .limit(30);
-  if (selected) query = query.eq("client_id", selected.id);
-  else if (brandSource) query = query.eq("client_id", brandSource.id);
-  const { data: posters } = await query;
+  const posters = await listPosterAssets(supabase, {
+    clientId: selected?.id || brandSource?.id,
+    archived: false,
+  });
   const siteUrl = getOutboundSiteUrl();
-  const groups = groupPosterSeries(posters ?? []);
+  const groups = groupPosterSeries(posters);
 
   return (
     <div className="space-y-8">
@@ -34,9 +30,11 @@ export default async function AiPage() {
         <WorkspaceScope companyName={selected?.name || brandSource?.name} noun="posters" />
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">
           Paste a slide blueprint and the generator typesets that copy on Brand
-          colors. Multi-slide briefs become a carousel plus PDF. The official
-          logo is stamped on after generation — then export to LinkedIn, X,
-          Facebook, and Instagram.
+          colors. Archive or delete a set when you are done. Older work lives on{" "}
+          <a href="/hub/archives" className="text-indigo-300 hover:text-indigo-200">
+            Archives
+          </a>
+          .
         </p>
       </div>
       <AiImageForm
@@ -78,6 +76,7 @@ export default async function AiPage() {
                   />
                 ))}
               </div>
+              <PosterActions id={slides[0].id} />
               {grouped.url ? <PosterExport pack={grouped} companyName={companyName} /> : null}
             </div>
           );
