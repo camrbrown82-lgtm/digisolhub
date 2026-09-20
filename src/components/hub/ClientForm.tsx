@@ -33,7 +33,7 @@ export function ClientForm() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ clientId: result.id }),
     });
-    router.push("/hub");
+    router.push("/hub/brand");
     router.refresh();
   }
 
@@ -42,6 +42,10 @@ export function ClientForm() {
       <label className="block text-sm">
         Company name
         <input name="name" required className="hub-field" placeholder="Acme Co" />
+        <span className="mt-1 block text-xs text-zinc-500">
+          Starts a Brand kit for this company. You will land on Brand next to
+          lock colors, voice, and logo.
+        </span>
       </label>
       <label className="block text-sm">
         Domain

@@ -115,8 +115,8 @@ export function AiImageForm({
             </p>
             <p className="text-xs text-zinc-400">
               {logoUrl
-                ? "Your copy is typeset as written. The official logo sits on a brand bar above the art, never over the text."
-                : "Upload a logo on Brand first so posters stay on-mark."}
+                ? `Copy is typeset as written for ${companyName} only. Official logo sits on a brand bar above the art, never over the text.`
+                : `Upload a logo on Brand for ${companyName} so posters stay on this company's mark.`}
             </p>
           </div>
         </div>

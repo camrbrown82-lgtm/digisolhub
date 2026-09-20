@@ -1,7 +1,7 @@
 import { EmailComposer } from "@/components/hub/EmailComposer";
 import { brandFromClient } from "@/lib/branding";
 import { createClient } from "@/lib/supabase/server";
-import { getActiveClient } from "@/lib/workspace";
+import { getWorkspaceClient } from "@/lib/workspace";
 
 export default async function EmailPage({
   searchParams,
@@ -9,7 +9,7 @@ export default async function EmailPage({
   searchParams: { template?: string };
 }) {
   const supabase = await createClient();
-  const active = await getActiveClient(supabase);
+  const active = await getWorkspaceClient(supabase);
   let campaignsQuery = supabase
     .from("campaigns")
     .select("id, name, status, sent_at")

@@ -1,4 +1,5 @@
 import { AiImageForm } from "@/components/hub/AiImageForm";
+import { BrandConsistencyNote } from "@/components/hub/BrandConsistencyNote";
 import { PosterActions } from "@/components/hub/PosterActions";
 import { PosterExport } from "@/components/hub/PosterExport";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
@@ -29,14 +30,18 @@ export default async function AiPage() {
         <h1 className="text-3xl font-semibold text-white">AI posters</h1>
         <WorkspaceScope companyName={selected?.name || brandSource?.name} noun="posters" />
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-          Paste a slide blueprint and the generator typesets that copy on Brand
-          colors. Archive or delete a set when you are done. Older work lives on{" "}
+          Paste a slide blueprint. The generator typesets that copy on this
+          company&apos;s Brand kit — background, text, and highlights — with
+          the official logo on a bar above the art. Switch Working on to brand
+          another company the same way. Archive or delete a set when you are
+          done. Older work lives on{" "}
           <a href="/hub/archives" className="text-indigo-300 hover:text-indigo-200">
             Archives
           </a>
           .
         </p>
       </div>
+      <BrandConsistencyNote companyName={companyName} brand={brand} />
       <AiImageForm
         companyName={companyName}
         tagline={brand.tagline}

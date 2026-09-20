@@ -1,8 +1,21 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
-import { mergeBrand, parseBrand } from "@/lib/branding";
+import { mergeBrand, parseBrand, starterBrandForCompany } from "@/lib/branding";
 
 type Params = { params: { id: string } };
+
+function brandedClient(data: {
+  id: string;
+  name: string;
+  domain: string | null;
+  notes: string | null;
+  branding: unknown;
+}) {
+  return {
+    ...data,
+    branding: parseBrand(data.branding, starterBrandForCompany(data.name)),
+  };
+}
 
 export async function GET(_request: Request, { params }: Params) {
   const { supabase, error } = await requireHubSession();
@@ -17,7 +30,7 @@ export async function GET(_request: Request, { params }: Params) {
   if (queryError || !data) {
     return NextResponse.json({ error: queryError?.message || "Company not found" }, { status: 404 });
   }
-  return NextResponse.json({ client: { ...data, branding: parseBrand(data.branding) } });
+  return NextResponse.json({ client: brandedClient(data) });
 }
 
 export async function PATCH(request: Request, { params }: Params) {
@@ -38,10 +51,16 @@ export async function PATCH(request: Request, { params }: Params) {
   if (body.branding !== undefined) {
     const { data: current } = await supabase
       .from("clients")
-      .select("branding")
+      .select("name, branding")
       .eq("id", params.id)
       .maybeSingle();
-    update.branding = mergeBrand(current?.branding, body.branding);
+    update.branding = mergeBrand(
+      current?.branding,
+      body.branding,
+      starterBrandForCompany(
+        typeof update.name === "string" ? update.name : current?.name,
+      ),
+    );
   }
 
   if (Object.keys(update).length === 0) {
@@ -62,5 +81,5 @@ export async function PATCH(request: Request, { params }: Params) {
     );
   }
 
-  return NextResponse.json({ client: { ...data, branding: parseBrand(data.branding) } });
+  return NextResponse.json({ client: brandedClient(data) });
 }

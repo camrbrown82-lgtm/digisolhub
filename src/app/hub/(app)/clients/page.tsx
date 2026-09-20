@@ -11,9 +11,11 @@ export default async function ClientsPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-semibold text-white">Companies</h1>
-        <p className="mt-1 text-sm text-zinc-400">
-          Each company is its own workspace. Open work, files, or analytics for
-          that business.
+        <p className="mt-1 max-w-2xl text-sm text-zinc-400">
+          Each company is its own brand workspace. Creating one starts a kit
+          (background, text, highlights, voice, logo). Switch Working on, then
+          fill Brand so posters and email stay on that company — DigiSol house
+          look never carries over.
         </p>
       </div>
       <ul className="divide-y divide-zinc-800 rounded-2xl border border-zinc-800">

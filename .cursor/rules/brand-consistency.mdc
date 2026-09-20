@@ -1,0 +1,14 @@
+---
+description: Every hub company has its own Brand kit. Never mix DigiSol house look into another client.
+alwaysApply: true
+---
+
+# Per-company brand consistency
+
+DigiSol Hub is multi-tenant. The Working-on company (`hub_client_id`) is the only brand in play.
+
+- Load kits with `getWorkspaceClient` + `brandFromClient`. Never hardcode DigiSol colors, voice, or logo onto another company.
+- Seed new clients with `starterBrandForCompany(name)`. DigiSol gets `DIGISOL_BRAND`; everyone else gets `NEUTRAL_BRAND` plus a note that this kit is theirs alone.
+- Posters lock **background**, **text**, and **highlights**. Stamp the official logo on a brand-colored bar above the art via `stampOfficialLogo`. Never ask the model to draw a logo or overlay it on copy.
+- Email, AI copy, and exports read the same kit (including `{{text}}` and `{{highlight}}`).
+- UI copy must say this is per company. Switch Working on to change kits.

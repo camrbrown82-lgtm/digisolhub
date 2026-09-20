@@ -8,7 +8,7 @@ import {
   getOpenAIApiKey,
   getOpenAITextModel,
 } from "@/lib/openai";
-import { getActiveClient } from "@/lib/workspace";
+import { getWorkspaceClient } from "@/lib/workspace";
 
 type Mode = "generate" | "flare";
 
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const active = await getActiveClient(supabase);
+  const active = await getWorkspaceClient(supabase);
   const { companyName, brand } = brandFromClient(active);
   const company = body.companyName?.trim() || companyName;
   const openai = createOpenAIClient();

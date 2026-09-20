@@ -88,7 +88,9 @@ export function BrandForm({
       setStatus(result.error || "Could not save brand");
       return;
     }
-    setStatus("Brand saved. Emails, logos, and AI posters will use this kit.");
+    setStatus(
+      `Brand saved for ${companyName}. Emails, logos, and AI posters for this company will stay on this kit.`,
+    );
     router.refresh();
   }
 

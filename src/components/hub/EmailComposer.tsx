@@ -349,8 +349,10 @@ export function EmailComposer({
         <h1 className="text-3xl font-semibold text-white">Email</h1>
         <p className="mt-1 text-sm text-zinc-400">
           Pick a template. The {companyName} logo, colors, tagline, and merge
-          fields are already wired. Fill subject, recipients, and body — or let
-          AI draft it locked to this company&apos;s brand kit.
+          fields are already wired. Switch Working on to write for another
+          company — this kit never mixes with DigiSol unless that is the
+          selected company. Fill subject, recipients, and body — or let AI
+          draft it locked to this brand.
         </p>
       </div>
 

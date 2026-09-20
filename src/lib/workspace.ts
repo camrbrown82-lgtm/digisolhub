@@ -5,6 +5,7 @@ import {
   DIGISOL_HOUSE_DOMAIN,
   DIGISOL_HOUSE_NAME,
   isBrandEmpty,
+  starterBrandForCompany,
 } from "@/lib/branding";
 
 export const HUB_CLIENT_COOKIE = "hub_client_id";
@@ -76,6 +77,16 @@ export async function listClients(supabase: SupabaseClient) {
   return data ?? [];
 }
 
+async function hydrateClientBrand<T extends { id: string; name?: string | null; branding?: unknown }>(
+  supabase: SupabaseClient,
+  client: T | null,
+) {
+  if (!client || !isBrandEmpty(client.branding)) return client;
+  const branding = starterBrandForCompany(client.name);
+  await supabase.from("clients").update({ branding }).eq("id", client.id);
+  return { ...client, branding };
+}
+
 export async function getActiveClient(supabase: SupabaseClient) {
   const id = await getActiveClientId();
   if (!id) return null;
@@ -84,7 +95,7 @@ export async function getActiveClient(supabase: SupabaseClient) {
     .select("id, name, domain, site_key, notes, branding")
     .eq("id", id)
     .maybeSingle();
-  return data;
+  return hydrateClientBrand(supabase, data);
 }
 
 export async function getWorkspaceClient(supabase: SupabaseClient) {
@@ -125,9 +136,14 @@ export async function findOrCreateClient(
     if (byName?.id) return byName.id;
   }
 
+  const companyName = name || domain;
   const { data: created, error } = await supabase
     .from("clients")
-    .insert({ name: name || domain, domain })
+    .insert({
+      name: companyName,
+      domain,
+      branding: starterBrandForCompany(companyName),
+    })
     .select("id")
     .single();
   if (error) return null;

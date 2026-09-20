@@ -9,7 +9,7 @@ import {
 } from "@/lib/email";
 import { brandFromClient } from "@/lib/branding";
 import { getEmailLogoUrl } from "@/lib/emailLogo";
-import { getActiveClient, getActiveClientId } from "@/lib/workspace";
+import { getWorkspaceClient } from "@/lib/workspace";
 
 type SendBody = {
   templateId?: string;
@@ -52,8 +52,8 @@ async function sendCampaign(
     return NextResponse.json({ error: "Template or HTML is required" }, { status: 400 });
   }
 
-  const clientId = await getActiveClientId();
-  const active = await getActiveClient(supabase);
+  const active = await getWorkspaceClient(supabase);
+  const clientId = active?.id || "";
   const { companyName, brand } = brandFromClient(active);
   const logoSrc = await getEmailLogoUrl(supabase, clientId || null);
   const contacts: Array<{

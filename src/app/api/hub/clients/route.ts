@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
+import { starterBrandForCompany } from "@/lib/branding";
 
 export async function GET() {
   const { supabase, error } = await requireHubSession();
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
       name,
       domain: body.domain?.trim() || null,
       notes: body.notes?.trim() || null,
+      branding: starterBrandForCompany(name),
     })
     .select("id")
     .single();

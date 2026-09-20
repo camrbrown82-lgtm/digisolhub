@@ -152,6 +152,9 @@ export function mergeBrand(existing: unknown, incoming: unknown, fallback?: Comp
     ...next,
     logoUrl: next.logoUrl || current.logoUrl,
     logoDescription: next.logoDescription || current.logoDescription,
+    textColor: next.textColor || current.textColor,
+    highlightColor: next.highlightColor || current.highlightColor,
+    backgroundColor: next.backgroundColor || current.backgroundColor,
   };
 }
 
@@ -167,12 +170,24 @@ export function brandLogoPromptLine(brand: CompanyBrand) {
   return "";
 }
 
+export function starterBrandForCompany(companyName?: string | null): CompanyBrand {
+  const name = companyName?.trim() || "";
+  if (name.toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase()) {
+    return { ...DIGISOL_BRAND };
+  }
+  return {
+    ...NEUTRAL_BRAND,
+    extra: name
+      ? `Brand kit for ${name}. Posters, email, and AI must use this company's background, text, highlights, voice, and logo only — never the DigiSol house look.`
+      : "",
+  };
+}
+
 export function brandFromClient(client?: { name?: string | null; branding?: unknown } | null) {
   const companyName = client?.name?.trim() || DIGISOL_HOUSE_NAME;
-  const house = companyName.toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase();
   return {
     companyName,
-    brand: parseBrand(client?.branding, house ? DIGISOL_BRAND : NEUTRAL_BRAND),
+    brand: parseBrand(client?.branding, starterBrandForCompany(companyName)),
   };
 }
 
