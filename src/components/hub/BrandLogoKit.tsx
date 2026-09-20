@@ -2,7 +2,7 @@
 
 import { DragEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LOGO_STYLES, type LogoStyle } from "@/lib/brandLogo";
+import { LOGO_STYLES, type LogoStyle } from "@/lib/logoStyles";
 
 const STYLE_LABELS: Record<LogoStyle, { label: string; hint: string }> = {
   wordmark: { label: "Wordmark", hint: "Name only" },

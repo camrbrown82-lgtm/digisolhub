@@ -9,13 +9,14 @@ import {
 } from "@/lib/branding";
 import { EMAIL_LOGO_NOTE, defaultEmailLogoUrl } from "@/lib/emailLogo";
 import { getSiteUrl } from "@/lib/supabase/env";
+import { LOGO_STYLES, type LogoStyle, parseLogoStyle } from "@/lib/logoStyles";
+
+export { LOGO_STYLES, parseLogoStyle };
+export type { LogoStyle };
 
 export const BRAND_LOGO_NOTE = "brand-logo";
 export const BRAND_LOGO_BUCKET = "email-images";
 export const MAX_LOGO_BYTES = 8 * 1024 * 1024;
-
-export const LOGO_STYLES = ["wordmark", "lettermark", "icon-wordmark", "emblem"] as const;
-export type LogoStyle = (typeof LOGO_STYLES)[number];
 
 export type BrandLogoAsset = {
   id: string;
@@ -23,10 +24,6 @@ export type BrandLogoAsset = {
   path: string;
   bucket: string;
 };
-
-export function parseLogoStyle(value: unknown): LogoStyle {
-  return LOGO_STYLES.includes(value as LogoStyle) ? (value as LogoStyle) : "icon-wordmark";
-}
 
 export function isUsableLogoUrl(url?: string | null) {
   const value = url?.trim() || "";
