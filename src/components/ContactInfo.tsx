@@ -79,7 +79,7 @@ export function ContactInfo({ location }: ContactInfoProps) {
 
   if (isHero) {
     return (
-      <div className="min-w-0 w-full justify-self-center px-1 text-center lg:max-w-2xl">
+      <div className="hidden min-w-0 w-full justify-self-center px-1 text-center lg:block lg:max-w-2xl">
         <p className="text-sm leading-snug text-zinc-300 sm:text-base">
           <Identity location={location} />
         </p>
