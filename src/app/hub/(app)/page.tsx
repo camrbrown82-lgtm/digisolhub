@@ -5,10 +5,11 @@ import { contactIdsForClient, getActiveClient } from "@/lib/workspace";
 
 export default async function HubHomePage() {
   let contacts = 0;
+  let leads = 0;
   let sends = 0;
   let opened = 0;
   let templates = 0;
-  let recent: { id: string; name: string | null; email: string; created_at: string }[] = [];
+  let recent: { id: string; name: string | null; email: string | null; created_at: string }[] = [];
   let companyName: string | null = null;
 
   try {
@@ -23,17 +24,19 @@ export default async function HubHomePage() {
       .from("sends")
       .select("id", { count: "exact", head: true })
       .not("opened_at", "is", null);
+    let leadsQuery = supabase.from("leads").select("id", { count: "exact", head: true });
     let templatesQuery = supabase
       .from("email_templates")
       .select("id", { count: "exact", head: true });
     let recentQuery = supabase
-      .from("contacts")
+      .from("leads")
       .select("id, name, email, created_at")
       .order("created_at", { ascending: false })
       .limit(6);
 
     if (active) {
       contactsQuery = contactsQuery.eq("client_id", active.id);
+      leadsQuery = leadsQuery.eq("client_id", active.id);
       templatesQuery = templatesQuery.eq("client_id", active.id);
       recentQuery = recentQuery.eq("client_id", active.id);
       if (scopedIds && scopedIds.length > 0) {
@@ -43,14 +46,16 @@ export default async function HubHomePage() {
     }
 
     const emptySends = Boolean(active && scopedIds && scopedIds.length === 0);
-    const [c, s, o, t, r] = await Promise.all([
+    const [c, l, s, o, t, r] = await Promise.all([
       contactsQuery,
+      leadsQuery,
       emptySends ? Promise.resolve({ count: 0 }) : sendsQuery,
       emptySends ? Promise.resolve({ count: 0 }) : openedQuery,
       templatesQuery,
       recentQuery,
     ]);
     contacts = c.count ?? 0;
+    leads = l.count ?? 0;
     sends = s.count ?? 0;
     opened = o.count ?? 0;
     templates = t.count ?? 0;
@@ -60,6 +65,7 @@ export default async function HubHomePage() {
   }
 
   const cards = [
+    { label: "Leads", value: leads, href: "/hub/leads" },
     { label: "Contacts", value: contacts, href: "/hub/contacts" },
     { label: "Emails sent", value: sends, href: "/hub/email" },
     { label: "Opens recorded", value: opened, href: "/hub/analytics" },
@@ -72,7 +78,7 @@ export default async function HubHomePage() {
         <h1 className="text-3xl font-semibold tracking-tight text-white">Overview</h1>
         <WorkspaceScope companyName={companyName} noun="work" />
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {cards.map((card) => (
           <Link
             key={card.label}
@@ -87,21 +93,21 @@ export default async function HubHomePage() {
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">Recent leads</h2>
-          <Link href="/hub/contacts" className="text-sm text-indigo-400 hover:text-indigo-300">
+          <Link href="/hub/leads" className="text-sm text-indigo-400 hover:text-indigo-300">
             View all
           </Link>
         </div>
         <ul className="mt-4 divide-y divide-zinc-800">
           {recent.length === 0 ? (
-            <li className="py-6 text-sm text-zinc-500">No contacts yet.</li>
+            <li className="py-6 text-sm text-zinc-500">No leads yet.</li>
           ) : (
-            recent.map((contact) => (
-              <li key={contact.id} className="flex items-center justify-between py-3 text-sm">
-                <Link href={`/hub/contacts/${contact.id}`} className="text-white hover:text-indigo-300">
-                  {contact.name || contact.email}
+            recent.map((lead) => (
+              <li key={lead.id} className="flex items-center justify-between py-3 text-sm">
+                <Link href={`/hub/leads/${lead.id}`} className="text-white hover:text-indigo-300">
+                  {lead.name || lead.email || "Untitled lead"}
                 </Link>
                 <span className="text-zinc-500">
-                  {new Date(contact.created_at).toLocaleDateString()}
+                  {new Date(lead.created_at).toLocaleDateString()}
                 </span>
               </li>
             ))

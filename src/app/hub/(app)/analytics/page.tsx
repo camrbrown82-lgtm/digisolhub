@@ -1,6 +1,11 @@
 import { headers } from "next/headers";
 import { CopySnippet } from "@/components/hub/CopySnippet";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
+import {
+  LEAD_STAGES,
+  type LeadRecord,
+  summarizeLeadPerformance,
+} from "@/lib/lead-pipeline";
 import { contactIdsForClient, getActiveClient } from "@/lib/workspace";
 import { newSiteKey, summarizeSiteEvents, trackingSnippet } from "@/lib/site-analytics";
 import { createClient } from "@/lib/supabase/server";
@@ -63,19 +68,37 @@ export default async function AnalyticsPage() {
     .limit(4000);
   if (active) siteQuery = siteQuery.eq("client_id", active.id);
 
-  const [contacts, sends, opened, clicked, unsubscribed, site] = await Promise.all([
+  let leadsQuery = supabase
+    .from("leads")
+    .select(
+      "id, source, stage, estimated_value, actual_value, first_touch_at, closed_at, created_at",
+    )
+    .order("created_at", { ascending: false })
+    .limit(2000);
+  if (active) leadsQuery = leadsQuery.eq("client_id", active.id);
+
+  const [contacts, sends, opened, clicked, unsubscribed, site, leadsResult] = await Promise.all([
     contactsQuery,
     emptySends ? Promise.resolve({ count: 0 }) : sendsQuery,
     emptySends ? Promise.resolve({ count: 0 }) : openedQuery,
     emptySends ? Promise.resolve({ count: 0 }) : clickedQuery,
     unsubQuery,
     siteQuery,
+    leadsQuery,
   ]);
 
   const website = summarizeSiteEvents(site.data ?? [], active?.domain);
   const maxDaily = Math.max(1, ...website.daily.map((item) => item.count));
+  const pipeline = summarizeLeadPerformance((leadsResult.data ?? []) as LeadRecord[]);
+  const maxStage = Math.max(1, ...LEAD_STAGES.map((stage) => pipeline.byStage[stage.id]));
+  const money = (value: number) =>
+    new Intl.NumberFormat("en-CA", {
+      style: "currency",
+      currency: "CAD",
+      maximumFractionDigits: 0,
+    }).format(value);
   const cards = [
-    { label: "Leads", value: contacts.count ?? 0 },
+    { label: "Contacts", value: contacts.count ?? 0 },
     { label: "Emails sent", value: sends.count ?? 0 },
     { label: "Opens (Resend)", value: opened.count ?? 0 },
     { label: "Clicks (Resend)", value: clicked.count ?? 0 },
@@ -169,6 +192,61 @@ export default async function AnalyticsPage() {
               Select a company under Working on to get that site&apos;s tracking snippet.
             </p>
           )}
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-white">Lead pipeline</h2>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          {[
+            { label: "Open leads", value: String(pipeline.open) },
+            { label: "Won", value: String(pipeline.won) },
+            { label: "Win rate", value: `${pipeline.winRate}%` },
+            { label: "Pipeline value", value: money(pipeline.pipelineValue) },
+            { label: "Avg days to close", value: String(pipeline.avgDaysToClose) },
+          ].map((card) => (
+            <div
+              key={card.label}
+              className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5"
+            >
+              <p className="text-sm text-zinc-400">{card.label}</p>
+              <p className="mt-2 text-3xl font-semibold text-white">{card.value}</p>
+            </div>
+          ))}
+        </div>
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+          <p className="text-sm text-zinc-400">Conversation funnel</p>
+          <div className="mt-4 flex h-28 items-end gap-2">
+            {LEAD_STAGES.map((stage) => (
+              <div key={stage.id} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+                <div
+                  className="w-full rounded-t bg-indigo-500/80"
+                  style={{
+                    height: `${Math.max(6, (pipeline.byStage[stage.id] / maxStage) * 100)}%`,
+                  }}
+                  title={`${stage.label}: ${pipeline.byStage[stage.id]}`}
+                />
+                <span className="truncate text-[10px] text-zinc-500">{stage.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+          <h3 className="text-sm font-semibold text-white">Source performance</h3>
+          <ul className="mt-3 space-y-2 text-sm">
+            {pipeline.bySource.length === 0 ? (
+              <li className="text-zinc-500">No field or website leads yet.</li>
+            ) : (
+              pipeline.bySource.map((row) => (
+                <li key={row.id} className="flex justify-between gap-3">
+                  <span className="truncate text-zinc-300">{row.label}</span>
+                  <span className="text-zinc-500">
+                    {row.count} · {row.won} won
+                  </span>
+                </li>
+              ))
+            )}
+          </ul>
         </div>
       </section>
 

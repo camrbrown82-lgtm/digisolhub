@@ -111,5 +111,46 @@ export async function upsertLead(payload: LeadPayload) {
     await emitHubEvent("hub/lead.created", { contactId });
   }
 
+  if (contactId) {
+    try {
+      const { data: existingLead } = await admin
+        .from("leads")
+        .select("id")
+        .eq("contact_id", contactId)
+        .maybeSingle();
+
+      if (!existingLead) {
+        const { data: pipelineLead } = await admin
+          .from("leads")
+          .insert({
+            contact_id: contactId,
+            client_id: clientId,
+            name: payload.name,
+            email,
+            phone: payload.phone,
+            company: payload.company,
+            service: payload.service,
+            source: "website",
+            channel: "web",
+            stage: "new",
+            notes_preview: payload.message?.slice(0, 280) ?? null,
+          })
+          .select("id")
+          .maybeSingle();
+
+        if (pipelineLead?.id) {
+          await admin.from("lead_activities").insert({
+            lead_id: pipelineLead.id,
+            type: "created",
+            body: payload.message || "Website inquiry.",
+            to_stage: "new",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Lead pipeline ingest skipped", error);
+    }
+  }
+
   return { id: contactId, created: !existing };
 }
