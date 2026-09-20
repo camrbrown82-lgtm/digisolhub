@@ -146,6 +146,7 @@ export function EmailComposer({
         primaryColor: brand.primaryColor,
         secondaryColor: brand.secondaryColor,
         backgroundColor: brand.backgroundColor,
+        highlightColor: brand.highlightColor,
         fonts: brand.fonts,
       }),
     };

@@ -184,6 +184,7 @@ export async function sendEmailToContact(input: SendEmailInput) {
     primaryColor: brand.primaryColor,
     secondaryColor: brand.secondaryColor,
     backgroundColor: brand.backgroundColor,
+    highlightColor: brand.highlightColor,
     fonts: brand.fonts,
   });
   const personalized = wrapCampaignHtml(branded, contact.email);
