@@ -7,6 +7,7 @@ import {
   inferVisualStyle,
   sanitizeVisualNotes,
 } from "@/lib/branding";
+import { type PosterSlide, mustPrintBlock } from "@/lib/posterBrief";
 
 export const POSTER_FORMATS = ["portrait", "square", "landscape"] as const;
 export type PosterFormat = (typeof POSTER_FORMATS)[number];
@@ -91,44 +92,63 @@ export async function writePosterArtDirection(
     brand: CompanyBrand;
     brief: string;
     format: PosterFormat;
+    slide?: PosterSlide;
+    slideCount?: number;
+    context?: string;
+    siteUrl?: string;
   },
 ) {
+  const slide = input.slide;
+  const slideCount = input.slideCount || 1;
+  const job = slide
+    ? [
+        `Slide ${slide.index} of ${slideCount} — ${slide.label}`,
+        slide.visualIdea ? `Requested layout: ${slide.visualIdea}` : "",
+        "MUST PRINT THIS COPY EXACTLY, spelled as written:",
+        mustPrintBlock(slide),
+        input.context ? `Series notes: ${input.context}` : "",
+        input.siteUrl ? `Canonical site URL if a button is needed: ${input.siteUrl}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n")
+    : input.brief;
   const fallback = brandImagePrompt(
     input.companyName,
     input.brand,
-    input.brief,
+    job,
     input.format,
   );
 
   try {
     const completion = await openai.chat.completions.create({
       model: process.env.OPENAI_EMAIL_MODEL || "gpt-4o-mini",
-      temperature: 0.3,
+      temperature: 0.12,
       messages: [
         {
           role: "system",
-          content: `You are a creative director. Write one image-generation prompt for a print-quality marketing poster. Output the prompt only — no title, no markdown, no quotes.
+          content: `You write one image-generation prompt for a single social-media infographic slide. Output the prompt only — no title, no markdown, no quotes around the whole prompt.
 
-The official logo will be composited on afterwards. You must not describe or request any logo, wordmark, or company-name lettering.
-
-Rules:
-- Look like a paid campaign, not AI collage or generic stock.
-- Translate brand voice into composition, lighting, materials, and type hierarchy.
-- Use only the given hex colors as the dominant palette. Background must read as the brand background.
-- Leave the top 20% empty negative space in the brand background color for the official logo stamp.
-- Headline copy may use the tagline or job line only. Never write the company name.
-- One focal idea, generous negative space, tactile surfaces, realistic light.
-- No real people, no contact details, no QR codes, no watermarks, no unreadably small type.`,
+You are a typesetter, not a copywriter.
+- Every MUST PRINT line must appear in the image, spelled exactly. Do not paraphrase, shorten, merge, or swap in a brand tagline.
+- If the visual idea conflicts with the copy, keep ALL required text readable and adapt the layout.
+- Do not invent extra slogans, stats, phone numbers, cities, or URLs.
+- Use only the given brand hex colors. Background is the brand background.
+- Premium dark infographic / carousel card. Thin accent glow is fine. No neon phone or device mockup unless the brief asks for a device.
+- Large high-contrast type. Generous margins. Infographic hierarchy, not a single floating paragraph.
+- Leave the top 20% empty in the background color for the official logo stamp. Do not draw a logo or a giant company wordmark.
+- Closing slides: a solid brand-colored button shape containing the exact URL from the copy.
+- Carousel slides must match each other: same background, same margins, same type style.
+- No photos of real people, no QR codes, no watermarks, no unreadably small type.`,
         },
         {
           role: "user",
-          content: `Format: ${input.format} poster
-Job: ${input.brief}
+          content: `Format: ${input.format} ${slideCount > 1 ? "carousel slide" : "poster"}
+${job}
 
 ${brandKitPrompt(input.companyName, input.brand, "visual")}
 Art direction: ${inferVisualStyle(input.brand)}
 Safe extra notes: ${sanitizeVisualNotes(input.brand.extra) || "(none)"}
-Official logo is stamped after generation. Do not describe a wordmark.`,
+Official logo is stamped after generation.`,
         },
       ],
     });

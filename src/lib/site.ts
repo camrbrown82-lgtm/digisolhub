@@ -1,4 +1,6 @@
 export const DIGISOL_SITE_URL = "https://wwwdigisol.com";
+export const DIGISOL_FOUNDER = "Cameron Brown";
+export const DIGISOL_FOUNDER_TITLE = "Founder & CEO";
 export const DIGISOL_FACEBOOK_URL =
   "https://www.facebook.com/profile.php?id=61594465430522&sk=about";
 export const DIGISOL_GOOGLE_LISTING_URL =

@@ -181,7 +181,7 @@ export function brandLockRules(
     brand.doSay ? `Lean on: ${brand.doSay}` : "",
     brand.dontSay ? `Never use: ${brand.dontSay}` : "",
     kind === "visual"
-      ? `Do not draw a logo, icon, or the letters of "${companyName}". The official logo is stamped on after generation.`
+      ? `Do not draw a logo or invent a wordmark. The official logo is stamped on after generation. User-supplied copy may include the company name as small footer type only if it is in the brief.`
       : brandLogoPromptLine(brand) ||
         (kind === "logo"
           ? `Create a new official mark for ${companyName} only. Spell the name exactly.`
@@ -200,7 +200,7 @@ export function brandLockRules(
   if (kind === "visual") {
     lines.push(
       `Leave the top 20% as empty ${brand.backgroundColor} negative space for that official mark.`,
-      "Headline type may use the tagline or campaign line only — never the company name as a wordmark.",
+      "Typeset the supplied headline and body exactly. Do not replace them with the brand tagline or a shorter slogan.",
       "Background must read as the brand background hex.",
     );
   }
@@ -271,15 +271,13 @@ export function brandImagePrompt(
     brand.audience ? `Made for this audience: ${brand.audience}` : "",
     `Dominant palette only: primary ${brand.primaryColor}, secondary ${brand.secondaryColor}, accent ${brand.accentColor}, background ${brand.backgroundColor}.`,
     `Typography feel like ${font}.`,
-    `Do not draw a logo or the letters of "${companyName}". The official mark is stamped on afterwards. Leave the top fifth empty ${brand.backgroundColor} space.`,
-    brand.tagline
-      ? `If a headline is needed, use this tagline exactly: "${brand.tagline}".`
-      : "If a headline is needed, use the job line only. Do not invent a wordmark.",
+    `Do not draw a logo or invent a wordmark for "${companyName}". The official mark is stamped on afterwards. Leave the top fifth empty ${brand.backgroundColor} space.`,
+    "Typeset the job copy exactly. Do not replace headlines with the brand tagline.",
     `Art direction: ${inferVisualStyle(brand)}`,
     brand.doSay ? `Headline vocabulary: ${brand.doSay}` : "",
     brand.dontSay ? `Do not depict or write: ${brand.dontSay}` : "",
     extra ? `Other visual notes: ${extra}` : "",
-    "Studio-quality print campaign, one focal idea, readable hierarchy, realistic materials and light. No photos of real people, no contact details, no QR codes, no watermarks, no tiny unreadable text, no stock-template look.",
+    "Studio-quality social infographic, readable hierarchy, realistic materials and light. No photos of real people, no invented phone numbers, no QR codes, no watermarks, no tiny unreadable text, no stock-template look, no neon phone mockup unless the brief asks for a device.",
   ]
     .filter(Boolean)
     .join("\n");

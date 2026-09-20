@@ -7,7 +7,7 @@ import { type PosterFormat } from "@/lib/poster";
 import { type PosterSocialPack } from "@/lib/posterSocial";
 
 const FORMATS: { id: PosterFormat; label: string; hint: string }[] = [
-  { id: "portrait", label: "Portrait", hint: "Stories, print posters" },
+  { id: "portrait", label: "Portrait", hint: "Stories, carousels, print" },
   { id: "square", label: "Square", hint: "Feed, ads" },
   { id: "landscape", label: "Landscape", hint: "Banners, web" },
 ];
@@ -31,7 +31,7 @@ export function AiImageForm({
   const [prompt, setPrompt] = useState("");
   const [format, setFormat] = useState<PosterFormat>("portrait");
   const [status, setStatus] = useState("");
-  const [url, setUrl] = useState("");
+  const [urls, setUrls] = useState<string[]>([]);
   const [artDirection, setArtDirection] = useState("");
   const [social, setSocial] = useState<PosterSocialPack | null>(null);
   const [busy, setBusy] = useState(false);
@@ -39,8 +39,8 @@ export function AiImageForm({
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
-    setStatus("Building a brand-locked poster with the official logo…");
-    setUrl("");
+    setStatus("Reading your slides and typesetting Brand-locked cards. Multi-slide briefs take about a minute…");
+    setUrls([]);
     setArtDirection("");
     setSocial(null);
     const response = await fetch("/api/hub/ai/image", {
@@ -51,9 +51,12 @@ export function AiImageForm({
     let result: {
       error?: string;
       asset?: { public_url?: string };
+      urls?: string[];
+      pdfUrl?: string;
       prompt?: string;
       social?: PosterSocialPack;
       logoStamped?: boolean;
+      slides?: { label: string }[];
     } = {};
     try {
       result = (await response.json()) as typeof result;
@@ -71,13 +74,19 @@ export function AiImageForm({
       setStatus(result.error || "Generation failed");
       return;
     }
-    setUrl(result.asset?.public_url ?? "");
+    const nextUrls = result.urls?.length
+      ? result.urls
+      : result.asset?.public_url
+        ? [result.asset.public_url]
+        : [];
+    setUrls(nextUrls);
     setArtDirection(result.prompt ?? "");
     setSocial(result.social ?? null);
+    const slideCount = result.slides?.length || nextUrls.length || 1;
     setStatus(
       result.logoStamped
-        ? "Saved. Official logo stamped from Brand."
-        : "Saved. Add a logo on Brand so the real mark can be stamped on.",
+        ? `Saved ${slideCount} branded slide${slideCount === 1 ? "" : "s"}. Official logo stamped from Brand.`
+        : `Saved ${slideCount} slide${slideCount === 1 ? "" : "s"}. Add a logo on Brand so the real mark can be stamped on.`,
     );
     router.refresh();
   }
@@ -103,7 +112,7 @@ export function AiImageForm({
             </p>
             <p className="text-xs text-zinc-400">
               {logoUrl
-                ? "Official logo will be stamped on after generation."
+                ? "Your copy is typeset as written. The official logo is stamped on after generation."
                 : "Upload a logo on Brand first so posters stay on-mark."}
             </p>
           </div>
@@ -157,27 +166,52 @@ export function AiImageForm({
       </fieldset>
 
       <label className="block text-sm">
-        What this poster is for
+        Slide blueprint
         <textarea
           value={prompt}
           onChange={(event) => setPrompt(event.target.value)}
           required
-          rows={4}
+          rows={12}
           className="hub-field resize-y"
-          placeholder="Homepage launch. One line about shipping custom sites that convert. Keep the type bold and the layout quiet."
+          placeholder={`[SLIDE 1 / POST HEADER: THE HOOK]
+Visual Idea: Dark studio, indigo glow, bold white type.
+Headline: Why the "Silo" Model is Costing Your Business Money
+Sub-headline: Web Development + Digital Marketing = The Ultimate Growth Engine for Alberta Businesses.
+
+[SLIDE 2 / CORE MESSAGE]
+Visual Idea: Three stacked callout cards.
+Body Copy:
+The Problem: ...
+The DigiSol Way: ...
+The Result: ...
+
+[SLIDE 3 / CALL TO ACTION]
+Text:
+Read our full monthly dispatch.
+Visit us today: https://wwwdigisol.com`}
         />
       </label>
+      <p className="text-xs text-zinc-500">
+        Paste the full brief. Each [SLIDE n] becomes its own carousel card with
+        that copy — LinkedIn, X, Facebook, Instagram, and a PDF when there are
+        multiple slides.
+      </p>
       <button type="submit" disabled={busy} className="hub-btn">
-        {busy ? "Generating…" : "Generate poster"}
+        {busy ? "Generating slides…" : "Generate poster"}
       </button>
       {status ? <p className="text-sm text-zinc-400">{status}</p> : null}
-      {url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={url}
-          alt={`Generated ${format} poster for ${companyName}`}
-          className="max-w-lg rounded-xl border border-zinc-800"
-        />
+      {urls.length ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {urls.map((url, index) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={url}
+              src={url}
+              alt={`Generated ${format} slide ${index + 1} for ${companyName}`}
+              className="rounded-xl border border-zinc-800"
+            />
+          ))}
+        </div>
       ) : null}
       {social ? <PosterExport pack={social} companyName={companyName} /> : null}
       {artDirection ? (

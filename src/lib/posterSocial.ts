@@ -1,26 +1,40 @@
 import { DIGISOL_SITE_URL } from "@/lib/site";
+import { type PosterSlide, shortPosterCaption } from "@/lib/posterBrief";
 
 export type PosterSocialPack = {
   url: string;
+  urls: string[];
+  pdfUrl?: string;
   facebook: string;
   linkedin: string;
   instagram: string;
+  twitter: string;
   fileBody: string;
   hashtags: string[];
 };
+
+function clip(value: string, max: number) {
+  const text = value.trim();
+  if (text.length <= max) return text;
+  return `${text.slice(0, Math.max(0, max - 1)).trimEnd()}…`;
+}
 
 export function posterSocialPack(input: {
   companyName: string;
   tagline?: string;
   brief: string;
   imageUrl: string;
+  imageUrls?: string[];
+  pdfUrl?: string;
   siteUrl?: string;
+  slides?: PosterSlide[];
 }): PosterSocialPack {
   const company = input.companyName.trim() || "DigiSol";
   const site = (input.siteUrl || DIGISOL_SITE_URL).replace(/\/$/, "");
-  const url = input.imageUrl;
-  const tagline = input.tagline?.trim() || "";
-  const brief = input.brief.trim();
+  const urls = (input.imageUrls?.length ? input.imageUrls : [input.imageUrl]).filter(Boolean);
+  const url = urls[0] || input.imageUrl;
+  const hook = shortPosterCaption(input.slides || []) || input.tagline?.trim() || company;
+  const carousel = urls.length > 1;
   const hashtags = [
     `#${company.replace(/[^A-Za-z0-9]+/g, "")}`,
     "#Alberta",
@@ -31,52 +45,69 @@ export function posterSocialPack(input: {
   ].filter((tag, index, list) => tag.length > 1 && list.indexOf(tag) === index);
 
   const facebook = [
-    tagline || company,
+    hook,
     "",
-    brief,
-    "",
-    url,
+    carousel ? `${urls.length}-slide carousel for Facebook and Instagram.` : "",
     site,
     "",
     hashtags.join(" "),
-  ].join("\n");
+  ]
+    .filter((line) => line !== "")
+    .join("\n");
 
   const linkedin = [
-    tagline || `${company} campaign`,
+    hook,
     "",
-    brief,
-    "",
-    `Poster: ${url}`,
-    `Work with ${company}: ${site}/#contact`,
+    `Read the full dispatch: ${site}`,
+    urls.length > 1 ? `Slides:\n${urls.map((item, index) => `${index + 1}. ${item}`).join("\n")}` : `Poster: ${url}`,
   ].join("\n");
 
   const instagram = [
-    tagline || company,
+    hook,
     "",
-    brief,
-    "",
+    carousel ? "Swipe the carousel." : "",
     hashtags.join(" "),
   ].join("\n");
 
+  const twitter = clip(`${hook}\n${site}\n${hashtags.slice(0, 3).join(" ")}`, 280);
+
   const fileBody = [
-    `${company.toUpperCase()} POSTER`,
-    tagline,
+    `${company.toUpperCase()} ${carousel ? "CAROUSEL" : "POSTER"}`,
+    hook,
     "",
-    `Image: ${url}`,
     `Site: ${site}`,
+    input.pdfUrl ? `PDF: ${input.pdfUrl}` : "",
     "",
-    "FACEBOOK / THREADS",
+    "SLIDES",
+    ...urls.map((item, index) => `${index + 1}. ${item}`),
+    "",
+    "FACEBOOK",
     facebook,
     "",
     "LINKEDIN",
     linkedin,
     "",
-    "INSTAGRAM / SHORT CAPTION",
+    "INSTAGRAM CAROUSEL",
     instagram,
     "",
-  ].join("\n");
+    "TWITTER / X",
+    twitter,
+    "",
+  ]
+    .filter((line) => line !== undefined)
+    .join("\n");
 
-  return { url, facebook, linkedin, instagram, fileBody, hashtags };
+  return {
+    url,
+    urls,
+    pdfUrl: input.pdfUrl,
+    facebook,
+    linkedin,
+    instagram,
+    twitter,
+    fileBody,
+    hashtags,
+  };
 }
 
 export function parsePosterMeta(notes?: string | null) {
@@ -87,6 +118,9 @@ export function parsePosterMeta(notes?: string | null) {
       brief?: string;
       prompt?: string;
       caption?: string;
+      seriesId?: string;
+      slideIndex?: number;
+      slideCount?: number;
       social?: PosterSocialPack;
     };
     if (parsed && typeof parsed === "object") return parsed;
@@ -111,9 +145,23 @@ export function socialPackFromAsset(
   },
   input: { companyName: string; tagline?: string; siteUrl?: string },
 ): PosterSocialPack {
-  if (isPosterSocialPack(poster.social_pack)) return poster.social_pack;
+  if (isPosterSocialPack(poster.social_pack)) {
+    const pack = poster.social_pack;
+    return {
+      ...pack,
+      urls: pack.urls?.length ? pack.urls : [pack.url],
+      twitter: pack.twitter || clip(`${pack.instagram}\n${input.siteUrl || DIGISOL_SITE_URL}`, 280),
+    };
+  }
   const meta = parsePosterMeta(poster.notes);
-  if (isPosterSocialPack(meta?.social)) return meta.social;
+  if (isPosterSocialPack(meta?.social)) {
+    const pack = meta.social;
+    return {
+      ...pack,
+      urls: pack.urls?.length ? pack.urls : [pack.url],
+      twitter: pack.twitter || clip(`${pack.instagram}\n${input.siteUrl || DIGISOL_SITE_URL}`, 280),
+    };
+  }
   return posterSocialPack({
     companyName: input.companyName,
     tagline: input.tagline,
@@ -121,4 +169,26 @@ export function socialPackFromAsset(
     imageUrl: poster.public_url || "",
     siteUrl: input.siteUrl,
   });
+}
+
+export function groupPosterSeries<T extends {
+  id: string;
+  notes?: string | null;
+  public_url?: string | null;
+  series_id?: string | null;
+  slide_index?: number | null;
+}>(posters: T[]) {
+  const groups: T[][] = [];
+  const seen = new Set<string>();
+  for (const poster of posters) {
+    const meta = parsePosterMeta(poster.notes);
+    const series = poster.series_id || meta?.seriesId || poster.id;
+    if (seen.has(series)) continue;
+    seen.add(series);
+    const slides = posters
+      .filter((item) => (item.series_id || parsePosterMeta(item.notes)?.seriesId || item.id) === series)
+      .sort((a, b) => (a.slide_index || parsePosterMeta(a.notes)?.slideIndex || 0) - (b.slide_index || parsePosterMeta(b.notes)?.slideIndex || 0));
+    groups.push(slides);
+  }
+  return groups;
 }

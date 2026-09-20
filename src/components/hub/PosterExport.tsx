@@ -11,7 +11,9 @@ export function PosterExport({
   pack: PosterSocialPack;
   companyName: string;
 }) {
-  const [copied, setCopied] = useState<"facebook" | "linkedin" | "instagram" | "url" | "">("");
+  const [copied, setCopied] = useState<"facebook" | "linkedin" | "instagram" | "twitter" | "url" | "">("");
+  const urls = pack.urls?.length ? pack.urls : pack.url ? [pack.url] : [];
+  const slug = companyName.toLowerCase().replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "") || "poster";
 
   async function copy(key: typeof copied, value: string) {
     await navigator.clipboard.writeText(value);
@@ -24,16 +26,15 @@ export function PosterExport({
     const href = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = href;
-    const slug = companyName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    link.download = `${slug || "poster"}-social-pack.txt`;
+    link.download = `${slug}-social-pack.txt`;
     link.click();
     URL.revokeObjectURL(href);
   }
 
-  function downloadImage() {
+  function downloadImage(url = pack.url, index?: number) {
     const link = document.createElement("a");
-    link.href = pack.url;
-    link.download = `${companyName.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "poster"}.png`;
+    link.href = url;
+    link.download = `${slug}${typeof index === "number" ? `-slide-${index + 1}` : ""}.png`;
     link.target = "_blank";
     link.rel = "noopener";
     link.click();
@@ -46,8 +47,7 @@ export function PosterExport({
         Export to socials
       </p>
       <p className="mt-1 text-xs text-zinc-400">
-        Copy a ready caption, download the poster, or share the public image
-        URL — same flow as Dispatch.
+        LinkedIn, X, Facebook, and Instagram carousel copy. Download slides or the PDF.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <button
@@ -74,6 +74,16 @@ export function PosterExport({
           {copied === "instagram" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           Copy Instagram caption
         </button>
+        {pack.twitter ? (
+          <button
+            type="button"
+            onClick={() => void copy("twitter", pack.twitter)}
+            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs font-medium text-zinc-100 hover:bg-white/10"
+          >
+            {copied === "twitter" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            Copy X / Twitter post
+          </button>
+        ) : null}
         <a
           href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pack.url)}`}
           target="_blank"
@@ -92,22 +102,47 @@ export function PosterExport({
           <Linkedin className="h-3.5 w-3.5" aria-hidden="true" />
           Share on LinkedIn
         </a>
+        {pack.twitter ? (
+          <a
+            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(pack.twitter)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-full border border-indigo-400/40 px-3 py-2 text-xs font-semibold text-indigo-200 hover:bg-indigo-500/15"
+          >
+            Share on X
+          </a>
+        ) : null}
         <button
           type="button"
-          onClick={() => void copy("url", pack.url)}
+          onClick={() => void copy("url", urls.join("\n"))}
           className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs font-medium text-zinc-100 hover:bg-white/10"
         >
           {copied === "url" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-          Copy image URL
+          Copy image URL{urls.length > 1 ? "s" : ""}
         </button>
-        <button
-          type="button"
-          onClick={downloadImage}
-          className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs font-medium text-zinc-100 hover:bg-white/10"
-        >
-          <Download className="h-3.5 w-3.5" />
-          Download poster
-        </button>
+        {urls.map((url, index) => (
+          <button
+            key={url}
+            type="button"
+            onClick={() => downloadImage(url, index)}
+            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs font-medium text-zinc-100 hover:bg-white/10"
+          >
+            <Download className="h-3.5 w-3.5" />
+            {urls.length > 1 ? `Download slide ${index + 1}` : "Download poster"}
+          </button>
+        ))}
+        {pack.pdfUrl ? (
+          <a
+            href={pack.pdfUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            download={`${slug}-carousel.pdf`}
+            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs font-medium text-zinc-100 hover:bg-white/10"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Download PDF
+          </a>
+        ) : null}
         <button
           type="button"
           onClick={downloadPack}
