@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
+import { DIGISOL_FACEBOOK_URL, DIGISOL_SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const inter = Inter({
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
   title: "DigiSol | Digital Marketing & Web Development",
   description:
     "DigiSol is a digital marketing and web development studio. We build high-converting websites and run the growth marketing that scales them.",
-  metadataBase: new URL("https://wwwdigisol.com"),
+  metadataBase: new URL(DIGISOL_SITE_URL),
   verification: {
     google: "QwmR9VlADhodbnOuBT3FM-XaaBAyM9BLcz5bLfRdi8Y",
   },
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
     title: "DigiSol | Code + Growth, Built Together",
     description:
       "Custom web development and digital marketing that convert. One partner from first click to closed deal.",
-    url: "https://wwwdigisol.com",
+    url: DIGISOL_SITE_URL,
     siteName: "DigiSol",
     type: "website",
     images: [{ url: "/logo.jpg", alt: "DigiSol — Engineering & Growth" }],
@@ -48,14 +49,14 @@ const organizationJsonLd = {
   "@type": ["Organization", "ProfessionalService"],
   name: "DigiSol",
   legalName: "DigiSol",
-  url: "https://wwwdigisol.com",
+  url: DIGISOL_SITE_URL,
   logo: {
     "@type": "ImageObject",
-    url: "https://wwwdigisol.com/logo.jpg",
+    url: `${DIGISOL_SITE_URL}/logo.jpg`,
     width: 1024,
     height: 559,
   },
-  image: "https://wwwdigisol.com/logo.jpg",
+  image: `${DIGISOL_SITE_URL}/logo.jpg`,
   description:
     "DigiSol provides digital marketing and custom web development. High-converting websites and growth marketing built under one roof.",
   email: "cam.r.brown82@gmail.com",
@@ -77,6 +78,7 @@ const organizationJsonLd = {
     description:
       "Certified Full Stack Developer and Digital Marketing and Social Media Specialist",
   },
+  sameAs: [DIGISOL_FACEBOOK_URL],
 };
 
 export default function RootLayout({

@@ -1,6 +1,8 @@
-import { Globe } from "lucide-react";
+import { Facebook, Globe } from "lucide-react";
 import { ContactInfo } from "@/components/ContactInfo";
 import { Logo } from "@/components/Logo";
+import { TrackedLink } from "@/components/TrackedLink";
+import { DIGISOL_FACEBOOK_URL } from "@/lib/site";
 
 const jumps = [
   { href: "/#top", label: "Top" },
@@ -28,6 +30,17 @@ export function Footer() {
             <Globe className="h-4 w-4 shrink-0" aria-hidden="true" />
             wwwdigisol.com
           </a>
+          <TrackedLink
+            href={DIGISOL_FACEBOOK_URL}
+            eventName="social_click"
+            eventParams={{ network: "facebook", location: "footer" }}
+            target="_blank"
+            rel="noopener noreferrer me"
+            className={`mt-2 ${linkClass}`}
+          >
+            <Facebook className="h-4 w-4 shrink-0" aria-hidden="true" />
+            Follow us on Facebook
+          </TrackedLink>
         </div>
 
         <div className="space-y-8">

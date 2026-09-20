@@ -1,5 +1,6 @@
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Facebook, Sparkles } from "lucide-react";
 import { TrackedLink } from "@/components/TrackedLink";
+import { DIGISOL_FACEBOOK_URL } from "@/lib/site";
 
 export function Hero() {
   return (
@@ -61,6 +62,17 @@ export function Hero() {
             Explore Services
           </TrackedLink>
         </div>
+        <TrackedLink
+          href={DIGISOL_FACEBOOK_URL}
+          eventName="social_click"
+          eventParams={{ network: "facebook", location: "hero" }}
+          target="_blank"
+          rel="noopener noreferrer me"
+          className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-indigo-300 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+        >
+          <Facebook className="h-4 w-4" aria-hidden="true" />
+          Follow us on Facebook
+        </TrackedLink>
       </div>
     </section>
   );
