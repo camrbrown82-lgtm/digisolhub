@@ -1,8 +1,8 @@
-import { Facebook, Globe } from "lucide-react";
+import { Globe } from "lucide-react";
 import { ContactInfo } from "@/components/ContactInfo";
+import { GoogleRating, ListingLinks } from "@/components/LocalListings";
 import { Logo } from "@/components/Logo";
-import { TrackedLink } from "@/components/TrackedLink";
-import { DIGISOL_FACEBOOK_URL } from "@/lib/site";
+import { DIGISOL_REGION, DIGISOL_SERVICE_CITIES } from "@/lib/site";
 
 const jumps = [
   { href: "/#top", label: "Top" },
@@ -23,24 +23,14 @@ export function Footer() {
         <div>
           <Logo size="footer" />
           <p className="mt-3 max-w-sm text-sm text-zinc-500">
-            Digital marketing and web development serving Alberta, Canada.
-            Custom platforms and growth, built under one roof.
+            {`Web development, local SEO, and digital marketing for Alberta companies. Serving ${DIGISOL_SERVICE_CITIES.slice(0, 3).join(", ")}, and local businesses across the province.`}
           </p>
           <a href="https://wwwdigisol.com" className={`mt-3 ${linkClass}`}>
             <Globe className="h-4 w-4 shrink-0" aria-hidden="true" />
             wwwdigisol.com
           </a>
-          <TrackedLink
-            href={DIGISOL_FACEBOOK_URL}
-            eventName="social_click"
-            eventParams={{ network: "facebook", location: "footer" }}
-            target="_blank"
-            rel="noopener noreferrer me"
-            className={`mt-2 ${linkClass}`}
-          >
-            <Facebook className="h-4 w-4 shrink-0" aria-hidden="true" />
-            Follow us on Facebook
-          </TrackedLink>
+          <ListingLinks location="footer" />
+          <GoogleRating location="footer" />
         </div>
 
         <div className="space-y-8">
@@ -68,7 +58,8 @@ export function Footer() {
         </div>
       </div>
       <p className="mx-auto mt-8 max-w-6xl border-t border-zinc-800 pt-6 text-sm text-zinc-500">
-        © {new Date().getFullYear()} DigiSol. All rights reserved.
+        © {new Date().getFullYear()} DigiSol. {DIGISOL_REGION}. All rights
+        reserved.
       </p>
     </footer>
   );

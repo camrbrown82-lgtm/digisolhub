@@ -10,25 +10,25 @@ const services: {
   {
     icon: Code2,
     title: "Custom Web & App Development",
-    body: "React, Next.js, and custom platforms engineered for high performance—no template bloat, no brittle page builders.",
+    body: "React, Next.js, and custom platforms for Alberta companies — high performance, no template bloat, no brittle page builders.",
     accent: "blue",
   },
   {
     icon: Megaphone,
     title: "Search & Paid Media Campaigns",
-    body: "Targeted Meta Ads, Search Ads, and local SEO built to dominate the queries and audiences that actually convert.",
+    body: "Google Ads, Meta Ads, and local SEO for Calgary, Edmonton, and nearby Alberta markets — so local searches turn into customers.",
     accent: "indigo",
   },
   {
     icon: TrendingUp,
     title: "Full-Funnel Integration & CRO",
-    body: "Turn visitors into leads with custom analytics, conversion paths, and email/lead workflows wired into the product.",
+    body: "Turn local visitors into leads with analytics, conversion paths, and email/lead workflows wired into the product.",
     accent: "blue",
   },
   {
     icon: ShoppingBag,
     title: "E-Commerce & Platform Solutions",
-    body: "Scalable online stores and custom auction/web platforms designed to sell, list, and grow without fighting the stack.",
+    body: "Online stores and custom auction/web platforms for Alberta retailers and service businesses that need to sell, list, and grow.",
     accent: "indigo",
   },
 ];
@@ -52,8 +52,8 @@ export function Services() {
             Engineering &amp; Marketing Solutions
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-zinc-400">
-            Four practices, one engagement. Ship the platform, fill the funnel,
-            and keep both in the same loop.
+            Four practices, one engagement for local Alberta companies. Ship
+            the platform, fill the local funnel, and keep both in the same loop.
           </p>
         </div>
         <ul className="mt-12 grid gap-6 sm:grid-cols-2">

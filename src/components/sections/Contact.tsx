@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Send } from "lucide-react";
 import { BrandCard } from "@/components/BrandCard";
+import { GoogleRating } from "@/components/LocalListings";
 import { trackEvent } from "@/lib/analytics";
 
 const fieldClass =
@@ -68,11 +69,11 @@ export function Contact() {
             id="contact-heading"
             className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl"
           >
-            Ready to Scale Your Online Presence?
+            Ready to Scale Your Alberta Business?
           </h2>
           <p className="mt-4 text-zinc-400">
-            Get in touch for a direct project quote or free strategy
-            consultation.
+            Get a project quote or free strategy consult for local SEO, web
+            development, and campaigns in Calgary, Edmonton, and across Alberta.
           </p>
         </div>
         <BrandCard
@@ -200,6 +201,9 @@ export function Contact() {
               </button>
             </form>
         </BrandCard>
+        <div className="mt-6 flex justify-center">
+          <GoogleRating location="contact" />
+        </div>
       </div>
     </section>
   );

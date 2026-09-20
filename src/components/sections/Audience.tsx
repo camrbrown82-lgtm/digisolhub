@@ -6,20 +6,20 @@ const audiences = [
     icon: Rocket,
     title: "For Startups",
     accent: "blue" as BrandAccent,
-    body: "Rapid deployment, cost-effective full-stack MVP builds, launch strategy, and immediate market positioning—so you ship, get found, and learn in weeks, not quarters.",
+    body: "Rapid deployment, cost-effective full-stack MVP builds, launch strategy, and local Alberta market positioning—so you ship, get found nearby, and learn in weeks, not quarters.",
     points: [
       "Rapid deployment and lean launch timelines",
       "Cost-effective full-stack MVP builds",
-      "Launch strategy and immediate market positioning",
+      "Launch strategy and Alberta market positioning",
     ],
   },
   {
     icon: Building2,
     title: "For Established Companies",
     accent: "indigo" as BrandAccent,
-    body: "Site performance overhauls, advanced marketing integration, conversion optimization, and modernizing legacy web platforms without stalling the business.",
+    body: "Site performance overhauls, local marketing integration, conversion optimization, and modernizing legacy web platforms for established Alberta companies.",
     points: [
-      "Site performance overhauls that restore speed and SEO",
+      "Site performance overhauls that restore speed and local SEO",
       "Advanced marketing integration across campaigns and product",
       "CRO and modernization of legacy web platforms",
     ],
@@ -45,8 +45,9 @@ export function Audience() {
             Who We Help
           </h2>
           <p className="mt-4 text-zinc-400">
-            Different stages. The same dual-threat playbook: code that
-            converts, and marketing that can actually ship.
+            Local Alberta companies first. Startups and established businesses
+            in Calgary, Edmonton, and across the province get the same
+            dual-threat playbook: code that converts, and marketing that ships.
           </p>
         </div>
         <div className="mt-12 grid gap-6 lg:grid-cols-2">

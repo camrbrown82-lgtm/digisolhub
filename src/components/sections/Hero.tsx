@@ -1,6 +1,7 @@
-import { ArrowRight, Facebook, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
+import { GoogleRating, ListingLinks } from "@/components/LocalListings";
 import { TrackedLink } from "@/components/TrackedLink";
-import { DIGISOL_FACEBOOK_URL } from "@/lib/site";
+import { DIGISOL_SERVICE_CITIES } from "@/lib/site";
 
 export function Hero() {
   return (
@@ -20,7 +21,7 @@ export function Hero() {
       <div className="relative mx-auto max-w-5xl text-center">
         <p className="mb-8 inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1.5 text-xs font-medium tracking-wide text-indigo-300 sm:text-sm">
           <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          Custom Web Engineering &amp; Digital Growth
+          Alberta-first web engineering &amp; local digital growth
         </p>
         <h1
           id="hero-heading"
@@ -29,19 +30,23 @@ export function Hero() {
           Digital Marketing{" "}
           <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
             &amp; Web Development
-          </span>
+          </span>{" "}
+          in Alberta
         </h1>
         <p className="mx-auto mt-8 max-w-3xl text-balance text-2xl font-semibold tracking-tight text-zinc-100 sm:text-3xl">
           Where Engineering Meets Growth
         </p>
         <p className="mx-auto mt-4 max-w-3xl text-balance text-lg font-medium tracking-tight text-zinc-300 sm:text-xl">
-          High-Converting Websites &amp; Growth Marketing Built Under One Roof
+          High-converting websites and local growth marketing for Alberta
+          companies
         </p>
         <p className="mx-auto mt-6 max-w-2xl text-pretty text-base leading-relaxed text-zinc-300 sm:text-lg">
-          Stop choosing between a developer who doesn&apos;t understand
-          marketing and a marketer who can&apos;t write code. We build fast,
-          custom web platforms and execute the marketing strategies that scale
-          them.
+          We start with local businesses. Custom web platforms, local SEO, Google
+          Ads, and Meta campaigns built for Calgary, Edmonton, and companies
+          across Alberta — so nearby customers can find you and convert.
+        </p>
+        <p className="mx-auto mt-4 max-w-2xl text-sm font-medium tracking-wide text-indigo-300">
+          {DIGISOL_SERVICE_CITIES.join(" · ")} · Across Alberta
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <TrackedLink
@@ -62,17 +67,10 @@ export function Hero() {
             Explore Services
           </TrackedLink>
         </div>
-        <TrackedLink
-          href={DIGISOL_FACEBOOK_URL}
-          eventName="social_click"
-          eventParams={{ network: "facebook", location: "hero" }}
-          target="_blank"
-          rel="noopener noreferrer me"
-          className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-indigo-300 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
-        >
-          <Facebook className="h-4 w-4" aria-hidden="true" />
-          Follow us on Facebook
-        </TrackedLink>
+        <ListingLinks location="hero" />
+        <div className="mt-5 flex justify-center">
+          <GoogleRating location="hero" />
+        </div>
       </div>
     </section>
   );

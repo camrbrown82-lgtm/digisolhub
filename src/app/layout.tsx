@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
-import { DIGISOL_FACEBOOK_URL, DIGISOL_SITE_URL } from "@/lib/site";
+import { DIGISOL_FACEBOOK_URL, DIGISOL_GOOGLE_LISTING_URL, DIGISOL_PHONE, DIGISOL_SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const inter = Inter({
@@ -11,9 +11,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "DigiSol | Digital Marketing & Web Development",
+  title: "DigiSol | Web Development & Digital Marketing in Alberta",
   description:
-    "DigiSol is a digital marketing and web development studio. We build high-converting websites and run the growth marketing that scales them.",
+    "Alberta-first web development and digital marketing for local companies. Custom websites, local SEO, Google Ads, and Meta campaigns in Calgary, Edmonton, and across Alberta.",
   metadataBase: new URL(DIGISOL_SITE_URL),
   verification: {
     google: "QwmR9VlADhodbnOuBT3FM-XaaBAyM9BLcz5bLfRdi8Y",
@@ -27,26 +27,27 @@ export const metadata: Metadata = {
     apple: "/logo.jpg",
   },
   openGraph: {
-    title: "DigiSol | Code + Growth, Built Together",
+    title: "DigiSol | Web Development & Digital Marketing in Alberta",
     description:
-      "Custom web development and digital marketing that convert. One partner from first click to closed deal.",
+      "Custom websites, local SEO, and growth marketing for Alberta companies. One partner from first click to closed deal.",
     url: DIGISOL_SITE_URL,
     siteName: "DigiSol",
+    locale: "en_CA",
     type: "website",
-    images: [{ url: "/logo.jpg", alt: "DigiSol — Engineering & Growth" }],
+    images: [{ url: "/logo.jpg", alt: "DigiSol — Engineering & Growth in Alberta" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "DigiSol | Code + Growth, Built Together",
+    title: "DigiSol | Web Development & Digital Marketing in Alberta",
     description:
-      "Custom web development and digital marketing that convert. One partner from first click to closed deal.",
+      "Custom websites, local SEO, and growth marketing for Alberta companies. One partner from first click to closed deal.",
     images: ["/logo.jpg"],
   },
 };
 
 const organizationJsonLd = {
   "@context": "https://schema.org",
-  "@type": ["Organization", "ProfessionalService"],
+  "@type": ["LocalBusiness", "ProfessionalService"],
   name: "DigiSol",
   legalName: "DigiSol",
   url: DIGISOL_SITE_URL,
@@ -58,19 +59,35 @@ const organizationJsonLd = {
   },
   image: `${DIGISOL_SITE_URL}/logo.jpg`,
   description:
-    "DigiSol provides digital marketing and custom web development. High-converting websites and growth marketing built under one roof.",
+    "Alberta web development and digital marketing studio. Custom websites, local SEO, Google Ads, and Meta campaigns for local companies in Calgary, Edmonton, and across Alberta.",
   email: "cam.r.brown82@gmail.com",
-  telephone: "+1-587-577-0782",
+  telephone: DIGISOL_PHONE,
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Carstairs",
+    addressRegion: "AB",
+    postalCode: "T0M 0N0",
+    addressCountry: "CA",
+  },
   areaServed: [
+    { "@type": "City", name: "Calgary" },
+    { "@type": "City", name: "Edmonton" },
+    { "@type": "City", name: "Red Deer" },
+    { "@type": "City", name: "Airdrie" },
+    { "@type": "City", name: "Carstairs" },
     { "@type": "AdministrativeArea", name: "Alberta" },
     { "@type": "Country", name: "Canada" },
   ],
   serviceType: [
-    "Digital Marketing",
     "Web Development",
-    "Search Engine Optimization",
+    "Digital Marketing",
+    "Local SEO",
+    "Google Ads",
+    "Meta Ads",
     "Conversion Rate Optimization",
+    "E-Commerce Development",
   ],
+  hasMap: DIGISOL_GOOGLE_LISTING_URL,
   founder: {
     "@type": "Person",
     name: "Cameron Brown",
@@ -78,7 +95,7 @@ const organizationJsonLd = {
     description:
       "Certified Full Stack Developer and Digital Marketing and Social Media Specialist",
   },
-  sameAs: [DIGISOL_FACEBOOK_URL],
+  sameAs: [DIGISOL_FACEBOOK_URL, DIGISOL_GOOGLE_LISTING_URL],
 };
 
 export default function RootLayout({
@@ -87,7 +104,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en-CA" className={inter.variable}>
       <body className="font-sans min-h-screen bg-zinc-950 text-zinc-100">
         <Script
           src="https://cdn.cookiehub.eu/c2/d9c0b74d.js"

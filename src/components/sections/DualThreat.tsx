@@ -31,7 +31,7 @@ const columns: Advantage[] = [
       },
       {
         icon: Zap,
-        text: "Lightning-fast load times that protect SEO and conversions",
+        text: "Lightning-fast load times that protect Alberta SEO and conversions",
       },
       {
         icon: LayoutTemplate,
@@ -54,11 +54,11 @@ const columns: Advantage[] = [
       },
       {
         icon: Target,
-        text: "Targeted Meta & Search campaigns that match the product",
+        text: "Targeted Meta & Search campaigns for Alberta local companies",
       },
       {
         icon: MapPin,
-        text: "Local SEO optimization that wins the map pack",
+        text: "Local SEO that wins the Calgary, Edmonton, and Alberta map pack",
       },
       {
         icon: LineChart,
@@ -84,11 +84,11 @@ export function DualThreat() {
             id="why-heading"
             className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl"
           >
-            The DigiSol Advantage
+            The DigiSol Advantage for Alberta
           </h2>
           <p className="mt-4 text-zinc-400">
-            Engineering that can actually convert. Marketing that can actually
-            ship. Two disciplines, one accountable team.
+            Engineering that converts local search into booked work. Marketing
+            that can actually ship. Built first for Alberta companies.
           </p>
         </div>
 
