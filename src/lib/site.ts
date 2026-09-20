@@ -4,7 +4,7 @@ export const DIGISOL_FOUNDER_TITLE = "Founder & CEO";
 export const DIGISOL_FACEBOOK_URL =
   "https://www.facebook.com/profile.php?id=61594465430522&sk=about";
 export const DIGISOL_LINKEDIN_URL =
-  "https://www.linkedin.com/in/cameron-brown-6a9a7a3b8";
+  "https://www.linkedin.com/in/cameron-brown-digisol";
 export const DIGISOL_GOOGLE_LISTING_URL =
   "https://www.google.com/search?q=DigiSol+Airdrie+Alberta+website+designer";
 export const DIGISOL_PHONE = "+1-587-577-0782";
