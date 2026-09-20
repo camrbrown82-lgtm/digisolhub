@@ -1,4 +1,5 @@
 import { parseFromAddress } from "@/lib/email";
+import { DispatchSendButton } from "@/components/hub/DispatchSendButton";
 
 function status(ok: boolean) {
   return ok ? "Configured" : "Missing";
@@ -18,6 +19,7 @@ export default function IntegrationsPage() {
     },
     { name: "OpenAI", ok: Boolean(process.env.OPENAI_API_KEY?.trim()) },
     { name: "Inngest", ok: Boolean(process.env.INNGEST_EVENT_KEY) },
+    { name: "Dispatch cron secret", ok: Boolean(process.env.CRON_SECRET?.trim()) },
     { name: "Web3Forms", ok: Boolean(process.env.WEB3FORMS_ACCESS_KEY || process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY) },
     { name: "Google Ads", ok: Boolean(process.env.NEXT_PUBLIC_GOOGLE_ADS_ID?.trim()) },
   ];
@@ -53,9 +55,13 @@ export default function IntegrationsPage() {
           opened/clicked/bounced.
         </p>
         <p className="mt-3">
-          Inngest serve path:{" "}
-          <code className="text-zinc-200">/api/inngest</code>
+          DigiSol Dispatch: readers subscribe after an issue. A daily cron at{" "}
+          <code className="text-zinc-200">/api/cron/dispatch</code> emails the
+          list when a new issue is published. Set{" "}
+          <code className="text-zinc-200">CRON_SECRET</code> in Vercel. Contacts
+          are tagged <code className="text-zinc-200">dispatch</code>.
         </p>
+        <DispatchSendButton />
         <p className="mt-3">
           Google Ads: set <code className="text-zinc-200">NEXT_PUBLIC_GOOGLE_ADS_ID</code>{" "}
           to the <code className="text-zinc-200">AW-***********</code> ID, and{" "}

@@ -188,9 +188,25 @@ async function executeMatchingWorkflows(
   }
 }
 
+export const sendDispatchIssues = inngest.createFunction(
+  {
+    id: "send-dispatch-issues",
+    triggers: [{ cron: "TZ=America/Edmonton 0 10 * * *" }],
+  },
+  async () => {
+    const { createAdminClient, hasAdminClient } = await import(
+      "@/lib/supabase/admin"
+    );
+    const { sendNewDispatchIssues } = await import("@/lib/dispatchMail");
+    if (!hasAdminClient()) return { skipped: true };
+    return sendNewDispatchIssues(createAdminClient());
+  },
+);
+
 export const functions = [
   runWorkflowsOnLead,
   runWorkflowsOnTag,
   runWorkflowsOnOpen,
   runSingleWorkflow,
+  sendDispatchIssues,
 ];

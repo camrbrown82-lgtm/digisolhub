@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { DispatchExport } from "@/components/DispatchExport";
+import { DispatchSubscribe } from "@/components/DispatchSubscribe";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { TrackedLink } from "@/components/TrackedLink";
@@ -133,7 +134,10 @@ export default function DispatchIssuePage({ params }: PageProps) {
               </section>
             ))}
           </div>
-          <div className="mt-12 rounded-2xl border border-indigo-400/25 bg-indigo-500/10 p-6 text-center">
+          <div className="mt-12">
+            <DispatchSubscribe sourceSlug={issue.slug} />
+          </div>
+          <div className="mt-8 rounded-2xl border border-indigo-400/25 bg-indigo-500/10 p-6 text-center">
             <h2 className="text-xl font-semibold text-white">
               Ready to apply this in Alberta?
             </h2>

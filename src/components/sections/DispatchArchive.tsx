@@ -1,5 +1,6 @@
 import { ArrowRight, Newspaper } from "lucide-react";
 import { BrandCard } from "@/components/BrandCard";
+import { DispatchSubscribe } from "@/components/DispatchSubscribe";
 import { TrackedLink } from "@/components/TrackedLink";
 import { DISPATCH_ISSUES, dispatchPath } from "@/lib/dispatch";
 
@@ -24,7 +25,8 @@ export function DispatchArchive() {
           <p className="mt-4 text-zinc-400">
             Local SEO, citations, reviews, and Next.js engineering notes for
             Airdrie, Calgary, Edmonton, and Red Deer. Read the issue, then
-            export it to your socials.
+            export it to your socials — or subscribe below for the next one
+            by email.
           </p>
         </div>
         <ul className="mt-12 grid gap-6 lg:grid-cols-1">
@@ -71,6 +73,9 @@ export function DispatchArchive() {
             </li>
           ))}
         </ul>
+        <div className="mx-auto mt-12 max-w-2xl">
+          <DispatchSubscribe />
+        </div>
       </div>
     </section>
   );

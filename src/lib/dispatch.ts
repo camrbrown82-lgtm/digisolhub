@@ -90,7 +90,16 @@ export function getDispatchIssue(slug: string) {
 }
 
 export function latestDispatchIssue() {
-  return DISPATCH_ISSUES[0];
+  return [...DISPATCH_ISSUES].sort((a, b) =>
+    b.publishedAt.localeCompare(a.publishedAt),
+  )[0];
+}
+
+export function publishedDispatchIssues(asOf = new Date()) {
+  const today = asOf.toISOString().slice(0, 10);
+  return DISPATCH_ISSUES.filter((issue) => issue.publishedAt <= today).sort(
+    (a, b) => a.publishedAt.localeCompare(b.publishedAt),
+  );
 }
 
 export function dispatchSocialPack(issue: DispatchIssue) {
