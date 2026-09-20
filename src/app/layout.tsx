@@ -73,6 +73,9 @@ const organizationJsonLd = {
   founder: {
     "@type": "Person",
     name: "Cameron Brown",
+    jobTitle: "Founder & CEO",
+    description:
+      "Certified Full Stack Developer and Digital Marketing and Social Media Specialist",
   },
 };
 

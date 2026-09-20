@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
+import { ContactInfo } from "@/components/ContactInfo";
 import { Logo } from "@/components/Logo";
 import { TrackedLink } from "@/components/TrackedLink";
 
@@ -12,9 +13,30 @@ const links = [
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+
+    const setHeaderHeight = () => {
+      document.documentElement.style.setProperty(
+        "--header-h",
+        `${header.offsetHeight}px`,
+      );
+    };
+
+    setHeaderHeight();
+    const observer = new ResizeObserver(setHeaderHeight);
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, [open]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-zinc-950/80 backdrop-blur-xl">
+    <header
+      ref={headerRef}
+      className="sticky top-0 z-50 border-b border-white/10 bg-zinc-950/80 backdrop-blur-xl"
+    >
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-indigo-600 focus:px-3 focus:py-2 focus:text-sm focus:text-white"
@@ -22,8 +44,11 @@ export function Navbar() {
         Skip to content
       </a>
       <div className="flex w-full items-center justify-between gap-4 px-4 py-5 sm:px-6 lg:px-8">
-        <Logo />
-        <nav className="hidden items-center gap-8 md:flex" aria-label="Primary">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-5 gap-y-2">
+          <Logo />
+          <ContactInfo location="hero" />
+        </div>
+        <nav className="hidden items-center gap-6 lg:flex xl:gap-8" aria-label="Primary">
           {links.map((link) => (
             <a
               key={link.href}
@@ -50,7 +75,7 @@ export function Navbar() {
         </nav>
         <button
           type="button"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 text-zinc-200 md:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 text-zinc-200 lg:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
           aria-expanded={open}
           aria-controls="mobile-nav"
           onClick={() => setOpen((v) => !v)}
@@ -62,7 +87,7 @@ export function Navbar() {
       {open && (
         <nav
           id="mobile-nav"
-          className="border-t border-white/10 px-4 py-4 md:hidden"
+          className="border-t border-white/10 px-4 py-4 lg:hidden"
           aria-label="Mobile"
         >
           <ul className="flex flex-col gap-3">

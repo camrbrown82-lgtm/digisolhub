@@ -6,8 +6,25 @@
   color-scheme: dark;
 }
 
+:root {
+  --header-h: 8.5rem;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --header-h: 10.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --header-h: 12.5rem;
+  }
+}
+
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: var(--header-h);
 }
 
 body {

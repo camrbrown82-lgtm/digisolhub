@@ -1,6 +1,6 @@
-import { Globe, Mail, Phone } from "lucide-react";
+import { Globe } from "lucide-react";
+import { ContactInfo } from "@/components/ContactInfo";
 import { Logo } from "@/components/Logo";
-import { TrackedLink } from "@/components/TrackedLink";
 
 const jumps = [
   { href: "/#top", label: "Top" },
@@ -16,7 +16,7 @@ const linkClass =
 
 export function Footer() {
   return (
-    <footer className="border-t border-zinc-800 px-4 py-10 sm:px-6 lg:px-8">
+    <footer className="border-t border-zinc-800 bg-zinc-950 px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-2 lg:items-start">
         <div>
           <Logo size="footer" />
@@ -50,45 +50,7 @@ export function Footer() {
             <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
               Contact
             </p>
-            <ul className="mt-3 space-y-2">
-              <li className="text-sm text-zinc-400">
-                Owner{" "}
-                <span className="font-medium text-zinc-200">Cameron Brown</span>
-              </li>
-              <li>
-                <TrackedLink
-                  href="tel:+15875770782"
-                  eventName="contact_click"
-                  eventParams={{ method: "phone", location: "footer" }}
-                  className={linkClass}
-                >
-                  <Phone className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  1-587-577-0782
-                </TrackedLink>
-              </li>
-              <li>
-                <TrackedLink
-                  href="mailto:cam.r.brown82@gmail.com"
-                  eventName="contact_click"
-                  eventParams={{ method: "email_gmail", location: "footer" }}
-                  className={linkClass}
-                >
-                  <Mail className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  cam.r.brown82@gmail.com
-                </TrackedLink>
-              </li>
-              <li>
-                <TrackedLink
-                  href="mailto:digisol2026@yahoo.com"
-                  eventName="contact_click"
-                  eventParams={{ method: "email_yahoo", location: "footer" }}
-                  className={linkClass}
-                >
-                  <Mail className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  digisol2026@yahoo.com
-                </TrackedLink>
-              </li>
-            </ul>
+            <ContactInfo location="footer" />
           </div>
         </div>
       </div>

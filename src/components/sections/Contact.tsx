@@ -2,14 +2,11 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Phone, Send, User } from "lucide-react";
-import { TrackedLink } from "@/components/TrackedLink";
+import { Send } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 
 const fieldClass =
   "mt-1.5 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2.5 text-sm text-white placeholder:text-zinc-500 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30";
-
-const OWNER_EMAIL = "cam.r.brown82@gmail.com";
 
 export function Contact() {
   const router = useRouter();
@@ -61,8 +58,8 @@ export function Contact() {
       className="border-t border-white/10 bg-zinc-900/40 px-4 py-20 sm:px-6 lg:px-8"
       aria-labelledby="contact-heading"
     >
-      <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-2 lg:items-start">
-        <div>
+      <div className="mx-auto max-w-xl">
+        <div className="text-center">
           <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
             Contact
           </p>
@@ -76,51 +73,9 @@ export function Contact() {
             Get in touch for a direct project quote or free strategy
             consultation.
           </p>
-          <ul className="mt-8 space-y-3 text-sm text-zinc-300">
-            <li className="flex items-center gap-3">
-              <User className="h-4 w-4 shrink-0 text-indigo-400" aria-hidden="true" />
-              <span>
-                Owner{" "}
-                <span className="font-medium text-white">Cameron Brown</span>
-              </span>
-            </li>
-            <li>
-              <TrackedLink
-                href="tel:+15875770782"
-                eventName="contact_click"
-                eventParams={{ method: "phone", location: "contact" }}
-                className="inline-flex items-center gap-3 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
-              >
-                <Phone className="h-4 w-4 shrink-0 text-indigo-400" aria-hidden="true" />
-                1-587-577-0782
-              </TrackedLink>
-            </li>
-            <li>
-              <TrackedLink
-                href={`mailto:${OWNER_EMAIL}`}
-                eventName="contact_click"
-                eventParams={{ method: "email_gmail", location: "contact" }}
-                className="inline-flex items-center gap-3 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
-              >
-                <Mail className="h-4 w-4 shrink-0 text-indigo-400" aria-hidden="true" />
-                {OWNER_EMAIL}
-              </TrackedLink>
-            </li>
-            <li>
-              <TrackedLink
-                href="mailto:digisol2026@yahoo.com"
-                eventName="contact_click"
-                eventParams={{ method: "email_yahoo", location: "contact" }}
-                className="inline-flex items-center gap-3 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
-              >
-                <Mail className="h-4 w-4 shrink-0 text-indigo-400" aria-hidden="true" />
-                digisol2026@yahoo.com
-              </TrackedLink>
-            </li>
-          </ul>
         </div>
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 backdrop-blur-md sm:p-8">
-            <form onSubmit={onSubmit} className="space-y-4">
+        <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 backdrop-blur-md sm:p-8">
+          <form onSubmit={onSubmit} className="space-y-4">
               <input
                 type="checkbox"
                 name="botcheck"

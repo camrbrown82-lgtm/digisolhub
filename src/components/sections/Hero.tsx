@@ -5,7 +5,7 @@ export function Hero() {
   return (
     <section
       id="top"
-      className="relative overflow-hidden px-4 pb-20 pt-16 sm:px-6 sm:pt-24 lg:px-8 lg:pb-28"
+      className="relative overflow-hidden px-4 py-16 sm:px-6 sm:py-24 lg:px-8"
       aria-labelledby="hero-heading"
     >
       <div
