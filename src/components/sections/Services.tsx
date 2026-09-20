@@ -1,25 +1,35 @@
-import { Code2, Megaphone, TrendingUp, ShoppingBag } from "lucide-react";
+import { Code2, Megaphone, TrendingUp, ShoppingBag, type LucideIcon } from "lucide-react";
+import { BrandCard, brandAccent, type BrandAccent } from "@/components/BrandCard";
 
-const services = [
+const services: {
+  icon: LucideIcon;
+  title: string;
+  body: string;
+  accent: BrandAccent;
+}[] = [
   {
     icon: Code2,
     title: "Custom Web & App Development",
     body: "React, Next.js, and custom platforms engineered for high performance—no template bloat, no brittle page builders.",
+    accent: "blue",
   },
   {
     icon: Megaphone,
     title: "Search & Paid Media Campaigns",
     body: "Targeted Meta Ads, Search Ads, and local SEO built to dominate the queries and audiences that actually convert.",
+    accent: "indigo",
   },
   {
     icon: TrendingUp,
     title: "Full-Funnel Integration & CRO",
     body: "Turn visitors into leads with custom analytics, conversion paths, and email/lead workflows wired into the product.",
+    accent: "blue",
   },
   {
     icon: ShoppingBag,
     title: "E-Commerce & Platform Solutions",
     body: "Scalable online stores and custom auction/web platforms designed to sell, list, and grow without fighting the stack.",
+    accent: "indigo",
   },
 ];
 
@@ -27,7 +37,7 @@ export function Services() {
   return (
     <section
       id="services"
-      className="border-t border-white/10 bg-zinc-900/40 px-4 py-20 sm:px-6 lg:px-8"
+      className="border-t border-white/10 px-4 py-20 sm:px-6 lg:px-8"
       aria-labelledby="services-heading"
     >
       <div className="mx-auto max-w-6xl">
@@ -47,21 +57,26 @@ export function Services() {
           </p>
         </div>
         <ul className="mt-12 grid gap-6 sm:grid-cols-2">
-          {services.map(({ icon: Icon, title, body }) => (
-            <li key={title}>
-              <article className="group h-full rounded-2xl border border-white/10 bg-zinc-950/80 p-8 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:border-indigo-400/60 hover:shadow-[0_0_40px_-12px] hover:shadow-indigo-500/40">
-                <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-300 transition-colors duration-300 group-hover:bg-indigo-500/25 group-hover:text-indigo-200">
-                  <Icon className="h-6 w-6" aria-hidden="true" />
-                </span>
-                <h3 className="mt-5 text-xl font-semibold text-white">
-                  {title}
-                </h3>
-                <p className="mt-3 text-sm leading-relaxed text-zinc-400 transition-colors duration-300 group-hover:text-zinc-300">
-                  {body}
-                </p>
-              </article>
-            </li>
-          ))}
+          {services.map(({ icon: Icon, title, body, accent }) => {
+            const styles = brandAccent[accent];
+            return (
+              <li key={title} className="h-full">
+                <BrandCard accent={accent} className="h-full">
+                  <span
+                    className={`inline-flex h-12 w-12 items-center justify-center rounded-xl ${styles.icon}`}
+                  >
+                    <Icon className="h-6 w-6" aria-hidden="true" />
+                  </span>
+                  <h3 className="mt-5 text-xl font-semibold text-white">
+                    {title}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-zinc-200">
+                    {body}
+                  </p>
+                </BrandCard>
+              </li>
+            );
+          })}
         </ul>
       </div>
     </section>

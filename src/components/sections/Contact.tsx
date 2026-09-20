@@ -3,10 +3,11 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Send } from "lucide-react";
+import { BrandCard } from "@/components/BrandCard";
 import { trackEvent } from "@/lib/analytics";
 
 const fieldClass =
-  "mt-1.5 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2.5 text-sm text-white placeholder:text-zinc-500 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30";
+  "mt-1.5 w-full rounded-lg border border-indigo-400/25 bg-zinc-950/80 px-3 py-2.5 text-sm text-white placeholder:text-zinc-500 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30";
 
 export function Contact() {
   const router = useRouter();
@@ -55,7 +56,7 @@ export function Contact() {
   return (
     <section
       id="contact"
-      className="border-t border-white/10 bg-zinc-900/40 px-4 py-20 sm:px-6 lg:px-8"
+      className="border-t border-white/10 px-4 py-20 sm:px-6 lg:px-8"
       aria-labelledby="contact-heading"
     >
       <div className="mx-auto max-w-xl">
@@ -74,7 +75,12 @@ export function Contact() {
             consultation.
           </p>
         </div>
-        <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 backdrop-blur-md sm:p-8">
+        <BrandCard
+          as="div"
+          accent="indigo"
+          innerClassName="p-6 sm:p-8"
+          className="mt-8"
+        >
           <form onSubmit={onSubmit} className="space-y-4">
               <input
                 type="checkbox"
@@ -193,7 +199,7 @@ export function Contact() {
                 <Send className="h-4 w-4" aria-hidden="true" />
               </button>
             </form>
-        </div>
+        </BrandCard>
       </div>
     </section>
   );

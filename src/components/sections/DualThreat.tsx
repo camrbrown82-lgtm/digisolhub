@@ -10,12 +10,13 @@ import {
   LineChart,
   type LucideIcon,
 } from "lucide-react";
+import { BrandCard, brandAccent, type BrandAccent } from "@/components/BrandCard";
 
 type Advantage = {
   icon: LucideIcon;
   title: string;
   items: { icon: LucideIcon; text: string }[];
-  accent: "blue" | "indigo";
+  accent: BrandAccent;
 };
 
 const columns: Advantage[] = [
@@ -67,23 +68,6 @@ const columns: Advantage[] = [
   },
 ];
 
-const accentClasses = {
-  blue: {
-    shell:
-      "bg-gradient-to-br from-blue-400/60 via-blue-500/20 to-zinc-800/40",
-    icon: "bg-blue-500/15 text-blue-300",
-    heading: "text-blue-300",
-    bullet: "text-blue-400",
-  },
-  indigo: {
-    shell:
-      "bg-gradient-to-br from-indigo-400/60 via-indigo-500/20 to-zinc-800/40",
-    icon: "bg-indigo-500/15 text-indigo-300",
-    heading: "text-indigo-300",
-    bullet: "text-indigo-400",
-  },
-};
-
 export function DualThreat() {
   return (
     <section
@@ -110,39 +94,34 @@ export function DualThreat() {
 
         <div className="mt-12 grid gap-6 lg:grid-cols-2">
           {columns.map((column) => {
-            const styles = accentClasses[column.accent];
+            const styles = brandAccent[column.accent];
             const Icon = column.icon;
             return (
-              <article
-                key={column.title}
-                className={`rounded-2xl p-[1px] ${styles.shell} shadow-xl shadow-black/30`}
-              >
-                <div className="h-full rounded-[15px] bg-zinc-900/50 p-8 backdrop-blur-md">
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`inline-flex h-12 w-12 items-center justify-center rounded-xl ${styles.icon}`}
-                    >
-                      <Icon className="h-6 w-6" aria-hidden="true" />
-                    </span>
-                    <h3 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
-                      {column.title}
-                    </h3>
-                  </div>
-                  <ul className="mt-8 space-y-4">
-                    {column.items.map(({ icon: ItemIcon, text }) => (
-                      <li key={text} className="flex gap-3">
-                        <ItemIcon
-                          className={`mt-0.5 h-5 w-5 shrink-0 ${styles.bullet}`}
-                          aria-hidden="true"
-                        />
-                        <span className="text-base leading-relaxed text-zinc-200">
-                          {text}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+              <BrandCard key={column.title} accent={column.accent}>
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`inline-flex h-12 w-12 items-center justify-center rounded-xl ${styles.icon}`}
+                  >
+                    <Icon className="h-6 w-6" aria-hidden="true" />
+                  </span>
+                  <h3 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
+                    {column.title}
+                  </h3>
                 </div>
-              </article>
+                <ul className="mt-8 space-y-4">
+                  {column.items.map(({ icon: ItemIcon, text }) => (
+                    <li key={text} className="flex gap-3">
+                      <ItemIcon
+                        className={`mt-0.5 h-5 w-5 shrink-0 ${styles.bullet}`}
+                        aria-hidden="true"
+                      />
+                      <span className="text-base leading-relaxed text-zinc-200">
+                        {text}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </BrandCard>
             );
           })}
         </div>
