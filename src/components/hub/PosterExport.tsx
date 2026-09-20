@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { Check, Copy, Download, Facebook, Instagram, Linkedin, Share2 } from "lucide-react";
+import { shareToInstagram } from "@/lib/instagramShare";
 import { type PosterSocialPack } from "@/lib/posterSocial";
-import { DIGISOL_INSTAGRAM_HANDLE, DIGISOL_INSTAGRAM_URL } from "@/lib/site";
+import { DIGISOL_INSTAGRAM_HANDLE } from "@/lib/site";
 
 export function PosterExport({
   pack,
@@ -13,15 +14,30 @@ export function PosterExport({
   companyName: string;
 }) {
   const [copied, setCopied] = useState<"facebook" | "linkedin" | "instagram" | "twitter" | "url" | "">("");
+  const [igStatus, setIgStatus] = useState("");
   const urls = pack.urls?.length ? pack.urls : pack.url ? [pack.url] : [];
   const slug = companyName.toLowerCase().replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "") || "poster";
-  const instagramUrl = pack.instagramUrl || DIGISOL_INSTAGRAM_URL;
   const instagramHandle = pack.instagramHandle || DIGISOL_INSTAGRAM_HANDLE;
 
   async function copy(key: typeof copied, value: string) {
     await navigator.clipboard.writeText(value);
     setCopied(key);
     window.setTimeout(() => setCopied(""), 2000);
+  }
+
+  async function shareInstagram() {
+    setIgStatus("Sharing…");
+    const result = await shareToInstagram({
+      caption: pack.instagram,
+      url: pack.url,
+      imageUrls: urls,
+    });
+    setIgStatus(
+      result === "shared"
+        ? "Shared — pick Instagram in the sheet"
+        : "Caption copied — paste with your slide in Instagram",
+    );
+    window.setTimeout(() => setIgStatus(""), 3500);
   }
 
   function downloadPack() {
@@ -50,8 +66,9 @@ export function PosterExport({
         Export to socials
       </p>
       <p className="mt-1 text-xs text-zinc-400">
-        LinkedIn, X, Facebook, and Instagram carousel copy for @
-        {instagramHandle}. Download slides or the PDF.
+        LinkedIn, X, Facebook, and Instagram for @{instagramHandle}. On phone,
+        Share to Instagram opens the system share sheet with your caption and
+        slides.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <button
@@ -106,15 +123,14 @@ export function PosterExport({
           <Linkedin className="h-3.5 w-3.5" aria-hidden="true" />
           Share on LinkedIn
         </a>
-        <a
-          href={instagramUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={() => void shareInstagram()}
           className="inline-flex items-center gap-2 rounded-full border border-indigo-400/40 px-3 py-2 text-xs font-semibold text-indigo-200 hover:bg-indigo-500/15"
         >
           <Instagram className="h-3.5 w-3.5" aria-hidden="true" />
-          Open Instagram @{instagramHandle}
-        </a>
+          Share to Instagram
+        </button>
         {pack.twitter ? (
           <a
             href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(pack.twitter)}`}
@@ -165,6 +181,7 @@ export function PosterExport({
           Download social pack
         </button>
       </div>
+      {igStatus ? <p className="mt-3 text-xs text-indigo-200">{igStatus}</p> : null}
     </div>
   );
 }

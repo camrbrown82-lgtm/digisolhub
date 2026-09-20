@@ -5,7 +5,6 @@ import { TrackedLink } from "@/components/TrackedLink";
 import {
   DIGISOL_FACEBOOK_URL,
   DIGISOL_GOOGLE_LISTING_URL,
-  DIGISOL_INSTAGRAM_HANDLE,
   DIGISOL_INSTAGRAM_URL,
   DIGISOL_LINKEDIN_URL,
 } from "@/lib/site";
@@ -83,7 +82,7 @@ export function ListingLinks({ location }: { location: ListingLocation }) {
         className={location === "footer" ? `mt-2 ${className}` : className}
       >
         <Instagram className="h-4 w-4 shrink-0" aria-hidden="true" />
-        Instagram @{DIGISOL_INSTAGRAM_HANDLE}
+        Follow us on Instagram
       </TrackedLink>
       <TrackedLink
         href={DIGISOL_GOOGLE_LISTING_URL}

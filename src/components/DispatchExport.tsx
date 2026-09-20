@@ -7,19 +7,36 @@ import {
   dispatchSocialPack,
   type DispatchIssue,
 } from "@/lib/dispatch";
-import { DIGISOL_INSTAGRAM_HANDLE, DIGISOL_INSTAGRAM_URL } from "@/lib/site";
+import { shareToInstagram } from "@/lib/instagramShare";
+import { DIGISOL_INSTAGRAM_HANDLE } from "@/lib/site";
 
 type PackKey = "facebook" | "linkedin" | "instagram";
 
 export function DispatchExport({ issue }: { issue: DispatchIssue }) {
   const pack = dispatchSocialPack(issue);
   const [copied, setCopied] = useState<PackKey | "url" | "">("");
+  const [igStatus, setIgStatus] = useState("");
 
   async function copy(key: PackKey | "url", value: string) {
     await navigator.clipboard.writeText(value);
     setCopied(key);
     trackEvent("dispatch_export", { format: key, slug: issue.slug });
     window.setTimeout(() => setCopied(""), 2000);
+  }
+
+  async function shareInstagram() {
+    setIgStatus("Sharing…");
+    trackEvent("dispatch_export", { format: "instagram_share", slug: issue.slug });
+    const result = await shareToInstagram({
+      caption: pack.instagram,
+      url: pack.url,
+    });
+    setIgStatus(
+      result === "shared"
+        ? "Shared — pick Instagram in the sheet"
+        : "Caption copied — paste in Instagram",
+    );
+    window.setTimeout(() => setIgStatus(""), 3500);
   }
 
   function download() {
@@ -40,8 +57,9 @@ export function DispatchExport({ issue }: { issue: DispatchIssue }) {
         Export to socials
       </p>
       <p className="mt-1 text-xs text-zinc-400">
-        Copy a ready caption or download the full pack. Instagram posts go to @
-        {DIGISOL_INSTAGRAM_HANDLE}. Every link points to wwwdigisol.com.
+        Copy a ready caption or share straight to Facebook, LinkedIn, or
+        Instagram (@{DIGISOL_INSTAGRAM_HANDLE}). Every link points to
+        wwwdigisol.com.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <button
@@ -104,18 +122,14 @@ export function DispatchExport({ issue }: { issue: DispatchIssue }) {
           <Linkedin className="h-3.5 w-3.5" aria-hidden="true" />
           Share on LinkedIn
         </a>
-        <a
-          href={DIGISOL_INSTAGRAM_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() =>
-            trackEvent("dispatch_export", { format: "instagram_open", slug: issue.slug })
-          }
+        <button
+          type="button"
+          onClick={() => void shareInstagram()}
           className="inline-flex items-center gap-2 rounded-full border border-indigo-400/40 px-3 py-2 text-xs font-semibold text-indigo-200 hover:bg-indigo-500/15"
         >
           <Instagram className="h-3.5 w-3.5" aria-hidden="true" />
-          Open Instagram @{DIGISOL_INSTAGRAM_HANDLE}
-        </a>
+          Share to Instagram
+        </button>
         <button
           type="button"
           onClick={() => copy("url", pack.url)}
@@ -137,6 +151,7 @@ export function DispatchExport({ issue }: { issue: DispatchIssue }) {
           Download social pack
         </button>
       </div>
+      {igStatus ? <p className="mt-3 text-xs text-indigo-200">{igStatus}</p> : null}
     </div>
   );
 }

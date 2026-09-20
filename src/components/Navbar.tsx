@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { ContactInfo } from "@/components/ContactInfo";
+import { HeaderSocialLinks } from "@/components/HeaderSocialLinks";
 import { Logo } from "@/components/Logo";
 import { TrackedLink } from "@/components/TrackedLink";
 
@@ -47,21 +48,27 @@ export function Navbar() {
       <div className="grid w-full items-center gap-x-6 gap-y-3 px-4 py-4 sm:px-6 xl:grid-cols-[auto_minmax(0,1fr)_auto] lg:px-8 lg:py-5">
         <div className="flex items-center justify-between gap-3 lg:contents">
           <Logo />
-          <button
-            type="button"
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 text-zinc-200 lg:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
-            aria-expanded={open}
-            aria-controls="mobile-nav"
-            onClick={() => setOpen((v) => !v)}
-          >
-            <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
-            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+          <div className="flex items-center gap-2 lg:hidden">
+            <HeaderSocialLinks location="nav_mobile" />
+            <button
+              type="button"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 text-zinc-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+              aria-expanded={open}
+              aria-controls="mobile-nav"
+              onClick={() => setOpen((v) => !v)}
+            >
+              <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
+              {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
         <div className="header-contact hidden min-w-0 w-full xl:block">
           <ContactInfo location="hero" />
         </div>
-        <nav className="hidden items-center justify-end gap-6 lg:flex xl:gap-8" aria-label="Primary">
+        <nav
+          className="hidden items-center justify-end gap-4 lg:flex xl:gap-6"
+          aria-label="Primary"
+        >
           {links.map((link) => (
             <a
               key={link.href}
@@ -71,6 +78,7 @@ export function Navbar() {
               {link.label}
             </a>
           ))}
+          <HeaderSocialLinks location="nav" />
           <TrackedLink
             href="/#contact"
             eventName="cta_click"
@@ -105,11 +113,20 @@ export function Navbar() {
                 </a>
               </li>
             ))}
+            <li className="px-3 py-1">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                Follow us
+              </p>
+              <HeaderSocialLinks location="nav_mobile" />
+            </li>
             <li>
               <TrackedLink
                 href="/#contact"
                 eventName="cta_click"
-                eventParams={{ cta_name: "book_consultation", location: "nav_mobile" }}
+                eventParams={{
+                  cta_name: "book_consultation",
+                  location: "nav_mobile",
+                }}
                 className="block rounded-full bg-indigo-600 px-4 py-2.5 text-center text-sm font-semibold text-white"
                 onClick={() => setOpen(false)}
               >
