@@ -1,5 +1,10 @@
 import { ArrowRight, Newspaper } from "lucide-react";
 import { BrandCard } from "@/components/BrandCard";
+import {
+  DispatchEyebrow,
+  DispatchTitle,
+  DISPATCH_GRADIENT,
+} from "@/components/DispatchHeadings";
 import { DispatchSubscribe } from "@/components/DispatchSubscribe";
 import { TrackedLink } from "@/components/TrackedLink";
 import { DISPATCH_ISSUES, dispatchPath } from "@/lib/dispatch";
@@ -13,15 +18,10 @@ export function DispatchArchive() {
     >
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
-            DigiSol Dispatch
-          </p>
-          <h2
-            id="dispatch-heading"
-            className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl"
-          >
+          <DispatchEyebrow>DigiSol Dispatch</DispatchEyebrow>
+          <DispatchTitle as="h2" id="dispatch-heading" className="mt-3">
             Monthly off-page SEO for Alberta companies
-          </h2>
+          </DispatchTitle>
           <p className="mt-4 text-zinc-400">
             Local SEO, citations, reviews, and Next.js engineering notes for
             Airdrie, Calgary, Edmonton, and Red Deer. Read the issue, then
@@ -39,7 +39,9 @@ export function DispatchArchive() {
                       <Newspaper className="h-4 w-4" aria-hidden="true" />
                       Volume {issue.volume} · {issue.month} {issue.year}
                     </p>
-                    <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+                    <h3
+                      className={`mt-3 text-2xl font-semibold tracking-tight ${DISPATCH_GRADIENT}`}
+                    >
                       {issue.title}
                     </h3>
                     <p className="mt-3 text-sm leading-relaxed text-zinc-200">

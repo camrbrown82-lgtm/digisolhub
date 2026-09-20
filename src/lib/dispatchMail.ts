@@ -45,7 +45,7 @@ export function dispatchIssueEmailBody(
   const accent = dispatchAccent(brand);
   const who = escapeHtml(firstName(name));
   return `<p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:${escapeHtml(accent)};">DigiSol Dispatch · ${escapeHtml(issue.month)} ${issue.year}</p>
-<p style="margin:0 0 16px;font-size:22px;font-weight:700;line-height:1.3;color:#09090b;">${escapeHtml(issue.title)}</p>
+<p style="margin:0 0 16px;font-size:22px;font-weight:700;line-height:1.3;color:#4f46e5;">${escapeHtml(issue.title)}</p>
 <p style="margin:0 0 12px;">Hey ${who},</p>
 <p style="margin:0 0 12px;">The ${escapeHtml(issue.month)} issue is live. ${escapeHtml(issue.excerpt)}</p>
 ${emailCtaButton(url, "Read this month's Dispatch", accent)}
@@ -63,7 +63,7 @@ export function dispatchWelcomeEmailBody(
   const accent = dispatchAccent(brand);
   const who = escapeHtml(firstName(name));
   return `<p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:${escapeHtml(accent)};">You're on the list</p>
-<p style="margin:0 0 16px;font-size:22px;font-weight:700;line-height:1.3;color:#09090b;">Welcome to DigiSol Dispatch</p>
+<p style="margin:0 0 16px;font-size:22px;font-weight:700;line-height:1.3;color:#4f46e5;">Welcome to DigiSol Dispatch</p>
 <p style="margin:0 0 12px;">Hey ${who},</p>
 <p style="margin:0 0 12px;">Each month, when a new issue goes live, we email you the link — local SEO, website design, and the engineering that makes the traffic convert. No filler.</p>
 ${emailCtaButton(archive, "Browse the Dispatch archive", accent)}

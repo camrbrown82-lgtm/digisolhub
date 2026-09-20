@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { DispatchExport } from "@/components/DispatchExport";
+import {
+  DispatchEyebrow,
+  DispatchSectionHeading,
+  DispatchTitle,
+} from "@/components/DispatchHeadings";
 import { DispatchSubscribe } from "@/components/DispatchSubscribe";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
@@ -105,28 +110,28 @@ export default function DispatchIssuePage({ params }: PageProps) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
         />
         <article className="mx-auto max-w-3xl">
-          <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
+          <DispatchEyebrow>
             DigiSol Dispatch · Volume {issue.volume}
-          </p>
+          </DispatchEyebrow>
           <p className="mt-2 text-sm text-zinc-500">
             {issue.month} {issue.year} · {issue.readingMinutes} min read
           </p>
-          <h1 className="mt-4 text-balance text-3xl font-semibold tracking-tight text-white sm:text-5xl">
+          <DispatchTitle as="h1" className="mt-4">
             {issue.title}
-          </h1>
+          </DispatchTitle>
           <p className="mt-5 text-lg leading-relaxed text-zinc-300">
             {issue.excerpt}
           </p>
-          <div className="mt-8 space-y-10">
-            {issue.sections.map((section) => (
+          <div className="mt-10 space-y-12">
+            {issue.sections.map((section, index) => (
               <section key={section.heading}>
-                <h2 className="text-2xl font-semibold tracking-tight text-white">
+                <DispatchSectionHeading index={index}>
                   {section.heading}
-                </h2>
-                {section.body.map((paragraph, index) => (
+                </DispatchSectionHeading>
+                {section.body.map((paragraph, paragraphIndex) => (
                   <p
-                    key={`${section.heading}-${index}`}
-                    className="mt-3 text-base leading-relaxed text-zinc-300"
+                    key={`${section.heading}-${paragraphIndex}`}
+                    className="mt-4 text-base leading-relaxed text-zinc-300"
                   >
                     {paragraph}
                   </p>
@@ -138,7 +143,7 @@ export default function DispatchIssuePage({ params }: PageProps) {
             <DispatchSubscribe sourceSlug={issue.slug} />
           </div>
           <div className="mt-8 rounded-2xl border border-indigo-400/25 bg-indigo-500/10 p-6 text-center">
-            <h2 className="text-xl font-semibold text-white">
+            <h2 className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-xl font-semibold text-transparent">
               Ready to apply this in Alberta?
             </h2>
             <p className="mt-2 text-sm text-zinc-400">

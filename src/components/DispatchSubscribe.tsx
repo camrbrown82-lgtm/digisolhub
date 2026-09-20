@@ -56,7 +56,7 @@ export function DispatchSubscribe({
           <Mail className="h-5 w-5" aria-hidden="true" />
         </span>
         <div>
-          <h2 className="text-xl font-semibold text-white">
+          <h2 className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-xl font-semibold text-transparent">
             Get the next Dispatch by email
           </h2>
           <p className="mt-1 text-sm text-zinc-400">
