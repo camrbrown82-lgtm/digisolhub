@@ -11,11 +11,7 @@ const links = [
   { href: "/#why-us", label: "Why Us" },
 ];
 
-type NavbarProps = {
-  sticky?: boolean;
-};
-
-export function Navbar({ sticky = true }: NavbarProps) {
+export function Navbar() {
   const [open, setOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
 
@@ -39,11 +35,7 @@ export function Navbar({ sticky = true }: NavbarProps) {
   return (
     <header
       ref={headerRef}
-      className={
-        sticky
-          ? "sticky top-0 z-50 border-b border-white/10 bg-zinc-950"
-          : "border-b border-white/10 bg-zinc-950"
-      }
+      className="border-b border-white/10 bg-zinc-950"
     >
       <a
         href="#main"

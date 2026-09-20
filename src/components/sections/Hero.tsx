@@ -5,7 +5,7 @@ export function Hero() {
   return (
     <section
       id="top"
-      className="relative overflow-hidden bg-zinc-950 px-4 py-8 sm:px-6 sm:py-10 lg:px-8"
+      className="relative overflow-hidden px-4 py-16 sm:px-6 sm:py-24 lg:px-8"
       aria-labelledby="hero-heading"
     >
       <div
@@ -17,20 +17,20 @@ export function Hero() {
         aria-hidden="true"
       />
       <div className="relative mx-auto max-w-5xl text-center">
-        <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1.5 text-xs font-medium tracking-wide text-indigo-300 sm:text-sm">
+        <p className="mb-8 inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1.5 text-xs font-medium tracking-wide text-indigo-300 sm:text-sm">
           <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           Custom Web Engineering &amp; Digital Growth
         </p>
         <h1
           id="hero-heading"
-          className="text-balance text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl"
+          className="text-balance text-5xl font-bold tracking-tight text-white sm:text-6xl md:text-7xl lg:text-8xl"
         >
           Digital Marketing{" "}
           <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
             &amp; Web Development
           </span>
         </h1>
-        <p className="mx-auto mt-4 max-w-3xl text-balance text-2xl font-semibold tracking-tight text-zinc-100 sm:text-3xl">
+        <p className="mx-auto mt-8 max-w-3xl text-balance text-2xl font-semibold tracking-tight text-zinc-100 sm:text-3xl">
           Where Engineering Meets Growth
         </p>
         <p className="mx-auto mt-4 max-w-3xl text-balance text-lg font-medium tracking-tight text-zinc-300 sm:text-xl">
@@ -42,7 +42,7 @@ export function Hero() {
           custom web platforms and execute the marketing strategies that scale
           them.
         </p>
-        <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <TrackedLink
             href="#contact"
             eventName="cta_click"
