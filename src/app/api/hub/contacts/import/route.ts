@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
+import { normalizeCampaignChannel } from "@/lib/campaignChannels";
+import { normalizeContactAbVariant } from "@/lib/contactAbVariants";
 import { parseCsv } from "@/lib/csv";
+import { ensureCampaignChannelSchema } from "@/lib/ensureCampaignChannelSchema";
 import { findOrCreateClient, resolveClientId } from "@/lib/workspace";
 
 function parseTags(value: string) {
@@ -13,6 +16,8 @@ function parseTags(value: string) {
 export async function POST(request: Request) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
+
+  await ensureCampaignChannelSchema().catch(() => null);
 
   const form = await request.formData();
   const file = form.get("file");
@@ -73,6 +78,8 @@ export async function POST(request: Request) {
       tags,
       notes_preview: row.notes?.slice(0, 280) || null,
       client_id: clientId || null,
+      campaign_channel: normalizeCampaignChannel(row.campaign_channel),
+      ab_variant: normalizeContactAbVariant(row.ab_variant),
     };
 
     if (existing) {

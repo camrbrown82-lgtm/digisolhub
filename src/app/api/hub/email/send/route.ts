@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { brandFromClient, brandKitPrompt } from "@/lib/branding";
+import { normalizeCampaignChannel } from "@/lib/campaignChannels";
+import { normalizeContactAbVariant } from "@/lib/contactAbVariants";
 import {
   findOrCreateContactForSend,
   getResendFrom,
@@ -10,6 +12,7 @@ import {
 } from "@/lib/email";
 import { getEmailLogoUrl } from "@/lib/emailLogo";
 import { TEMPLATE_VARIABLES } from "@/lib/emailTemplates";
+import { ensureCampaignChannelSchema } from "@/lib/ensureCampaignChannelSchema";
 import {
   BRAND_COPY_TEMPERATURE,
   createOpenAIClient,
@@ -27,6 +30,8 @@ type SendBody = {
   segment?: "all" | "tag" | "service";
   tag?: string;
   service?: string;
+  campaignChannel?: string;
+  abVariant?: string;
   subject?: string;
   html?: string;
   campaignName?: string;
@@ -109,6 +114,7 @@ export async function POST(request: Request) {
   }
 
   try {
+    await ensureCampaignChannelSchema().catch(() => null);
     return await sendCampaign(supabase, body);
   } catch (err) {
     return NextResponse.json(
@@ -182,6 +188,10 @@ async function sendCampaign(
     if (body.segment === "service" && body.service) {
       query = query.eq("service", body.service);
     }
+    const channel = normalizeCampaignChannel(body.campaignChannel);
+    if (channel) query = query.eq("campaign_channel", channel);
+    const ab = normalizeContactAbVariant(body.abVariant);
+    if (ab) query = query.eq("ab_variant", ab);
 
     const { data, error: queryError } = await query;
     if (queryError) {
@@ -218,6 +228,8 @@ async function sendCampaign(
         to: body.to,
         tag: body.tag,
         service: body.service,
+        campaignChannel: body.campaignChannel || null,
+        abVariant: body.abVariant || null,
         sendMode: mode,
       },
       status: "sending",

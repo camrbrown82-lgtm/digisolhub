@@ -2,6 +2,16 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  CAMPAIGN_CHANNELS,
+  CAMPAIGN_CHANNEL_LABELS,
+  type CampaignChannel,
+} from "@/lib/campaignChannels";
+import {
+  CONTACT_AB_VARIANTS,
+  CONTACT_AB_VARIANT_LABELS,
+  type ContactAbVariant,
+} from "@/lib/contactAbVariants";
 
 const field = "hub-field";
 
@@ -20,6 +30,8 @@ export function ContactForm({
     service?: string | null;
     tags?: string[] | null;
     client_id?: string | null;
+    campaign_channel?: string | null;
+    ab_variant?: string | null;
   };
   contactId?: string;
   clients?: { id: string; name: string }[];
@@ -41,6 +53,8 @@ export function ContactForm({
       domain: String(data.get("domain") ?? ""),
       phone: String(data.get("phone") ?? ""),
       service: String(data.get("service") ?? ""),
+      campaign_channel: String(data.get("campaign_channel") ?? "") || null,
+      ab_variant: String(data.get("ab_variant") ?? "") || null,
       client_id: String(data.get("client_id") ?? "") || null,
       tags: String(data.get("tags") ?? "")
         .split(",")
@@ -109,8 +123,38 @@ export function ContactForm({
         <input name="phone" defaultValue={initial?.phone ?? ""} className={field} />
       </label>
       <label className="text-sm">
-        Service
+        Service / industry
         <input name="service" defaultValue={initial?.service ?? ""} className={field} />
+      </label>
+      <label className="text-sm">
+        Campaign channel
+        <select
+          name="campaign_channel"
+          defaultValue={initial?.campaign_channel ?? ""}
+          className={field}
+        >
+          <option value="">Unset</option>
+          {CAMPAIGN_CHANNELS.map((channel) => (
+            <option key={channel} value={channel}>
+              {CAMPAIGN_CHANNEL_LABELS[channel as CampaignChannel]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="text-sm">
+        A/B test group
+        <select
+          name="ab_variant"
+          defaultValue={initial?.ab_variant ?? ""}
+          className={field}
+        >
+          <option value="">Unassigned</option>
+          {CONTACT_AB_VARIANTS.map((variant) => (
+            <option key={variant} value={variant}>
+              {CONTACT_AB_VARIANT_LABELS[variant as ContactAbVariant]}
+            </option>
+          ))}
+        </select>
       </label>
       <label className="text-sm sm:col-span-2">
         Tags (comma-separated)

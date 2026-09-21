@@ -1,6 +1,12 @@
 import { notFound } from "next/navigation";
+import { ContactDeleteButton } from "@/components/hub/ContactDeleteButton";
 import { ContactForm } from "@/components/hub/ContactForm";
 import { ContactNotes } from "@/components/hub/ContactNotes";
+import {
+  campaignChannelLabel,
+} from "@/lib/campaignChannels";
+import { contactAbVariantLabel } from "@/lib/contactAbVariants";
+import { ensureCampaignChannelSchema } from "@/lib/ensureCampaignChannelSchema";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ContactDetailPage({
@@ -8,6 +14,7 @@ export default async function ContactDetailPage({
 }: {
   params: { id: string };
 }) {
+  await ensureCampaignChannelSchema().catch(() => null);
   const supabase = await createClient();
   const { data: clients } = await supabase.from("clients").select("id, name").order("name");
   const { data: contact } = await supabase
@@ -33,14 +40,28 @@ export default async function ContactDetailPage({
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-semibold text-white">
-          {contact.name || contact.email}
-        </h1>
-        <p className="mt-1 text-sm text-zinc-400">
-          Source {contact.source}
-          {contact.unsubscribed_at ? " · unsubscribed" : ""}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold text-white">
+            {contact.name || contact.email}
+          </h1>
+          <p className="mt-1 text-sm text-zinc-400">
+            Source {contact.source}
+            {contact.phone ? ` · ${contact.phone}` : ""}
+            {contact.campaign_channel
+              ? ` · ${campaignChannelLabel(contact.campaign_channel)}`
+              : ""}
+            {contact.ab_variant
+              ? ` · ${contactAbVariantLabel(contact.ab_variant)}`
+              : ""}
+            {contact.unsubscribed_at ? " · unsubscribed" : ""}
+          </p>
+        </div>
+        <ContactDeleteButton
+          contactId={contact.id}
+          label="Delete contact"
+          redirectTo="/hub/contacts"
+        />
       </div>
       <ContactForm contactId={contact.id} initial={contact} clients={clients ?? []} />
       <section>

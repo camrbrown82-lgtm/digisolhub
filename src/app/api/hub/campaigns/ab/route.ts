@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { assignAbVariants } from "@/lib/campaignAb";
 import { brandFromClient } from "@/lib/branding";
+import { normalizeCampaignChannel } from "@/lib/campaignChannels";
+import { normalizeContactAbVariant } from "@/lib/contactAbVariants";
 import {
   findOrCreateContactForSend,
   getResendFrom,
@@ -11,6 +13,7 @@ import {
 } from "@/lib/email";
 import { getEmailLogoUrl } from "@/lib/emailLogo";
 import { ensureCampaignAbSchema } from "@/lib/ensureCampaignAbSchema";
+import { ensureCampaignChannelSchema } from "@/lib/ensureCampaignChannelSchema";
 import { getWorkspaceClient } from "@/lib/workspace";
 
 type AbBody = {
@@ -22,6 +25,8 @@ type AbBody = {
   segment?: "all" | "tag" | "service";
   tag?: string;
   service?: string;
+  campaignChannel?: string;
+  abVariant?: string;
   to?: string;
 };
 
@@ -33,6 +38,7 @@ export async function POST(request: Request) {
   if (!schema.ok) {
     return NextResponse.json({ error: schema.error }, { status: 503 });
   }
+  await ensureCampaignChannelSchema().catch(() => null);
 
   let body: AbBody;
   try {
@@ -91,6 +97,10 @@ export async function POST(request: Request) {
     ) {
       query = query.eq("service", body.service || body.industry || "");
     }
+    const channel = normalizeCampaignChannel(body.campaignChannel);
+    if (channel) query = query.eq("campaign_channel", channel);
+    const ab = normalizeContactAbVariant(body.abVariant);
+    if (ab) query = query.eq("ab_variant", ab);
     const { data, error: queryError } = await query;
     if (queryError) {
       return NextResponse.json({ error: queryError.message }, { status: 400 });
@@ -127,6 +137,8 @@ export async function POST(request: Request) {
         to: body.to,
         tag: body.tag,
         service: body.service || body.industry,
+        campaignChannel: body.campaignChannel || null,
+        abVariant: body.abVariant || null,
         ab: true,
       },
       status: "sending",

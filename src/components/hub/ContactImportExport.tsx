@@ -78,9 +78,9 @@ export function ContactImportExport() {
         <div>
           <p className="text-sm font-medium text-white">Data sheet import / export</p>
           <p className="mt-1 text-xs text-zinc-500">
-            CSV columns: name, email, company, domain, phone, service, tags, notes.
-            Drag a sheet onto the drop zone or browse. Excel can be stored on Files
-            as a data sheet.
+            CSV columns: name, email, company, domain, phone, service, tags, notes,
+            campaign_channel, ab_variant. Drag a sheet onto the drop zone or browse.
+            Excel can be stored on Files as a data sheet.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

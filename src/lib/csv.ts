@@ -65,6 +65,16 @@ const HEADER_ALIASES: Record<string, string> = {
   labels: "tags",
   note: "notes",
   notes_preview: "notes",
+  channel: "campaign_channel",
+  marketing_channel: "campaign_channel",
+  campaign_type: "campaign_channel",
+  campaign_channel_type: "campaign_channel",
+  ab: "ab_variant",
+  variant: "ab_variant",
+  test_group: "ab_variant",
+  test_ab: "ab_variant",
+  a_b: "ab_variant",
+  ab_test: "ab_variant",
 };
 
 export function parseCsv(text: string) {
@@ -102,4 +112,6 @@ export const CONTACT_CSV_COLUMNS = [
   "service",
   "tags",
   "notes",
+  "campaign_channel",
+  "ab_variant",
 ] as const;

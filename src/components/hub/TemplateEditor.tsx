@@ -5,6 +5,16 @@ import { FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { type CompanyBrand } from "@/lib/branding";
 import { MergeFieldBar } from "@/components/hub/MergeFieldBar";
+import {
+  CAMPAIGN_CHANNELS,
+  CAMPAIGN_CHANNEL_LABELS,
+  type CampaignChannel,
+} from "@/lib/campaignChannels";
+import {
+  CONTACT_AB_VARIANTS,
+  CONTACT_AB_VARIANT_LABELS,
+  type ContactAbVariant,
+} from "@/lib/contactAbVariants";
 
 const EmailEditor = dynamic(
   () => import("@/components/hub/EmailEditor").then((mod) => mod.EmailEditor),
@@ -42,6 +52,8 @@ export function TemplateEditor({
   const [segment, setSegment] = useState<"all" | "tag" | "service">("all");
   const [tag, setTag] = useState("");
   const [service, setService] = useState("");
+  const [campaignChannel, setCampaignChannel] = useState("");
+  const [abVariant, setAbVariant] = useState("");
 
   function insertToken(token: string) {
     if (token === "{{logo}}" && logoSrc) {
@@ -89,6 +101,8 @@ export function TemplateEditor({
         segment,
         tag: tag || undefined,
         service: service || undefined,
+        campaignChannel: campaignChannel || undefined,
+        abVariant: abVariant || undefined,
       }),
     });
     const result = (await response.json()) as {
@@ -184,6 +198,36 @@ export function TemplateEditor({
               />
             </label>
           ) : null}
+          <label className="text-sm">
+            Campaign channel
+            <select
+              value={campaignChannel}
+              onChange={(event) => setCampaignChannel(event.target.value)}
+              className="hub-field"
+            >
+              <option value="">Any channel</option>
+              {CAMPAIGN_CHANNELS.map((channel) => (
+                <option key={channel} value={channel}>
+                  {CAMPAIGN_CHANNEL_LABELS[channel as CampaignChannel]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm">
+            A/B group
+            <select
+              value={abVariant}
+              onChange={(event) => setAbVariant(event.target.value)}
+              className="hub-field"
+            >
+              <option value="">Any (Unassigned + A + B)</option>
+              {CONTACT_AB_VARIANTS.map((variant) => (
+                <option key={variant} value={variant}>
+                  {CONTACT_AB_VARIANT_LABELS[variant as ContactAbVariant]}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
         <button type="button" onClick={send} className="hub-btn mt-4">
           Send campaign

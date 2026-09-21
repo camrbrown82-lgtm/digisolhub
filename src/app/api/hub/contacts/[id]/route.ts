@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
+import { normalizeCampaignChannel } from "@/lib/campaignChannels";
+import { normalizeContactAbVariant } from "@/lib/contactAbVariants";
+import { ensureCampaignChannelSchema } from "@/lib/ensureCampaignChannelSchema";
 import { emitHubEvent } from "@/lib/events";
 
 type Params = { params: { id: string } };
@@ -24,6 +27,8 @@ export async function PATCH(request: Request, { params }: Params) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
+  await ensureCampaignChannelSchema().catch(() => null);
+
   const body = (await request.json()) as Record<string, unknown>;
   const previous = await supabase
     .from("contacts")
@@ -31,9 +36,21 @@ export async function PATCH(request: Request, { params }: Params) {
     .eq("id", params.id)
     .single();
 
+  const payload = { ...body };
+  if ("campaign_channel" in payload) {
+    payload.campaign_channel = normalizeCampaignChannel(
+      typeof payload.campaign_channel === "string" ? payload.campaign_channel : null,
+    );
+  }
+  if ("ab_variant" in payload) {
+    payload.ab_variant = normalizeContactAbVariant(
+      typeof payload.ab_variant === "string" ? payload.ab_variant : null,
+    );
+  }
+
   const { error: updateError } = await supabase
     .from("contacts")
-    .update(body)
+    .update(payload)
     .eq("id", params.id);
 
   if (updateError) {

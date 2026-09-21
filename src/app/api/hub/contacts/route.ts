@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
+import { normalizeCampaignChannel } from "@/lib/campaignChannels";
+import { normalizeContactAbVariant } from "@/lib/contactAbVariants";
+import { ensureCampaignChannelSchema } from "@/lib/ensureCampaignChannelSchema";
 import { emitHubEvent } from "@/lib/events";
 import { findOrCreateClient, resolveClientId } from "@/lib/workspace";
 
@@ -22,6 +25,8 @@ export async function POST(request: Request) {
   const { user, supabase, error } = await requireHubSession();
   if (error || !user) return error;
 
+  await ensureCampaignChannelSchema().catch(() => null);
+
   const body = (await request.json()) as {
     name?: string;
     email?: string;
@@ -32,6 +37,8 @@ export async function POST(request: Request) {
     source?: string;
     tags?: string[];
     client_id?: string;
+    campaign_channel?: string | null;
+    ab_variant?: string | null;
   };
 
   const email = body.email?.trim().toLowerCase();
@@ -59,6 +66,8 @@ export async function POST(request: Request) {
       source: body.source ?? "manual",
       tags: body.tags ?? [],
       client_id: clientId || null,
+      campaign_channel: normalizeCampaignChannel(body.campaign_channel),
+      ab_variant: normalizeContactAbVariant(body.ab_variant),
     })
     .select("id")
     .single();

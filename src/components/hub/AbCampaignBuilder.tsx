@@ -3,6 +3,16 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FlaskConical, Loader2 } from "lucide-react";
+import {
+  CAMPAIGN_CHANNELS,
+  CAMPAIGN_CHANNEL_LABELS,
+  type CampaignChannel,
+} from "@/lib/campaignChannels";
+import {
+  CONTACT_AB_VARIANTS,
+  CONTACT_AB_VARIANT_LABELS,
+  type ContactAbVariant,
+} from "@/lib/contactAbVariants";
 
 type TemplateOption = { id: string; name: string; subject: string | null };
 
@@ -19,6 +29,8 @@ export function AbCampaignBuilder({
   const [splitPercentA, setSplitPercentA] = useState(50);
   const [segment, setSegment] = useState<"all" | "service" | "tag">("service");
   const [tag, setTag] = useState("");
+  const [campaignChannel, setCampaignChannel] = useState("");
+  const [abVariant, setAbVariant] = useState("");
   const [to, setTo] = useState("");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
@@ -42,6 +54,8 @@ export function AbCampaignBuilder({
           segment: to.trim() ? undefined : segment,
           service: segment === "service" ? industry : undefined,
           tag: segment === "tag" ? tag : undefined,
+          campaignChannel: campaignChannel || undefined,
+          abVariant: abVariant || undefined,
           to: to.trim() || undefined,
         }),
       });
@@ -92,7 +106,8 @@ export function AbCampaignBuilder({
           <p className="mt-1 text-sm text-zinc-400">
             Same industry audience, two template variants. DigiSol splits the
             list, tracks opens/clicks per variant, and lets you audit daily,
-            weekly, or monthly before declaring a winner.
+            weekly, or monthly before declaring a winner. Narrow by campaign
+            channel or sticky Test A / Test B assignment when needed.
           </p>
         </div>
       </div>
@@ -174,6 +189,38 @@ export function AbCampaignBuilder({
             onChange={(event) => setSplitPercentA(Number(event.target.value) || 50)}
             className="hub-field mt-1.5"
           />
+        </label>
+        <label className="text-sm text-zinc-300">
+          Campaign channel
+          <select
+            value={campaignChannel}
+            onChange={(event) => setCampaignChannel(event.target.value)}
+            className="hub-field mt-1.5"
+            disabled={Boolean(to.trim())}
+          >
+            <option value="">Any channel</option>
+            {CAMPAIGN_CHANNELS.map((channel) => (
+              <option key={channel} value={channel}>
+                {CAMPAIGN_CHANNEL_LABELS[channel as CampaignChannel]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-sm text-zinc-300">
+          Contact A/B group
+          <select
+            value={abVariant}
+            onChange={(event) => setAbVariant(event.target.value)}
+            className="hub-field mt-1.5"
+            disabled={Boolean(to.trim())}
+          >
+            <option value="">Any (Unassigned + A + B)</option>
+            {CONTACT_AB_VARIANTS.map((variant) => (
+              <option key={variant} value={variant}>
+                {CONTACT_AB_VARIANT_LABELS[variant as ContactAbVariant]}
+              </option>
+            ))}
+          </select>
         </label>
         {segment === "tag" && !to.trim() ? (
           <label className="sm:col-span-2 text-sm text-zinc-300">
