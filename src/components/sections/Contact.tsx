@@ -76,6 +76,22 @@ export function Contact() {
             custom development, local SEO, and campaigns in Airdrie, Calgary,
             Edmonton, and across Alberta.
           </p>
+          <p className="mt-3 text-sm text-zinc-500">
+            Prefer to browse packages first?{" "}
+            <a
+              href="/pricing"
+              className="font-medium text-indigo-300 underline-offset-2 transition hover:text-indigo-200 hover:underline"
+              onClick={() =>
+                trackEvent("cta_click", {
+                  cta_name: "view_pricing",
+                  location: "contact",
+                })
+              }
+            >
+              See DigiSol pricing
+            </a>
+            .
+          </p>
         </div>
         <BrandCard
           as="div"

@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { ArrowRight, MapPin } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
-import { PricingSection } from "@/components/sections/PricingSection";
 import { TrackedLink } from "@/components/TrackedLink";
 import {
   LOCATION_PAGES,
@@ -142,34 +141,37 @@ export default function LocationCityPage({ params }: PageProps) {
               Ready to grow in {page.name}?
             </h2>
             <p className="mt-2 text-sm text-zinc-400">
-              Build a DigiSol package for your industry, pay with Stripe, or
-              book a consult first.
+              Book a free consultation for website design, Next.js engineering,
+              local SEO, and full-funnel CRO — we&apos;ll scale the plan to your
+              industry.
             </p>
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+            <TrackedLink
+              href="/#contact"
+              eventName="cta_click"
+              eventParams={{
+                cta_name: "book_consultation",
+                location: `locations_${page.slug}`,
+              }}
+              className="mt-5 inline-flex items-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-indigo-500"
+            >
+              Book a Free Consultation
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </TrackedLink>
+            <p className="mt-4 text-sm text-zinc-500">
+              Or{" "}
               <TrackedLink
-                href="#pricing"
+                href="/pricing"
                 eventName="cta_click"
                 eventParams={{
                   cta_name: "view_pricing",
                   location: `locations_${page.slug}`,
                 }}
-                className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-indigo-500"
+                className="font-medium text-indigo-300 underline-offset-2 hover:underline"
               >
-                Build your pricing
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                browse DigiSol pricing
               </TrackedLink>
-              <TrackedLink
-                href="/#contact"
-                eventName="cta_click"
-                eventParams={{
-                  cta_name: "book_consultation",
-                  location: `locations_${page.slug}`,
-                }}
-                className="inline-flex items-center gap-2 rounded-full border border-white/15 px-6 py-3 text-sm font-semibold text-zinc-200 transition hover:bg-white/5"
-              >
-                Book a Free Consultation
-              </TrackedLink>
-            </div>
+              .
+            </p>
           </div>
 
           <nav className="mt-12" aria-label="Other DigiSol service cities">
@@ -192,7 +194,6 @@ export default function LocationCityPage({ params }: PageProps) {
             </ul>
           </nav>
         </article>
-        <PricingSection cityHint={page.name} />
       </main>
       <Footer />
     </>
