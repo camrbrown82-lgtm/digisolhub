@@ -20,40 +20,79 @@ import { ensureCampaignChannelSchema } from "@/lib/ensureCampaignChannelSchema";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveClient, resolveClientId } from "@/lib/workspace";
 
+type ContactListRow = {
+  id: string;
+  name: string | null;
+  email: string;
+  company: string | null;
+  phone: string | null;
+  service: string | null;
+  source: string | null;
+  tags: string[] | null;
+  unsubscribed_at: string | null;
+  created_at: string;
+  client_id: string | null;
+  campaign_channel: string | null;
+  ab_variant: string | null;
+};
+
 export default async function ContactsPage({
   searchParams,
 }: {
   searchParams: { channel?: string; ab?: string };
 }) {
-  await ensureCampaignChannelSchema().catch(() => null);
+  const schema = await ensureCampaignChannelSchema().catch((err: unknown) => ({
+    ok: false as const,
+    error: err instanceof Error ? err.message : "Schema ensure failed",
+  }));
   const supabase = await createClient();
   const active = await getActiveClient(supabase);
   const clientId = (await resolveClientId(supabase)) || active?.id || "";
   const channelFilter = normalizeCampaignChannel(searchParams.channel);
   const abFilter = normalizeContactAbVariant(searchParams.ab);
 
-  let query = supabase
-    .from("contacts")
-    .select(
-      "id, name, email, company, phone, service, source, tags, unsubscribed_at, created_at, client_id, campaign_channel, ab_variant",
-    )
-    .order("created_at", { ascending: false });
-  if (clientId) query = query.eq("client_id", clientId);
-  if (channelFilter) query = query.eq("campaign_channel", channelFilter);
-  if (abFilter) query = query.eq("ab_variant", abFilter);
-
-  const { data, error } = await query;
-  // Fallback if columns not migrated yet.
-  let contacts = data ?? [];
-  if (error) {
-    let fallback = supabase
+  async function loadContacts(includeChannelFields: boolean): Promise<{
+    data: ContactListRow[] | null;
+    error: { message: string } | null;
+  }> {
+    let next = supabase
       .from("contacts")
       .select(
-        "id, name, email, company, phone, service, source, tags, unsubscribed_at, created_at, client_id",
+        includeChannelFields
+          ? "id, name, email, company, phone, service, source, tags, unsubscribed_at, created_at, client_id, campaign_channel, ab_variant"
+          : "id, name, email, company, phone, service, source, tags, unsubscribed_at, created_at, client_id",
       )
       .order("created_at", { ascending: false });
-    if (clientId) fallback = fallback.eq("client_id", clientId);
-    const retry = await fallback;
+    if (clientId) next = next.eq("client_id", clientId);
+    if (includeChannelFields && channelFilter) {
+      next = next.eq("campaign_channel", channelFilter);
+    }
+    if (includeChannelFields && abFilter) {
+      next = next.eq("ab_variant", abFilter);
+    }
+    const result = await next;
+    return {
+      data: (result.data as ContactListRow[] | null) ?? null,
+      error: result.error,
+    };
+  }
+
+  let { data, error } = await loadContacts(true);
+  if (error) {
+    await ensureCampaignChannelSchema({ force: true }).catch(() => null);
+    const retry = await loadContacts(true);
+    data = retry.data;
+    error = retry.error;
+  }
+
+  let contacts: ContactListRow[] = data ?? [];
+  const schemaWarning = error
+    ? error.message
+    : !schema.ok
+      ? schema.error
+      : "";
+  if (error) {
+    const retry = await loadContacts(false);
     contacts = (retry.data ?? []).map((row) => ({
       ...row,
       campaign_channel: null,
@@ -84,6 +123,19 @@ export default async function ContactsPage({
       </div>
 
       <ContactImportExport />
+
+      {schemaWarning ? (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          Channel and A/B fields may not save yet: {schemaWarning}. Reload this
+          page after a minute, or open a contact and save again.
+        </div>
+      ) : null}
+
+      <p className="text-sm text-zinc-400">
+        Channel and Test A/B are sticky contact fields — set them here anytime.
+        Workflow/campaign tags are separate and get applied when automations
+        run; edit tags on each contact&apos;s detail page.
+      </p>
 
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">

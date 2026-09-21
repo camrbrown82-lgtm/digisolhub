@@ -31,3 +31,5 @@ alter table public.contacts
     ab_variant is null
     or ab_variant in ('A', 'B')
   );
+
+notify pgrst, 'reload schema';

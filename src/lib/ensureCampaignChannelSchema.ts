@@ -32,12 +32,19 @@ alter table public.contacts
     ab_variant is null
     or ab_variant in ('A', 'B')
   );
+
+-- Keep PostgREST in sync so Hub PATCH/SELECT see the new columns.
+notify pgrst, 'reload schema';
 `;
 
 let applied = false;
 
-export async function ensureCampaignChannelSchema() {
-  if (applied) return { ok: true as const, skipped: true as const };
+export async function ensureCampaignChannelSchema(options?: {
+  force?: boolean;
+}) {
+  if (applied && !options?.force) {
+    return { ok: true as const, skipped: true as const };
+  }
   const connectionString =
     process.env.POSTGRES_URL?.trim() ||
     process.env.POSTGRES_URL_NON_POOLING?.trim() ||
@@ -58,7 +65,24 @@ export async function ensureCampaignChannelSchema() {
     await client.query(SQL);
     applied = true;
     return { ok: true as const, skipped: false as const };
+  } catch (error) {
+    applied = false;
+    return {
+      ok: false as const,
+      error: error instanceof Error ? error.message : "Schema ensure failed",
+    };
   } finally {
     await client.end();
   }
+}
+
+export function isMissingContactChannelColumnError(message: string | null | undefined) {
+  if (!message) return false;
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("campaign_channel") ||
+    lower.includes("ab_variant") ||
+    lower.includes("schema cache") ||
+    lower.includes("could not find")
+  );
 }

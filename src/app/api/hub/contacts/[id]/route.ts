@@ -2,10 +2,27 @@ import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { normalizeCampaignChannel } from "@/lib/campaignChannels";
 import { normalizeContactAbVariant } from "@/lib/contactAbVariants";
-import { ensureCampaignChannelSchema } from "@/lib/ensureCampaignChannelSchema";
+import {
+  ensureCampaignChannelSchema,
+  isMissingContactChannelColumnError,
+} from "@/lib/ensureCampaignChannelSchema";
 import { emitHubEvent } from "@/lib/events";
 
 type Params = { params: { id: string } };
+
+const PATCH_KEYS = [
+  "name",
+  "email",
+  "company",
+  "domain",
+  "phone",
+  "service",
+  "tags",
+  "client_id",
+  "campaign_channel",
+  "ab_variant",
+  "unsubscribed_at",
+] as const;
 
 export async function GET(_request: Request, { params }: Params) {
   const { supabase, error } = await requireHubSession();
@@ -27,7 +44,13 @@ export async function PATCH(request: Request, { params }: Params) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
-  await ensureCampaignChannelSchema().catch(() => null);
+  const ensured = await ensureCampaignChannelSchema().catch((err: unknown) => ({
+    ok: false as const,
+    error: err instanceof Error ? err.message : "Schema ensure failed",
+  }));
+  if (!ensured.ok) {
+    console.error("[contacts PATCH] schema ensure", ensured.error);
+  }
 
   const body = (await request.json()) as Record<string, unknown>;
   const previous = await supabase
@@ -36,7 +59,12 @@ export async function PATCH(request: Request, { params }: Params) {
     .eq("id", params.id)
     .single();
 
-  const payload = { ...body };
+  const payload: Record<string, unknown> = {};
+  for (const key of PATCH_KEYS) {
+    if (!(key in body)) continue;
+    payload[key] = body[key];
+  }
+
   if ("campaign_channel" in payload) {
     payload.campaign_channel = normalizeCampaignChannel(
       typeof payload.campaign_channel === "string" ? payload.campaign_channel : null,
@@ -47,11 +75,22 @@ export async function PATCH(request: Request, { params }: Params) {
       typeof payload.ab_variant === "string" ? payload.ab_variant : null,
     );
   }
+  if ("client_id" in payload && payload.client_id === "") {
+    payload.client_id = null;
+  }
 
-  const { error: updateError } = await supabase
-    .from("contacts")
-    .update(payload)
-    .eq("id", params.id);
+  let updateError = (
+    await supabase.from("contacts").update(payload).eq("id", params.id)
+  ).error;
+
+  if (updateError && isMissingContactChannelColumnError(updateError.message)) {
+    await ensureCampaignChannelSchema({ force: true }).catch(() => null);
+    // Brief pause so PostgREST can pick up NOTIFY reload.
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    updateError = (
+      await supabase.from("contacts").update(payload).eq("id", params.id)
+    ).error;
+  }
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 400 });
