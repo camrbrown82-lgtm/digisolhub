@@ -84,6 +84,8 @@ export type SendEmailInput = {
   html?: string;
   campaignId?: string | null;
   variant?: "A" | "B" | null;
+  /** Extra BCC addresses on this single send */
+  bcc?: string[];
   companyName?: string;
   logoSrc?: string;
   clientId?: string | null;
@@ -169,6 +171,8 @@ export async function sendEmailToContact(input: SendEmailInput) {
     companyName,
     brand,
     contact.name || "there",
+    undefined,
+    contact.company,
   );
   const mergedSubject = renderMergeFields(subject, mergeVars, { logoAs: "company" });
   const mergedBody = renderMergeFields(html, mergeVars, { logoAs: "token" });
@@ -191,10 +195,19 @@ export async function sendEmailToContact(input: SendEmailInput) {
   const personalized = wrapCampaignHtml(branded, contact.email);
   const unsub = unsubscribeUrl(contact.email);
 
+  const bcc = Array.from(
+    new Set(
+      (input.bcc ?? [])
+        .map((email) => email.trim().toLowerCase())
+        .filter((email) => email.includes("@") && email !== contact.email.toLowerCase()),
+    ),
+  );
+
   const resend = new Resend(apiKey);
   const payload = {
     from,
     to: contact.email,
+    ...(bcc.length ? { bcc } : {}),
     ...(firstEnv("RESEND_REPLY_TO") ? { replyTo: firstEnv("RESEND_REPLY_TO") } : {}),
     subject: mergedSubject || `Message from ${companyName}`,
     html: personalized,

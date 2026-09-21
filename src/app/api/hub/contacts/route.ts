@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { emitHubEvent } from "@/lib/events";
-import { findOrCreateClient, getActiveClientId } from "@/lib/workspace";
+import { findOrCreateClient, resolveClientId } from "@/lib/workspace";
 
 export async function GET() {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
-  const clientId = await getActiveClientId();
+  const clientId = await resolveClientId(supabase);
   let query = supabase.from("contacts").select("*").order("created_at", { ascending: false });
   if (clientId) query = query.eq("client_id", clientId);
 
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 
   const clientId =
     body.client_id ||
-    (await getActiveClientId()) ||
+    (await resolveClientId(supabase)) ||
     (await findOrCreateClient(supabase, {
       name: body.company,
       domain: body.domain,

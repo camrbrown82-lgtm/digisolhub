@@ -67,6 +67,10 @@ export function EmailComposer({
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [recipients, setRecipients] = useState("");
+  const [bccAlso, setBccAlso] = useState("");
+  const [sendMode, setSendMode] = useState<"personalized" | "bcc" | "ai_each">(
+    "personalized",
+  );
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState<"save" | "send" | "ai" | "logo" | "">("");
   const [aiPrompt, setAiPrompt] = useState("");
@@ -78,10 +82,13 @@ export function EmailComposer({
   const active = templates.find((row) => row.id === activeId);
 
   async function loadTemplates(preferredId?: string) {
+    // Repair stale Working-on cookie (e.g. deleted DealFinder) before loading.
+    await fetch("/api/hub/workspace").catch(() => null);
+
     const response = await fetch("/api/hub/templates");
     const json = (await response.json()) as { templates?: Template[]; error?: string };
     if (!response.ok) {
-      setStatus(json.error || "Could not load templates");
+      setStatus(json.error || "Could not load templates — sign in again or check Working on.");
       return;
     }
     const next = json.templates ?? [];
@@ -96,6 +103,8 @@ export function EmailComposer({
     if (selected) {
       setSubject(selected.subject ?? "");
       setBody(selected.html ?? "");
+    } else {
+      setStatus("No templates for this company yet — click New blank or refresh Working on.");
     }
   }
 
@@ -186,26 +195,36 @@ export function EmailComposer({
   }
 
   async function save() {
-    if (!active) return false;
-    setBusy("save");
-    const response = await fetch(`/api/hub/templates/${active.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subject, html: body, name: active.name }),
-    });
-    const json = (await response.json()) as { error?: string };
-    setBusy("");
-    if (!response.ok) {
-      setStatus(json.error || "Save failed");
+    if (!active) {
+      setStatus("Pick or create a template before saving.");
       return false;
     }
-    setTemplates((list) =>
-      list.map((row) =>
-        row.id === active.id ? { ...row, subject, html: body } : row,
-      ),
-    );
-    setStatus("Saved");
-    return true;
+    setBusy("save");
+    setStatus("");
+    try {
+      const response = await fetch(`/api/hub/templates/${active.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject, html: body, name: active.name }),
+      });
+      const json = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        setStatus(json.error || "Save failed");
+        return false;
+      }
+      setTemplates((list) =>
+        list.map((row) =>
+          row.id === active.id ? { ...row, subject, html: body } : row,
+        ),
+      );
+      setStatus("Saved");
+      return true;
+    } catch {
+      setStatus("Save failed — check your connection and try again.");
+      return false;
+    } finally {
+      setBusy("");
+    }
   }
 
   async function send() {
@@ -217,41 +236,71 @@ export function EmailComposer({
       setStatus("Subject and body are required");
       return;
     }
+    if (!active) {
+      setStatus("Pick or create a template before sending.");
+      return;
+    }
     const saved = await save();
     if (!saved) return;
     setBusy("send");
-    const response = await fetch("/api/hub/email/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        templateId: active?.id,
-        subject,
-        html: body,
-        to: recipients,
-        campaignName: active?.name || subject,
-      }),
-    });
-    const json = (await response.json()) as {
-      error?: string;
-      sent?: number;
-      failed?: number;
-      from?: string;
-      results?: { error?: string }[];
-    };
-    setBusy("");
-    const via = json.from ? ` via ${json.from}` : "";
-    const failReason =
-      json.error || json.results?.find((row) => row.error)?.error || "Send failed";
-    if (!response.ok) {
-      setStatus(failReason);
-      return;
+    setStatus(
+      sendMode === "ai_each"
+        ? "Personalizing and sending…"
+        : sendMode === "bcc"
+          ? "Sending BCC blast…"
+          : "Sending…",
+    );
+    try {
+      const response = await fetch("/api/hub/email/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          templateId: active.id,
+          subject,
+          html: body,
+          to: recipients,
+          bccAlso: bccAlso.trim() || undefined,
+          mode: sendMode,
+          campaignName: active.name || subject,
+        }),
+      });
+      const json = (await response.json()) as {
+        error?: string;
+        sent?: number;
+        failed?: number;
+        personalized?: number;
+        mode?: string;
+        from?: string;
+        results?: { error?: string }[];
+      };
+      const via = json.from ? ` via ${json.from}` : "";
+      const failReason =
+        json.error || json.results?.find((row) => row.error)?.error || "Send failed";
+      if (!response.ok) {
+        setStatus(failReason);
+        return;
+      }
+      if (json.failed) {
+        setStatus(`Sent ${json.sent ?? 0} · failed ${json.failed}. ${failReason}`);
+        return;
+      }
+      const personalized =
+        json.personalized && json.personalized > 0
+          ? ` · AI tailored ${json.personalized}`
+          : "";
+      const modeLabel =
+        json.mode === "bcc"
+          ? " (BCC blast)"
+          : json.mode === "ai_each"
+            ? " (AI each)"
+            : "";
+      setStatus(`Sent ${json.sent ?? 0}${modeLabel}${personalized}${via}`);
+      router.refresh();
+    } catch {
+      setStatus("Send failed — check Resend on Integrations and try again.");
+    } finally {
+      setBusy("");
     }
-    if (json.failed) {
-      setStatus(`Sent ${json.sent ?? 0} · failed ${json.failed}. ${failReason}`);
-      return;
-    }
-    setStatus(`Sent ${json.sent ?? 0}${via}`);
-    router.refresh();
   }
 
   async function runAi(mode: "generate" | "flare") {
@@ -503,6 +552,66 @@ export function EmailComposer({
             Insert all company contacts
           </button>
         </label>
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium text-zinc-200">Send mode</legend>
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                {
+                  id: "personalized" as const,
+                  label: "Personalized",
+                  hint: "One email each · merge fields",
+                },
+                {
+                  id: "bcc" as const,
+                  label: "BCC blast",
+                  hint: "One email · everyone on BCC",
+                },
+                {
+                  id: "ai_each" as const,
+                  label: "AI each contact",
+                  hint: "Rewrite per CRM contact, then send",
+                },
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setSendMode(option.id)}
+                className={`rounded-full px-3 py-1.5 text-left text-xs transition ${
+                  sendMode === option.id
+                    ? "bg-indigo-600 text-white"
+                    : "border border-zinc-700 text-zinc-300 hover:border-indigo-500"
+                }`}
+              >
+                <span className="block font-medium">{option.label}</span>
+                <span
+                  className={`block ${
+                    sendMode === option.id ? "text-indigo-100" : "text-zinc-500"
+                  }`}
+                >
+                  {option.hint}
+                </span>
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-zinc-500">
+            {sendMode === "bcc"
+              ? "First recipient is To; the rest go on BCC. Best for announcements — merge fields only apply to the To address."
+              : sendMode === "ai_each"
+                ? "For contacts in Hub CRM, AI rewrites subject/body using their name, company, and notes (max 25 per send), then sends individually."
+                : "Each recipient gets their own email with {{name}} / {{contact_company}} filled in."}
+          </p>
+        </fieldset>
+        <label className="block text-sm">
+          Also BCC (optional)
+          <input
+            value={bccAlso}
+            onChange={(event) => setBccAlso(event.target.value)}
+            className="hub-field"
+            placeholder="you@wwwdigisol.com"
+          />
+        </label>
         <label className="block text-sm">
           Body
           <textarea
@@ -576,10 +685,18 @@ export function EmailComposer({
           <button
             type="button"
             className="hub-btn"
-            disabled={busy === "send"}
+            disabled={busy === "send" || busy === "save"}
             onClick={() => void send()}
           >
-            {busy === "send" ? "Sending…" : "Send"}
+            {busy === "send"
+              ? sendMode === "ai_each"
+                ? "Personalizing…"
+                : "Sending…"
+              : sendMode === "bcc"
+                ? "Send BCC blast"
+                : sendMode === "ai_each"
+                  ? "AI personalize & send"
+                  : "Send"}
           </button>
         </div>
         <p className="text-xs text-zinc-500">

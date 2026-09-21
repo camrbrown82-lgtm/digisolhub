@@ -17,6 +17,7 @@ export type StarterTemplate = {
 export const TEMPLATE_VARIABLES = [
   "{{name}}",
   "{{company}}",
+  "{{contact_company}}",
   "{{logo}}",
   "{{tagline}}",
   "{{primary}}",
@@ -30,7 +31,8 @@ export const TEMPLATE_VARIABLES = [
 
 export const TEMPLATE_VARIABLE_HINTS: Record<(typeof TEMPLATE_VARIABLES)[number], string> = {
   "{{name}}": "Contact name",
-  "{{company}}": "Company",
+  "{{company}}": "Your brand (Working on)",
+  "{{contact_company}}": "Recipient company",
   "{{logo}}": "Official logo",
   "{{tagline}}": "Tagline",
   "{{primary}}": "Primary color",
@@ -45,6 +47,7 @@ export const TEMPLATE_VARIABLE_HINTS: Record<(typeof TEMPLATE_VARIABLES)[number]
 export type MergeVars = {
   name?: string;
   company?: string;
+  contactCompany?: string;
   logo?: string;
   tagline?: string;
   primaryColor?: string;
@@ -70,10 +73,12 @@ export function mergeVarsFromBrand(
   },
   name?: string,
   logo?: string,
+  contactCompany?: string | null,
 ): MergeVars {
   return {
     name: name?.trim() || "there",
     company: companyName.trim() || "DigiSol",
+    contactCompany: contactCompany?.trim() || companyName.trim() || "DigiSol",
     logo,
     tagline: brand.tagline?.trim() || "",
     primaryColor: brand.primaryColor || "",
@@ -102,6 +107,10 @@ export function renderMergeFields(
   return text
     .replaceAll("{{name}}", vars.name?.trim() || "there")
     .replaceAll("{{company}}", vars.company?.trim() || "DigiSol")
+    .replaceAll(
+      "{{contact_company}}",
+      vars.contactCompany?.trim() || vars.company?.trim() || "DigiSol",
+    )
     .replaceAll("{{tagline}}", vars.tagline?.trim() || "")
     .replaceAll("{{primary}}", vars.primaryColor?.trim() || "")
     .replaceAll("{{secondary}}", vars.secondaryColor?.trim() || "")
@@ -134,7 +143,7 @@ Talk soon,
     key: "proposal",
     name: "Proposal follow-up",
     blurb: "Short nudge after you sent a quote or scope.",
-    subject: "Quick thought on your {{company}} build",
+    subject: "Quick thought on your {{contact_company}} build",
     body: `Hey {{name}},
 
 Wanted to bump the proposal while it's still fresh.

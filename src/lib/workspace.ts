@@ -15,6 +15,20 @@ export async function getActiveClientId() {
   return store.get(HUB_CLIENT_COOKIE)?.value?.trim() || "";
 }
 
+/** Cookie may point at a deleted company — resolve to a real client id. */
+export async function resolveClientId(supabase: SupabaseClient) {
+  const cookieId = await getActiveClientId();
+  if (cookieId) {
+    const { data } = await supabase
+      .from("clients")
+      .select("id")
+      .eq("id", cookieId)
+      .maybeSingle();
+    if (data?.id) return data.id as string;
+  }
+  return (await ensureDigisolClient(supabase)) || "";
+}
+
 export function applyClientFilter<T extends { eq: (col: string, val: string) => T }>(
   query: T,
   clientId: string,
@@ -95,11 +109,15 @@ export async function getActiveClient(supabase: SupabaseClient) {
     .select("id, name, domain, site_key, notes, branding")
     .eq("id", id)
     .maybeSingle();
+  if (!data) return null;
   return hydrateClientBrand(supabase, data);
 }
 
 export async function getWorkspaceClient(supabase: SupabaseClient) {
-  return (await getActiveClient(supabase)) ?? (await getDigisolClient(supabase));
+  const active = await getActiveClient(supabase);
+  if (active) return active;
+  // Stale Working-on cookie (deleted company) → house DigiSol workspace.
+  return getDigisolClient(supabase);
 }
 
 export async function contactIdsForClient(

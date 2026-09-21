@@ -26,6 +26,19 @@ export function ClientSwitcher({
     setValue(activeClientId);
   }, [activeClientId]);
 
+  useEffect(() => {
+    // Repair cookie if Working on pointed at a deleted company.
+    void fetch("/api/hub/workspace")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((json: { clientId?: string; repaired?: boolean } | null) => {
+        if (json?.repaired && json.clientId) {
+          setValue(json.clientId);
+          router.refresh();
+        }
+      })
+      .catch(() => null);
+  }, [router]);
+
   async function onChange(next: string) {
     setValue(next);
     await fetch("/api/hub/workspace", {

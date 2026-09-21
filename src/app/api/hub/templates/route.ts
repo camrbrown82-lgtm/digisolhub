@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { STARTER_TEMPLATES, starterKeyOf } from "@/lib/emailTemplates";
-import { getActiveClientId } from "@/lib/workspace";
+import { resolveClientId } from "@/lib/workspace";
 
 async function ensureStarterTemplates(
   supabase: Awaited<ReturnType<typeof requireHubSession>>["supabase"],
@@ -18,7 +18,7 @@ async function ensureStarterTemplates(
   const missing = STARTER_TEMPLATES.filter((row) => !existing.has(row.key));
   if (missing.length === 0) return;
 
-  await supabase.from("email_templates").insert(
+  const { error: insertError } = await supabase.from("email_templates").insert(
     missing.map((row) => ({
       name: row.name,
       subject: row.subject,
@@ -27,13 +27,16 @@ async function ensureStarterTemplates(
       client_id: clientId,
     })),
   );
+  if (insertError) {
+    console.error("ensureStarterTemplates", insertError.message);
+  }
 }
 
 export async function GET() {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
-  const clientId = (await getActiveClientId()) || null;
+  const clientId = (await resolveClientId(supabase)) || null;
   await ensureStarterTemplates(supabase, clientId);
 
   let query = supabase
@@ -46,7 +49,7 @@ export async function GET() {
   if (queryError) {
     return NextResponse.json({ error: queryError.message }, { status: 400 });
   }
-  return NextResponse.json({ templates: data });
+  return NextResponse.json({ templates: data, clientId });
 }
 
 export async function POST(request: Request) {
@@ -60,6 +63,7 @@ export async function POST(request: Request) {
     grapes_json?: unknown;
   };
 
+  const clientId = (await resolveClientId(supabase)) || null;
   const { data, error: insertError } = await supabase
     .from("email_templates")
     .insert({
@@ -67,7 +71,7 @@ export async function POST(request: Request) {
       subject: body.subject ?? "",
       html: body.html ?? "",
       grapes_json: body.grapes_json ?? null,
-      client_id: (await getActiveClientId()) || null,
+      client_id: clientId,
     })
     .select("id")
     .single();
