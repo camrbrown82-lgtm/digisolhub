@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { parseCsv } from "@/lib/csv";
-import { findOrCreateClient, getActiveClientId } from "@/lib/workspace";
+import { findOrCreateClient, resolveClientId } from "@/lib/workspace";
 
 function parseTags(value: string) {
   return value
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No data rows found" }, { status: 400 });
   }
 
-  const activeClientId = await getActiveClientId();
+  const activeClientId = await resolveClientId(supabase);
   let created = 0;
   let updated = 0;
   const failed: { email: string; error: string }[] = [];
