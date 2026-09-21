@@ -54,9 +54,16 @@ export async function ensureCampaignChannelSchema(options?: {
     return { ok: false as const, error: "POSTGRES_URL is not set" };
   }
 
+  // pg v8.16+ treats sslmode=require as verify-full, which breaks Supabase
+  // pooler certs. Strip sslmode and disable verification explicitly.
+  const cleaned = connectionString
+    .replace(/([?&])sslmode=[^&]*/gi, "$1")
+    .replace(/[?&]$/, "")
+    .replace(/\?&/, "?")
+    .replace(/\?$/, "");
   const client = new pg.Client({
-    connectionString,
-    ssl: connectionString.includes("localhost")
+    connectionString: cleaned,
+    ssl: cleaned.includes("localhost")
       ? undefined
       : { rejectUnauthorized: false },
   });
