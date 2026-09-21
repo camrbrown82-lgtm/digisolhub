@@ -6,9 +6,16 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/hub/", "/api/", "/auth/"],
+      disallow: [
+        "/confirmation",
+        "/hub",
+        "/hub/",
+        "/auth/",
+        "/unsubscribe",
+        "/api/",
+      ],
     },
     sitemap: `${DIGISOL_SITE_URL}/sitemap.xml`,
-    host: DIGISOL_SITE_URL,
+    host: "wwwdigisol.com",
   };
 }
