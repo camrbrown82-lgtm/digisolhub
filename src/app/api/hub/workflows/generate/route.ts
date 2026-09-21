@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { brandFromClient } from "@/lib/branding";
+import { ensureTagDescriptionSchema } from "@/lib/ensureTagSchema";
 import {
   createOpenAIClient,
   getOpenAIApiKey,
@@ -11,7 +12,7 @@ import {
   buildWorkflowUserPrompt,
   parseWorkflowAiResponse,
 } from "@/lib/workflowAi";
-import { getActiveClientId, getWorkspaceClient } from "@/lib/workspace";
+import { resolveClientId, getWorkspaceClient } from "@/lib/workspace";
 
 export async function POST(request: Request) {
   const { supabase, error } = await requireHubSession();
@@ -34,6 +35,7 @@ export async function POST(request: Request) {
     offer?: string;
     triggerHint?: string;
     notes?: string;
+    tagGuidance?: string;
     save?: boolean;
   };
 
@@ -45,7 +47,10 @@ export async function POST(request: Request) {
     );
   }
 
+  await ensureTagDescriptionSchema().catch(() => null);
+
   const active = await getWorkspaceClient(supabase);
+  const clientId = await resolveClientId(supabase);
   const { companyName } = brandFromClient(active);
   const openai = createOpenAIClient();
 
@@ -64,6 +69,7 @@ export async function POST(request: Request) {
           offer: body.offer?.trim(),
           triggerHint: body.triggerHint?.trim(),
           notes: body.notes?.trim(),
+          tagGuidance: body.tagGuidance?.trim(),
           companyName,
         }),
       },
@@ -86,7 +92,30 @@ export async function POST(request: Request) {
   }
 
   if (body.save === false) {
-    return NextResponse.json({ workflow: plan, saved: false });
+    return NextResponse.json({ workflow: plan, tags: plan.tags, saved: false });
+  }
+
+  // Upsert tag catalogue so descriptions live in Hub CRM tags.
+  for (const tag of plan.tags) {
+    const { data: existing } = await supabase
+      .from("tags")
+      .select("id, description")
+      .ilike("name", tag.name)
+      .maybeSingle();
+    if (existing?.id) {
+      if (tag.description) {
+        await supabase
+          .from("tags")
+          .update({ description: tag.description })
+          .eq("id", existing.id);
+      }
+    } else {
+      await supabase.from("tags").insert({
+        name: tag.name,
+        description: tag.description || null,
+        color: "#6366f1",
+      });
+    }
   }
 
   const { data, error: insertError } = await supabase
@@ -96,7 +125,7 @@ export async function POST(request: Request) {
       trigger: plan.trigger,
       graph: plan.graph,
       enabled: false,
-      client_id: (await getActiveClientId()) || null,
+      client_id: clientId || null,
     })
     .select("id, name, trigger, enabled, updated_at")
     .single();
@@ -112,6 +141,7 @@ export async function POST(request: Request) {
     id: data.id,
     workflow: data,
     summary: plan.summary,
+    tags: plan.tags,
     saved: true,
   });
 }

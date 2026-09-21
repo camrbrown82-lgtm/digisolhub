@@ -70,6 +70,12 @@ function WorkflowStepNode({ data, selected }: NodeProps) {
               : "Email"}
       </p>
       <p className="mt-0.5 text-sm font-medium text-white">{nodeTitle(record)}</p>
+      {action === "add_tag" && record.tagDescription ? (
+        <p className="mt-1 max-w-[200px] text-[11px] leading-snug text-zinc-400">
+          {String(record.tagDescription).slice(0, 90)}
+          {String(record.tagDescription).length > 90 ? "…" : ""}
+        </p>
+      ) : null}
       <Handle type="source" position={Position.Bottom} className="!bg-zinc-400" />
     </div>
   );

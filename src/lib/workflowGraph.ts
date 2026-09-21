@@ -123,6 +123,11 @@ export function sanitizeWorkflowGraph(
         .toLowerCase()
         .replace(/[^a-z0-9_-]+/g, "-")
         .slice(0, 40) || "nurture";
+      if (typeof data.tagDescription === "string" && data.tagDescription.trim()) {
+        nodeData.tagDescription = data.tagDescription.trim().slice(0, 240);
+      } else if (typeof data.description === "string" && data.description.trim()) {
+        nodeData.tagDescription = data.description.trim().slice(0, 240);
+      }
     }
     if (action === "send_template") {
       // Template IDs are filled in the editor — keep a note in the label.

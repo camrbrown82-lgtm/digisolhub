@@ -85,6 +85,12 @@ export function WorkflowEditor({
           nextData.tag = tag;
           nextData.label = `Add tag: ${tag}`;
         }
+        if (
+          action === "add_tag" &&
+          typeof nextData.tagDescription === "string"
+        ) {
+          nextData.tagDescription = nextData.tagDescription.trim().slice(0, 240);
+        }
         if (action === "wait" && typeof nextData.duration === "string") {
           nextData.label = `Wait ${nextData.duration}`;
         }
@@ -105,7 +111,12 @@ export function WorkflowEditor({
       kind === "wait"
         ? { label: "Wait 1 day", action: kind, duration: "1d" }
         : kind === "add_tag"
-          ? { label: `Add tag: ${tag}`, action: kind, tag }
+          ? {
+              label: `Add tag: ${tag}`,
+              action: kind,
+              tag,
+              tagDescription: "",
+            }
           : {
               label: templates[0]?.name || "Send email",
               action: kind,
@@ -281,9 +292,21 @@ export function WorkflowEditor({
                   placeholder="warm-lead"
                 />
               </label>
+              <label className="block text-sm text-zinc-300">
+                Tag description
+                <textarea
+                  value={String(selectedData.tagDescription || "")}
+                  onChange={(event) =>
+                    updateSelectedData({ tagDescription: event.target.value })
+                  }
+                  rows={3}
+                  className="hub-field mt-1.5 min-h-[72px]"
+                  placeholder="When this tag is applied and what it means for follow-up…"
+                />
+              </label>
               <p className="text-xs text-zinc-500">
-                Applied to the contact when this step runs. Lowercase letters, numbers,
-                hyphens.
+                AI fills this when it generates a workflow. Edit anytime — save
+                writes it back onto the step.
               </p>
               {tagSuggestions.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
