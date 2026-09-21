@@ -6,6 +6,7 @@ import {
   FILE_KIND_LABELS,
   inferFileKind,
   MAX_FILE_BYTES,
+  MAX_FILE_MB,
   type FileKind,
 } from "@/lib/files";
 import { createBrowserSupabase } from "@/lib/supabase/client";
@@ -34,7 +35,7 @@ export function FileImporter() {
 
     for (const file of files.slice(0, 25)) {
       if (file.size > MAX_FILE_BYTES) {
-        failed.push(`${file.name} is larger than 20MB`);
+        failed.push(`${file.name} is larger than ${MAX_FILE_MB}MB`);
         continue;
       }
       const ext = file.name.split(".").pop() || "bin";
@@ -109,7 +110,7 @@ export function FileImporter() {
             required
             multiple
             className="hub-field"
-            accept="image/*,.pdf,.csv,.tsv,.xls,.xlsx,.ods,.doc,.docx,.ppt,.pptx,.txt,.zip"
+            accept="image/*,video/*,.mp4,.webm,.mov,.pdf,.csv,.tsv,.xls,.xlsx,.ods,.doc,.docx,.ppt,.pptx,.txt,.zip"
           />
         </label>
         <button type="submit" className="hub-btn">
@@ -117,8 +118,8 @@ export function FileImporter() {
         </button>
       </div>
       <p className="mt-3 text-xs text-zinc-500">
-        Images, PDFs, spreadsheets, and other related files. Select a company under
-        Working on first so they stay with that business. Max 20MB each.
+        Images, videos, PDFs, spreadsheets, and other related files. Select a company under
+        Working on first so they stay with that business. Max {MAX_FILE_MB}MB each.
       </p>
       {status ? <p className="mt-2 text-sm text-zinc-300">{status}</p> : null}
     </form>

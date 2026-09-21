@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
-import { inferFileKind, isFileKind, MAX_FILE_BYTES } from "@/lib/files";
+import { inferFileKind, isFileKind, MAX_FILE_BYTES, MAX_FILE_MB } from "@/lib/files";
 import { getActiveClientId } from "@/lib/workspace";
 
 const BUCKETS = ["assets", "email-images", "ai-posters"] as const;
@@ -15,7 +15,7 @@ async function registerAsset(
   },
 ) {
   if (input.file.size > MAX_FILE_BYTES) {
-    throw new Error(`${input.file.name} is larger than 20MB`);
+    throw new Error(`${input.file.name} is larger than ${MAX_FILE_MB}MB`);
   }
   if (!BUCKETS.includes(input.bucket as (typeof BUCKETS)[number])) {
     throw new Error("Invalid bucket");

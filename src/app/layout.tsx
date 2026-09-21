@@ -3,6 +3,13 @@ import { Inter } from "next/font/google";
 import Script from "next/script";
 import { DigiSolSiteBeacon } from "@/components/DigiSolSiteBeacon";
 import {
+  WEBSITE_AUDIT_DESCRIPTION,
+  WEBSITE_AUDIT_PAGE_URL,
+  WEBSITE_AUDIT_TITLE,
+  WEBSITE_AUDIT_UPLOAD_DATE,
+  WEBSITE_AUDIT_VIDEO_URL,
+} from "@/lib/media";
+import {
   DIGISOL_CITY,
   DIGISOL_GOOGLE_LISTING_URL,
   DIGISOL_LINKEDIN_URL,
@@ -111,6 +118,16 @@ const organizationJsonLd = {
       "Certified Full Stack Developer and Digital Marketing and Social Media Specialist",
   },
   sameAs: [...DIGISOL_SAME_AS],
+  subjectOf: {
+    "@type": "VideoObject",
+    name: WEBSITE_AUDIT_TITLE,
+    description: WEBSITE_AUDIT_DESCRIPTION,
+    url: WEBSITE_AUDIT_PAGE_URL,
+    contentUrl: WEBSITE_AUDIT_VIDEO_URL,
+    embedUrl: WEBSITE_AUDIT_PAGE_URL,
+    thumbnailUrl: `${DIGISOL_SITE_URL}/logo.jpg`,
+    uploadDate: WEBSITE_AUDIT_UPLOAD_DATE,
+  },
 };
 
 export default function RootLayout({

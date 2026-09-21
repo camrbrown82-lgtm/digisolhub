@@ -12,6 +12,7 @@ const links = [
   { href: "/pricing", label: "Pricing" },
   { href: "/#why-us", label: "Why Us" },
   { href: "/#dispatch", label: "Dispatch" },
+  { href: "/media/website-audit", label: "Media" },
 ];
 
 export function Navbar() {

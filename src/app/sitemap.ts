@@ -29,6 +29,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.9,
     },
+    {
+      url: `${DIGISOL_SITE_URL}/media/website-audit`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.75,
+    },
     ...LOCATION_PAGES.map((page) => ({
       url: locationUrl(page.slug),
       lastModified: new Date(),

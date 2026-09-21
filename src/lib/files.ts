@@ -1,16 +1,20 @@
-export const FILE_KINDS = ["image", "datasheet", "related"] as const;
+export const FILE_KINDS = ["image", "datasheet", "video", "related"] as const;
 export type FileKind = (typeof FILE_KINDS)[number];
 
 export const FILE_KIND_LABELS: Record<FileKind, string> = {
   image: "Images",
   datasheet: "Data sheets",
+  video: "Videos",
   related: "Related files",
 };
 
 const IMAGE_EXT = new Set(["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "tif", "tiff", "avif"]);
 const DATASHEET_EXT = new Set(["pdf", "csv", "tsv", "xls", "xlsx", "ods", "numbers"]);
+const VIDEO_EXT = new Set(["mp4", "webm", "mov", "m4v", "avi", "mkv"]);
 
-export const MAX_FILE_BYTES = 20 * 1024 * 1024;
+/** Hub Files max size — raised for campaign videos (~50MB). */
+export const MAX_FILE_BYTES = 50 * 1024 * 1024;
+export const MAX_FILE_MB = Math.round(MAX_FILE_BYTES / (1024 * 1024));
 
 export function extensionOf(filename: string) {
   return filename.split(".").pop()?.trim().toLowerCase() || "";
@@ -23,6 +27,7 @@ export function isFileKind(value: string): value is FileKind {
 export function inferFileKind(filename: string, mimeType = ""): FileKind {
   const ext = extensionOf(filename);
   if (IMAGE_EXT.has(ext) || mimeType.startsWith("image/")) return "image";
+  if (VIDEO_EXT.has(ext) || mimeType.startsWith("video/")) return "video";
   if (
     DATASHEET_EXT.has(ext) ||
     mimeType === "application/pdf" ||

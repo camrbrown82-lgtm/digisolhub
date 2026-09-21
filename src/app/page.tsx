@@ -6,6 +6,7 @@ import { DispatchArchive } from "@/components/sections/DispatchArchive";
 import { DualThreat } from "@/components/sections/DualThreat";
 import { Hero } from "@/components/sections/Hero";
 import { Services } from "@/components/sections/Services";
+import { WebsiteAudit } from "@/components/sections/WebsiteAudit";
 
 export default function HomePage() {
   return (
@@ -15,6 +16,7 @@ export default function HomePage() {
         <Hero />
         <DualThreat />
         <Services />
+        <WebsiteAudit />
         <Audience />
         <DispatchArchive />
         <Contact />

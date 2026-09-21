@@ -11,6 +11,7 @@ const FILTERS = [
   { href: "/hub/assets", label: "All files", kind: "" },
   { href: "/hub/assets?kind=image", label: "Images", kind: "image" },
   { href: "/hub/assets?kind=datasheet", label: "Data sheets", kind: "datasheet" },
+  { href: "/hub/assets?kind=video", label: "Videos", kind: "video" },
   { href: "/hub/assets?kind=related", label: "Related", kind: "related" },
 ] as const;
 
@@ -65,7 +66,7 @@ export default async function AssetsPage({
       </div>
       {files.length === 0 ? (
         <p className="rounded-2xl border border-zinc-800 px-4 py-8 text-sm text-zinc-500">
-          No files in this view yet. Import images, data sheets, or related files above.
+          No files in this view yet. Import images, videos, data sheets, or related files above.
         </p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
