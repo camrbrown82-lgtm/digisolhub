@@ -7,6 +7,16 @@ const nextConfig = {
       { protocol: "https", hostname: "**.supabase.co" },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.wwwdigisol.com" }],
+        destination: "https://wwwdigisol.com/:path*",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -49,6 +49,14 @@ export function Hero() {
         <p className="mx-auto mt-4 max-w-2xl text-sm font-medium tracking-wide text-indigo-300">
           {DIGISOL_SERVICE_CITIES.join(" · ")} · Across Alberta
         </p>
+        <p className="mx-auto mt-2 text-sm text-zinc-400">
+          <a
+            href="https://wwwdigisol.com"
+            className="font-medium text-zinc-300 underline-offset-4 transition hover:text-white hover:underline"
+          >
+            wwwdigisol.com
+          </a>
+        </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <TrackedLink
             href="#contact"
