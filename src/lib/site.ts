@@ -9,7 +9,10 @@ export const DIGISOL_INSTAGRAM_HANDLE = "Digi.Sol2026";
 export const DIGISOL_INSTAGRAM_URL =
   `https://www.instagram.com/${DIGISOL_INSTAGRAM_HANDLE}/`;
 export const DIGISOL_GOOGLE_LISTING_URL =
-  "https://www.google.com/search?q=DigiSol+Airdrie+Alberta+website+designer";
+  "https://g.page/r/CcL2FJtD6brkECE";
+/** Direct “Write a review” link for the Google Business Profile. */
+export const DIGISOL_GOOGLE_REVIEW_URL =
+  "https://g.page/r/CcL2FJtD6brkECE/review";
 /** Profiles Google / schema can associate with DigiSol (NAP + sameAs). */
 export const DIGISOL_SAME_AS = [
   DIGISOL_FACEBOOK_URL,

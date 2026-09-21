@@ -5,6 +5,7 @@ import { TrackedLink } from "@/components/TrackedLink";
 import {
   DIGISOL_FACEBOOK_URL,
   DIGISOL_GOOGLE_LISTING_URL,
+  DIGISOL_GOOGLE_REVIEW_URL,
   DIGISOL_INSTAGRAM_URL,
   DIGISOL_LINKEDIN_URL,
 } from "@/lib/site";
@@ -104,12 +105,12 @@ export function GoogleRating({ location }: { location: ListingLocation }) {
 
   return (
     <TrackedLink
-      href={DIGISOL_GOOGLE_LISTING_URL}
+      href={DIGISOL_GOOGLE_REVIEW_URL}
       eventName="google_rating_click"
       eventParams={{ location }}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label="Open DigiSol on Google to view ratings and leave a review"
+      aria-label="Leave a Google review for DigiSol"
       className={
         isFooter
           ? "mt-3 inline-flex items-center gap-3 rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-3 py-2 text-left transition hover:border-indigo-400/50 hover:bg-indigo-500/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
@@ -141,7 +142,7 @@ export function GoogleRating({ location }: { location: ListingLocation }) {
               : "block text-xs text-zinc-400"
           }
         >
-          See our listing and leave a review
+          Leave a Google review
         </span>
       </span>
     </TrackedLink>
