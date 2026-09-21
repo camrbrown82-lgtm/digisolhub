@@ -23,6 +23,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.85,
     },
+    {
+      url: `${DIGISOL_SITE_URL}/pricing`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
     ...LOCATION_PAGES.map((page) => ({
       url: locationUrl(page.slug),
       lastModified: new Date(),

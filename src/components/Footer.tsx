@@ -9,6 +9,8 @@ const jumps = [
   { href: "/#top", label: "Top" },
   { href: "/#why-us", label: "Why Us" },
   { href: "/#services", label: "Services" },
+  { href: "/#pricing", label: "Pricing" },
+  { href: "/pricing", label: "Build your stack" },
   { href: "/#audience", label: "Who We Help" },
   { href: "/#dispatch", label: "Dispatch" },
   { href: "/locations", label: "Locations" },

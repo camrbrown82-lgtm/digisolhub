@@ -5,6 +5,7 @@ import { Contact } from "@/components/sections/Contact";
 import { DispatchArchive } from "@/components/sections/DispatchArchive";
 import { DualThreat } from "@/components/sections/DualThreat";
 import { Hero } from "@/components/sections/Hero";
+import { PricingSection } from "@/components/sections/PricingSection";
 import { Services } from "@/components/sections/Services";
 
 export default function HomePage() {
@@ -15,6 +16,7 @@ export default function HomePage() {
         <Hero />
         <DualThreat />
         <Services />
+        <PricingSection />
         <Audience />
         <DispatchArchive />
         <Contact />

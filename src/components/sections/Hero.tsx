@@ -60,12 +60,12 @@ export function Hero() {
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </TrackedLink>
           <TrackedLink
-            href="#services"
+            href="#pricing"
             eventName="cta_click"
-            eventParams={{ cta_name: "explore_services", location: "hero" }}
+            eventParams={{ cta_name: "view_pricing", location: "hero" }}
             className="inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 sm:w-auto"
           >
-            Explore Services
+            Build Your Pricing
           </TrackedLink>
         </div>
         <ListingLinks location="hero" />

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { MapPin } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
+import { PricingSection } from "@/components/sections/PricingSection";
 import { TrackedLink } from "@/components/TrackedLink";
 import { LOCATION_PAGES, locationPath } from "@/lib/locations";
 import { DIGISOL_SITE_URL } from "@/lib/site";
@@ -62,6 +63,7 @@ export default function LocationsIndexPage() {
             </li>
           ))}
         </ul>
+        <PricingSection cityHint="Alberta" />
       </main>
       <Footer />
     </>
