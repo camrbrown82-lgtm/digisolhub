@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "clean-contacts": "node scripts/clean-contacts.mjs",
     "pages:deploy": "echo Use Vercel for the hub. Cloudflare static export is no longer the app target."
   },
   "dependencies": {
@@ -14,6 +15,8 @@
     "@supabase/ssr": "^0.12.6",
     "@supabase/supabase-js": "^2.116.0",
     "@xyflow/react": "^12.11.6",
+    "csv-parse": "^7.0.2",
+    "csv-stringify": "^6.8.3",
     "grapesjs": "^0.23.6",
     "grapesjs-preset-newsletter": "^1.0.2",
     "inngest": "^4.20.0",
