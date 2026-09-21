@@ -83,6 +83,7 @@ export type SendEmailInput = {
   subject?: string;
   html?: string;
   campaignId?: string | null;
+  variant?: "A" | "B" | null;
   companyName?: string;
   logoSrc?: string;
   clientId?: string | null;
@@ -227,6 +228,7 @@ export async function sendEmailToContact(input: SendEmailInput) {
       template_id: input.templateId ?? null,
       resend_id: data?.id ?? null,
       status: "sent",
+      ...(input.variant ? { variant: input.variant } : {}),
     })
     .select("id")
     .single();

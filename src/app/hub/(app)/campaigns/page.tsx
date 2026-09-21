@@ -1,9 +1,12 @@
 import Link from "next/link";
-import { Activity, Mail, Workflow } from "lucide-react";
+import { Activity, FlaskConical, Mail, Workflow } from "lucide-react";
+import { AbCampaignBuilder } from "@/components/hub/AbCampaignBuilder";
+import { AbCampaignResults } from "@/components/hub/AbCampaignResults";
 import { AiWorkflowGenerator } from "@/components/hub/AiWorkflowGenerator";
 import { NewWorkflowButton } from "@/components/hub/NewWorkflowButton";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { contactIdsForClient, getActiveClient } from "@/lib/workspace";
+import { ensureCampaignAbSchema } from "@/lib/ensureCampaignAbSchema";
 import { createClient } from "@/lib/supabase/server";
 
 function pct(part: number, whole: number) {
@@ -12,6 +15,7 @@ function pct(part: number, whole: number) {
 }
 
 export default async function CampaignsPage() {
+  await ensureCampaignAbSchema().catch(() => null);
   const supabase = await createClient();
   const active = await getActiveClient(supabase);
   const scopedIds = active ? await contactIdsForClient(supabase, active.id) : null;
@@ -26,7 +30,9 @@ export default async function CampaignsPage() {
 
   let campaignsQuery = supabase
     .from("campaigns")
-    .select("id, name, status, sent_at, created_at")
+    .select(
+      "id, name, status, sent_at, created_at, is_ab, industry, winner_variant, template_id, template_b_id",
+    )
     .order("created_at", { ascending: false })
     .limit(20);
   if (active) campaignsQuery = campaignsQuery.eq("client_id", active.id);
@@ -34,10 +40,10 @@ export default async function CampaignsPage() {
   let sendsQuery = supabase
     .from("sends")
     .select(
-      "id, campaign_id, status, opened_at, clicked_at, bounced_at, created_at, contact_id",
+      "id, campaign_id, status, opened_at, clicked_at, bounced_at, created_at, contact_id, variant",
     )
     .order("created_at", { ascending: false })
-    .limit(40);
+    .limit(500);
   if (active && scopedIds && scopedIds.length > 0) {
     sendsQuery = sendsQuery.in("contact_id", scopedIds);
   }
@@ -48,18 +54,99 @@ export default async function CampaignsPage() {
     .order("started_at", { ascending: false })
     .limit(20);
 
-  const [workflowsResult, campaignsResult, sendsResult, runsResult] =
+  let templatesQuery = supabase
+    .from("email_templates")
+    .select("id, name, subject")
+    .order("updated_at", { ascending: false })
+    .limit(40);
+  if (active) templatesQuery = templatesQuery.eq("client_id", active.id);
+
+  const [workflowsResult, campaignsPrimary, sendsPrimary, runsResult, templatesResult] =
     await Promise.all([
       workflowsQuery,
       campaignsQuery,
-      emptySends ? Promise.resolve({ data: [] as never[] }) : sendsQuery,
+      emptySends ? Promise.resolve({ data: [] as never[], error: null }) : sendsQuery,
       runsQuery,
+      templatesQuery,
     ]);
 
+  let campaigns =
+    campaignsPrimary.data?.map((row) => ({
+      ...row,
+      is_ab: Boolean((row as { is_ab?: boolean }).is_ab),
+      industry: (row as { industry?: string | null }).industry ?? null,
+      winner_variant:
+        (row as { winner_variant?: string | null }).winner_variant ?? null,
+      template_id: (row as { template_id?: string | null }).template_id ?? null,
+      template_b_id:
+        (row as { template_b_id?: string | null }).template_b_id ?? null,
+    })) ?? [];
+
+  // Fallback if A/B columns are not migrated yet.
+  if (campaignsPrimary.error) {
+    let fallback = supabase
+      .from("campaigns")
+      .select("id, name, status, sent_at, created_at")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    if (active) fallback = fallback.eq("client_id", active.id);
+    const retry = await fallback;
+    campaigns = (retry.data ?? []).map((row) => ({
+      ...row,
+      is_ab: false,
+      industry: null,
+      winner_variant: null,
+      template_id: null,
+      template_b_id: null,
+    }));
+  }
+
+  let sends = emptySends ? [] : sendsPrimary.data ?? [];
+  if (sendsPrimary.error && !emptySends) {
+    let fallbackSends = supabase
+      .from("sends")
+      .select(
+        "id, campaign_id, status, opened_at, clicked_at, bounced_at, created_at, contact_id",
+      )
+      .order("created_at", { ascending: false })
+      .limit(500);
+    if (active && scopedIds && scopedIds.length > 0) {
+      fallbackSends = fallbackSends.in("contact_id", scopedIds);
+    }
+    const retrySends = await fallbackSends;
+    sends = (retrySends.data ?? []).map((row) => ({ ...row, variant: null }));
+  }
+
   const workflows = workflowsResult.data ?? [];
-  const campaigns = campaignsResult.data ?? [];
-  const sends = emptySends ? [] : sendsResult.data ?? [];
   const runs = runsResult.data ?? [];
+  const templates = templatesResult.data ?? [];
+
+  const abCampaignIds = campaigns.filter((row) => row.is_ab).map((row) => row.id);
+  const { data: auditRows } =
+    abCampaignIds.length > 0
+      ? await supabase
+          .from("campaign_audits")
+          .select("id, campaign_id, period, note, winner_pick, created_at")
+          .in("campaign_id", abCampaignIds)
+          .order("created_at", { ascending: false })
+          .limit(100)
+      : { data: [] as {
+          id: string;
+          campaign_id: string;
+          period: string;
+          note: string;
+          winner_pick: string | null;
+          created_at: string;
+        }[] };
+
+  const auditsByCampaign = new Map<string, NonNullable<typeof auditRows>>();
+  for (const audit of auditRows ?? []) {
+    const list = auditsByCampaign.get(audit.campaign_id) ?? [];
+    list.push(audit);
+    auditsByCampaign.set(audit.campaign_id, list);
+  }
+
+  const abCampaigns = campaigns.filter((row) => row.is_ab);
 
   const workflowNameById = new Map(workflows.map((row) => [row.id, row.name]));
   const contactIdsNeeded = Array.from(
@@ -112,8 +199,9 @@ export default async function CampaignsPage() {
           <h1 className="text-3xl font-semibold text-white">Campaigns</h1>
           <WorkspaceScope companyName={active?.name} noun="campaigns & workflows" />
           <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-            One place for email campaigns, automation workflows, AI generation,
-            and live monitoring — scoped to the company you are Working on.
+            Email campaigns with A/B testing, automation workflows, AI
+            generation, and live monitoring — scoped to the company you are
+            Working on.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -144,7 +232,46 @@ export default async function CampaignsPage() {
         ))}
       </section>
 
+      <AbCampaignBuilder templates={templates} />
+
       <AiWorkflowGenerator />
+
+      {abCampaigns.length > 0 ? (
+        <section className="space-y-4">
+          <div className="flex items-center gap-2">
+            <FlaskConical className="h-4 w-4 text-indigo-300" aria-hidden="true" />
+            <h2 className="text-lg font-semibold text-white">A/B performance</h2>
+          </div>
+          <div className="grid gap-4 xl:grid-cols-2">
+            {abCampaigns.map((campaign) => (
+              <AbCampaignResults
+                key={campaign.id}
+                campaignId={campaign.id}
+                campaignName={campaign.name}
+                industry={campaign.industry}
+                winnerVariant={campaign.winner_variant}
+                sends={sends
+                  .filter((send) => send.campaign_id === campaign.id)
+                  .map((send) => ({
+                    variant: send.variant ?? null,
+                    status: send.status,
+                    opened_at: send.opened_at,
+                    clicked_at: send.clicked_at,
+                    bounced_at: send.bounced_at,
+                    created_at: send.created_at,
+                  }))}
+                audits={(auditsByCampaign.get(campaign.id) ?? []).map((audit) => ({
+                  id: audit.id,
+                  period: audit.period,
+                  note: audit.note,
+                  winner_pick: audit.winner_pick,
+                  created_at: audit.created_at,
+                }))}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <div className="grid gap-6 xl:grid-cols-2">
         <section className="space-y-3">
@@ -203,6 +330,7 @@ export default async function CampaignsPage() {
                     <div className="flex items-center justify-between gap-3">
                       <p className="truncate font-medium text-white">{campaign.name}</p>
                       <span className="shrink-0 text-sm text-zinc-500">
+                        {campaign.is_ab ? "A/B · " : ""}
                         {campaign.status}
                       </span>
                     </div>
@@ -247,6 +375,7 @@ export default async function CampaignsPage() {
                         {contact?.name || contact?.email || "Contact"}
                       </span>
                       <span className="shrink-0 text-zinc-500">
+                        {send.variant ? `${send.variant} · ` : ""}
                         {send.status}
                         {send.bounced_at ? " · bounce" : ""}
                       </span>
