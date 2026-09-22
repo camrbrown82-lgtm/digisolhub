@@ -185,11 +185,20 @@ export function getPricingItem(id: string) {
   return ALL_PRICING_ITEMS.find((item) => item.id === id) ?? null;
 }
 
-export function formatCad(cents: number) {
+/** Alberta charges federal GST only (no PST). Listed prices are before tax. */
+export const ALBERTA_GST_PERCENT = 5;
+export const ALBERTA_GST_RATE = ALBERTA_GST_PERCENT / 100;
+
+export function gstCents(amountCents: number) {
+  return Math.round(amountCents * ALBERTA_GST_RATE);
+}
+
+export function formatCad(cents: number, fractionDigits = 0) {
   return new Intl.NumberFormat("en-CA", {
     style: "currency",
     currency: "CAD",
-    maximumFractionDigits: 0,
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
   }).format(cents / 100);
 }
 
@@ -203,5 +212,15 @@ export function summarizeSelection(ids: string[]) {
   const monthly = items
     .filter((item) => item.kind === "recurring")
     .reduce((sum, item) => sum + item.amount, 0);
-  return { items, oneTime, monthly };
+  const oneTimeGst = gstCents(oneTime);
+  const monthlyGst = gstCents(monthly);
+  return {
+    items,
+    oneTime,
+    monthly,
+    oneTimeGst,
+    monthlyGst,
+    oneTimeTotal: oneTime + oneTimeGst,
+    monthlyTotal: monthly + monthlyGst,
+  };
 }

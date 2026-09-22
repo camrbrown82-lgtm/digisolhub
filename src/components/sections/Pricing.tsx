@@ -4,6 +4,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { Check, Loader2, Sparkles } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 import {
+  ALBERTA_GST_PERCENT,
   PRICING_ADDONS,
   PRICING_PACKAGES,
   PRICING_RETAINERS,
@@ -154,7 +155,8 @@ export function PricingBuilder({
           Pick a core package, add a monthly growth engine if you want ongoing
           SEO or ads, then stack modules for cities, e-commerce, or custom apps.
           Same DigiSol dual threat — design, engineering, and marketing — for
-          every Alberta industry.
+          every Alberta industry. Listed prices exclude {ALBERTA_GST_PERCENT}%
+          GST; tax is added at Stripe Checkout.
         </p>
       </div>
 
@@ -243,16 +245,34 @@ export function PricingBuilder({
               ))}
             </ul>
           </div>
-          <div className="text-right">
-            <p className="text-sm text-zinc-400">One-time</p>
-            <p className="text-2xl font-semibold text-white">
-              {formatCad(totals.oneTime)}
-            </p>
-            <p className="mt-2 text-sm text-zinc-400">Monthly</p>
-            <p className="text-2xl font-semibold text-white">
-              {formatCad(totals.monthly)}
-              <span className="text-sm font-normal text-zinc-400"> /mo</span>
-            </p>
+          <div className="min-w-[12rem] space-y-3 text-right text-sm">
+            <div>
+              <p className="text-zinc-400">One-time subtotal</p>
+              <p className="text-lg font-semibold text-white">
+                {formatCad(totals.oneTime)}
+              </p>
+              <p className="text-zinc-500">
+                GST ({ALBERTA_GST_PERCENT}%) {formatCad(totals.oneTimeGst, 2)}
+              </p>
+              <p className="mt-1 text-xl font-semibold text-white">
+                {formatCad(totals.oneTimeTotal, 2)}
+              </p>
+            </div>
+            <div>
+              <p className="text-zinc-400">Monthly subtotal</p>
+              <p className="text-lg font-semibold text-white">
+                {formatCad(totals.monthly)}
+                <span className="text-sm font-normal text-zinc-400"> /mo</span>
+              </p>
+              <p className="text-zinc-500">
+                GST ({ALBERTA_GST_PERCENT}%) {formatCad(totals.monthlyGst, 2)}
+                /mo
+              </p>
+              <p className="mt-1 text-xl font-semibold text-white">
+                {formatCad(totals.monthlyTotal, 2)}
+                <span className="text-sm font-normal text-zinc-400"> /mo</span>
+              </p>
+            </div>
           </div>
         </div>
 
@@ -323,7 +343,8 @@ export function PricingBuilder({
           </p>
         ) : (
           <p className="mt-3 text-xs text-zinc-500">
-            Secure checkout powered by Stripe. CAD. Scope confirmed after payment.
+            Secure Stripe Checkout · CAD · {ALBERTA_GST_PERCENT}% GST (Alberta)
+            added at payment · scope confirmed after payment.
           </p>
         )}
         {error ? <p className="mt-3 text-sm text-rose-300">{error}</p> : null}

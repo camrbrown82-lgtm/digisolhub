@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { getPricingItem, summarizeSelection } from "@/lib/pricing";
-import { createStripeClient, siteOrigin, stripeConfigured } from "@/lib/stripe";
+import {
+  createStripeClient,
+  getAlbertaGstTaxRateId,
+  siteOrigin,
+  stripeConfigured,
+} from "@/lib/stripe";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -53,10 +58,13 @@ export async function POST(request: Request) {
 
   const stripe = createStripeClient();
   const origin = siteOrigin();
+  const gstTaxRateId = await getAlbertaGstTaxRateId(stripe);
   const line_items = items.map((item) => ({
     quantity: 1,
+    tax_rates: [gstTaxRateId],
     price_data: {
       currency: "cad",
+      tax_behavior: "exclusive" as const,
       product_data: {
         name: item.name,
         description: item.blurb.slice(0, 450),
@@ -84,11 +92,12 @@ export async function POST(request: Request) {
       industry: (body?.industry || "").slice(0, 80),
       notes: (body?.notes || "").slice(0, 400),
       source: "wwwdigisol.com",
+      tax: "alberta_gst_5",
     },
     custom_text: {
       submit: {
         message:
-          "DigiSol will confirm scope after checkout. Alberta companies · custom design, engineering & growth.",
+          "Prices exclude 5% GST (Alberta). DigiSol confirms scope after checkout.",
       },
     },
   });
