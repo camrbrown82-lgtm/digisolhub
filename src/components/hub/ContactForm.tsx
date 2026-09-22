@@ -15,6 +15,15 @@ import {
 
 const field = "hub-field";
 
+const CONTACT_SOURCES = [
+  { value: "manual", label: "Manual / Hub" },
+  { value: "website", label: "Website form" },
+  { value: "referral", label: "Referral" },
+  { value: "cold_outreach", label: "Cold outreach" },
+  { value: "event", label: "Event / networking" },
+  { value: "import", label: "CSV import" },
+] as const;
+
 export function ContactForm({
   initial,
   contactId,
@@ -28,6 +37,7 @@ export function ContactForm({
     domain?: string | null;
     phone?: string | null;
     service?: string | null;
+    source?: string | null;
     tags?: string[] | null;
     client_id?: string | null;
     campaign_channel?: string | null;
@@ -53,6 +63,7 @@ export function ContactForm({
       domain: String(data.get("domain") ?? ""),
       phone: String(data.get("phone") ?? ""),
       service: String(data.get("service") ?? ""),
+      source: String(data.get("source") ?? "") || "manual",
       campaign_channel: String(data.get("campaign_channel") ?? "") || null,
       ab_variant: String(data.get("ab_variant") ?? "") || null,
       client_id: String(data.get("client_id") ?? "") || null,
@@ -75,9 +86,20 @@ export function ContactForm({
       setError(result.error || "Could not save contact");
       return;
     }
-    router.push(`/hub/contacts/${contactId || result.id}`);
+    // After create, return to the contacts list (Hub home for CRM).
+    if (contactId) {
+      router.push(`/hub/contacts/${contactId}`);
+    } else {
+      router.push("/hub/contacts");
+    }
     router.refresh();
   }
+
+  const sourceDefault =
+    initial?.source &&
+    CONTACT_SOURCES.some((item) => item.value === initial.source)
+      ? initial.source
+      : initial?.source || "manual";
 
   return (
     <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
@@ -127,6 +149,20 @@ export function ContactForm({
         <input name="service" defaultValue={initial?.service ?? ""} className={field} />
       </label>
       <label className="text-sm">
+        Lead source
+        <select name="source" defaultValue={sourceDefault} className={field}>
+          {CONTACT_SOURCES.map((item) => (
+            <option key={item.value} value={item.value}>
+              {item.label}
+            </option>
+          ))}
+          {initial?.source &&
+          !CONTACT_SOURCES.some((item) => item.value === initial.source) ? (
+            <option value={initial.source}>{initial.source}</option>
+          ) : null}
+        </select>
+      </label>
+      <label className="text-sm">
         Campaign channel
         <select
           name="campaign_channel"
@@ -162,6 +198,7 @@ export function ContactForm({
           name="tags"
           defaultValue={(initial?.tags ?? []).join(", ")}
           className={field}
+          placeholder="e.g. lead, trades, booked-consult"
         />
       </label>
       {error ? (
@@ -169,9 +206,16 @@ export function ContactForm({
           {error}
         </p>
       ) : null}
-      <div className="sm:col-span-2">
+      <div className="sm:col-span-2 flex flex-wrap gap-3">
         <button type="submit" disabled={saving} className="hub-btn">
           {saving ? "Saving…" : contactId ? "Save contact" : "Create contact"}
+        </button>
+        <button
+          type="button"
+          className="hub-btn-secondary"
+          onClick={() => router.push("/hub/contacts")}
+        >
+          Back to contacts
         </button>
       </div>
     </form>

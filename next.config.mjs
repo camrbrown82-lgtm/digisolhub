@@ -15,6 +15,21 @@ const nextConfig = {
         destination: "https://wwwdigisol.com/:path*",
         permanent: true,
       },
+      {
+        source: "/hub/leads",
+        destination: "/hub/contacts",
+        permanent: true,
+      },
+      {
+        source: "/hub/leads/new",
+        destination: "/hub/contacts/new",
+        permanent: true,
+      },
+      {
+        source: "/hub/leads/:id",
+        destination: "/hub/contacts",
+        permanent: true,
+      },
     ];
   },
 };

@@ -9,28 +9,23 @@ import {
   Building2,
   Contact,
   Files,
-  LayoutDashboard,
   LogOut,
   Mail,
   Palette,
   Plug,
-  Target,
   Workflow,
 } from "lucide-react";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 
 const nav = [
-  { href: "/hub", label: "Overview", icon: LayoutDashboard },
+  { href: "/hub/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/hub/clients", label: "Companies", icon: Building2 },
   { href: "/hub/brand", label: "Brand", icon: Palette },
   { href: "/hub/contacts", label: "Contacts", icon: Contact },
-  { href: "/hub/leads", label: "Leads", icon: Target },
   { href: "/hub/email", label: "Email", icon: Mail },
   { href: "/hub/campaigns", label: "Campaigns", icon: Workflow },
   { href: "/hub/assets", label: "Files", icon: Files },
-  { href: "/hub/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/hub/ai", label: "AI posters", icon: Bot },
-  { href: "/hub/archives", label: "Archives", icon: Archive },
   { href: "/hub/integrations", label: "Integrations", icon: Plug },
 ];
 
@@ -50,11 +45,11 @@ export function HubSidebar() {
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
         {nav.map((item) => {
           const active =
-            item.href === "/hub"
-              ? pathname === "/hub"
-              : item.href === "/hub/campaigns"
-                ? pathname === "/hub/campaigns" ||
-                  pathname.startsWith("/hub/workflows")
+            item.href === "/hub/campaigns"
+              ? pathname === "/hub/campaigns" ||
+                pathname.startsWith("/hub/workflows")
+              : item.href === "/hub/ai"
+                ? pathname === "/hub/ai" || pathname.startsWith("/hub/archives")
                 : pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;
           return (
@@ -72,6 +67,17 @@ export function HubSidebar() {
             </Link>
           );
         })}
+        <Link
+          href="/hub/archives"
+          className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition ${
+            pathname.startsWith("/hub/archives")
+              ? "bg-indigo-600/20 text-white"
+              : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300"
+          }`}
+        >
+          <Archive className="h-4 w-4 shrink-0" aria-hidden="true" />
+          Poster archives
+        </Link>
       </nav>
       <div className="border-t border-zinc-800 p-3">
         <Link

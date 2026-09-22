@@ -2,9 +2,8 @@ import { notFound } from "next/navigation";
 import { ContactDeleteButton } from "@/components/hub/ContactDeleteButton";
 import { ContactForm } from "@/components/hub/ContactForm";
 import { ContactNotes } from "@/components/hub/ContactNotes";
-import {
-  campaignChannelLabel,
-} from "@/lib/campaignChannels";
+import { HubBackButton } from "@/components/hub/HubBackButton";
+import { campaignChannelLabel } from "@/lib/campaignChannels";
 import { contactAbVariantLabel } from "@/lib/contactAbVariants";
 import { ensureCampaignChannelSchema } from "@/lib/ensureCampaignChannelSchema";
 import { createClient } from "@/lib/supabase/server";
@@ -42,7 +41,8 @@ export default async function ContactDetailPage({
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold text-white">
+          <HubBackButton href="/hub/contacts" label="Back to contacts" />
+          <h1 className="mt-3 text-3xl font-semibold text-white">
             {contact.name || contact.email}
           </h1>
           <p className="mt-1 text-sm text-zinc-400">

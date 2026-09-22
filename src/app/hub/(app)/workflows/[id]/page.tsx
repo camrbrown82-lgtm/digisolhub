@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import { HubBackButton } from "@/components/hub/HubBackButton";
 import { WorkflowEditor } from "@/components/hub/WorkflowEditor";
 import { createClient } from "@/lib/supabase/server";
 import { resolveClientId } from "@/lib/workspace";
@@ -50,12 +50,8 @@ export default async function WorkflowDetailPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-sm text-indigo-300">
-            <Link href="/hub/campaigns" className="hover:text-indigo-200">
-              ← Campaigns
-            </Link>
-          </p>
-          <h1 className="mt-1 text-3xl font-semibold text-white">Edit workflow</h1>
+          <HubBackButton href="/hub/campaigns" label="Back to campaigns" />
+          <h1 className="mt-3 text-3xl font-semibold text-white">Edit workflow</h1>
         </div>
       </div>
       <WorkflowEditor

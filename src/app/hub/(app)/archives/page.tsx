@@ -1,5 +1,6 @@
 import { PosterActions } from "@/components/hub/PosterActions";
 import { PosterExport } from "@/components/hub/PosterExport";
+import { HubBackButton } from "@/components/hub/HubBackButton";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { brandFromClient } from "@/lib/branding";
 import { listPosterAssets } from "@/lib/posterArchive";
@@ -24,10 +25,11 @@ export default async function ArchivesPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-semibold text-white">Archives</h1>
+        <HubBackButton href="/hub/ai" label="Back to AI posters" />
+        <h1 className="mt-3 text-3xl font-semibold text-white">Poster archives</h1>
         <WorkspaceScope companyName={selected?.name || brandSource?.name} noun="archives" />
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-          Poster sets archived for this company. Restore them to AI posters or
+          Archived poster sets for this company. Restore them to AI posters or
           delete them for good.
         </p>
       </div>

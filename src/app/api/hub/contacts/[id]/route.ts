@@ -17,6 +17,7 @@ const PATCH_KEYS = [
   "domain",
   "phone",
   "service",
+  "source",
   "tags",
   "client_id",
   "campaign_channel",

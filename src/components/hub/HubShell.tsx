@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ClientSwitcher, type HubClient } from "@/components/hub/ClientSwitcher";
+import { HubBackButton } from "@/components/hub/HubBackButton";
 
 export function HubShell({
   sidebar,
@@ -19,6 +20,7 @@ export function HubShell({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const isHubHome = pathname === "/hub" || pathname === "/hub/analytics";
 
   useEffect(() => {
     setOpen(false);
@@ -44,7 +46,10 @@ export function HubShell({
         >
           <Menu className="h-5 w-5" />
         </button>
-        <Logo href="/hub" size="hub" />
+        {!isHubHome ? (
+          <HubBackButton className="shrink-0" label="Back" />
+        ) : null}
+        <Logo href="/hub/analytics" size="hub" />
         <p className="hidden text-sm text-zinc-500 sm:block">Hub</p>
         <div className="min-w-0 flex-1 sm:max-w-xs sm:ml-auto">
           <ClientSwitcher clients={clients} activeClientId={activeClientId} compact />

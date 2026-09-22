@@ -54,7 +54,7 @@ export async function updateSession(request: NextRequest) {
 
     if (isLogin && user && isAllowedEmail(user.email)) {
       const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = "/hub";
+      redirectUrl.pathname = "/hub/analytics";
       redirectUrl.search = "";
       return NextResponse.redirect(redirectUrl);
     }

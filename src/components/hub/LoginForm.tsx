@@ -33,7 +33,7 @@ export function LoginForm() {
   );
 
   function nextPath() {
-    return params.get("next") || "/hub";
+    return params.get("next") || "/hub/analytics";
   }
 
   function goToHub() {

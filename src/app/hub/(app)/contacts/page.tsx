@@ -116,6 +116,10 @@ export default async function ContactsPage({
         <div>
           <h1 className="text-3xl font-semibold text-white">Contacts</h1>
           <WorkspaceScope companyName={active?.name} noun="contacts" />
+          <p className="mt-2 max-w-2xl text-sm text-zinc-400">
+            People and leads live here — set source, channel, A/B group, and
+            tags on each contact. Counts and funnel stats are on Analytics.
+          </p>
         </div>
         <Link href="/hub/contacts/new" className="hub-btn">
           New contact

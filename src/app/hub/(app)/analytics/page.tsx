@@ -118,6 +118,11 @@ export default async function AnalyticsPage() {
       <div>
         <h1 className="text-3xl font-semibold text-white">Analytics</h1>
         <WorkspaceScope companyName={active?.name} noun="metrics" />
+        <p className="mt-2 max-w-2xl text-sm text-zinc-400">
+          Hub home for performance. Add people under Contacts (with lead
+          source/tags). Overview and the old Leads board redirect here or to
+          Contacts so nothing is duplicated in the menu.
+        </p>
       </div>
 
       <section className="space-y-4">
