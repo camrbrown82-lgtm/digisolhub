@@ -13,6 +13,7 @@ const links = [
   { href: "/#why-us", label: "Why Us" },
   { href: "/#dispatch", label: "Dispatch" },
   { href: "/media/website-audit", label: "Media" },
+  { href: "/about", label: "About" },
 ];
 
 export function Navbar() {
