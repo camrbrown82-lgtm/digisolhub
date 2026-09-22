@@ -92,6 +92,9 @@ export default function IntegrationsPage() {
           <code className="text-zinc-200">GA4_PRIVATE_KEY</code>. Create a Google
           Cloud service account, enable the Google Analytics Data API, download a
           JSON key, and add that email as a Viewer on the DigiSol GA4 property.
+          Hub visits and browsers that have used Hub are excluded from site
+          analytics; use incognito or <code className="text-zinc-200">?track=1</code>{" "}
+          to measure honestly.
         </p>
         <p className="mt-3">
           AI posters need <code className="text-zinc-200">OPENAI_API_KEY</code> on

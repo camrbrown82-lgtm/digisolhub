@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
+import { shouldSkipSiteAnalytics } from "@/lib/internalTraffic";
 
 declare global {
   interface Window {
@@ -33,8 +34,7 @@ function locationContentGroup(pathname: string) {
 
 /**
  * Sends GA4 + first-party pageviews on App Router navigations
- * (city landers included). Initial full-page load is still covered by
- * layout gtag config + /t.js.
+ * (city landers included). Skips Hub and internal-traffic browsers.
  */
 export function GaRouteTracker() {
   const pathname = usePathname();
@@ -42,7 +42,7 @@ export function GaRouteTracker() {
   const lastSent = useRef("");
 
   useEffect(() => {
-    if (!pathname || pathname.startsWith("/hub")) return;
+    if (!pathname || shouldSkipSiteAnalytics(pathname)) return;
 
     const search = searchParams?.toString();
     const path = `${pathname}${search ? `?${search}` : ""}`;

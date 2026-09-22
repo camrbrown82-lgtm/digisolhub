@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 
 const script = `(() => {
   try {
+    if (/(?:^|;\\s*)ds_internal=1(?:;|$)/.test(document.cookie)) return;
     var nodes = document.querySelectorAll('script[src*="/t.js"]');
     var script = document.currentScript || nodes[nodes.length - 1];
     var key = script && script.getAttribute("data-key");
@@ -22,6 +23,7 @@ const script = `(() => {
     }
 
     function send() {
+      if (/(?:^|;\\s*)ds_internal=1(?:;|$)/.test(document.cookie)) return;
       if (location.pathname.indexOf("/hub") === 0) return;
       fetch(origin + "/api/collect", {
         method: "POST",
