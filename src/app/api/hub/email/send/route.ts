@@ -238,21 +238,35 @@ async function sendCampaign(
     .select("id")
     .single();
 
-  const extraBcc = Array.isArray(body.bccAlso)
-    ? body.bccAlso
-    : typeof body.bccAlso === "string"
-      ? parseRecipientList(body.bccAlso)
-      : [];
+  const extraBcc = Array.from(
+    new Set(
+      (Array.isArray(body.bccAlso)
+        ? body.bccAlso
+        : typeof body.bccAlso === "string"
+          ? parseRecipientList(body.bccAlso)
+          : []
+      )
+        .map((email) => email.trim().toLowerCase())
+        .filter((email) => email.includes("@")),
+    ),
+  );
 
-  const results: { contactId: string; ok: boolean; error?: string; personalized?: boolean }[] =
-    [];
+  const results: {
+    contactId: string;
+    email?: string;
+    ok: boolean;
+    error?: string;
+    personalized?: boolean;
+  }[] = [];
 
   if (mode === "bcc") {
     // One message: first contact is To, everyone else (plus optional list) on BCC.
     const [primary, ...rest] = contacts;
     const bcc = [
       ...rest.map((row) => row.email),
-      ...extraBcc,
+      ...extraBcc.filter(
+        (email) => email !== primary.email.trim().toLowerCase(),
+      ),
     ];
     try {
       await sendEmailToContact({
@@ -279,13 +293,14 @@ async function sendCampaign(
           variant: null,
         });
       }
-      results.push({ contactId: primary.id, ok: true });
+      results.push({ contactId: primary.id, email: primary.email, ok: true });
       for (const contact of rest) {
-        results.push({ contactId: contact.id, ok: true });
+        results.push({ contactId: contact.id, email: contact.email, ok: true });
       }
     } catch (err) {
       results.push({
         contactId: primary.id,
+        email: primary.email,
         ok: false,
         error: err instanceof Error ? err.message : "Send failed",
       });
@@ -305,6 +320,9 @@ async function sendCampaign(
     const maxAi = 25;
     const aiTargets = mode === "ai_each" ? contacts.slice(0, maxAi) : contacts;
 
+    // Audit BCC once — not on every personalized copy (that floods one inbox + spam).
+    let auditBccSent = false;
+
     for (const contact of aiTargets) {
       try {
         let subject = body.subject;
@@ -322,6 +340,20 @@ async function sendCampaign(
           html = tailored.body;
           personalized = true;
         }
+        const toEmail = contact.email.trim().toLowerCase();
+        if (!toEmail.includes("@")) {
+          results.push({
+            contactId: contact.id,
+            email: contact.email,
+            ok: false,
+            error: "Contact has no valid email",
+          });
+          continue;
+        }
+        const bccThisSend =
+          !auditBccSent && extraBcc.length
+            ? extraBcc.filter((email) => email !== toEmail)
+            : [];
         await sendEmailToContact({
           contactId: contact.id,
           contact,
@@ -334,12 +366,19 @@ async function sendCampaign(
           logoSrc,
           clientId: clientId || null,
           brand,
-          bcc: extraBcc,
+          bcc: bccThisSend,
         });
-        results.push({ contactId: contact.id, ok: true, personalized });
+        if (bccThisSend.length) auditBccSent = true;
+        results.push({
+          contactId: contact.id,
+          email: contact.email,
+          ok: true,
+          personalized,
+        });
       } catch (err) {
         results.push({
           contactId: contact.id,
+          email: contact.email,
           ok: false,
           error: err instanceof Error ? err.message : "Send failed",
         });
@@ -349,6 +388,7 @@ async function sendCampaign(
     if (mode === "ai_each" && contacts.length > maxAi) {
       results.push({
         contactId: contacts[maxAi].id,
+        email: contacts[maxAi].email,
         ok: false,
         error: `AI personalize capped at ${maxAi} contacts this send. Re-run for the rest or use Personalized/BCC.`,
       });
@@ -366,6 +406,9 @@ async function sendCampaign(
   }
 
   const failed = results.filter((item) => !item.ok);
+  const deliveredTo = results
+    .filter((item) => item.ok && item.email)
+    .map((item) => item.email as string);
   const from = parseFromAddress(getResendFrom());
   return NextResponse.json({
     campaignId: campaign?.id,
@@ -373,6 +416,8 @@ async function sendCampaign(
     sent: results.filter((item) => item.ok).length,
     failed: failed.length,
     personalized: results.filter((item) => item.personalized).length,
+    deliveredTo,
+    auditBcc: mode === "bcc" ? extraBcc : extraBcc.slice(0, 1).length ? extraBcc : [],
     error: failed[0]?.error,
     from: from.email,
     results,

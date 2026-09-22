@@ -271,7 +271,8 @@ export function EmailComposer({
         personalized?: number;
         mode?: string;
         from?: string;
-        results?: { error?: string }[];
+        deliveredTo?: string[];
+        results?: { error?: string; email?: string }[];
       };
       const via = json.from ? ` via ${json.from}` : "";
       const failReason =
@@ -294,7 +295,15 @@ export function EmailComposer({
           : json.mode === "ai_each"
             ? " (AI each)"
             : "";
-      setStatus(`Sent ${json.sent ?? 0}${modeLabel}${personalized}${via}`);
+      const delivered =
+        json.deliveredTo && json.deliveredTo.length
+          ? ` → ${json.deliveredTo.slice(0, 5).join(", ")}${
+              json.deliveredTo.length > 5
+                ? ` +${json.deliveredTo.length - 5} more`
+                : ""
+            }`
+          : "";
+      setStatus(`Sent ${json.sent ?? 0}${modeLabel}${personalized}${via}${delivered}`);
       router.refresh();
     } catch {
       setStatus("Send failed — check Resend on Integrations and try again.");
@@ -599,18 +608,24 @@ export function EmailComposer({
             {sendMode === "bcc"
               ? "First recipient is To; the rest go on BCC. Best for announcements — merge fields only apply to the To address."
               : sendMode === "ai_each"
-                ? "For contacts in Hub CRM, AI rewrites subject/body using their name, company, and notes (max 25 per send), then sends individually."
-                : "Each recipient gets their own email with {{name}} / {{contact_company}} filled in."}
+                ? "Each Hub contact gets their own AI-rewritten email To their address (max 25). Put digisol2026@yahoo.com only in Also BCC if you want one audit copy — not in Recipients."
+                : "Each recipient gets their own email To their address with {{name}} / {{contact_company}} filled in."}
           </p>
         </fieldset>
         <label className="block text-sm">
-          Also BCC (optional)
+          Also BCC — one audit copy (optional)
           <input
             value={bccAlso}
             onChange={(event) => setBccAlso(event.target.value)}
             className="hub-field"
-            placeholder="you@wwwdigisol.com"
+            placeholder="hello@wwwdigisol.com"
           />
+          <span className="mt-1 block text-xs text-zinc-500">
+            Personalized / AI each: BCC is added to the{" "}
+            <strong className="font-medium text-zinc-400">first</strong> send
+            only (so your inbox is not flooded with every copy). BCC blast: still
+            includes everyone.
+          </span>
         </label>
         <label className="block text-sm">
           Body
