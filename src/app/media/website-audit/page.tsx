@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { TrackedLink } from "@/components/TrackedLink";
+import { WebsiteAuditExport } from "@/components/WebsiteAuditExport";
 import { WebsiteAuditVideo } from "@/components/WebsiteAuditVideo";
 import {
   WEBSITE_AUDIT_DESCRIPTION,
@@ -103,8 +104,9 @@ export default function WebsiteAuditMediaPage() {
             </h1>
             <p className="mt-4 text-lg text-zinc-400">{WEBSITE_AUDIT_DESCRIPTION}</p>
 
-            <div className="mt-10">
+            <div className="mt-10 space-y-6">
               <WebsiteAuditVideo />
+              <WebsiteAuditExport location="media_website_audit" />
             </div>
 
             <div className="mt-10 space-y-4 text-zinc-300">
@@ -134,7 +136,7 @@ export default function WebsiteAuditMediaPage() {
               </TrackedLink>
               <a
                 href={WEBSITE_AUDIT_VIDEO_URL}
-                className="text-sm font-medium text-zinc-400 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+                className="text-sm font-medium text-indigo-300 transition hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
               >
                 Direct video file (MP4)
               </a>

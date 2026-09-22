@@ -1,4 +1,5 @@
 import { TrackedLink } from "@/components/TrackedLink";
+import { WebsiteAuditExport } from "@/components/WebsiteAuditExport";
 import { WebsiteAuditVideo } from "@/components/WebsiteAuditVideo";
 import { WEBSITE_AUDIT_PAGE_PATH } from "@/lib/media";
 
@@ -23,12 +24,14 @@ export function WebsiteAudit() {
           <p className="mt-4 text-zinc-400">
             A short presentation on what Alberta businesses should fix first —
             design, speed, local SEO, and the path from visit to booked work.
+            Export ready captions for Facebook, LinkedIn, and Instagram below.
           </p>
         </div>
 
-        <div className="mx-auto mt-12 max-w-4xl">
+        <div className="mx-auto mt-12 max-w-4xl space-y-6">
           <WebsiteAuditVideo />
-          <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <WebsiteAuditExport location="homepage_website_audit" />
+          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <TrackedLink
               href="/#contact"
               eventName="cta_click"
@@ -42,7 +45,7 @@ export function WebsiteAudit() {
             </TrackedLink>
             <a
               href={WEBSITE_AUDIT_PAGE_PATH}
-              className="text-sm font-medium text-zinc-400 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+              className="text-sm font-medium text-indigo-300 transition hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
             >
               Full media page &amp; transcript
             </a>
