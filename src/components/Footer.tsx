@@ -1,7 +1,6 @@
 import { Globe } from "lucide-react";
 import { ContactInfo } from "@/components/ContactInfo";
 import { GoogleRating, ListingLinks } from "@/components/LocalListings";
-import { Logo } from "@/components/Logo";
 import { LOCATION_PAGES, locationPath } from "@/lib/locations";
 import { DIGISOL_ADDRESS_LINE, DIGISOL_REGION, DIGISOL_SERVICE_CITIES } from "@/lib/site";
 
@@ -26,9 +25,22 @@ export function Footer() {
   return (
     <footer className="border-t border-indigo-500/25 bg-zinc-950 px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-6xl flex-col gap-5">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,16rem)_minmax(0,1fr)] lg:items-start lg:gap-10">
+        <a
+          href="/"
+          className="block w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+          aria-label="DigiSol home"
+        >
+          <img
+            src="/logo.jpg"
+            alt="DigiSol — Engineering & Growth"
+            width={960}
+            height={312}
+            className="h-28 w-full object-contain object-left sm:h-32 md:h-36"
+          />
+        </a>
+
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,16.5rem)_minmax(0,1fr)] lg:items-start lg:gap-10">
           <div className="min-w-0 space-y-3">
-            <Logo size="footer" />
             <GoogleRating location="footer" />
             <p className="text-sm leading-snug text-indigo-200/70">
               {`Design, development, SEO & marketing for Alberta companies · Airdrie · ${DIGISOL_SERVICE_CITIES.join(", ")}`}
