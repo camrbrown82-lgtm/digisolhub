@@ -250,7 +250,9 @@ export default async function AnalyticsPage() {
               {!gaStatus.ready || ga4.locations.length === 0 ? (
                 <li className="text-zinc-500">
                   No /locations traffic yet — Calgary, Edmonton, Red Deer,
-                  Cochrane, Airdrie will appear here.
+                  Cochrane, Airdrie appear here after visits. Alberta visitors
+                  are now routed to their city lander so these paths register in
+                  GA4.
                 </li>
               ) : (
                 ga4.locations.map((row) => (

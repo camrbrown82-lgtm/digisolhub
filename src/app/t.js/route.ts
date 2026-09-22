@@ -20,21 +20,48 @@ const script = `(() => {
       visitor = (crypto.randomUUID && crypto.randomUUID()) || String(Date.now());
       try { localStorage.setItem(storageKey, visitor); } catch (e) {}
     }
-    fetch(origin + "/api/collect", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        k: key,
-        path: location.pathname + location.search,
-        host: location.host,
-        title: document.title,
-        referrer: document.referrer,
-        locale: navigator.language,
-        vid: visitor
-      }),
-      keepalive: true,
-      mode: "cors"
-    }).catch(function () {});
+
+    function send() {
+      if (location.pathname.indexOf("/hub") === 0) return;
+      fetch(origin + "/api/collect", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          k: key,
+          path: location.pathname + location.search,
+          host: location.host,
+          title: document.title,
+          referrer: document.referrer,
+          locale: navigator.language,
+          vid: visitor
+        }),
+        keepalive: true,
+        mode: "cors"
+      }).catch(function () {});
+    }
+
+    send();
+
+    var last = location.pathname + location.search;
+    function maybeSend() {
+      var next = location.pathname + location.search;
+      if (next === last) return;
+      last = next;
+      send();
+    }
+    var push = history.pushState;
+    var replace = history.replaceState;
+    history.pushState = function () {
+      var result = push.apply(this, arguments);
+      maybeSend();
+      return result;
+    };
+    history.replaceState = function () {
+      var result = replace.apply(this, arguments);
+      maybeSend();
+      return result;
+    };
+    window.addEventListener("popstate", maybeSend);
   } catch (e) {}
 })();`;
 

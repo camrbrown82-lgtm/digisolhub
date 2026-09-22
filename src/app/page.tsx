@@ -1,4 +1,5 @@
 import { Footer } from "@/components/Footer";
+import { GeoHomeBanner } from "@/components/GeoHomeBanner";
 import { Navbar } from "@/components/Navbar";
 import { Audience } from "@/components/sections/Audience";
 import { Contact } from "@/components/sections/Contact";
@@ -12,6 +13,7 @@ export default function HomePage() {
   return (
     <>
       <Navbar />
+      <GeoHomeBanner />
       <main id="main">
         <Hero />
         <DualThreat />

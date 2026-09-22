@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
 import { DigiSolSiteBeacon } from "@/components/DigiSolSiteBeacon";
+import { GaRouteTrackerBoundary } from "@/components/GaRouteTrackerBoundary";
 import {
   WEBSITE_AUDIT_DESCRIPTION,
   WEBSITE_AUDIT_PAGE_URL,
@@ -166,8 +167,8 @@ export default function RootLayout({
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'G-4ZBG4VPC9C');
-            gtag('config', 'G-DCKSJLNE4T');
+            gtag('config', 'G-4ZBG4VPC9C', { send_page_view: true });
+            gtag('config', 'G-DCKSJLNE4T', { send_page_view: true });
             ${GOOGLE_ADS_ID ? `gtag('config', '${GOOGLE_ADS_ID}');` : ""}
           `}
         </Script>
@@ -178,6 +179,7 @@ export default function RootLayout({
           }}
         />
         {children}
+        <GaRouteTrackerBoundary />
         <DigiSolSiteBeacon />
       </body>
     </html>
