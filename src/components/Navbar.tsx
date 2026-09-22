@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { ContactInfo } from "@/components/ContactInfo";
-import { HeaderSocialLinks } from "@/components/HeaderSocialLinks";
 import { Logo } from "@/components/Logo";
 import { TrackedLink } from "@/components/TrackedLink";
 
@@ -40,7 +39,7 @@ export function Navbar() {
   return (
     <header
       ref={headerRef}
-      className="border-b border-white/10 bg-zinc-950"
+      className="border-b border-indigo-500/25 bg-zinc-950"
     >
       <a
         href="#main"
@@ -48,14 +47,13 @@ export function Navbar() {
       >
         Skip to content
       </a>
-      <div className="grid w-full items-center gap-x-6 gap-y-3 px-4 py-4 sm:px-6 xl:grid-cols-[auto_minmax(0,1fr)_auto] lg:px-8 lg:py-5">
+      <div className="grid w-full items-center gap-x-6 gap-y-3 px-4 py-3 sm:px-6 xl:grid-cols-[auto_minmax(0,1fr)_auto] lg:px-8 lg:py-4">
         <div className="flex items-center justify-between gap-3 lg:contents">
           <Logo />
           <div className="flex items-center gap-2 lg:hidden">
-            <HeaderSocialLinks location="nav_mobile" />
             <button
               type="button"
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 text-zinc-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-indigo-400/30 text-indigo-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
               aria-expanded={open}
               aria-controls="mobile-nav"
               onClick={() => setOpen((v) => !v)}
@@ -69,30 +67,29 @@ export function Navbar() {
           <ContactInfo location="hero" />
         </div>
         <nav
-          className="hidden items-center justify-end gap-4 lg:flex xl:gap-6"
+          className="hidden items-center justify-end gap-4 lg:flex xl:gap-5"
           aria-label="Primary"
         >
           {links.map((link) => (
             <a
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-zinc-300 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+              className="text-sm font-medium text-indigo-200 transition-colors hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
             >
               {link.label}
             </a>
           ))}
-          <HeaderSocialLinks location="nav" />
           <TrackedLink
             href="/#contact"
             eventName="cta_click"
             eventParams={{ cta_name: "book_consultation", location: "nav" }}
-            className="inline-flex items-center rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+            className="inline-flex items-center rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-sky-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
           >
             Contact
           </TrackedLink>
           <a
             href="/hub"
-            className="inline-flex items-center rounded-full border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 transition hover:border-indigo-500 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+            className="inline-flex items-center rounded-full border border-sky-400/40 px-4 py-2 text-sm font-medium text-sky-300 transition hover:border-indigo-400 hover:bg-indigo-500/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
           >
             Admin
           </a>
@@ -101,27 +98,21 @@ export function Navbar() {
       {open && (
         <nav
           id="mobile-nav"
-          className="border-t border-white/10 px-4 py-4 lg:hidden"
+          className="border-t border-indigo-500/20 px-4 py-4 lg:hidden"
           aria-label="Mobile"
         >
-          <ul className="flex flex-col gap-3">
+          <ul className="flex flex-col gap-2">
             {links.map((link) => (
               <li key={link.href}>
                 <a
                   href={link.href}
-                  className="block rounded-lg px-3 py-2 text-zinc-200 hover:bg-white/5"
+                  className="block rounded-lg px-3 py-2 text-indigo-100 hover:bg-indigo-500/10 hover:text-sky-300"
                   onClick={() => setOpen(false)}
                 >
                   {link.label}
                 </a>
               </li>
             ))}
-            <li className="px-3 py-1">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                Follow us
-              </p>
-              <HeaderSocialLinks location="nav_mobile" />
-            </li>
             <li>
               <TrackedLink
                 href="/#contact"
@@ -139,7 +130,7 @@ export function Navbar() {
             <li>
               <a
                 href="/hub"
-                className="block rounded-lg px-3 py-2 text-zinc-200 hover:bg-white/5"
+                className="block rounded-lg px-3 py-2 text-sky-300 hover:bg-indigo-500/10"
                 onClick={() => setOpen(false)}
               >
                 Admin

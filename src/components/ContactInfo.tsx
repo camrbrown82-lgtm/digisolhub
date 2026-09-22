@@ -30,9 +30,9 @@ const contacts = [
 ] as const;
 
 const linkClass = {
-  hero: "inline-flex items-center gap-1.5 text-xs text-zinc-300 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 sm:text-sm",
+  hero: "inline-flex items-center gap-1.5 text-xs text-indigo-200 transition hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 sm:text-sm",
   footer:
-    "inline-flex items-center gap-2 text-sm text-zinc-400 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400",
+    "inline-flex items-center gap-1.5 text-sm text-indigo-300/90 transition hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400",
 };
 
 type ContactInfoProps = {
@@ -46,19 +46,13 @@ function Identity({ location }: ContactInfoProps) {
     <span>
       <span className="block">
         Founder &amp; CEO{" "}
-        <span
-          className={
-            isHero ? "font-medium text-white" : "font-medium text-zinc-200"
-          }
-        >
-          Cameron Brown
-        </span>
+        <span className="font-medium text-sky-300">Cameron Brown</span>
       </span>
       <span
         className={
           isHero
-            ? "mt-0.5 block text-xs leading-snug text-zinc-400"
-            : "mt-0.5 block text-zinc-500"
+            ? "mt-0.5 block text-xs leading-snug text-indigo-300/80"
+            : "mt-0.5 block text-indigo-300/70"
         }
       >
         Certified Full Stack Developer and Digital Marketing and Social Media
@@ -90,7 +84,7 @@ export function ContactInfo({ location }: ContactInfoProps) {
   if (isHero) {
     return (
       <div className="min-w-0 w-full justify-self-center px-1 text-center xl:max-w-2xl">
-        <p className="text-sm leading-snug text-zinc-300 sm:text-base">
+        <p className="text-sm leading-snug text-indigo-100 sm:text-base">
           <Identity location={location} />
         </p>
         <div className="mt-2 flex flex-wrap items-center justify-center gap-x-5 gap-y-1">
@@ -101,8 +95,8 @@ export function ContactInfo({ location }: ContactInfoProps) {
   }
 
   return (
-    <ul className="mt-3 space-y-2">
-      <li className="text-sm text-zinc-400">
+    <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5">
+      <li className="w-full text-sm text-indigo-200/80 sm:w-auto sm:basis-full">
         <Identity location={location} />
       </li>
       {links.map((link) => (

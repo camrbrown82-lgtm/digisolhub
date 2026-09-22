@@ -16,7 +16,7 @@ const heroLink =
   "inline-flex items-center gap-2 text-sm font-medium text-indigo-300 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400";
 
 const footerLink =
-  "inline-flex items-center gap-2 text-sm text-zinc-400 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400";
+  "inline-flex items-center gap-1.5 text-sm text-indigo-300/90 transition hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400";
 
 function GoogleMark({ className }: { className?: string }) {
   return (
@@ -48,7 +48,7 @@ export function ListingLinks({ location }: { location: ListingLocation }) {
     <div
       className={
         location === "footer"
-          ? "mt-2 flex flex-col"
+          ? "flex flex-wrap gap-x-4 gap-y-1.5"
           : "mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-6"
       }
     >
@@ -60,8 +60,8 @@ export function ListingLinks({ location }: { location: ListingLocation }) {
         rel="noopener noreferrer me"
         className={className}
       >
-        <Facebook className="h-4 w-4 shrink-0" aria-hidden="true" />
-        Follow us on Facebook
+        <Facebook className="h-4 w-4 shrink-0 text-sky-400" aria-hidden="true" />
+        Facebook
       </TrackedLink>
       <TrackedLink
         href={DIGISOL_LINKEDIN_URL}
@@ -69,10 +69,10 @@ export function ListingLinks({ location }: { location: ListingLocation }) {
         eventParams={{ network: "linkedin", location }}
         target="_blank"
         rel="noopener noreferrer me"
-        className={location === "footer" ? `mt-2 ${className}` : className}
+        className={className}
       >
-        <Linkedin className="h-4 w-4 shrink-0" aria-hidden="true" />
-        Connect on LinkedIn
+        <Linkedin className="h-4 w-4 shrink-0 text-sky-400" aria-hidden="true" />
+        LinkedIn
       </TrackedLink>
       <TrackedLink
         href={DIGISOL_INSTAGRAM_URL}
@@ -80,10 +80,10 @@ export function ListingLinks({ location }: { location: ListingLocation }) {
         eventParams={{ network: "instagram", location }}
         target="_blank"
         rel="noopener noreferrer me"
-        className={location === "footer" ? `mt-2 ${className}` : className}
+        className={className}
       >
-        <Instagram className="h-4 w-4 shrink-0" aria-hidden="true" />
-        Follow us on Instagram
+        <Instagram className="h-4 w-4 shrink-0 text-sky-400" aria-hidden="true" />
+        Instagram
       </TrackedLink>
       <TrackedLink
         href={DIGISOL_GOOGLE_LISTING_URL}
@@ -91,10 +91,10 @@ export function ListingLinks({ location }: { location: ListingLocation }) {
         eventParams={{ network: "google", location }}
         target="_blank"
         rel="noopener noreferrer"
-        className={location === "footer" ? `mt-2 ${className}` : className}
+        className={className}
       >
         <GoogleMark className="h-4 w-4 shrink-0" />
-        Find us on Google
+        Google
       </TrackedLink>
     </div>
   );
@@ -113,7 +113,7 @@ export function GoogleRating({ location }: { location: ListingLocation }) {
       aria-label="Leave a Google review for DigiSol"
       className={
         isFooter
-          ? "mt-3 inline-flex items-center gap-3 rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-3 py-2 text-left transition hover:border-indigo-400/50 hover:bg-indigo-500/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+          ? "inline-flex items-center gap-2.5 rounded-lg border border-indigo-400/30 bg-indigo-500/10 px-2.5 py-1.5 text-left transition hover:border-sky-400/40 hover:bg-indigo-500/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
           : "inline-flex items-center gap-3 rounded-2xl border border-indigo-400/30 bg-indigo-500/10 px-4 py-3 text-left transition hover:border-indigo-400/50 hover:bg-indigo-500/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
       }
     >
@@ -121,7 +121,7 @@ export function GoogleRating({ location }: { location: ListingLocation }) {
         {Array.from({ length: 5 }).map((_, index) => (
           <Star
             key={index}
-            className="h-4 w-4 fill-amber-400 text-amber-400"
+            className="h-3.5 w-3.5 fill-amber-400 text-amber-400"
           />
         ))}
       </span>
@@ -129,7 +129,7 @@ export function GoogleRating({ location }: { location: ListingLocation }) {
         <span
           className={
             isFooter
-              ? "block text-sm font-medium text-zinc-200"
+              ? "block text-sm font-medium text-sky-200"
               : "block text-sm font-semibold text-white"
           }
         >
@@ -138,7 +138,7 @@ export function GoogleRating({ location }: { location: ListingLocation }) {
         <span
           className={
             isFooter
-              ? "block text-xs text-zinc-500"
+              ? "block text-xs text-indigo-300/70"
               : "block text-xs text-zinc-400"
           }
         >

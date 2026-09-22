@@ -20,71 +20,76 @@ const jumps = [
 ];
 
 const linkClass =
-  "inline-flex items-center gap-2 text-sm text-zinc-400 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400";
+  "inline-flex items-center gap-1.5 text-sm text-indigo-300/90 transition hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400";
 
 export function Footer() {
   return (
-    <footer className="border-t border-zinc-800 bg-zinc-950 px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-2 lg:items-start">
-        <div>
-          <Logo size="footer" />
-          <p className="mt-3 max-w-sm text-sm text-zinc-500">
-            {`Website design, custom development, local SEO, and digital marketing for Alberta companies. Based in Airdrie. Serving ${DIGISOL_SERVICE_CITIES.join(", ")}, and local businesses across the province.`}
-          </p>
-          <p className="mt-2 max-w-sm text-sm text-zinc-500">
-            {DIGISOL_ADDRESS_LINE}
-          </p>
-          <a href="https://wwwdigisol.com" className={`mt-3 ${linkClass}`}>
-            <Globe className="h-4 w-4 shrink-0" aria-hidden="true" />
-            wwwdigisol.com
-          </a>
-          <ListingLinks location="footer" />
-          <GoogleRating location="footer" />
-        </div>
-
-        <div className="space-y-8">
-          <nav aria-label="Footer">
-            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-              Jump to
+    <footer className="border-t border-indigo-500/25 bg-zinc-950 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-6xl flex-col gap-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
+          <div className="min-w-0 max-w-md shrink-0">
+            <Logo size="footer" />
+            <p className="mt-2 text-sm leading-snug text-indigo-200/70">
+              {`Design, development, SEO & marketing for Alberta companies · Airdrie · ${DIGISOL_SERVICE_CITIES.join(", ")}`}
             </p>
-            <ul className="mt-3 space-y-2">
-              {jumps.map((link) => (
-                <li key={link.href}>
-                  <a href={link.href} className={linkClass}>
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
+            <p className="mt-1 text-xs text-sky-300/70">{DIGISOL_ADDRESS_LINE}</p>
+            <a href="https://wwwdigisol.com" className={`mt-2 ${linkClass}`}>
+              <Globe className="h-3.5 w-3.5 shrink-0 text-sky-400" aria-hidden="true" />
+              wwwdigisol.com
+            </a>
+          </div>
 
-          <nav aria-label="Service cities">
-            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-              Alberta cities
-            </p>
-            <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
-              {LOCATION_PAGES.map((city) => (
-                <li key={city.slug}>
-                  <a href={locationPath(city.slug)} className={linkClass}>
-                    {city.name}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
+          <div className="min-w-0 flex-1 space-y-4">
+            <nav aria-label="Footer" className="w-full">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-indigo-400">
+                Jump to
+              </p>
+              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5">
+                {jumps.map((link) => (
+                  <li key={link.href}>
+                    <a href={link.href} className={linkClass}>
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
 
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-              Contact
-            </p>
-            <ContactInfo location="footer" />
+            <nav aria-label="Service cities" className="w-full">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-sky-400">
+                Alberta cities
+              </p>
+              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5">
+                {LOCATION_PAGES.map((city) => (
+                  <li key={city.slug}>
+                    <a href={locationPath(city.slug)} className={linkClass}>
+                      {city.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-indigo-400">
+                  Contact
+                </p>
+                <ContactInfo location="footer" />
+              </div>
+              <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+                <ListingLinks location="footer" />
+                <GoogleRating location="footer" />
+              </div>
+            </div>
           </div>
         </div>
+
+        <p className="border-t border-indigo-500/20 pt-4 text-xs text-indigo-200/55">
+          © {new Date().getFullYear()} DigiSol. {DIGISOL_REGION}. All rights
+          reserved.
+        </p>
       </div>
-      <p className="mx-auto mt-8 max-w-6xl border-t border-zinc-800 pt-6 text-sm text-zinc-500">
-        © {new Date().getFullYear()} DigiSol. {DIGISOL_REGION}. All rights
-        reserved.
-      </p>
     </footer>
   );
 }
