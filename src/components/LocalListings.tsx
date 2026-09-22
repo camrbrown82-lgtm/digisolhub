@@ -48,7 +48,7 @@ export function ListingLinks({ location }: { location: ListingLocation }) {
     <div
       className={
         location === "footer"
-          ? "flex flex-wrap gap-x-4 gap-y-1.5"
+          ? "flex flex-col gap-1.5"
           : "mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-6"
       }
     >
