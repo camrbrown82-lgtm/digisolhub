@@ -26,20 +26,22 @@ export function Footer() {
   return (
     <footer className="border-t border-indigo-500/25 bg-zinc-950 px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-6xl flex-col gap-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
-          <div className="min-w-0 max-w-md shrink-0">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,16rem)_minmax(0,1fr)] lg:items-start lg:gap-10">
+          <div className="min-w-0 space-y-3">
             <Logo size="footer" />
-            <p className="mt-2 text-sm leading-snug text-indigo-200/70">
+            <GoogleRating location="footer" />
+            <p className="text-sm leading-snug text-indigo-200/70">
               {`Design, development, SEO & marketing for Alberta companies · Airdrie · ${DIGISOL_SERVICE_CITIES.join(", ")}`}
             </p>
-            <p className="mt-1 text-xs text-sky-300/70">{DIGISOL_ADDRESS_LINE}</p>
-            <a href="https://wwwdigisol.com" className={`mt-2 ${linkClass}`}>
+            <p className="text-xs text-sky-300/70">{DIGISOL_ADDRESS_LINE}</p>
+            <a href="https://wwwdigisol.com" className={linkClass}>
               <Globe className="h-3.5 w-3.5 shrink-0 text-sky-400" aria-hidden="true" />
               wwwdigisol.com
             </a>
+            <ListingLinks location="footer" />
           </div>
 
-          <div className="min-w-0 flex-1 space-y-4">
+          <div className="min-w-0 space-y-4">
             <nav aria-label="Footer" className="w-full">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-indigo-400">
                 Jump to
@@ -70,17 +72,11 @@ export function Footer() {
               </ul>
             </nav>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-              <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-indigo-400">
-                  Contact
-                </p>
-                <ContactInfo location="footer" />
-              </div>
-              <div className="flex shrink-0 flex-col gap-2 sm:items-end">
-                <ListingLinks location="footer" />
-                <GoogleRating location="footer" />
-              </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-indigo-400">
+                Contact
+              </p>
+              <ContactInfo location="footer" />
             </div>
           </div>
         </div>
