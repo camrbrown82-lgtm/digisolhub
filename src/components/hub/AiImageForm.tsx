@@ -83,6 +83,7 @@ export function AiImageForm({
     setUrls(nextUrls);
     setArtDirection(result.prompt ?? "");
     setSocial(result.social ?? null);
+    setPrompt("");
     const slideCount = result.slides?.length || nextUrls.length || 1;
     setStatus(
       result.warning
