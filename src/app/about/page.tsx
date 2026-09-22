@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { CredentialsGallery } from "@/components/CredentialsGallery";
@@ -7,6 +8,7 @@ import {
   CREDENTIALS_PAGE_PATH,
   CREDENTIALS_PAGE_URL,
   FOUNDER_BIO,
+  FOUNDER_PHOTO,
 } from "@/lib/credentials";
 import { DIGISOL_FOUNDER, DIGISOL_FOUNDER_TITLE, DIGISOL_SITE_URL } from "@/lib/site";
 
@@ -23,7 +25,12 @@ export const metadata: Metadata = {
     siteName: "DigiSol",
     locale: "en_CA",
     type: "profile",
-    images: [{ url: "/logo.jpg", alt: "DigiSol" }],
+    images: [
+      {
+        url: FOUNDER_PHOTO,
+        alt: `${DIGISOL_FOUNDER}, founder of DigiSol`,
+      },
+    ],
   },
 };
 
@@ -33,6 +40,7 @@ const personJsonLd = {
   name: DIGISOL_FOUNDER,
   jobTitle: DIGISOL_FOUNDER_TITLE,
   url: CREDENTIALS_PAGE_URL,
+  image: `${DIGISOL_SITE_URL}${FOUNDER_PHOTO}`,
   worksFor: {
     "@type": "Organization",
     name: "DigiSol",
@@ -59,19 +67,15 @@ export default function AboutPage() {
           </p>
           <div className="mt-6 grid items-start gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.15fr)] lg:gap-14">
             <div className="space-y-6">
-              <div
-                className="flex aspect-[4/5] max-w-sm flex-col items-center justify-center rounded-3xl border border-dashed border-indigo-400/35 bg-gradient-to-b from-indigo-500/10 to-zinc-900/60 px-6 text-center"
-                aria-label="Profile photo coming soon"
-              >
-                <div className="flex h-28 w-28 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900 text-3xl font-semibold text-indigo-200">
-                  CB
-                </div>
-                <p className="mt-5 text-sm font-medium text-zinc-200">
-                  Profile photo coming soon
-                </p>
-                <p className="mt-1 text-xs text-zinc-500">
-                  Space reserved for Cameron&apos;s headshot
-                </p>
+              <div className="relative aspect-[4/5] max-w-sm overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900 shadow-[0_24px_60px_-28px_rgba(79,70,229,0.55)]">
+                <Image
+                  src={FOUNDER_PHOTO}
+                  alt={`${FOUNDER_BIO.name}, founder of DigiSol`}
+                  fill
+                  priority
+                  className="object-cover object-[center_18%]"
+                  sizes="(max-width: 1024px) 90vw, 380px"
+                />
               </div>
               <div>
                 <h1 className="text-balance text-4xl font-bold tracking-tight text-white sm:text-5xl">

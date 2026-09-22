@@ -11,6 +11,8 @@ export type CredentialItem = {
   blurb?: string;
 };
 
+export const FOUNDER_PHOTO = "/about/cameron-brown.jpg";
+
 export const FOUNDER_BIO = {
   name: DIGISOL_FOUNDER,
   headline: "Design, code, and growth — built with the same hands-on grit",
