@@ -1,6 +1,13 @@
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { emitHubEvent } from "@/lib/events";
 import { findOrCreateClient } from "@/lib/workspace";
+import {
+  attributionTags,
+  emptyAttribution,
+  parseAttributionFromBody,
+  type AttributionPayload,
+} from "@/lib/meta/attribution";
+import { ensureMetaSchema } from "@/lib/ensureMetaSchema";
 
 export type LeadPayload = {
   name?: string | null;
@@ -12,6 +19,8 @@ export type LeadPayload = {
   message?: string | null;
   source?: string | null;
   tags?: string[] | null;
+  attribution?: AttributionPayload;
+  metaEventId?: string | null;
 };
 
 function parseCompanyDomain(raw?: string | null) {
@@ -38,6 +47,16 @@ export function normalizeLead(body: Record<string, unknown>): LeadPayload {
     nested.company ?? nested.business ?? nested.business_name ?? "",
   ).trim();
   const parsed = parseCompanyDomain(business);
+  const attribution = parseAttributionFromBody(body);
+  const metaEventId =
+    typeof nested.event_id === "string"
+      ? nested.event_id.trim()
+      : typeof nested.eventId === "string"
+        ? nested.eventId.trim()
+        : typeof body.event_id === "string"
+          ? body.event_id.trim()
+          : null;
+
   return {
     name: name || null,
     email: email || null,
@@ -48,6 +67,8 @@ export function normalizeLead(body: Record<string, unknown>): LeadPayload {
     message: String(nested.message ?? nested.details ?? nested.project_details ?? "").trim() || null,
     source: String(nested.source ?? body.from_name ?? "web3forms").trim() || "web3forms",
     tags: Array.isArray(nested.tags) ? (nested.tags as string[]) : ["lead"],
+    attribution,
+    metaEventId,
   };
 }
 
@@ -60,6 +81,8 @@ export async function upsertLead(payload: LeadPayload) {
     throw new Error("A valid email is required");
   }
 
+  await ensureMetaSchema().catch(() => null);
+
   const admin = createAdminClient();
   const clientId = await findOrCreateClient(admin, {
     name: payload.company,
@@ -68,36 +91,118 @@ export async function upsertLead(payload: LeadPayload) {
 
   const { data: existing } = await admin
     .from("contacts")
-    .select("id, tags")
+    .select("id, tags, campaign_channel, utm_campaign, source")
     .ilike("email", email)
     .maybeSingle();
 
+  const attr = payload.attribution || emptyAttribution();
   const tags = Array.from(
-    new Set([...(existing?.tags ?? []), ...(payload.tags ?? ["lead"])]),
+    new Set([
+      ...(existing?.tags ?? []),
+      ...(payload.tags ?? ["lead"]),
+      ...attributionTags(attr),
+    ]),
   );
 
-  const row = {
+  const fromFacebook =
+    attr.campaign_channel === "facebook" ||
+    attr.campaign_channel === "instagram" ||
+    Boolean(attr.fbclid);
+
+  const row: Record<string, unknown> = {
     name: payload.name,
     email,
     company: payload.company,
     domain: payload.domain,
     phone: payload.phone,
     service: payload.service,
-    source: payload.source ?? "web3forms",
+    source: fromFacebook
+      ? payload.source === "web3forms"
+        ? "facebook"
+        : payload.source ?? "facebook"
+      : payload.source ?? "web3forms",
     tags,
     notes_preview: payload.message?.slice(0, 280) ?? null,
     client_id: clientId,
   };
 
+  // First-touch attribution: only fill empty contact fields.
+  if (attr.campaign_channel && !existing?.campaign_channel) {
+    row.campaign_channel = attr.campaign_channel;
+  }
+  if (attr.ab_variant) row.ab_variant = attr.ab_variant;
+  if (attr.utm_source) row.utm_source = attr.utm_source;
+  if (attr.utm_medium) row.utm_medium = attr.utm_medium;
+  if (attr.utm_campaign && !existing?.utm_campaign) {
+    row.utm_campaign = attr.utm_campaign;
+  }
+  if (attr.utm_content) row.utm_content = attr.utm_content;
+  if (attr.utm_term) row.utm_term = attr.utm_term;
+  if (attr.fbclid) row.fbclid = attr.fbclid;
+  if (attr.fbp) row.fbp = attr.fbp;
+  if (attr.fbc) row.fbc = attr.fbc;
+  if (attr.landing_path) row.landing_path = attr.landing_path;
+  if (payload.metaEventId) row.meta_event_id = payload.metaEventId;
+
   let contactId = existing?.id as string | undefined;
 
   if (existing) {
     const { error } = await admin.from("contacts").update(row).eq("id", existing.id);
-    if (error) throw error;
+    if (error) {
+      // Older DBs without attribution columns — retry core fields only.
+      if (/column|schema cache/i.test(error.message)) {
+        const {
+          utm_source: _u1,
+          utm_medium: _u2,
+          utm_campaign: _u3,
+          utm_content: _u4,
+          utm_term: _u5,
+          fbclid: _f1,
+          fbp: _f2,
+          fbc: _f3,
+          landing_path: _l,
+          meta_event_id: _m,
+          ...core
+        } = row;
+        const { error: retryError } = await admin
+          .from("contacts")
+          .update(core)
+          .eq("id", existing.id);
+        if (retryError) throw retryError;
+      } else {
+        throw error;
+      }
+    }
   } else {
     const { data, error } = await admin.from("contacts").insert(row).select("id").single();
-    if (error) throw error;
-    contactId = data.id;
+    if (error) {
+      if (/column|schema cache/i.test(error.message)) {
+        const {
+          utm_source: _u1,
+          utm_medium: _u2,
+          utm_campaign: _u3,
+          utm_content: _u4,
+          utm_term: _u5,
+          fbclid: _f1,
+          fbp: _f2,
+          fbc: _f3,
+          landing_path: _l,
+          meta_event_id: _m,
+          ...core
+        } = row;
+        const { data: retryData, error: retryError } = await admin
+          .from("contacts")
+          .insert(core)
+          .select("id")
+          .single();
+        if (retryError) throw retryError;
+        contactId = retryData.id;
+      } else {
+        throw error;
+      }
+    } else {
+      contactId = data.id;
+    }
   }
 
   if (payload.message && contactId) {
@@ -130,8 +235,8 @@ export async function upsertLead(payload: LeadPayload) {
             phone: payload.phone,
             company: payload.company,
             service: payload.service,
-            source: "website",
-            channel: "web",
+            source: fromFacebook ? "facebook" : "website",
+            channel: fromFacebook ? "facebook" : "web",
             stage: "new",
             notes_preview: payload.message?.slice(0, 280) ?? null,
           })
@@ -152,5 +257,10 @@ export async function upsertLead(payload: LeadPayload) {
     }
   }
 
-  return { id: contactId, created: !existing };
+  return {
+    id: contactId,
+    created: !existing,
+    attribution: attr,
+    fromFacebook,
+  };
 }

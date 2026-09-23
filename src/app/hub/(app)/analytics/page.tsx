@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { CopySnippet } from "@/components/hub/CopySnippet";
+import { MetaAdsPanel } from "@/components/hub/MetaAdsPanel";
 import { WebsiteAuditPanel } from "@/components/hub/WebsiteAuditPanel";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { fetchDigisolGa4Summary, ga4ConfigStatus, type Ga4Summary } from "@/lib/ga4";
@@ -12,6 +13,10 @@ import {
 import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
 import { fetchAnalyticsEventsSummary } from "@/lib/analyticsEvents";
 import { reconcileHubEmailStats } from "@/lib/resendStats";
+import {
+  emptyMetaAdsSummary,
+  fetchMetaAdsSummary,
+} from "@/lib/meta/insights";
 import { contactIdsForClient, getActiveClient } from "@/lib/workspace";
 import { newSiteKey, summarizeSiteEvents, trackingSnippet } from "@/lib/site-analytics";
 import { createClient } from "@/lib/supabase/server";
@@ -106,7 +111,7 @@ export default async function AnalyticsPage() {
 
   // One reconciler for Performance + Hub cards (light sync + Resend fallback).
   // Time-box slow external calls so the page always paints first-party data.
-  const [contacts, unsubscribed, site, leadsResult, ga4, latestAudit, email, agentEvents] =
+  const [contacts, unsubscribed, site, leadsResult, ga4, latestAudit, email, agentEvents, metaAds] =
     await Promise.all([
       contactsQuery,
       unsubQuery,
@@ -168,6 +173,11 @@ export default async function AnalyticsPage() {
         }),
         4000,
         emptyAgent,
+      ),
+      withTimeout(
+        isDigisol ? fetchMetaAdsSummary(14) : Promise.resolve(emptyMetaAdsSummary(14)),
+        8000,
+        emptyMetaAdsSummary(14),
       ),
     ]);
 
@@ -450,6 +460,8 @@ export default async function AnalyticsPage() {
           )}
         </div>
       </section>
+
+      {isDigisol ? <MetaAdsPanel summary={metaAds} /> : null}
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-white">Lead pipeline</h2>

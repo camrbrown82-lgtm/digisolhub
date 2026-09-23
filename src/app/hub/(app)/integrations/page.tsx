@@ -1,6 +1,12 @@
 import { parseFromAddress } from "@/lib/email";
 import { DispatchSendButton } from "@/components/hub/DispatchSendButton";
 import { ResendTrackingPanel } from "@/components/hub/ResendTrackingPanel";
+import {
+  metaAdsInsightsConfigured,
+  metaCapiConfigured,
+  metaPixelId,
+} from "@/lib/meta/config";
+import { metaPixelConfigured } from "@/lib/metaPixel";
 
 function status(ok: boolean) {
   return ok ? "Configured" : "Missing";
@@ -29,6 +35,27 @@ export default function IntegrationsPage() {
         process.env.GA4_PROPERTY_ID?.trim() &&
           (process.env.GA4_CLIENT_EMAIL?.trim() || process.env.GOOGLE_CLIENT_EMAIL?.trim()) &&
           (process.env.GA4_PRIVATE_KEY?.trim() || process.env.GOOGLE_PRIVATE_KEY?.trim()),
+      ),
+    },
+    {
+      name: "Meta Pixel",
+      ok: metaPixelConfigured(),
+      detail: metaPixelId() || "Missing",
+    },
+    {
+      name: "Meta Conversions API",
+      ok: metaCapiConfigured(),
+    },
+    {
+      name: "Meta Ads Insights",
+      ok: metaAdsInsightsConfigured(),
+    },
+    {
+      name: "Meta Page publish",
+      ok: Boolean(
+        process.env.META_PAGE_ID?.trim() &&
+          (process.env.META_PAGE_ACCESS_TOKEN?.trim() ||
+            process.env.FACEBOOK_PAGE_ACCESS_TOKEN?.trim()),
       ),
     },
   ];
@@ -104,6 +131,17 @@ export default function IntegrationsPage() {
           Hub visits and browsers that have used Hub are excluded from site
           analytics; use incognito or <code className="text-zinc-200">?track=1</code>{" "}
           to measure honestly.
+        </p>
+        <p className="mt-3">
+          Meta Pixel is live via{" "}
+          <code className="text-zinc-200">NEXT_PUBLIC_META_PIXEL_ID</code>. For
+          server Lead events (Conversions API) and Hub Ads metrics, set{" "}
+          <code className="text-zinc-200">META_CAPI_ACCESS_TOKEN</code> (system
+          user with ads_management / ads_read) and{" "}
+          <code className="text-zinc-200">META_AD_ACCOUNT_ID</code> (
+          <code className="text-zinc-200">act_…</code>). Contact form UTMs /
+          fbclid are stored on Hub contacts; Analytics syncs Insights daily via{" "}
+          <code className="text-zinc-200">/api/cron/meta-insights</code>.
         </p>
         <p className="mt-3">
           AI posters need <code className="text-zinc-200">OPENAI_API_KEY</code> on

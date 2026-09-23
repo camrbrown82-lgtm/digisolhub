@@ -7,6 +7,10 @@ import { BrandCard } from "@/components/BrandCard";
 import { GoogleRating } from "@/components/LocalListings";
 import { trackMetaEvent } from "@/components/MetaPixel";
 import { trackEvent } from "@/lib/analytics";
+import {
+  getAttributionForSubmit,
+  newMetaEventId,
+} from "@/lib/attributionClient";
 
 const fieldClass =
   "mt-1.5 w-full rounded-lg border border-indigo-400/25 bg-zinc-950/80 px-3 py-2.5 text-sm text-white placeholder:text-zinc-500 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30";
@@ -31,6 +35,8 @@ export function Contact({
     const data = new FormData(form);
 
     try {
+      const eventId = newMetaEventId();
+      const attribution = getAttributionForSubmit();
       const response = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -41,20 +47,38 @@ export function Contact({
           service: data.get("service"),
           message: data.get("details"),
           website_url: data.get("website_url"),
+          event_id: eventId,
+          event_source_url:
+            typeof window !== "undefined" ? window.location.href : undefined,
+          attribution,
         }),
       });
-      const result = (await response.json()) as { ok?: boolean; error?: string };
+      const result = (await response.json()) as {
+        ok?: boolean;
+        error?: string;
+        eventId?: string;
+      };
       if (!response.ok) {
         throw new Error(result.error || "Could not send the request.");
+      }
+      const dedupeId = result.eventId || eventId;
+      try {
+        sessionStorage.setItem("ds_meta_lead_event_id", dedupeId);
+      } catch {
+        // ignore
       }
       trackEvent("generate_lead", {
         method: "contact_form",
         service: String(data.get("service") ?? ""),
       });
-      trackMetaEvent("Lead", {
-        content_name: "consultation_request",
-        content_category: String(data.get("service") ?? ""),
-      });
+      trackMetaEvent(
+        "Lead",
+        {
+          content_name: "consultation_request",
+          content_category: String(data.get("service") ?? ""),
+        },
+        { eventID: dedupeId },
+      );
       router.push("/confirmation");
     } catch (err) {
       const detail = err instanceof Error ? err.message : "";

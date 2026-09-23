@@ -5,6 +5,7 @@ import { DigiSolSiteBeacon } from "@/components/DigiSolSiteBeacon";
 import { MetaPixel } from "@/components/MetaPixel";
 import { PublicKaylevChat } from "@/components/PublicKaylevChat";
 import { PublicSiteAnalytics } from "@/components/PublicSiteAnalytics";
+import { AttributionCaptureBoundary } from "@/components/AttributionCaptureBoundary";
 import {
   WEBSITE_AUDIT_DESCRIPTION,
   WEBSITE_AUDIT_PAGE_URL,
@@ -192,6 +193,7 @@ export default function RootLayout({
           <DigiSolSiteBeacon />
         </PublicSiteAnalytics>
         <MetaPixel />
+        <AttributionCaptureBoundary />
       </body>
     </html>
   );

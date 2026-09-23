@@ -2,8 +2,12 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { getResendApiKey, getResendFrom } from "@/lib/email";
 import { getWeb3FormsAccessKey } from "@/lib/supabase/env";
-import { hasAdminClient } from "@/lib/supabase/admin";
+import { hasAdminClient, createAdminClient } from "@/lib/supabase/admin";
 import { normalizeLead, upsertLead } from "@/lib/leads";
+import { sendMetaLeadEvent } from "@/lib/meta/capi";
+import { parseAttributionFromBody } from "@/lib/meta/attribution";
+import { DIGISOL_SITE_URL } from "@/lib/site";
+import { ensureMetaSchema } from "@/lib/ensureMetaSchema";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -156,20 +160,85 @@ export async function POST(request: Request) {
   }
 
   let leadSaved = false;
+  let contactId: string | undefined;
+  const eventId =
+    str(body.event_id) ||
+    str(body.eventId) ||
+    `lead_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  const attribution = parseAttributionFromBody(body);
+
   if (hasAdminClient()) {
     try {
-      await upsertLead(
+      const saved = await upsertLead(
         normalizeLead({
           ...body,
           ...fields,
           source: "web3forms",
+          event_id: eventId,
+          attribution,
         }),
       );
-      leadSaved = true;
+      leadSaved = Boolean(saved.id);
+      contactId = saved.id;
     } catch (error) {
       console.error("Lead ingest failed", error);
       deliveryErrors.push("Could not save lead to Hub.");
     }
+  }
+
+  // Server-side Meta Conversions API (deduped with browser Pixel via event_id).
+  let capiOk = false;
+  try {
+    const forwarded = request.headers.get("x-forwarded-for") || "";
+    const clientIp =
+      forwarded.split(",")[0]?.trim() ||
+      request.headers.get("x-real-ip") ||
+      null;
+    const landing = attribution.landing_path;
+    const eventSourceUrl =
+      str(body.event_source_url) ||
+      (landing
+        ? `${DIGISOL_SITE_URL}${landing.startsWith("/") ? "" : "/"}${landing}`
+        : `${DIGISOL_SITE_URL}/#contact`);
+    const capi = await sendMetaLeadEvent({
+      eventId,
+      eventSourceUrl,
+      user: {
+        email: fields.email,
+        phone: str(body.phone) || null,
+        fbp: attribution.fbp,
+        fbc: attribution.fbc,
+        clientIpAddress: clientIp,
+        clientUserAgent: request.headers.get("user-agent"),
+      },
+      customData: {
+        content_name: "consultation_request",
+        content_category: fields.service || undefined,
+        utm_campaign: attribution.utm_campaign || undefined,
+        utm_content: attribution.utm_content || undefined,
+      },
+    });
+    capiOk = capi.ok;
+    if (!capi.skipped && hasAdminClient()) {
+      await ensureMetaSchema().catch(() => null);
+      const admin = createAdminClient();
+      await admin.from("meta_capi_events").upsert(
+        {
+          event_name: "Lead",
+          event_id: eventId,
+          contact_id: contactId || null,
+          status: capi.ok ? "ok" : "error",
+          error_message: capi.error || null,
+          response: capi.raw || {},
+        },
+        { onConflict: "event_id" },
+      );
+    }
+    if (!capi.ok && !capi.skipped) {
+      console.error("Meta CAPI Lead failed", capi.error);
+    }
+  } catch (error) {
+    console.error("Meta CAPI Lead exception", error);
   }
 
   if (!delivered && !leadSaved) {
@@ -188,5 +257,8 @@ export async function POST(request: Request) {
     ok: true,
     delivered,
     leadSaved,
+    eventId,
+    capiOk,
+    campaignChannel: attribution.campaign_channel,
   });
 }

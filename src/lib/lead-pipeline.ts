@@ -16,6 +16,7 @@ export const LEAD_SOURCES = [
   { id: "cold_call", label: "Cold call" },
   { id: "walk_in", label: "Walk-in" },
   { id: "website", label: "Website" },
+  { id: "facebook", label: "Facebook / Meta" },
   { id: "other", label: "Other" },
 ] as const;
 
@@ -25,6 +26,7 @@ export const LEAD_CHANNELS = [
   { id: "email", label: "Email" },
   { id: "social", label: "Social" },
   { id: "web", label: "Web" },
+  { id: "facebook", label: "Facebook" },
   { id: "other", label: "Other" },
 ] as const;
 
