@@ -16,7 +16,6 @@ const jumps = [
   { href: "/about", label: "About" },
   { href: "/locations", label: "Locations" },
   { href: "/#contact", label: "Contact" },
-  { href: "/hub", label: "Admin" },
 ];
 
 const linkClass =

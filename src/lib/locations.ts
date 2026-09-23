@@ -1,8 +1,5 @@
 import { DIGISOL_SITE_URL } from "@/lib/site";
-import {
-  homeCopyForAudience,
-  type HomeCopy,
-} from "@/lib/visitorRegion";
+import { homeCopyAlberta, type HomeCopy } from "@/lib/visitorRegion";
 
 export type LocationPage = {
   slug: string;
@@ -18,7 +15,7 @@ export type LocationPage = {
 
 /** Same homepage copy shape — city name swapped into hero / services / contact. */
 export function homeCopyForLocation(page: LocationPage): HomeCopy {
-  const base = homeCopyForAudience("alberta");
+  const base = homeCopyAlberta();
   return {
     ...base,
     heroEyebrow: page.regionLabel,
@@ -45,7 +42,7 @@ export function homeCopyForLocation(page: LocationPage): HomeCopy {
 
 /** Alberta-wide `/locations` hub — same stack as home, not locked to one city. */
 export function homeCopyForLocationsHub(): HomeCopy {
-  const base = homeCopyForAudience("alberta");
+  const base = homeCopyAlberta();
   return {
     ...base,
     heroEyebrow: "DigiSol service areas · Alberta-wide",

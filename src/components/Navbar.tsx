@@ -18,7 +18,7 @@ const links = [
 ];
 
 /**
- * Header: wordmark left · centered page links + Contact/Admin · badge right.
+ * Header: wordmark left · centered page links + Contact · badge right.
  */
 export function Navbar() {
   const [open, setOpen] = useState(false);
@@ -94,12 +94,6 @@ export function Navbar() {
           >
             Contact
           </TrackedLink>
-          <a
-            href="/hub"
-            className="inline-flex items-center rounded-full border border-sky-400/40 px-4 py-2 text-sm font-medium text-sky-300 transition hover:border-indigo-400 hover:bg-indigo-500/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
-          >
-            Admin
-          </a>
         </nav>
 
         {/* Right — secondary badge */}
@@ -173,15 +167,6 @@ export function Navbar() {
               >
                 Contact
               </TrackedLink>
-            </li>
-            <li>
-              <a
-                href="/hub"
-                className="block rounded-lg px-3 py-2 text-sky-300 hover:bg-indigo-500/10"
-                onClick={() => setOpen(false)}
-              >
-                Admin
-              </a>
             </li>
           </ul>
         </nav>

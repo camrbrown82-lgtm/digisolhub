@@ -1,26 +1,17 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { isAllowedEmail } from "@/lib/allowlist";
 
+/**
+ * Magic-link / OTP callbacks are disabled.
+ * Hub access is password + owner allowlist only.
+ */
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/hub/analytics";
-
-  if (code) {
+  const { origin } = new URL(request.url);
+  try {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user && isAllowedEmail(user.email)) {
-        return NextResponse.redirect(`${origin}${next}`);
-      }
-      await supabase.auth.signOut();
-      return NextResponse.redirect(`${origin}/hub/login?error=not-allowed`);
-    }
+    await supabase.auth.signOut();
+  } catch {
+    // ignore — still bounce to password login
   }
-
   return NextResponse.redirect(`${origin}/hub/login?error=auth`);
 }

@@ -120,48 +120,48 @@ export type HomeCopy = {
   chatGreetingAudience: string;
 };
 
-/** Homepage / chat copy keyed by audience. */
-export function homeCopyForAudience(audience: VisitorAudience): HomeCopy {
-  if (audience === "international") {
-    return {
-      heroEyebrow: "Website design, engineering & growth marketing",
-      heroTitleLead: "Website Design,",
-      heroTitleAccent: "Development & Marketing",
-      heroTitleTail: "",
-      heroTagline: "Where Design, Engineering, and Growth Meet",
-      heroSub:
-        "Custom websites we design and build — then marketing that fills them",
-      heroBody:
-        "DigiSol partners with growing companies on brand-led websites, modern Next.js builds, SEO, and paid media. Whether you serve a local market or customers across borders, we design the site, engineer the platform, and help the right people find you and convert.",
-      heroMarkets: "Remote-friendly · North America & beyond",
-      whyTitle: "The DigiSol Advantage",
-      whyBody:
-        "We design the website, engineer it to convert, and market it — one partner, not a designer, a developer, and an agency.",
-      designBook: "Pages built around how your customers actually inquire and buy",
-      devSpeed: "Lightning-fast load times that protect SEO and conversions",
-      mktPaid: "Targeted Meta & Search campaigns matched to your market",
-      mktSeo: "SEO and local discovery tuned to the places you actually sell",
-      audienceIntro:
-        "Startups and established companies get the same playbook: a designed website, code that converts, and marketing that ships — wherever you operate.",
-      audienceStartupBody:
-        "A designed site and a lean custom build so you launch looking real — then clear positioning so the right customers can find you.",
-      audienceStartupPoint: "Launch strategy and market positioning",
-      audienceEstablishedBody:
-        "Redesign the site customers actually use, then modernize the platform under it — with marketing and conversion work wired in for established companies.",
-      servicesPaid:
-        "Google Ads, Meta Ads, and SEO so searches in your markets turn into customers.",
-      servicesCommerce:
-        "Online stores and custom auction/web platforms for retailers and service businesses that need to sell, list, and grow.",
-      auditBody:
-        "A short presentation on what businesses should fix first — design, speed, SEO, and the path from visit to booked work. Export ready captions for Facebook, LinkedIn, and Instagram below.",
-      contactTitle: "Ready to Grow Your Business Online?",
-      contactBody:
-        "Get a project quote or free strategy consult for website design, custom development, SEO, and campaigns — built for companies that sell locally or across borders.",
-      chatGreetingAudience: "businesses",
-    };
-  }
+/** Shared non-Alberta marketing copy — same MarketingHomeStack, general framing. */
+export function homeCopyGeneral(): HomeCopy {
+  return {
+    heroEyebrow: "Website design, engineering & growth marketing",
+    heroTitleLead: "Website Design,",
+    heroTitleAccent: "Development & Marketing",
+    heroTitleTail: "",
+    heroTagline: "Where Design, Engineering, and Growth Meet",
+    heroSub:
+      "Custom websites we design and build — then marketing that fills them",
+    heroBody:
+      "DigiSol partners with growing companies on brand-led websites, modern Next.js builds, SEO, and paid media. Whether you serve a local market or customers across borders, we design the site, engineer the platform, and help the right people find you and convert.",
+    heroMarkets: "Remote-friendly · North America & beyond",
+    whyTitle: "The DigiSol Advantage",
+    whyBody:
+      "We design the website, engineer it to convert, and market it — one partner, not a designer, a developer, and an agency.",
+    designBook: "Pages built around how your customers actually inquire and buy",
+    devSpeed: "Lightning-fast load times that protect SEO and conversions",
+    mktPaid: "Targeted Meta & Search campaigns matched to your market",
+    mktSeo: "SEO and local discovery tuned to the places you actually sell",
+    audienceIntro:
+      "Startups and established companies get the same playbook: a designed website, code that converts, and marketing that ships — wherever you operate.",
+    audienceStartupBody:
+      "A designed site and a lean custom build so you launch looking real — then clear positioning so the right customers can find you.",
+    audienceStartupPoint: "Launch strategy and market positioning",
+    audienceEstablishedBody:
+      "Redesign the site customers actually use, then modernize the platform under it — with marketing and conversion work wired in for established companies.",
+    servicesPaid:
+      "Google Ads, Meta Ads, and SEO so searches in your markets turn into customers.",
+    servicesCommerce:
+      "Online stores and custom auction/web platforms for retailers and service businesses that need to sell, list, and grow.",
+    auditBody:
+      "A short presentation on what businesses should fix first — design, speed, SEO, and the path from visit to booked work. Export ready captions for Facebook, LinkedIn, and Instagram below.",
+    contactTitle: "Ready to Grow Your Business Online?",
+    contactBody:
+      "Get a project quote or free strategy consult for website design, custom development, SEO, and campaigns — built for companies that sell locally or across borders.",
+    chatGreetingAudience: "businesses",
+  };
+}
 
-  // canada + alberta share Alberta-rooted primary layout (open to clients anywhere)
+/** Alberta-rooted copy for `/locations` hub and city lander base. */
+export function homeCopyAlberta(): HomeCopy {
   return {
     heroEyebrow: "Website design, engineering & growth — rooted in Alberta",
     heroTitleLead: "Website Design,",
@@ -200,4 +200,14 @@ export function homeCopyForAudience(audience: VisitorAudience): HomeCopy {
       "Get a project quote or free strategy consult for website design, custom development, SEO, and campaigns. Alberta-rooted, happy to work with companies wherever you sell.",
     chatGreetingAudience: "growing businesses",
   };
+}
+
+/**
+ * Audience → homepage copy.
+ * Alberta city geo still redirects to /locations/[city].
+ * Canada + international (and anyone on `/` outside those landers) get general stack copy.
+ */
+export function homeCopyForAudience(audience: VisitorAudience): HomeCopy {
+  if (audience === "alberta") return homeCopyAlberta();
+  return homeCopyGeneral();
 }
