@@ -6,12 +6,14 @@ import {
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
+import { BrandCard, brandAccent, type BrandAccent } from "@/components/BrandCard";
 import { TrackedLink } from "@/components/TrackedLink";
 
 type Pillar = {
   icon: LucideIcon;
   title: string;
   body: string;
+  accent: BrandAccent;
 };
 
 const PILLARS: Pillar[] = [
@@ -19,21 +21,25 @@ const PILLARS: Pillar[] = [
     icon: MessageCircle,
     title: "24/7 Midnight Lead Capture",
     body: "Never miss a high-intent prospect. Kaylev catches social and website leads around the clock and engages them instantly—before interest cools down.",
+    accent: "indigo",
   },
   {
     icon: Radar,
     title: "Autonomous Site Audits & Local SEO",
     body: "Kaylev scans your web presence, flags performance leaks, and strengthens local ranking so customers in your area find you first.",
+    accent: "blue",
   },
   {
     icon: Share2,
     title: "Multi-Channel Campaign Orchestration",
     body: "From automated email follow-ups to coordinated social touchpoints, Kaylev runs outreach pipelines without a manual click for every step.",
+    accent: "blue",
   },
   {
     icon: Clock3,
     title: "15+ Hours/Week Recovered",
     body: "Cut repetitive data entry, manual posting, and basic follow-ups so you can focus on closing deals and running the business.",
+    accent: "indigo",
   },
 ];
 
@@ -83,35 +89,51 @@ export function KaylevValueProp({
           </p>
         </div>
 
-        <ul className="mt-12 grid gap-4 sm:grid-cols-2">
+        <ul className="mt-12 grid gap-6 sm:grid-cols-2">
           {PILLARS.map((pillar) => {
             const Icon = pillar.icon;
+            const styles = brandAccent[pillar.accent];
             return (
-              <li
-                key={pillar.title}
-                className="rounded-2xl border border-white/10 bg-zinc-900/50 p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)] backdrop-blur-sm transition hover:border-indigo-400/30"
-              >
-                <div className="flex items-start gap-4">
-                  <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-300">
-                    <Icon className="h-5 w-5" aria-hidden="true" />
-                  </span>
-                  <div>
-                    <h3 className="text-lg font-semibold tracking-tight text-white">
-                      {pillar.title}
-                    </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-                      {pillar.body}
-                    </p>
+              <li key={pillar.title} className="h-full">
+                <BrandCard
+                  accent={pillar.accent}
+                  as="div"
+                  className="h-full"
+                  innerClassName="flex h-full flex-col p-6 sm:p-8"
+                >
+                  <div className="flex items-start gap-4">
+                    <span
+                      className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${styles.icon}`}
+                    >
+                      <Icon className="h-6 w-6" aria-hidden="true" />
+                    </span>
+                    <div>
+                      <h3
+                        className={`text-lg font-semibold tracking-tight sm:text-xl ${styles.heading}`}
+                      >
+                        {pillar.title}
+                      </h3>
+                      <p className="mt-3 text-sm leading-relaxed text-zinc-200">
+                        {pillar.body}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                </BrandCard>
               </li>
             );
           })}
         </ul>
 
-        <div className="mt-10 rounded-2xl border border-indigo-400/25 bg-gradient-to-br from-indigo-500/10 via-zinc-950/40 to-sky-500/5 p-6 text-center sm:p-8">
-          <p className="text-sm font-medium text-indigo-200">The DigiSol Advantage</p>
-          <p className="mx-auto mt-2 max-w-2xl text-base leading-relaxed text-zinc-300">
+        <BrandCard
+          accent="indigo"
+          as="div"
+          className="mt-10"
+          innerClassName="p-6 text-center sm:p-8"
+        >
+          <p className="text-sm font-semibold uppercase tracking-wider text-indigo-300">
+            The DigiSol Advantage
+          </p>
+          <p className="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-zinc-200">
             {advantageLine}
           </p>
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -133,7 +155,7 @@ export function KaylevValueProp({
                 cta_name: "kaylev_book_consult",
                 location: analyticsLocation,
               }}
-              className="inline-flex items-center justify-center rounded-full border border-indigo-400/40 bg-transparent px-6 py-3 text-sm font-semibold text-indigo-200 transition hover:border-indigo-300 hover:bg-indigo-500/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+              className="inline-flex items-center justify-center rounded-full border border-blue-400/50 bg-blue-500/10 px-6 py-3 text-sm font-semibold text-blue-200 transition hover:border-blue-300 hover:bg-blue-500/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
             >
               Book a consultation
             </TrackedLink>
@@ -142,7 +164,7 @@ export function KaylevValueProp({
             Prefer chat? Open Kaylev on this page and drop your URL for an instant
             audit walkthrough.
           </p>
-        </div>
+        </BrandCard>
       </div>
     </section>
   );
