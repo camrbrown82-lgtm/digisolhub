@@ -232,7 +232,7 @@ export async function processSocialPostQueue(
   let query = db
     .from("social_posts")
     .select(
-      "id, client_id, campaign_id, channel, variant, body, media_url, status, token_cost",
+      "id, client_id, campaign_id, channel, variant, body, media_url, status, token_cost, metadata",
     )
     .eq("status", "queued")
     .order("scheduled_at", { ascending: true, nullsFirst: true })
@@ -262,6 +262,18 @@ export async function processSocialPostQueue(
         channel: row.channel,
         ok: false,
         error: "Invalid channel",
+      });
+      continue;
+    }
+
+    const meta = (row as { metadata?: Record<string, unknown> }).metadata;
+    if (meta?.publishMode === "manual_facebook_group") {
+      results.push({
+        id: row.id,
+        channel: row.channel,
+        ok: false,
+        skipped: true,
+        error: "Manual Facebook Group post — copy from Hub Campaigns",
       });
       continue;
     }

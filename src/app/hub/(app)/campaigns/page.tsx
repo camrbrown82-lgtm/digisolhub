@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Activity, FlaskConical, Mail, Workflow } from "lucide-react";
+import { AbAuditVideoCampaignPanel } from "@/components/hub/AbAuditVideoCampaignPanel";
 import { AbCampaignBuilder } from "@/components/hub/AbCampaignBuilder";
 import { AbCampaignResults } from "@/components/hub/AbCampaignResults";
 import { AiWorkflowGenerator } from "@/components/hub/AiWorkflowGenerator";
@@ -231,6 +232,8 @@ export default async function CampaignsPage() {
           </div>
         ))}
       </section>
+
+      <AbAuditVideoCampaignPanel />
 
       <AbCampaignBuilder templates={templates} />
 
