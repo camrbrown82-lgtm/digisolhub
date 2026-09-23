@@ -50,13 +50,13 @@ export function Navbar() {
         Skip to content
       </a>
 
-      <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:h-[4.25rem] sm:px-6 lg:px-8">
-        <div className="flex min-w-0 shrink-0 items-center">
+      <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between gap-6 px-4 sm:h-24 sm:px-6 lg:h-[6.5rem] lg:px-8">
+        <div className="flex shrink-0 items-center justify-start">
           <Logo />
         </div>
 
         <nav
-          className="hidden items-center gap-5 lg:flex xl:gap-6"
+          className="ml-auto hidden items-center gap-5 lg:flex xl:gap-6"
           aria-label="Primary"
         >
           {links.map((link) => (
