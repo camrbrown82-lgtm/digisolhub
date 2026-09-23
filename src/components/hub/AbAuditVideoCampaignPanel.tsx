@@ -22,6 +22,15 @@ type CampaignPayload = {
   } | null;
   posts?: CampaignPost[];
   stats?: { published: number; queued: number; failed: number; total: number };
+  metrics?: {
+    windowDays: number;
+    ctaLandings: number;
+    uniqueVisitors: number;
+    kaylevLeads: number;
+    kaylevAudits: number;
+    byVariant: Array<{ variant: string; label: string; landings: number }>;
+    note: string;
+  };
   recentEvents?: Array<{ event_type: string; success: boolean; created_at: string }>;
   videoUrl?: string;
   mediaPageUrl?: string;
@@ -188,6 +197,54 @@ export function AbAuditVideoCampaignPanel() {
           <Stat label="Posted" value={stats.published} />
           <Stat label="Still queued" value={stats.queued} />
           <Stat label="Failed" value={stats.failed} />
+        </div>
+      ) : null}
+
+      {data?.metrics ? (
+        <div className="space-y-3 rounded-xl border border-zinc-800 bg-zinc-950/50 p-4">
+          <div>
+            <h3 className="text-sm font-semibold text-white">
+              Social → DigiSol outcomes (last {data.metrics.windowDays} days)
+            </h3>
+            <p className="mt-1 text-xs text-zinc-500">{data.metrics.note}</p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <Stat label="CTA landings" value={data.metrics.ctaLandings} />
+            <Stat label="Unique visitors" value={data.metrics.uniqueVisitors} />
+            <Stat label="Kaylev leads" value={data.metrics.kaylevLeads} />
+            <Stat label="Kaylev audits" value={data.metrics.kaylevAudits} />
+          </div>
+          {data.metrics.byVariant.length > 0 ? (
+            <div>
+              <p className="text-xs font-medium text-zinc-400">
+                Landings by caption variant
+              </p>
+              <ul className="mt-2 space-y-1 text-xs text-zinc-400">
+                {data.metrics.byVariant.map((row) => (
+                  <li
+                    key={row.variant}
+                    className="flex justify-between gap-3 border-b border-zinc-800/80 py-1.5 last:border-0"
+                  >
+                    <span className="truncate text-zinc-300">
+                      v{row.variant} · {row.label}
+                    </span>
+                    <span className="shrink-0 text-zinc-500">{row.landings}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="text-xs text-zinc-600">
+              No UTM landings yet — after Groups see the post, clicks on the CTA
+              link appear here (and on Analytics).
+            </p>
+          )}
+          <div className="rounded-lg border border-zinc-800/80 bg-zinc-900/40 px-3 py-2 text-[11px] leading-relaxed text-zinc-500">
+            <strong className="text-zinc-400">Kaylev (site chat)</strong> can run
+            a free website audit, email the breakdown, capture a lead, and log
+            findings to Hub. Kaylev does <em>not</em> manage Facebook posting or
+            read Group metrics — that stays on this Campaigns panel + Analytics.
+          </div>
         </div>
       ) : null}
 

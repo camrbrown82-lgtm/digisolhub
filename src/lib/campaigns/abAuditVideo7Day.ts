@@ -365,7 +365,7 @@ export async function getAbAuditVideoCampaignStatus(db: SupabaseClient) {
   const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
   const { data: events } = await db
     .from("analytics_events")
-    .select("event_type, success, created_at, metadata")
+    .select("event_type, success, created_at, metadata, channel, source")
     .eq("company_id", clientId)
     .gte("created_at", since)
     .in("event_type", [
@@ -377,13 +377,85 @@ export async function getAbAuditVideoCampaignStatus(db: SupabaseClient) {
     .order("created_at", { ascending: false })
     .limit(100);
 
+  const metrics = await loadCampaignOutcomeMetrics(db, clientId, since);
+
   return {
     campaign,
     posts,
     stats: { published, queued, failed, total: posts.length },
+    metrics,
     recentEvents: events ?? [],
     videoUrl: WEBSITE_AUDIT_VIDEO_URL,
     mediaPageUrl: WEBSITE_AUDIT_PAGE_URL,
+  };
+}
+
+/**
+ * DigiSol-side outcomes for the FB Groups campaign.
+ * Facebook Group likes/reach/impressions are NOT available via Meta for Groups —
+ * we measure what lands on wwwdigisol.com (UTM CTAs) + Kaylev actions.
+ */
+async function loadCampaignOutcomeMetrics(
+  db: SupabaseClient,
+  clientId: string,
+  since: string,
+) {
+  const campaignKey = AB_AUDIT_VIDEO_CAMPAIGN_KEY;
+
+  const { data: siteRows } = await db
+    .from("site_events")
+    .select("path, visitor_id, created_at")
+    .eq("client_id", clientId)
+    .gte("created_at", since)
+    .ilike("path", `%utm_campaign=${campaignKey}%`)
+    .limit(800);
+
+  const landings = siteRows ?? [];
+  const visitors = new Set(
+    landings.map((row) => row.visitor_id).filter(Boolean) as string[],
+  );
+
+  const byVariant = new Map<string, number>();
+  for (const row of landings) {
+    const path = String(row.path || "");
+    const match = path.match(/[?&]utm_content=([^&]+)/i);
+    const raw = match?.[1] ? decodeURIComponent(match[1]) : "unknown";
+    const key = raw.replace(/^v/i, "") || "unknown";
+    byVariant.set(key, (byVariant.get(key) ?? 0) + 1);
+  }
+
+  const { data: auditEvents } = await db
+    .from("analytics_events")
+    .select("id, event_type, created_at, metadata")
+    .eq("company_id", clientId)
+    .gte("created_at", since)
+    .in("event_type", ["visitor_chat_lead", "website_audit_run"])
+    .limit(200);
+
+  const kaylevLeads = (auditEvents ?? []).filter(
+    (e) => e.event_type === "visitor_chat_lead",
+  ).length;
+  const kaylevAudits = (auditEvents ?? []).filter(
+    (e) => e.event_type === "website_audit_run",
+  ).length;
+
+  return {
+    windowDays: 14,
+    ctaLandings: landings.length,
+    uniqueVisitors: visitors.size,
+    kaylevLeads,
+    kaylevAudits,
+    byVariant: Array.from(byVariant.entries())
+      .map(([variant, landingsCount]) => ({
+        variant,
+        landings: landingsCount,
+        label:
+          AB_AUDIT_VIDEO_VARIANTS.find((v) => v.id === variant)?.label ||
+          `Variant ${variant}`,
+      }))
+      .sort((a, b) => b.landings - a.landings),
+    note:
+      "Facebook Groups do not expose likes/reach/impressions to DigiSol. Metrics below are DigiSol outcomes: UTM CTA clicks onto the site, plus Kaylev chat leads and free audits.",
   };
 }
 
