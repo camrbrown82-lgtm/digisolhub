@@ -24,7 +24,7 @@ function readCookie(name: string) {
 
 function greetingFor(audience: VisitorAudience) {
   const copy = homeCopyForAudience(audience);
-  return `Hi — I'm ${KAYLEV_NAME}. DigiSol offers a free website audit for ${copy.chatGreetingAudience}. Paste your site URL and I'll check SEO, speed, and conversion basics — no cost, no commitment. Want me to run yours now?`;
+  return `Hi — I'm ${KAYLEV_NAME}. DigiSol offers a free website audit for ${copy.chatGreetingAudience}. Paste your site URL and I'll check SEO, speed, and conversion basics — then email you the full breakdown. Want me to run yours now?`;
 }
 
 function createGreetingMessage(audience: VisitorAudience): UIMessage {
@@ -196,7 +196,7 @@ export function VisitorChat() {
                   void onSubmit(event);
                 }
               }}
-              placeholder="Paste your site URL…"
+              placeholder="Site URL or email…"
               className="min-h-[2rem] max-h-16 flex-1 resize-none rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
               disabled={busy}
             />
