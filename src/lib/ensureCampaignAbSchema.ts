@@ -44,8 +44,10 @@ create policy "hub campaign_audits" on public.campaign_audits
 let applied = false;
 
 /** Apply campaign A/B migration once when POSTGRES_URL is available (e.g. on Vercel). */
-export async function ensureCampaignAbSchema() {
-  if (applied) return { ok: true as const, skipped: true as const };
+export async function ensureCampaignAbSchema(options?: { force?: boolean }) {
+  if (applied && !options?.force) {
+    return { ok: true as const, skipped: true as const };
+  }
   const connectionString =
     process.env.POSTGRES_URL?.trim() ||
     process.env.POSTGRES_URL_NON_POOLING?.trim() ||
@@ -61,16 +63,34 @@ export async function ensureCampaignAbSchema() {
 
   const client = new pg.Client({
     connectionString,
+    connectionTimeoutMillis: 4000,
+    query_timeout: 8000,
     ssl: connectionString.includes("localhost")
       ? undefined
       : { rejectUnauthorized: false },
   });
-  await client.connect();
+
   try {
-    await client.query(CAMPAIGN_AB_SQL);
+    await Promise.race([
+      (async () => {
+        await client.connect();
+        await client.query(CAMPAIGN_AB_SQL);
+        // Force PostgREST to pick up new columns (avoids "schema cache" errors).
+        await client.query(`notify pgrst, 'reload schema'`);
+      })(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Schema ensure timed out")), 10000),
+      ),
+    ]);
     applied = true;
     return { ok: true as const, skipped: false as const };
+  } catch (error) {
+    applied = false;
+    return {
+      ok: false as const,
+      error: error instanceof Error ? error.message : "Schema ensure failed",
+    };
   } finally {
-    await client.end();
+    await client.end().catch(() => null);
   }
 }

@@ -21,7 +21,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string) {
   });
 }
 
-/** Password-only hub login. Owner email is fixed — no OTP / magic link / signup. */
+/** Password-only hub login — owner email is fixed server-side. */
 export function LoginForm() {
   const params = useSearchParams();
   const ownerEmail = allowedEmail();
@@ -31,7 +31,7 @@ export function LoginForm() {
     params.get("error") === "not-allowed"
       ? "That account is not allowed to access the hub."
       : params.get("error") === "auth"
-        ? "Sign-in failed. Use your password — magic links are disabled."
+        ? "Sign-in failed. Check your password."
         : "",
   );
 
@@ -52,7 +52,7 @@ export function LoginForm() {
       const supabase = await withTimeout(
         createBrowserSupabase(),
         12000,
-        "Timed out connecting to Supabase. Check SUPABASE_URL on this deploy.",
+        "Timed out connecting to Supabase.",
       );
 
       const { data, error: authError } = await withTimeout(
@@ -61,13 +61,12 @@ export function LoginForm() {
           password,
         }),
         20000,
-        "Sign-in timed out. Confirm Email+password auth is enabled in Supabase.",
+        "Sign-in timed out.",
       );
 
       if (authError) throw authError;
 
-      const email = data.user?.email;
-      if (!isAllowedEmail(email)) {
+      if (!isAllowedEmail(data.user?.email)) {
         await supabase.auth.signOut();
         throw new Error("That account is not allowed to access the hub.");
       }
@@ -76,9 +75,7 @@ export function LoginForm() {
     } catch (err) {
       setStatus("idle");
       setError(
-        err instanceof Error
-          ? err.message
-          : "Could not sign in. Check the password.",
+        err instanceof Error ? err.message : "Could not sign in. Check the password.",
       );
     }
   }
@@ -86,24 +83,10 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div>
-        <label htmlFor="hub-email" className="block text-sm font-medium text-zinc-200">
-          Email
-        </label>
-        <input
-          id="hub-email"
-          type="email"
-          required
-          value={ownerEmail}
-          readOnly
-          className="hub-field cursor-not-allowed opacity-90"
-          autoComplete="username"
-        />
-        <p className="mt-1.5 text-xs text-zinc-500">
-          Owner-only access. Magic links and OTP are disabled.
-        </p>
-      </div>
-      <div>
-        <label htmlFor="hub-password" className="block text-sm font-medium text-zinc-200">
+        <label
+          htmlFor="hub-password"
+          className="block text-sm font-medium text-zinc-200"
+        >
           Password
         </label>
         <input
@@ -115,6 +98,7 @@ export function LoginForm() {
           onChange={(event) => setPassword(event.target.value)}
           className="hub-field"
           autoComplete="current-password"
+          autoFocus
         />
       </div>
       {error ? (
@@ -122,8 +106,12 @@ export function LoginForm() {
           {error}
         </p>
       ) : null}
-      <button type="submit" disabled={status === "working"} className="hub-btn w-full">
-        {status === "working" ? "Signing in…" : "Sign in to Hub"}
+      <button
+        type="submit"
+        disabled={status === "working"}
+        className="hub-btn w-full"
+      >
+        {status === "working" ? "Signing in…" : "Sign in"}
       </button>
     </form>
   );

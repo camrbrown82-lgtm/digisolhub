@@ -46,21 +46,30 @@ function formatWhen(iso: string) {
 export function AbAuditVideoCampaignPanel() {
   const [data, setData] = useState<CampaignPayload | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/hub/campaigns/ab-audit-video");
-    const json = (await res.json()) as {
-      ok?: boolean;
-      campaign?: CampaignPayload | null;
-      error?: string;
-    };
-    if (!res.ok) {
-      setMessage(json.error || "Could not load campaign");
-      return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/hub/campaigns/ab-audit-video");
+      const json = (await res.json()) as {
+        ok?: boolean;
+        campaign?: CampaignPayload | null;
+        error?: string;
+      };
+      if (!res.ok) {
+        setMessage(json.error || "Could not load campaign");
+        return;
+      }
+      setData(json.campaign ?? null);
+      setMessage("");
+    } catch {
+      setMessage("Could not reach campaign API");
+    } finally {
+      setLoading(false);
     }
-    setData(json.campaign ?? null);
   }, []);
 
   useEffect(() => {
@@ -70,26 +79,31 @@ export function AbAuditVideoCampaignPanel() {
   async function startCampaign() {
     setBusy(true);
     setMessage("Initializing 7-day / 5-variant campaign…");
-    const res = await fetch("/api/hub/campaigns/ab-audit-video", {
-      method: "POST",
-    });
-    const json = (await res.json()) as {
-      ok?: boolean;
-      note?: string;
-      alreadyRunning?: boolean;
-      error?: string;
-    };
-    setBusy(false);
-    if (!res.ok) {
-      setMessage(json.error || "Start failed");
-      return;
+    try {
+      const res = await fetch("/api/hub/campaigns/ab-audit-video", {
+        method: "POST",
+      });
+      const json = (await res.json()) as {
+        ok?: boolean;
+        note?: string;
+        alreadyRunning?: boolean;
+        error?: string;
+      };
+      if (!res.ok) {
+        setMessage(json.error || "Start failed");
+        return;
+      }
+      setMessage(
+        json.alreadyRunning
+          ? "Campaign already running — schedule loaded."
+          : json.note || "Campaign started.",
+      );
+      await load();
+    } catch {
+      setMessage("Start failed — network error");
+    } finally {
+      setBusy(false);
     }
-    setMessage(
-      json.alreadyRunning
-        ? "Campaign already running — schedule loaded."
-        : json.note || "Campaign started.",
-    );
-    await load();
   }
 
   async function copyCaption(post: CampaignPost) {
@@ -179,10 +193,13 @@ export function AbAuditVideoCampaignPanel() {
 
       {message ? <p className="text-sm text-zinc-400">{message}</p> : null}
 
-      {posts.length === 0 ? (
+      {loading ? (
+        <p className="text-sm text-zinc-500">Loading campaign schedule…</p>
+      ) : posts.length === 0 ? (
         <p className="text-sm text-zinc-500">
-          Not started yet. Click <strong>Start campaign</strong> to write the
-          schedule into Supabase and unlock monitoring.
+          {data?.campaign?.id
+            ? "Campaign row found but no posts yet — click Start campaign to repair the schedule."
+            : "Not started yet. Click Start campaign to write the schedule into Supabase and unlock monitoring."}
         </p>
       ) : (
         <ul className="space-y-3">

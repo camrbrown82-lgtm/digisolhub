@@ -35,10 +35,11 @@ export async function POST(request: Request) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
-  const schema = await ensureCampaignAbSchema();
-  if (!schema.ok) {
-    return NextResponse.json({ error: schema.error }, { status: 503 });
-  }
+  // Best-effort A/B schema — do not hard-fail the page if Postgres is slow.
+  await Promise.race([
+    ensureCampaignAbSchema().catch(() => null),
+    new Promise((resolve) => setTimeout(resolve, 3000)),
+  ]);
   await ensureCampaignChannelSchema().catch(() => null);
 
   let body: AbBody;

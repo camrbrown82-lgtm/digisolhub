@@ -72,7 +72,7 @@ export function Navbar() {
           />
         </a>
 
-        {/* Center — page links + Contact + Admin */}
+        {/* Center — page links + Contact */}
         <nav
           className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-4 lg:flex xl:gap-5"
           aria-label="Primary"
@@ -96,11 +96,12 @@ export function Navbar() {
           </TrackedLink>
         </nav>
 
-        {/* Right — secondary badge */}
+        {/* Right — badge opens Hub login (hidden entry; public sees a logo) */}
         <a
-          href="/"
+          href="/hub/login"
           className="relative z-10 ml-auto hidden shrink-0 items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 lg:inline-flex"
-          aria-label="DigiSol"
+          aria-label="DigiSol Hub"
+          title="Hub"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -132,15 +133,23 @@ export function Navbar() {
           aria-label="Mobile"
         >
           <div className="mx-auto mb-3 flex max-w-7xl justify-center lg:hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={DIGISOL_LOGO_BADGE}
-              alt=""
-              width={256}
-              height={256}
-              className="h-14 w-14 rounded-full object-cover ring-1 ring-indigo-400/30"
-              aria-hidden="true"
-            />
+            <a
+              href="/hub/login"
+              className="inline-flex"
+              aria-label="DigiSol Hub"
+              title="Hub"
+              onClick={() => setOpen(false)}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={DIGISOL_LOGO_BADGE}
+                alt=""
+                width={256}
+                height={256}
+                className="h-14 w-14 rounded-full object-cover ring-1 ring-indigo-400/30"
+                aria-hidden="true"
+              />
+            </a>
           </div>
           <ul className="mx-auto flex max-w-7xl flex-col gap-2">
             {links.map((link) => (

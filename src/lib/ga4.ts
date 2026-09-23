@@ -86,6 +86,41 @@ export async function fetchDigisolGa4Summary(days = 14): Promise<Ga4Summary> {
     });
   }
 
+  const GA4_TIMEOUT_MS = 6000;
+
+  try {
+    const summary = await Promise.race([
+      fetchDigisolGa4SummaryInner(propertyId, clientEmail, days),
+      new Promise<Ga4Summary>((resolve) =>
+        setTimeout(
+          () =>
+            resolve(
+              emptySummary({
+                configured: true,
+                error:
+                  "Google Analytics timed out — try refreshing. First-party DigiSol stats below still load.",
+              }),
+            ),
+          GA4_TIMEOUT_MS,
+        ),
+      ),
+    ]);
+    return summary;
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not load Google Analytics";
+    return emptySummary({
+      configured: true,
+      error: message,
+    });
+  }
+}
+
+async function fetchDigisolGa4SummaryInner(
+  propertyId: string,
+  clientEmail: string,
+  days: number,
+): Promise<Ga4Summary> {
   try {
     const client = new BetaAnalyticsDataClient({
       credentials: {

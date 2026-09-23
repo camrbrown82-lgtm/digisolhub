@@ -81,33 +81,94 @@ export default async function AnalyticsPage() {
     sources: [],
   };
 
+  const emptyAgent = {
+    total: 0,
+    successRate: 0,
+    tokenCost: 0,
+    byType: [] as { label: string; value: number }[],
+    byChannel: [] as { label: string; value: number }[],
+    daily: [] as { day: string; value: number }[],
+    weakPoints: [] as { label: string; value: number }[],
+  };
+
+  const withTimeout = <T,>(promise: Promise<T>, ms: number, fallback: T) =>
+    Promise.race([
+      promise.catch(() => fallback),
+      new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+    ]);
+
+  const ga4TimeoutFallback: Ga4Summary = {
+    ...emptyGa4,
+    configured: true,
+    error:
+      "Analytics timed out loading Google data — first-party DigiSol stats below still load. Refresh to retry.",
+  };
+
   // One reconciler for Performance + Hub cards (light sync + Resend fallback).
+  // Time-box slow external calls so the page always paints first-party data.
   const [contacts, unsubscribed, site, leadsResult, ga4, latestAudit, email, agentEvents] =
     await Promise.all([
       contactsQuery,
       unsubQuery,
       siteQuery,
       leadsQuery,
-      isDigisol ? fetchDigisolGa4Summary(14) : Promise.resolve(emptyGa4),
+      withTimeout(
+        isDigisol ? fetchDigisolGa4Summary(14) : Promise.resolve(emptyGa4),
+        7000,
+        ga4TimeoutFallback,
+      ),
       active
-        ? (async () => {
-            const { data } = await supabase
-              .from("website_audits")
-              .select(
-                "id, url, final_url, score, ttfb_ms, total_ms, report, created_at",
-              )
-              .eq("client_id", active.id)
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            return { data };
-          })().catch(() => ({ data: null }))
+        ? withTimeout(
+            (async () => {
+              const { data } = await supabase
+                .from("website_audits")
+                .select(
+                  "id, url, final_url, score, ttfb_ms, total_ms, report, created_at",
+                )
+                .eq("client_id", active.id)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              return { data };
+            })(),
+            4000,
+            { data: null },
+          )
         : Promise.resolve({ data: null }),
-      reconcileHubEmailStats(supabase, scopedIds),
-      fetchAnalyticsEventsSummary(supabase, {
-        companyId: active?.id ?? null,
-        days: 14,
-      }),
+      withTimeout(
+        reconcileHubEmailStats(supabase, scopedIds),
+        6000,
+        {
+          sends: 0,
+          opened: 0,
+          clicked: 0,
+          openRate: 0,
+          clickRate: 0,
+          engagementSource: "hub" as const,
+          synced: 0,
+          resend: {
+            configured: false,
+            days: 14,
+            sent: 0,
+            delivered: 0,
+            opened: 0,
+            uniqueOpened: 0,
+            clicked: 0,
+            uniqueClicked: 0,
+            bounced: 0,
+            openRate: null,
+            clickRate: null,
+          },
+        },
+      ),
+      withTimeout(
+        fetchAnalyticsEventsSummary(supabase, {
+          companyId: active?.id ?? null,
+          days: 14,
+        }),
+        4000,
+        emptyAgent,
+      ),
     ]);
 
   const website = summarizeSiteEvents(site.data ?? [], active?.domain);

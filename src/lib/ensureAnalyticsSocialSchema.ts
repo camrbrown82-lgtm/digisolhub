@@ -112,13 +112,22 @@ export async function ensureAnalyticsSocialSchema(options?: { force?: boolean })
     .replace(/\?$/, "");
   const client = new pg.Client({
     connectionString: cleaned,
+    connectionTimeoutMillis: 4000,
+    query_timeout: 8000,
     ssl: cleaned.includes("localhost")
       ? undefined
       : { rejectUnauthorized: false },
   });
-  await client.connect();
   try {
-    await client.query(SQL);
+    await Promise.race([
+      (async () => {
+        await client.connect();
+        await client.query(SQL);
+      })(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Schema ensure timed out")), 10000),
+      ),
+    ]);
     applied = true;
     return { ok: true as const, skipped: false as const };
   } catch (error) {
@@ -128,6 +137,6 @@ export async function ensureAnalyticsSocialSchema(options?: { force?: boolean })
       error: error instanceof Error ? error.message : "Schema ensure failed",
     };
   } finally {
-    await client.end();
+    await client.end().catch(() => null);
   }
 }

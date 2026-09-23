@@ -114,87 +114,27 @@ export type StartedAuditVideoCampaign = {
  * Create (or return) the DigiSol 7-day Facebook Group video campaign + 5 queued posts.
  * Posts are manual_facebook_group — copy into Groups; Meta Page API cannot target arbitrary groups.
  */
-export async function startAbAuditVideoCampaign(
+async function withSchemaTimeout<T>(
+  promise: Promise<T>,
+  ms = 4000,
+): Promise<T | null> {
+  return Promise.race([
+    promise.catch(() => null),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+  ]);
+}
+
+async function insertQueuedPosts(
   db: SupabaseClient,
-): Promise<StartedAuditVideoCampaign> {
-  await ensureAnalyticsSocialSchema().catch(() => null);
-
-  const clientId = await ensureDigisolClient(db);
-  if (!clientId) throw new Error("DigiSol client missing");
-
-  const { data: existing } = await db
-    .from("campaigns")
-    .select("id, status, notes, created_at")
-    .eq("client_id", clientId)
-    .contains("segment", { key: AB_AUDIT_VIDEO_CAMPAIGN_KEY })
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (existing?.id) {
-    const posts = await loadCampaignPosts(db, existing.id);
-    if (posts.length > 0) {
-      return {
-        campaignId: existing.id,
-        alreadyRunning: true,
-        clientId,
-        videoUrl: WEBSITE_AUDIT_VIDEO_URL,
-        mediaPageUrl: WEBSITE_AUDIT_PAGE_URL,
-        posts,
-        note: "Campaign already initialized — monitoring existing schedule.",
-      };
-    }
-  }
-
-  const startsAt = scheduleAtMountain(0);
-  const endsAt = scheduleAtMountain(6);
-  endsAt.setUTCHours(endsAt.getUTCHours() + 14);
-
-  const segment = {
-    key: AB_AUDIT_VIDEO_CAMPAIGN_KEY,
-    channel: "facebook",
-    target: "facebook_groups",
-    audience:
-      "Alberta startup founders, small business owners, entrepreneurs (Calgary, Edmonton, Airdrie, Red Deer groups)",
-    durationDays: 7,
-    startsAt: startsAt.toISOString(),
-    endsAt: endsAt.toISOString(),
-    videoUrl: WEBSITE_AUDIT_VIDEO_URL,
-    mediaPageUrl: WEBSITE_AUDIT_PAGE_URL,
-    cta:
-      "Visit the site for a free website audit (Limited to the first 100 users).",
-    kaylevHandoff: true,
-    publishMode: "manual_facebook_group",
-  };
-
-  const { data: campaign, error: campErr } = await db
-    .from("campaigns")
-    .insert({
-      name: AB_AUDIT_VIDEO_CAMPAIGN_NAME,
-      status: "scheduled",
-      client_id: clientId,
-      industry: "Alberta SMB / startups",
-      notes: JSON.stringify({
-        goal: "Distribute website audit video → free audit leads (first 100)",
-        segment,
-      }),
-      segment,
-      is_ab: true,
-      ab_split: 20,
-    })
-    .select("id")
-    .single();
-
-  if (campErr || !campaign) {
-    throw new Error(campErr?.message || "Could not create campaign");
-  }
-
+  clientId: string,
+  campaignId: string,
+) {
   const rows = AB_AUDIT_VIDEO_VARIANTS.map((variant) => {
     const scheduled = scheduleAtMountain(variant.dayOffset);
     const body = captionForVariant(variant);
     return {
       client_id: clientId,
-      campaign_id: campaign.id,
+      campaign_id: campaignId,
       channel: "facebook" as const,
       variant: variant.id,
       body,
@@ -217,21 +157,29 @@ export async function startAbAuditVideoCampaign(
     };
   });
 
-  const { data: inserted, error: postErr } = await db
+  let { data: inserted, error: postErr } = await db
     .from("social_posts")
     .insert(rows)
     .select("id, variant, status, scheduled_at, body, metadata");
 
   if (postErr) {
-    throw new Error(postErr.message);
+    await withSchemaTimeout(ensureAnalyticsSocialSchema({ force: true }));
+    const retry = await db
+      .from("social_posts")
+      .insert(rows)
+      .select("id, variant, status, scheduled_at, body, metadata");
+    inserted = retry.data;
+    postErr = retry.error;
   }
+
+  if (postErr) throw new Error(postErr.message);
 
   await logAnalyticsEvent(db, {
     companyId: clientId,
     eventType: "social_post_queued",
     channel: "facebook",
     success: true,
-    campaignId: campaign.id,
+    campaignId,
     source: "ab_audit_video_7d",
     metadata: {
       campaignKey: AB_AUDIT_VIDEO_CAMPAIGN_KEY,
@@ -240,7 +188,7 @@ export async function startAbAuditVideoCampaign(
     },
   });
 
-  const posts = (inserted ?? []).map((row) => {
+  return (inserted ?? []).map((row) => {
     const meta = (row.metadata || {}) as Record<string, unknown>;
     const def = AB_AUDIT_VIDEO_VARIANTS.find((v) => v.id === row.variant);
     return {
@@ -253,6 +201,87 @@ export async function startAbAuditVideoCampaign(
       ctaLink: String(meta.ctaLink || ctaLinkForVariant(String(row.variant))),
     };
   });
+}
+
+export async function startAbAuditVideoCampaign(
+  db: SupabaseClient,
+): Promise<StartedAuditVideoCampaign> {
+  // Social schedule only needs core campaigns columns — skip A/B fields that
+  // trip PostgREST schema cache when ab_split / industry / notes are missing.
+  await withSchemaTimeout(ensureAnalyticsSocialSchema({ force: true }));
+
+  const clientId = await ensureDigisolClient(db);
+  if (!clientId) throw new Error("DigiSol client missing");
+
+  const existing = await findAuditVideoCampaign(db, clientId);
+
+  if (existing?.id) {
+    const posts = await loadCampaignPosts(db, existing.id);
+    if (posts.length > 0) {
+      return {
+        campaignId: existing.id,
+        alreadyRunning: true,
+        clientId,
+        videoUrl: WEBSITE_AUDIT_VIDEO_URL,
+        mediaPageUrl: WEBSITE_AUDIT_PAGE_URL,
+        posts,
+        note: "Campaign already initialized — monitoring existing schedule.",
+      };
+    }
+    // Campaign row exists but posts never landed (prior schema failure) — finish it.
+    const repaired = await insertQueuedPosts(db, clientId, existing.id);
+    return {
+      campaignId: existing.id,
+      alreadyRunning: false,
+      clientId,
+      videoUrl: WEBSITE_AUDIT_VIDEO_URL,
+      mediaPageUrl: WEBSITE_AUDIT_PAGE_URL,
+      posts: repaired,
+      note:
+        "Campaign schedule repaired. Post each caption + video into Alberta Facebook Groups on the scheduled day, then mark as posted in Hub.",
+    };
+  }
+
+  const startsAt = scheduleAtMountain(0);
+  const endsAt = scheduleAtMountain(6);
+  endsAt.setUTCHours(endsAt.getUTCHours() + 14);
+
+  const segment = {
+    key: AB_AUDIT_VIDEO_CAMPAIGN_KEY,
+    channel: "facebook",
+    target: "facebook_groups",
+    audience:
+      "Alberta startup founders, small business owners, entrepreneurs (Calgary, Edmonton, Airdrie, Red Deer groups)",
+    durationDays: 7,
+    startsAt: startsAt.toISOString(),
+    endsAt: endsAt.toISOString(),
+    videoUrl: WEBSITE_AUDIT_VIDEO_URL,
+    mediaPageUrl: WEBSITE_AUDIT_PAGE_URL,
+    goal: "Distribute website audit video → free audit leads (first 100)",
+    industry: "Alberta SMB / startups",
+    cta:
+      "Visit the site for a free website audit (Limited to the first 100 users).",
+    kaylevHandoff: true,
+    publishMode: "manual_facebook_group",
+  };
+
+  // Core columns only (name/status/client_id/segment) — always present.
+  const { data: campaign, error: campErr } = await db
+    .from("campaigns")
+    .insert({
+      name: AB_AUDIT_VIDEO_CAMPAIGN_NAME,
+      status: "scheduled",
+      client_id: clientId,
+      segment,
+    })
+    .select("id")
+    .single();
+
+  if (campErr || !campaign) {
+    throw new Error(campErr?.message || "Could not create campaign");
+  }
+
+  const posts = await insertQueuedPosts(db, clientId, campaign.id);
 
   return {
     campaignId: campaign.id,
@@ -264,6 +293,31 @@ export async function startAbAuditVideoCampaign(
     note:
       "Campaign saved. Post each caption + video into Alberta Facebook Groups on the scheduled day, then mark as posted in Hub. Auto Graph posting to private Groups is not available — Page API only.",
   };
+}
+
+async function findAuditVideoCampaign(db: SupabaseClient, clientId: string) {
+  const bySegment = await db
+    .from("campaigns")
+    .select("id, status, created_at")
+    .eq("client_id", clientId)
+    .contains("segment", { key: AB_AUDIT_VIDEO_CAMPAIGN_KEY })
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (bySegment.data?.id) return bySegment.data;
+
+  // Fallback if jsonb contains is flaky — match by campaign name.
+  const byName = await db
+    .from("campaigns")
+    .select("id, status, created_at")
+    .eq("client_id", clientId)
+    .eq("name", AB_AUDIT_VIDEO_CAMPAIGN_NAME)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return byName.data;
 }
 
 async function loadCampaignPosts(db: SupabaseClient, campaignId: string) {
@@ -292,13 +346,13 @@ export async function getAbAuditVideoCampaignStatus(db: SupabaseClient) {
   const clientId = await ensureDigisolClient(db);
   if (!clientId) return null;
 
+  const found = await findAuditVideoCampaign(db, clientId);
+  if (!found?.id) return null;
+
   const { data: campaign } = await db
     .from("campaigns")
-    .select("id, name, status, segment, notes, created_at")
-    .eq("client_id", clientId)
-    .contains("segment", { key: AB_AUDIT_VIDEO_CAMPAIGN_KEY })
-    .order("created_at", { ascending: false })
-    .limit(1)
+    .select("id, name, status, segment, created_at")
+    .eq("id", found.id)
     .maybeSingle();
 
   if (!campaign) return null;

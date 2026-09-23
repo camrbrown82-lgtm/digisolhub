@@ -20,7 +20,7 @@ export async function GET() {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
-  await ensureAnalyticsSocialSchema().catch(() => null);
+  // Do not block status on schema migration — that was hanging Hub monitoring.
   try {
     const status = await getAbAuditVideoCampaignStatus(supabase);
     return NextResponse.json({ ok: true, campaign: status });
@@ -36,7 +36,11 @@ export async function POST() {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
-  await ensureAnalyticsSocialSchema().catch(() => null);
+  await Promise.race([
+    ensureAnalyticsSocialSchema({ force: true }).catch(() => null),
+    new Promise((resolve) => setTimeout(resolve, 4000)),
+  ]);
+
   try {
     const started = await startAbAuditVideoCampaign(supabase);
     return NextResponse.json({ ok: true, ...started });

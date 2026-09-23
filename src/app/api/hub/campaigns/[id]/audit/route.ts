@@ -8,10 +8,10 @@ export async function PATCH(request: Request, { params }: Params) {
   const { supabase, user, error } = await requireHubSession();
   if (error) return error;
 
-  const schema = await ensureCampaignAbSchema();
-  if (!schema.ok) {
-    return NextResponse.json({ error: schema.error }, { status: 503 });
-  }
+  await Promise.race([
+    ensureCampaignAbSchema().catch(() => null),
+    new Promise((resolve) => setTimeout(resolve, 3000)),
+  ]);
 
   const body = (await request.json().catch(() => null)) as {
     period?: "day" | "week" | "month";

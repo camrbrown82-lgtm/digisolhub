@@ -7,7 +7,6 @@ import { AiWorkflowGenerator } from "@/components/hub/AiWorkflowGenerator";
 import { NewWorkflowButton } from "@/components/hub/NewWorkflowButton";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { contactIdsForClient, getActiveClient } from "@/lib/workspace";
-import { ensureCampaignAbSchema } from "@/lib/ensureCampaignAbSchema";
 import { createClient } from "@/lib/supabase/server";
 
 function pct(part: number, whole: number) {
@@ -16,7 +15,6 @@ function pct(part: number, whole: number) {
 }
 
 export default async function CampaignsPage() {
-  await ensureCampaignAbSchema().catch(() => null);
   const supabase = await createClient();
   const active = await getActiveClient(supabase);
   const scopedIds = active ? await contactIdsForClient(supabase, active.id) : null;
