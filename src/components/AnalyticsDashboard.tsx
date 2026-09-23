@@ -35,6 +35,14 @@ export type AnalyticsDashboardProps = {
     pipelineOpen: number;
     pipelineWon: number;
   };
+  agentActivity?: {
+    total: number;
+    successRate: number;
+    tokenCost: number;
+    byType: AnalyticsRankItem[];
+    byChannel: AnalyticsRankItem[];
+    daily: AnalyticsSeriesPoint[];
+  };
   weakPoints: AnalyticsRankItem[];
   topPages: AnalyticsRankItem[];
   topSources: AnalyticsRankItem[];
@@ -218,6 +226,7 @@ export function AnalyticsDashboard({
   traffic,
   firstParty,
   conversion,
+  agentActivity,
   weakPoints,
   topPages,
   topSources,
@@ -238,6 +247,13 @@ export function AnalyticsDashboard({
         : conversion.winRate >= 10
           ? "watch"
           : "weak";
+  const agentHealth: AnalyticsHealth = !agentActivity?.total
+    ? "unknown"
+    : agentActivity.successRate >= 90
+      ? "strong"
+      : agentActivity.successRate >= 70
+        ? "watch"
+        : "weak";
 
   const trendDaily =
     gaConfigured && !gaError
@@ -250,7 +266,8 @@ export function AnalyticsDashboard({
         <h2 className="text-lg font-semibold text-white">Performance dashboard</h2>
         <p className="mt-1 text-sm text-zinc-400">
           Color-coded traffic, conversion health, and weak points
-          {companyName ? ` for ${companyName}` : ""} — GA4 + DigiSol Hub data.
+          {companyName ? ` for ${companyName}` : ""} — GA4 + DigiSol Hub + agent
+          telemetry.
         </p>
       </div>
 
@@ -260,7 +277,7 @@ export function AnalyticsDashboard({
         </div>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <HealthCard
           label="Traffic trend"
           value={
@@ -297,6 +314,16 @@ export function AnalyticsDashboard({
           hint={`${conversion.pipelineWon} won · ${conversion.pipelineOpen} open`}
           health={pipelineHealth}
         />
+        <HealthCard
+          label="Agent actions"
+          value={agentActivity?.total ? String(agentActivity.total) : "—"}
+          hint={
+            agentActivity?.total
+              ? `${agentActivity.successRate}% success · ${agentActivity.tokenCost} tokens`
+              : "No analytics_events yet"
+          }
+          health={agentHealth}
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -311,10 +338,10 @@ export function AnalyticsDashboard({
           emptyLabel="No traffic yet for this window."
         />
         <ColorBarChart
-          title="First-party DigiSol Hub pageviews"
-          points={firstParty.daily}
-          health={trafficHealth(firstParty.daily)}
-          emptyLabel="No first-party site events yet."
+          title="Agent telemetry (analytics_events)"
+          points={agentActivity?.daily ?? []}
+          health={agentHealth}
+          emptyLabel="No agent events yet — audits, leads, emails, and social posts will appear here."
         />
       </div>
 
@@ -326,10 +353,10 @@ export function AnalyticsDashboard({
           empty="No page data yet."
         />
         <RankList
-          title="Top sources"
-          items={topSources}
+          title="Event channels"
+          items={agentActivity?.byChannel?.length ? agentActivity.byChannel : topSources}
           accent="bg-violet-500"
-          empty="No source data yet."
+          empty="No channel telemetry yet."
         />
         <div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-5">
           <div className="flex items-center justify-between gap-2">
@@ -340,7 +367,7 @@ export function AnalyticsDashboard({
           </div>
           {weakPoints.length === 0 ? (
             <p className="mt-3 text-sm text-zinc-500">
-              No weak pages flagged — keep watching conversion paths.
+              No weak signals flagged — keep watching conversion paths.
             </p>
           ) : (
             <ul className="mt-4 space-y-3">
@@ -354,7 +381,8 @@ export function AnalyticsDashboard({
                     <span className="shrink-0 text-rose-200/80">{item.value}</span>
                   </div>
                   <p className="mt-1 text-xs text-rose-100/60">
-                    Review CTA clarity and bounce on this path.
+                    Failed or low-performing signal — review CTA, deliverability, or
+                    social publish status.
                   </p>
                 </li>
               ))}

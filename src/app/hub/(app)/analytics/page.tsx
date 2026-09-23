@@ -10,6 +10,7 @@ import {
   summarizeLeadPerformance,
 } from "@/lib/lead-pipeline";
 import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
+import { fetchAnalyticsEventsSummary } from "@/lib/analyticsEvents";
 import { reconcileHubEmailStats } from "@/lib/resendStats";
 import { contactIdsForClient, getActiveClient } from "@/lib/workspace";
 import { newSiteKey, summarizeSiteEvents, trackingSnippet } from "@/lib/site-analytics";
@@ -81,7 +82,7 @@ export default async function AnalyticsPage() {
   };
 
   // One reconciler for Performance + Hub cards (light sync + Resend fallback).
-  const [contacts, unsubscribed, site, leadsResult, ga4, latestAudit, email] =
+  const [contacts, unsubscribed, site, leadsResult, ga4, latestAudit, email, agentEvents] =
     await Promise.all([
       contactsQuery,
       unsubQuery,
@@ -103,6 +104,10 @@ export default async function AnalyticsPage() {
           })().catch(() => ({ data: null }))
         : Promise.resolve({ data: null }),
       reconcileHubEmailStats(supabase, scopedIds),
+      fetchAnalyticsEventsSummary(supabase, {
+        companyId: active?.id ?? null,
+        days: 14,
+      }),
     ]);
 
   const website = summarizeSiteEvents(site.data ?? [], active?.domain);
@@ -129,13 +134,17 @@ export default async function AnalyticsPage() {
     { label: "Unsubscribed", value: unsubscribed.count ?? 0 },
   ];
   const gaStatus = ga4ConfigStatus();
-  const weakPoints = website.pages
-    .filter((page) => page.count > 0)
-    .slice(0, 5)
-    .map((page) => ({
-      label: page.label,
-      value: page.count,
-    }));
+  const weakPoints = (
+    agentEvents.weakPoints.length
+      ? agentEvents.weakPoints
+      : website.pages
+          .filter((page) => page.count > 0)
+          .slice(0, 5)
+          .map((page) => ({
+            label: page.label,
+            value: page.count,
+          }))
+  );
   const topPages = (
     gaStatus.ready && !ga4.error && ga4.pages.length > 0
       ? ga4.pages.map((page) => ({ label: page.label, value: page.pageviews }))
@@ -246,6 +255,14 @@ export default async function AnalyticsPage() {
             winRate: pipeline.winRate,
             pipelineOpen: pipeline.open,
             pipelineWon: pipeline.won,
+          }}
+          agentActivity={{
+            total: agentEvents.total,
+            successRate: agentEvents.successRate,
+            tokenCost: agentEvents.tokenCost,
+            byType: agentEvents.byType,
+            byChannel: agentEvents.byChannel,
+            daily: agentEvents.daily,
           }}
           weakPoints={weakPoints}
           topPages={topPages}

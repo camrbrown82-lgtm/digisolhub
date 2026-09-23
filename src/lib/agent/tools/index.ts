@@ -11,3 +11,4 @@ export { runWebsiteAuditTool } from "@/lib/agent/tools/runWebsiteAudit";
 export { fetchAnalytics } from "@/lib/agent/tools/fetchAnalytics";
 export { generateCampaignWorkflow } from "@/lib/agent/tools/generateCampaignWorkflow";
 export { dispatchAutomatedEmail } from "@/lib/agent/tools/dispatchAutomatedEmail";
+export { dispatchSocialCampaignTool } from "@/lib/agent/tools/dispatchSocialCampaign";

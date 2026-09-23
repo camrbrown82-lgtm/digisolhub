@@ -39,8 +39,9 @@ export function resolveComplexity(task: AgentTaskKind, prompt: string): AgentCom
 
 /**
  * Cost-aware model router.
- * Lightweight drafting → gpt-4o-mini; multi-step strategy → gpt-4o.
- * Env overrides keep ops flexible without code changes.
+ * Background / light tasks (email draft, social A/B, visitor chat) → gpt-4o-mini.
+ * Deep orchestration / multi-step strategy → gpt-4o.
+ * Env overrides: OPENAI_AGENT_LIGHT_MODEL / OPENAI_AGENT_COMPLEX_MODEL.
  */
 export function routeAgentModel(complexity: AgentComplexity): string {
   if (complexity === "complex") {

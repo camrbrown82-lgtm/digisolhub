@@ -130,6 +130,7 @@ export const HEAVY_TOOL_COST_ESTIMATES: Record<
   dispatchDigisolEmail: { tokens: 0, toolCalls: 1, emails: 1 },
   dispatchEmailCampaign: { tokens: 0, toolCalls: 1, emails: 1 },
   dispatchAutomatedEmail: { tokens: 0, toolCalls: 1, emails: 1 },
+  dispatchSocialCampaign: { tokens: 900, toolCalls: 1 },
   agent_orchestration: { tokens: 1800, toolCalls: 1 },
   agent_light: { tokens: 700, toolCalls: 1 },
 };

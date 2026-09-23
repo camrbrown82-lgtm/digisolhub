@@ -15,6 +15,7 @@ const HEAVY_TOOLS = new Set([
   "runWebsiteAudit",
   "generateCampaignWorkflow",
   "dispatchAutomatedEmail",
+  "dispatchSocialCampaign",
 ]);
 
 const registry = new Map<string, AgentToolDefinition>();
@@ -79,7 +80,13 @@ export async function executeAgentTool(
   try {
     if (HEAVY_TOOLS.has(name)) {
       const confirmSend = args.confirmSend === true;
-      if (!(name === "dispatchAutomatedEmail" && !confirmSend)) {
+      const confirmPost = args.confirmPost === true;
+      const drySocial =
+        name === "dispatchSocialCampaign" &&
+        args.mode === "publish" &&
+        !confirmPost;
+      const dryEmail = name === "dispatchAutomatedEmail" && !confirmSend;
+      if (!dryEmail && !drySocial) {
         const emails =
           name === "dispatchAutomatedEmail" && confirmSend
             ? Math.min(
@@ -105,7 +112,13 @@ export async function executeAgentTool(
 
     if (HEAVY_TOOLS.has(name)) {
       const confirmSend = args.confirmSend === true;
-      if (!(name === "dispatchAutomatedEmail" && !confirmSend)) {
+      const confirmPost = args.confirmPost === true;
+      const drySocial =
+        name === "dispatchSocialCampaign" &&
+        args.mode === "publish" &&
+        !confirmPost;
+      const dryEmail = name === "dispatchAutomatedEmail" && !confirmSend;
+      if (!dryEmail && !drySocial) {
         const emails =
           name === "dispatchAutomatedEmail" && confirmSend
             ? Math.min(

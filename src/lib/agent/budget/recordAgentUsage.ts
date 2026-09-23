@@ -7,6 +7,7 @@ import {
   resolveCompanyWallet,
   type EstimatedCost,
 } from "@/lib/agent/budget/wallet";
+import { logAnalyticsEvent } from "@/lib/analyticsEvents";
 
 export type RecordedUsage = EstimatedCost & {
   model?: string | null;
@@ -122,6 +123,23 @@ export async function recordAgentUsage(
       periodStart: updated.period_start,
       periodEnd: updated.period_end,
       invocation,
+    },
+  });
+
+  await logAnalyticsEvent(opts.supabase, {
+    companyId,
+    eventType: emails > 0 ? "email_sent" : audits > 0 ? "website_audit_run" : "agent_tool",
+    channel: emails > 0 ? "email" : null,
+    success: true,
+    tokenCost: tokens,
+    source: usage.toolName || "recordAgentUsage",
+    metadata: {
+      toolName: usage.toolName,
+      toolCalls,
+      audits,
+      emails,
+      invocation,
+      model: usage.model ?? null,
     },
   });
 

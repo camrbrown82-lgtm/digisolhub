@@ -87,7 +87,15 @@ export const MASTER_TOOL_SCHEMAS: ChatCompletionTool[] = [
           },
           channel: {
             type: "string",
-            enum: ["email", "cold_call", "sms", "social", "mixed"],
+            enum: [
+              "email",
+              "cold_call",
+              "door_to_door",
+              "facebook",
+              "instagram",
+              "linkedin",
+              "mixed",
+            ],
             description: "Primary outreach channel. Default email.",
           },
           audiencePercentA: {

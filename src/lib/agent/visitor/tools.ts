@@ -3,6 +3,7 @@ import { z } from "zod";
 import { runWebsiteAudit } from "@/lib/agent/websiteAudit";
 import { logAgentActivity } from "@/lib/agent/digisol/activityLog";
 import { DIGISOL_OPERATOR } from "@/lib/agent/digisol/scope";
+import { logAnalyticsEvent } from "@/lib/analyticsEvents";
 import { emitHubEvent } from "@/lib/events";
 import { ensureWebsiteAuditSchema } from "@/lib/ensureWebsiteAuditSchema";
 import { sendAuditFollowUpEmail } from "@/lib/prospectAudit/followUpEmail";
@@ -82,6 +83,20 @@ export function createVisitorAgentTools() {
             auditId: saved?.id ?? null,
             score: audit.score,
             summary: audit.report.summary,
+          },
+        });
+
+        await logAnalyticsEvent(admin, {
+          companyId: clientId,
+          eventType: "website_audit_run",
+          channel: "email",
+          success: true,
+          tokenCost: 800,
+          source: "visitor_chat",
+          metadata: {
+            auditId: saved?.id ?? null,
+            score: audit.score,
+            url: audit.url,
           },
         });
 
@@ -260,6 +275,16 @@ export function createVisitorAgentTools() {
           output: { contactId, created },
         });
 
+        await logAnalyticsEvent(admin, {
+          companyId: clientId,
+          eventType: "visitor_chat_lead",
+          channel: "email",
+          success: true,
+          contactId: contactId ?? null,
+          source: "visitor_chat",
+          metadata: { leadType, created, email },
+        });
+
         // If they asked for an audit (or shared a URL), email the breakdown + soft CTA.
         let followUp: Record<string, unknown> | null = null;
         const wantsAuditEmail =
@@ -336,6 +361,21 @@ export function createVisitorAgentTools() {
           status: result.emailed ? "ok" : "error",
           input: { email: input.email, auditId: input.auditId ?? null },
           output: result,
+        });
+
+        await logAnalyticsEvent(admin, {
+          companyId: clientId,
+          eventType: "email_sent",
+          channel: "email",
+          success: Boolean(result.emailed),
+          tokenCost: 0,
+          source: "visitor_chat",
+          metadata: {
+            kind: "audit_followup",
+            email: input.email,
+            auditId: input.auditId ?? null,
+            reason: result.reason ?? null,
+          },
         });
 
         return {

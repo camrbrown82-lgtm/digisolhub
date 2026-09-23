@@ -326,7 +326,7 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
 
     generateCampaignWorkflow: tool({
       description:
-        "Read DigiSol brand rules and DigiSol contact segments, then build an A/B email test structure (Variant A/B), channel config (email / cold_call), and audience percentages. DigiSol CRM only.",
+        "Read DigiSol brand rules and DigiSol contact segments, then build an A/B campaign structure (Variant A/B), channel config (email / cold_call / door_to_door / facebook / instagram / linkedin), and audience percentages. DigiSol CRM only.",
       inputSchema: z.object({
         campaignGoal: z
           .string()
@@ -341,9 +341,20 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
           .optional()
           .describe("Optional DigiSol CRM tag to sample contacts from."),
         channels: z
-          .array(z.enum(["email", "cold_call"]))
+          .array(
+            z.enum([
+              "email",
+              "cold_call",
+              "door_to_door",
+              "facebook",
+              "instagram",
+              "linkedin",
+            ]),
+          )
           .optional()
-          .describe("Channels to include. Default email + cold_call."),
+          .describe(
+            "Channels to include. Default email + cold_call; social channels supported.",
+          ),
         variantAPercent: z
           .number()
           .min(10)

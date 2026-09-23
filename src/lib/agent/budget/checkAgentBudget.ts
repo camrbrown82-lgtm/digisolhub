@@ -49,6 +49,7 @@ export type BudgetCheckResult = {
 
 const DIGISOL_AUTOMATED_GENERATIVE_TOOLS = new Set([
   "generateCampaignWorkflow",
+  "dispatchSocialCampaign",
   "agent_orchestration",
   "runMasterAgent",
   "runAgent",

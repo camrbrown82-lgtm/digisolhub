@@ -20,7 +20,14 @@ alter table public.contacts
   add constraint contacts_campaign_channel_check
   check (
     campaign_channel is null
-    or campaign_channel in ('email', 'cold_call', 'door_to_door')
+    or campaign_channel in (
+      'email',
+      'cold_call',
+      'door_to_door',
+      'facebook',
+      'instagram',
+      'linkedin'
+    )
   );
 
 alter table public.contacts

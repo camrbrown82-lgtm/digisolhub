@@ -2,14 +2,28 @@ export const CAMPAIGN_CHANNELS = [
   "email",
   "cold_call",
   "door_to_door",
+  "facebook",
+  "instagram",
+  "linkedin",
 ] as const;
 
 export type CampaignChannel = (typeof CAMPAIGN_CHANNELS)[number];
+
+export const SOCIAL_CAMPAIGN_CHANNELS = [
+  "facebook",
+  "instagram",
+  "linkedin",
+] as const;
+
+export type SocialCampaignChannel = (typeof SOCIAL_CAMPAIGN_CHANNELS)[number];
 
 export const CAMPAIGN_CHANNEL_LABELS: Record<CampaignChannel, string> = {
   email: "Email marketing",
   cold_call: "Cold calls",
   door_to_door: "Door to door",
+  facebook: "Facebook",
+  instagram: "Instagram",
+  linkedin: "LinkedIn",
 };
 
 const ALIASES: Record<string, CampaignChannel> = {
@@ -29,10 +43,24 @@ const ALIASES: Record<string, CampaignChannel> = {
   door: "door_to_door",
   knocks: "door_to_door",
   canvass: "door_to_door",
+  facebook: "facebook",
+  fb: "facebook",
+  meta: "facebook",
+  instagram: "instagram",
+  ig: "instagram",
+  insta: "instagram",
+  linkedin: "linkedin",
+  li: "linkedin",
 };
 
 export function isCampaignChannel(value: string): value is CampaignChannel {
   return CAMPAIGN_CHANNELS.includes(value as CampaignChannel);
+}
+
+export function isSocialCampaignChannel(
+  value: string,
+): value is SocialCampaignChannel {
+  return SOCIAL_CAMPAIGN_CHANNELS.includes(value as SocialCampaignChannel);
 }
 
 /** Normalize free-text / CSV values to a campaign channel, or null if unknown/empty. */

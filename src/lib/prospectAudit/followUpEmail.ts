@@ -33,7 +33,7 @@ export type AuditFollowUpInput = {
 
 /**
  * Soft audit breakdown email: findings + product ideas (no pricing) +
- * Cameron consultation CTA. Used by daily prospect cron and Kaylev chat.
+ * Cameron consultation CTA. Used by daily prospect cron and Caleb visitor chat.
  */
 export async function sendAuditFollowUpEmail(input: AuditFollowUpInput) {
   const contact = await findOrCreateContactForSend(input.db, {
