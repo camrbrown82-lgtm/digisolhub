@@ -14,17 +14,15 @@ type Pillar = {
   title: string;
   body: string;
   accent: BrandAccent;
-  featured?: boolean;
 };
 
-/** Same BrandCard + featured layout as Services — sky / blue / indigo washes. */
+/** Balanced 2×2 pillars — no featured full-width gap. */
 const PILLARS: Pillar[] = [
   {
     icon: MessageCircle,
     title: "24/7 Midnight Lead Capture",
     body: "Never miss a high-intent prospect. Kaylev catches social and website leads around the clock and engages them instantly—before interest cools down.",
     accent: "sky",
-    featured: true,
   },
   {
     icon: Radar,
@@ -66,7 +64,7 @@ export function KaylevValueProp({
       aria-labelledby="kaylev-heading"
     >
       <div className="mx-auto max-w-6xl">
-        <div className="text-center">
+        <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
           <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
             DigiSol AI · Kaylev
           </p>
@@ -76,95 +74,80 @@ export function KaylevValueProp({
           >
             Meet Kaylev: Your 24/7 Autonomous Growth Engine
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-zinc-400">
+          <p className="mt-4 text-zinc-400">
             Most websites just sit there. Yours should actively close deals.
             Lead capture, audits, campaigns, and hours back every week.
           </p>
         </div>
 
-        <ul className="mt-12 grid gap-6 sm:grid-cols-2">
-          {PILLARS.map(({ icon: Icon, title, body, accent, featured }) => {
+        <ul className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2">
+          {PILLARS.map(({ icon: Icon, title, body, accent }) => {
             const styles = brandAccent[accent];
             return (
-              <li
-                key={title}
-                className={featured ? "h-full sm:col-span-2" : "h-full"}
-              >
+              <li key={title} className="h-full">
                 <BrandCard accent={accent} className="h-full">
-                  <div
-                    className={
-                      featured
-                        ? "flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6"
-                        : ""
-                    }
+                  <span
+                    className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${styles.icon}`}
                   >
-                    <span
-                      className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${styles.icon}`}
-                    >
-                      <Icon className="h-6 w-6" aria-hidden="true" />
-                    </span>
-                    <div>
-                      <h3
-                        className={`text-xl font-semibold text-white ${featured ? "" : "mt-5"}`}
-                      >
-                        {title}
-                      </h3>
-                      <p className="mt-3 text-sm leading-relaxed text-zinc-200">
-                        {body}
-                      </p>
-                    </div>
-                  </div>
+                    <Icon className="h-6 w-6" aria-hidden="true" />
+                  </span>
+                  <h3 className="mt-5 text-xl font-semibold text-white">
+                    {title}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-zinc-200">
+                    {body}
+                  </p>
                 </BrandCard>
               </li>
             );
           })}
-        </ul>
 
-        <div className="mt-10">
-          <BrandCard accent="indigo" className="h-full">
-            <div className="text-center">
-              <span
-                className={`mx-auto inline-flex h-12 w-12 items-center justify-center rounded-xl ${brandAccent.indigo.icon}`}
-              >
-                <Sparkles className="h-6 w-6" aria-hidden="true" />
-              </span>
-              <h3 className="mt-5 text-xl font-semibold text-white">
-                The DigiSol Advantage
-              </h3>
-              <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-zinc-200">
-                {advantageLine}
-              </p>
-              <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <TrackedLink
-                  href="/#contact"
-                  eventName="cta_click"
-                  eventParams={{
-                    cta_name: "kaylev_free_audit",
-                    location: analyticsLocation,
-                  }}
-                  className="inline-flex items-center justify-center rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+          <li className="col-span-full">
+            <BrandCard accent="indigo" className="h-full">
+              <div className="text-center">
+                <span
+                  className={`mx-auto inline-flex h-12 w-12 items-center justify-center rounded-xl ${brandAccent.indigo.icon}`}
                 >
-                  Get a free website audit
-                </TrackedLink>
-                <TrackedLink
-                  href="/#contact"
-                  eventName="cta_click"
-                  eventParams={{
-                    cta_name: "kaylev_book_consult",
-                    location: analyticsLocation,
-                  }}
-                  className="inline-flex items-center justify-center rounded-full border border-blue-400/40 bg-blue-500/10 px-6 py-3 text-sm font-semibold text-blue-200 transition hover:border-blue-300 hover:bg-blue-500/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
-                >
-                  Book a consultation
-                </TrackedLink>
+                  <Sparkles className="h-6 w-6" aria-hidden="true" />
+                </span>
+                <h3 className="mt-5 text-xl font-semibold text-white">
+                  The DigiSol Advantage
+                </h3>
+                <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-zinc-200">
+                  {advantageLine}
+                </p>
+                <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                  <TrackedLink
+                    href="/#contact"
+                    eventName="cta_click"
+                    eventParams={{
+                      cta_name: "kaylev_free_audit",
+                      location: analyticsLocation,
+                    }}
+                    className="inline-flex items-center justify-center rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+                  >
+                    Get a free website audit
+                  </TrackedLink>
+                  <TrackedLink
+                    href="/#contact"
+                    eventName="cta_click"
+                    eventParams={{
+                      cta_name: "kaylev_book_consult",
+                      location: analyticsLocation,
+                    }}
+                    className="inline-flex items-center justify-center rounded-full border border-blue-400/40 bg-blue-500/10 px-6 py-3 text-sm font-semibold text-blue-200 transition hover:border-blue-300 hover:bg-blue-500/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
+                  >
+                    Book a consultation
+                  </TrackedLink>
+                </div>
+                <p className="mt-4 text-xs text-zinc-500">
+                  Prefer chat? Open Kaylev on this page and drop your URL for an
+                  instant audit walkthrough.
+                </p>
               </div>
-              <p className="mt-4 text-xs text-zinc-500">
-                Prefer chat? Open Kaylev on this page and drop your URL for an
-                instant audit walkthrough.
-              </p>
-            </div>
-          </BrandCard>
-        </div>
+            </BrandCard>
+          </li>
+        </ul>
       </div>
     </section>
   );
