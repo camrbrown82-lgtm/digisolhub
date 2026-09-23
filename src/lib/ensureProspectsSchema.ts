@@ -79,16 +79,31 @@ export async function ensureProspectsSchema() {
 
   const client = new pg.Client({
     connectionString,
+    connectionTimeoutMillis: 4000,
+    query_timeout: 8000,
     ssl: connectionString.includes("localhost")
       ? undefined
       : { rejectUnauthorized: false },
   });
-  await client.connect();
   try {
-    await client.query(PROSPECTS_SQL);
+    await Promise.race([
+      (async () => {
+        await client.connect();
+        await client.query(PROSPECTS_SQL);
+      })(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Prospects schema ensure timed out")), 10000),
+      ),
+    ]);
     applied = true;
     return { ok: true as const, skipped: false as const };
+  } catch (error) {
+    applied = false;
+    return {
+      ok: false as const,
+      error: error instanceof Error ? error.message : "Schema ensure failed",
+    };
   } finally {
-    await client.end();
+    await client.end().catch(() => null);
   }
 }

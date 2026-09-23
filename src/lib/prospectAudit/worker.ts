@@ -10,8 +10,10 @@ import { getOpenAIApiKey } from "@/lib/openai";
 import { getResendApiKey } from "@/lib/email";
 import { evaluateCaslPublishedContact } from "@/lib/prospectAudit/casl";
 import { sendProspectAuditEmail } from "@/lib/prospectAudit/email";
+import { ensureProspectQueue } from "@/lib/prospectAudit/ensureQueue";
 import {
   DEFAULT_PROSPECT_TRADES,
+  PROSPECT_AUDIT_BATCH_DEFAULT,
   PROSPECT_AUDIT_MAX_OUTPUT_TOKENS,
   PROSPECT_AUDIT_MODEL,
   resolveProspectBatchSize,
@@ -49,6 +51,12 @@ export type ProspectAuditWorkerResult = {
   model: string;
   maxOutputTokens: number;
   dryRun: boolean;
+  queueSeed?: {
+    pendingBefore: number;
+    inserted: number;
+    skippedExisting: number;
+    catalogRemaining: number;
+  };
   results: Array<Record<string, unknown>>;
   totals: {
     attempted: number;
@@ -73,11 +81,26 @@ export async function runProspectAuditWorker(
   opts: ProspectAuditWorkerOptions,
 ): Promise<ProspectAuditWorkerResult> {
   await Promise.all([
-    ensureProspectsSchema().catch(() => null),
-    ensureWebsiteAuditSchema().catch(() => null),
-    ensureAgentActivityLogSchema().catch(() => null),
-    ensureDigisolDailyUsageSchema().catch(() => null),
-    ensureClientAiWalletSchema().catch(() => null),
+    Promise.race([
+      ensureProspectsSchema().catch(() => null),
+      new Promise((r) => setTimeout(r, 4000)),
+    ]),
+    Promise.race([
+      ensureWebsiteAuditSchema().catch(() => null),
+      new Promise((r) => setTimeout(r, 4000)),
+    ]),
+    Promise.race([
+      ensureAgentActivityLogSchema().catch(() => null),
+      new Promise((r) => setTimeout(r, 4000)),
+    ]),
+    Promise.race([
+      ensureDigisolDailyUsageSchema().catch(() => null),
+      new Promise((r) => setTimeout(r, 4000)),
+    ]),
+    Promise.race([
+      ensureClientAiWalletSchema().catch(() => null),
+      new Promise((r) => setTimeout(r, 4000)),
+    ]),
   ]);
 
   if (!getOpenAIApiKey()) {
@@ -87,6 +110,26 @@ export async function runProspectAuditWorker(
   const clientId = await ensureDigisolClient(opts.db);
   if (!clientId) {
     throw new Error("DigiSol house profile is missing");
+  }
+
+  // Auto-fill empty/low queue from Alberta catalog (root cause of "no prospects").
+  let queueSeed: ProspectAuditWorkerResult["queueSeed"];
+  try {
+    queueSeed = await ensureProspectQueue(opts.db, clientId, {
+      minPending: PROSPECT_AUDIT_BATCH_DEFAULT,
+      fillCount: 12,
+    });
+  } catch (seedErr) {
+    console.warn(
+      "[prospect-audit] queue seed failed",
+      seedErr instanceof Error ? seedErr.message : seedErr,
+    );
+    queueSeed = {
+      pendingBefore: 0,
+      inserted: 0,
+      skippedExisting: 0,
+      catalogRemaining: 0,
+    };
   }
 
   // DigiSol bootstrap: hard stop when daily automated audit/email cap is spent.
@@ -174,6 +217,7 @@ export async function runProspectAuditWorker(
       model: PROSPECT_AUDIT_MODEL,
       maxOutputTokens: PROSPECT_AUDIT_MAX_OUTPUT_TOKENS,
       dryRun,
+      queueSeed,
       results: [{ skipped: true, reason: "daily_cap_reached" }],
       totals,
     };
@@ -192,6 +236,38 @@ export async function runProspectAuditWorker(
 
   if (listError) {
     throw new Error(listError.message);
+  }
+
+  if (!prospects?.length) {
+    await logAgentActivity({
+      supabase: opts.db,
+      clientId,
+      action: "prospect_audit:empty_queue",
+      toolName: "runProspectAuditWorker",
+      status: "finished",
+      model: PROSPECT_AUDIT_MODEL,
+      output: { queueSeed, trades },
+    });
+    return {
+      ok: true,
+      operator: DIGISOL_OPERATOR.name,
+      dailyMax,
+      processedTodayBefore: usedToday,
+      remainingDaily,
+      batchSize,
+      model: PROSPECT_AUDIT_MODEL,
+      maxOutputTokens: PROSPECT_AUDIT_MAX_OUTPUT_TOKENS,
+      dryRun,
+      queueSeed,
+      results: [
+        {
+          skipped: true,
+          reason: "empty_queue",
+          note: "No pending prospects after seed — expand ALBERTA_PROSPECT_SEED.",
+        },
+      ],
+      totals,
+    };
   }
 
   for (const prospect of prospects ?? []) {
@@ -299,6 +375,7 @@ export async function runProspectAuditWorker(
     model: PROSPECT_AUDIT_MODEL,
     maxOutputTokens: PROSPECT_AUDIT_MAX_OUTPUT_TOKENS,
     dryRun,
+    queueSeed,
     results,
     totals,
   };

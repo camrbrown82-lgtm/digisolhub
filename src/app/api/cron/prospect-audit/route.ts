@@ -6,7 +6,8 @@ import type { ProspectTrade } from "@/lib/prospectAudit/limits";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-export const maxDuration = 60;
+/** Five site fetches + mini summaries need headroom on Hobby Fluid. */
+export const maxDuration = 120;
 
 function cronAuthorized(request: Request) {
   const secret = process.env.CRON_SECRET?.trim();

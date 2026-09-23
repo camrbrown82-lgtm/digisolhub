@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ProspectAuditRunButton } from "@/components/hub/ProspectAuditRunButton";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { ensureProspectsSchema } from "@/lib/ensureProspectsSchema";
 import { createClient } from "@/lib/supabase/server";
@@ -23,7 +24,10 @@ type ProspectRow = {
 };
 
 export default async function ProspectsPage() {
-  await ensureProspectsSchema().catch(() => null);
+  await Promise.race([
+    ensureProspectsSchema().catch(() => null),
+    new Promise((resolve) => setTimeout(resolve, 3000)),
+  ]);
   const supabase = await createClient();
   const active = await getActiveClient(supabase);
   const clientId = (await resolveClientId(supabase)) || active?.id || "";
@@ -66,13 +70,17 @@ export default async function ProspectsPage() {
             Schedule:{" "}
             <code className="text-zinc-300">/api/cron/prospect-audit</code> runs
             daily at <span className="text-zinc-300">15:00 UTC</span> (9:00 AM
-            Mountain Daylight / 8:00 AM Mountain Standard). Results appear in
-            this table and under Contacts filtered by prospect audit.
+            Mountain Daylight / 8:00 AM Mountain Standard). The cron auto-seeds
+            Alberta trade sites into the queue when it is empty, then audits and
+            emails up to 5.
           </p>
         </div>
-        <Link href="/hub/contacts?source=prospect_audit" className="hub-btn">
-          View audit leads
-        </Link>
+        <div className="flex flex-col items-end gap-3">
+          <Link href="/hub/contacts?source=prospect_audit" className="hub-btn-secondary">
+            View audit leads
+          </Link>
+          <ProspectAuditRunButton />
+        </div>
       </div>
 
       {error ? (
@@ -104,9 +112,10 @@ export default async function ProspectsPage() {
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-8 text-zinc-500">
-                  No prospects in the queue yet. Seed rows in{" "}
-                  <code className="text-zinc-300">prospects</code> (url, trade,
-                  city) and the daily cron will pick them up.
+                  No prospects yet. Click{" "}
+                  <strong className="text-zinc-300">Run today&apos;s audits</strong>{" "}
+                  to seed Alberta trade sites and process up to 5 (or wait for the
+                  15:00 UTC cron).
                 </td>
               </tr>
             ) : (
