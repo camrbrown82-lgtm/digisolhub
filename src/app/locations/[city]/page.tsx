@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ArrowRight, MapPin } from "lucide-react";
+import { ArrowRight, MapPin, Sparkles } from "lucide-react";
 import { Footer } from "@/components/Footer";
+import { GoogleRating, ListingLinks } from "@/components/LocalListings";
 import { Navbar } from "@/components/Navbar";
+import { BrandCard, brandAccent } from "@/components/BrandCard";
 import { KaylevValueProp } from "@/components/sections/KaylevValueProp";
 import { TrackedLink } from "@/components/TrackedLink";
 import {
@@ -63,6 +65,7 @@ export default function LocationCityPage({ params }: PageProps) {
   if (!page) notFound();
 
   const otherCities = LOCATION_PAGES.filter((item) => item.slug !== page.slug);
+  const analyticsLocation = `locations_${page.slug}`;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": ["LocalBusiness", "ProfessionalService"],
@@ -98,112 +101,186 @@ export default function LocationCityPage({ params }: PageProps) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <div className="px-4 py-16 sm:px-6 lg:px-8">
-          <article className="mx-auto max-w-7xl">
-            <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-indigo-400">
-              <MapPin className="h-4 w-4" aria-hidden="true" />
+
+        {/* Hero — same chrome & centering as homepage Hero */}
+        <section
+          id="top"
+          className="relative overflow-hidden px-4 py-16 sm:px-6 sm:py-24 lg:px-8"
+          aria-labelledby="location-hero-heading"
+        >
+          <div
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-600/20 via-zinc-950 to-zinc-950"
+            aria-hidden="true"
+          />
+          <div
+            className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgb(255_255_255/0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgb(255_255_255/0.04)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)]"
+            aria-hidden="true"
+          />
+          <div className="relative mx-auto max-w-5xl text-center">
+            <p className="mb-8 inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1.5 text-xs font-medium tracking-wide text-indigo-300 sm:text-sm">
+              <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               {page.regionLabel}
             </p>
-            <div className="mt-4 max-w-3xl">
-              <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-5xl">
-                <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-                  {page.headline}
-                </span>
-              </h1>
-              <p className="mt-5 text-lg leading-relaxed text-zinc-300">
-                {page.subhead}
-              </p>
-              <p className="mt-4 text-base leading-relaxed text-zinc-400">
-                {page.intro}
-              </p>
+            <h1
+              id="location-hero-heading"
+              className="text-balance text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl"
+            >
+              <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                {page.headline}
+              </span>
+            </h1>
+            <p className="mx-auto mt-8 max-w-3xl text-balance text-2xl font-semibold tracking-tight text-zinc-100 sm:text-3xl">
+              {page.subhead}
+            </p>
+            <p className="mx-auto mt-6 max-w-2xl text-pretty text-base leading-relaxed text-zinc-300 sm:text-lg">
+              {page.intro}
+            </p>
+            <p className="mx-auto mt-4 max-w-2xl text-sm font-medium tracking-wide text-indigo-300">
+              Also serving {page.nearby}
+            </p>
+            <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <TrackedLink
+                href="/#contact"
+                eventName="cta_click"
+                eventParams={{
+                  cta_name: "book_consultation",
+                  location: `${analyticsLocation}_hero`,
+                }}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 sm:w-auto"
+              >
+                Book a Free Consultation
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </TrackedLink>
+              <TrackedLink
+                href="/#services"
+                eventName="cta_click"
+                eventParams={{
+                  cta_name: "explore_services",
+                  location: `${analyticsLocation}_hero`,
+                }}
+                className="inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 sm:w-auto"
+              >
+                Explore Services
+              </TrackedLink>
             </div>
+            <ListingLinks location="hero" />
+            <div className="mt-5 flex justify-center">
+              <GoogleRating location="hero" />
+            </div>
+          </div>
+        </section>
 
-            <section className="mt-12" aria-labelledby="focus-heading">
+        {/* Focus — same centered header + BrandCard pattern as homepage sections */}
+        <section
+          className="border-t border-white/10 px-4 py-20 sm:px-6 lg:px-8"
+          aria-labelledby="focus-heading"
+        >
+          <div className="mx-auto max-w-6xl">
+            <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
+              <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
+                Local focus
+              </p>
               <h2
                 id="focus-heading"
-                className="text-2xl font-semibold tracking-tight text-white"
+                className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl"
               >
                 What we do for {page.name} companies
               </h2>
-              <ul className="mt-6 space-y-3">
-                {page.focus.map((item) => (
-                  <li
-                    key={item}
-                    className="flex gap-3 text-base leading-relaxed text-zinc-300"
-                  >
-                    <span
-                      className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400"
-                      aria-hidden="true"
-                    />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-6 text-sm text-zinc-500">
-                Also serving {page.nearby}. DigiSol headquarters:{" "}
-                {DIGISOL_ADDRESS_LINE}.
+              <p className="mt-4 text-zinc-400">
+                DigiSol headquarters: {DIGISOL_ADDRESS_LINE}.
               </p>
-            </section>
-          </article>
-        </div>
+            </div>
+            <ul className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2">
+              {page.focus.map((item, index) => {
+                const accent =
+                  index % 2 === 0
+                    ? ("blue" as const)
+                    : ("indigo" as const);
+                const styles = brandAccent[accent];
+                return (
+                  <li key={item} className="h-full">
+                    <BrandCard accent={accent} className="h-full">
+                      <span
+                        className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${styles.icon}`}
+                      >
+                        <Sparkles className="h-5 w-5" aria-hidden="true" />
+                      </span>
+                      <p className="mt-4 text-base leading-relaxed text-zinc-200">
+                        {item}
+                      </p>
+                    </BrandCard>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </section>
 
         <KaylevValueProp
           locationName={page.name}
           analyticsLocation={`locations_kaylev_${page.slug}`}
         />
 
-        <div className="px-4 pb-16 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl">
-            <div className="rounded-2xl border border-indigo-400/25 bg-indigo-500/10 p-6 text-center">
-              <h2 className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-xl font-semibold text-transparent">
-                Ready to grow in {page.name}?
-              </h2>
-              <p className="mt-2 text-sm text-zinc-400">
-                Book a free consultation for website design, Next.js engineering,
-                local SEO, and full-funnel CRO — we&apos;ll scale the plan to your
-                industry.
-              </p>
-              <TrackedLink
-                href="/#contact"
-                eventName="cta_click"
-                eventParams={{
-                  cta_name: "book_consultation",
-                  location: `locations_${page.slug}`,
-                }}
-                className="mt-5 inline-flex items-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-indigo-500"
-              >
-                Book a Free Consultation
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </TrackedLink>
-              <p className="mt-4 text-sm text-zinc-500">
-                Or{" "}
-                <TrackedLink
-                  href="/pricing"
-                  eventName="cta_click"
-                  eventParams={{
-                    cta_name: "view_pricing",
-                    location: `locations_${page.slug}`,
-                  }}
-                  className="font-medium text-indigo-300 underline-offset-2 hover:underline"
-                >
-                  browse DigiSol pricing
-                </TrackedLink>
-                .
-              </p>
-            </div>
+        <section className="border-t border-white/10 px-4 py-20 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-6xl">
+            <BrandCard accent="indigo">
+              <div className="text-center">
+                <h2 className="text-xl font-semibold text-white sm:text-2xl">
+                  Ready to grow in {page.name}?
+                </h2>
+                <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-zinc-200">
+                  Book a free consultation for website design, Next.js
+                  engineering, local SEO, and full-funnel CRO — we&apos;ll scale
+                  the plan to your industry.
+                </p>
+                <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                  <TrackedLink
+                    href="/#contact"
+                    eventName="cta_click"
+                    eventParams={{
+                      cta_name: "book_consultation",
+                      location: analyticsLocation,
+                    }}
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-indigo-500"
+                  >
+                    Book a Free Consultation
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </TrackedLink>
+                  <TrackedLink
+                    href="/pricing"
+                    eventName="cta_click"
+                    eventParams={{
+                      cta_name: "view_pricing",
+                      location: analyticsLocation,
+                    }}
+                    className="inline-flex items-center justify-center rounded-full border border-blue-400/40 bg-blue-500/10 px-6 py-3 text-sm font-semibold text-blue-200 transition hover:border-blue-300 hover:bg-blue-500/20"
+                  >
+                    Browse DigiSol pricing
+                  </TrackedLink>
+                </div>
+              </div>
+            </BrandCard>
 
-            <nav className="mt-12" aria-label="Other DigiSol service cities">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
-                More Alberta cities
-              </h2>
-              <ul className="mt-4 flex flex-wrap gap-3">
+            <nav
+              className="mt-16"
+              aria-label="Other DigiSol service cities"
+            >
+              <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
+                <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
+                  More Alberta cities
+                </p>
+                <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+                  DigiSol service areas
+                </h2>
+              </div>
+              <ul className="mt-8 flex flex-wrap items-center justify-center gap-3">
                 {otherCities.map((city) => (
                   <li key={city.slug}>
                     <TrackedLink
                       href={locationPath(city.slug)}
                       eventName="location_nav"
                       eventParams={{ city: city.slug, from: page.slug }}
-                      className="inline-flex rounded-full border border-white/15 px-4 py-2 text-sm text-zinc-200 transition hover:bg-white/5"
+                      className="inline-flex rounded-full border border-white/15 px-4 py-2 text-sm text-zinc-200 transition hover:border-indigo-400/40 hover:bg-white/5"
                     >
                       {city.name}
                     </TrackedLink>
@@ -212,7 +289,7 @@ export default function LocationCityPage({ params }: PageProps) {
               </ul>
             </nav>
           </div>
-        </div>
+        </section>
       </main>
       <Footer />
     </>

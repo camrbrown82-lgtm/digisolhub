@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { MapPin } from "lucide-react";
+import { BrandCard, brandAccent } from "@/components/BrandCard";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { TrackedLink } from "@/components/TrackedLink";
@@ -24,44 +25,73 @@ export default function LocationsIndexPage() {
   return (
     <>
       <Navbar />
-      <main id="main" className="px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
-            DigiSol service areas
-          </p>
-          <h1 className="mt-3 text-balance text-3xl font-semibold tracking-tight sm:text-5xl">
-            <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-              Website design & local SEO across Alberta
-            </span>
-          </h1>
-          <p className="mt-4 text-zinc-400">
-            City pages built for local search — Calgary, Edmonton, Red Deer,
-            Cochrane, and our Airdrie home base.
-          </p>
-        </div>
-        <ul className="mx-auto mt-12 grid max-w-3xl gap-4 sm:grid-cols-2">
-          {LOCATION_PAGES.map((city) => (
-            <li key={city.slug}>
-              <TrackedLink
-                href={locationPath(city.slug)}
-                eventName="location_nav"
-                eventParams={{ city: city.slug, from: "index" }}
-                className="flex h-full flex-col rounded-2xl border border-white/10 bg-zinc-900/40 p-5 text-left transition hover:border-indigo-400/40 hover:bg-zinc-900/70"
-              >
-                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-indigo-300">
-                  <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
-                  {city.regionLabel}
-                </span>
-                <span className="mt-3 text-xl font-semibold text-white">
-                  {city.name}
-                </span>
-                <span className="mt-2 text-sm leading-relaxed text-zinc-400">
-                  {city.subhead}
-                </span>
-              </TrackedLink>
-            </li>
-          ))}
-        </ul>
+      <main id="main">
+        <section
+          className="relative overflow-hidden px-4 py-16 sm:px-6 sm:py-24 lg:px-8"
+          aria-labelledby="locations-heading"
+        >
+          <div
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-600/20 via-zinc-950 to-zinc-950"
+            aria-hidden="true"
+          />
+          <div
+            className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgb(255_255_255/0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgb(255_255_255/0.04)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)]"
+            aria-hidden="true"
+          />
+          <div className="relative mx-auto max-w-5xl text-center">
+            <p className="mb-8 inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1.5 text-xs font-medium tracking-wide text-indigo-300 sm:text-sm">
+              <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              DigiSol service areas
+            </p>
+            <h1
+              id="locations-heading"
+              className="text-balance text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl"
+            >
+              <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                Website design &amp; local SEO across Alberta
+              </span>
+            </h1>
+            <p className="mx-auto mt-6 max-w-2xl text-pretty text-base leading-relaxed text-zinc-300 sm:text-lg">
+              City pages built for local search — Calgary, Edmonton, Red Deer,
+              Cochrane, and our Airdrie home base.
+            </p>
+          </div>
+        </section>
+
+        <section className="border-t border-white/10 px-4 pb-20 sm:px-6 lg:px-8">
+          <ul className="mx-auto grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-2">
+            {LOCATION_PAGES.map((city, index) => {
+              const accent =
+                index % 2 === 0 ? ("sky" as const) : ("indigo" as const);
+              const styles = brandAccent[accent];
+              return (
+                <li key={city.slug} className="h-full">
+                  <TrackedLink
+                    href={locationPath(city.slug)}
+                    eventName="location_nav"
+                    eventParams={{ city: city.slug, from: "index" }}
+                    className="block h-full"
+                  >
+                    <BrandCard accent={accent} className="h-full transition hover:brightness-110">
+                      <span
+                        className={`inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-semibold uppercase tracking-wider ${styles.icon}`}
+                      >
+                        <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+                        {city.regionLabel}
+                      </span>
+                      <span className="mt-5 block text-xl font-semibold text-white">
+                        {city.name}
+                      </span>
+                      <span className="mt-2 block text-sm leading-relaxed text-zinc-300">
+                        {city.subhead}
+                      </span>
+                    </BrandCard>
+                  </TrackedLink>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       </main>
       <Footer />
     </>
