@@ -1,0 +1,30 @@
+{
+  "_comment": "Pro-frequency Vercel crons (restored after Hobby downgrade). Keep in sync with vercel.json on Pro.",
+  "crons": [
+    {
+      "path": "/api/cron/dispatch",
+      "schedule": "0 16 * * *",
+      "note": "Daily DigiSol Dispatch send — 16:00 UTC"
+    },
+    {
+      "path": "/api/cron/prospect-audit",
+      "schedule": "0 15 * * *",
+      "note": "Morning Alberta prospect audits — 15:00 UTC / 9 AM MDT"
+    },
+    {
+      "path": "/api/cron/resend-sync",
+      "schedule": "15 * * * *",
+      "note": "Hourly Resend open/click backfill (Pro)"
+    },
+    {
+      "path": "/api/cron/social-dispatch",
+      "schedule": "*/15 * * * *",
+      "note": "Social queue every 15 minutes (Pro)"
+    },
+    {
+      "path": "/api/cron/meta-insights",
+      "schedule": "0 13 * * *",
+      "note": "Daily Meta Ads + Instagram Insights sync — 13:00 UTC"
+    }
+  ]
+}
