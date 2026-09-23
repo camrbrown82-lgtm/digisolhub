@@ -7,7 +7,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   GEO_AUDIENCE_COOKIE,
   GEO_COUNTRY_COOKIE,
-  homeCopyForAudience,
   parseAudienceCookie,
   type VisitorAudience,
 } from "@/lib/visitorRegion";
@@ -23,8 +22,15 @@ function readCookie(name: string) {
 }
 
 function greetingFor(audience: VisitorAudience) {
-  const copy = homeCopyForAudience(audience);
-  return `Hi — I'm ${KAYLEV_NAME}. DigiSol offers a free website audit for ${copy.chatGreetingAudience}. Paste your site URL and I'll check SEO, speed, and conversion basics — then email you the full breakdown. Want me to run yours now?`;
+  if (audience === "international") {
+    return `Hey there! I'm ${KAYLEV_NAME}, your digital assistant here at DigiSol. Whether you're local or scaling from afar, we help businesses fix conversion leaks and boost online growth.
+
+To get started, just drop your website URL below—and if you'd like me to email you a full, detailed breakdown of our findings, let me know what email address to send it to (or feel free to ask me any questions first!).`;
+  }
+
+  return `Hey there! I'm ${KAYLEV_NAME}, your digital assistant here at DigiSol. Proud to help Alberta businesses—and teams scaling from farther afield—fix conversion leaks and boost online growth.
+
+To get started, just drop your website URL below—and if you'd like me to email you a full, detailed breakdown of our findings, let me know what email address to send it to (or feel free to ask me any questions first!).`;
 }
 
 function createGreetingMessage(audience: VisitorAudience): UIMessage {
@@ -196,7 +202,7 @@ export function VisitorChat() {
                   void onSubmit(event);
                 }
               }}
-              placeholder="Site URL or email…"
+              placeholder="Enter your website URL…"
               className="min-h-[2rem] max-h-16 flex-1 resize-none rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
               disabled={busy}
             />
