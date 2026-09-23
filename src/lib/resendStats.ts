@@ -20,31 +20,33 @@ export type ResendAccountMetrics = {
 
 type MetricsTotals = Record<string, number | null | undefined>;
 
+const METRICS_TIMEOUT_MS = 2500;
+
 /**
  * Pull account-level Resend metrics (opens/clicks/etc.) for the last N days.
- * Requires RESEND_API_KEY. Used by Hub Analytics + DigiSol agent tools.
+ * Hard-timeout so Hub Analytics never hangs on Resend.
  */
 export async function fetchResendAccountMetrics(
   days = 14,
 ): Promise<ResendAccountMetrics> {
   const apiKey = getResendApiKey();
   const lookback = Math.min(30, Math.max(1, Math.floor(days)));
-  if (!apiKey) {
-    return {
-      configured: false,
-      error: "RESEND_API_KEY missing",
-      days: lookback,
-      sent: 0,
-      delivered: 0,
-      opened: 0,
-      uniqueOpened: 0,
-      clicked: 0,
-      uniqueClicked: 0,
-      bounced: 0,
-      openRate: null,
-      clickRate: null,
-    };
-  }
+  const empty = (error?: string): ResendAccountMetrics => ({
+    configured: Boolean(apiKey),
+    error,
+    days: lookback,
+    sent: 0,
+    delivered: 0,
+    opened: 0,
+    uniqueOpened: 0,
+    clicked: 0,
+    uniqueClicked: 0,
+    bounced: 0,
+    openRate: null,
+    clickRate: null,
+  });
+
+  if (!apiKey) return empty("RESEND_API_KEY missing");
 
   const end = new Date();
   const start = new Date(Date.now() - lookback * 24 * 60 * 60 * 1000);
@@ -65,6 +67,9 @@ export async function fetchResendAccountMetrics(
     ].join(","),
   });
 
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), METRICS_TIMEOUT_MS);
+
   try {
     const res = await fetch(`https://api.resend.com/emails/metrics?${params}`, {
       headers: {
@@ -72,6 +77,7 @@ export async function fetchResendAccountMetrics(
         Accept: "application/json",
       },
       cache: "no-store",
+      signal: controller.signal,
     });
     const json = (await res.json().catch(() => ({}))) as {
       totals?: MetricsTotals;
@@ -82,24 +88,12 @@ export async function fetchResendAccountMetrics(
     };
 
     if (!res.ok) {
-      return {
-        configured: true,
-        error:
-          json.message ||
+      return empty(
+        json.message ||
           json.error ||
           json.name ||
           `Resend metrics HTTP ${res.status}`,
-        days: lookback,
-        sent: 0,
-        delivered: 0,
-        opened: 0,
-        uniqueOpened: 0,
-        clicked: 0,
-        uniqueClicked: 0,
-        bounced: 0,
-        openRate: null,
-        clickRate: null,
-      };
+      );
     }
 
     const totals = json.totals || json.data?.[0]?.totals || {};
@@ -117,26 +111,25 @@ export async function fetchResendAccountMetrics(
       clickRate: rate(totals.click_rate),
     };
   } catch (err) {
-    return {
-      configured: true,
-      error: err instanceof Error ? err.message : "Resend metrics fetch failed",
-      days: lookback,
-      sent: 0,
-      delivered: 0,
-      opened: 0,
-      uniqueOpened: 0,
-      clicked: 0,
-      uniqueClicked: 0,
-      bounced: 0,
-      openRate: null,
-      clickRate: null,
-    };
+    const aborted =
+      err instanceof Error &&
+      (err.name === "AbortError" || /aborted/i.test(err.message));
+    return empty(
+      aborted
+        ? "Resend metrics timed out"
+        : err instanceof Error
+          ? err.message
+          : "Resend metrics fetch failed",
+    );
+  } finally {
+    clearTimeout(timer);
   }
 }
 
 /**
- * Backfill Hub `sends` open/click timestamps from Resend `last_event`
- * when the webhook has not updated them yet.
+ * Backfill Hub `sends` open/click timestamps from Resend `last_event`.
+ * Only checks recent unreplied sends, in parallel, with a tight cap —
+ * never call this on the Hub Analytics critical path.
  */
 export async function syncResendEngagementFromApi(
   db: SupabaseClient,
@@ -147,11 +140,13 @@ export async function syncResendEngagementFromApi(
     return { synced: 0, checked: 0, skipped: true as const, reason: "no_api_key" };
   }
 
-  const limit = Math.min(40, Math.max(1, opts?.limit ?? 25));
+  // Keep this small — each row is a Resend GET.
+  const limit = Math.min(8, Math.max(1, opts?.limit ?? 5));
   let query = db
     .from("sends")
     .select("id, resend_id, contact_id, opened_at, clicked_at, bounced_at, status")
     .not("resend_id", "is", null)
+    .is("opened_at", null)
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -170,62 +165,66 @@ export async function syncResendEngagementFromApi(
   }
 
   const resend = new Resend(apiKey);
-  let synced = 0;
+  const results = await Promise.all(
+    rows.map(async (row) => {
+      const resendId = row.resend_id as string | null;
+      if (!resendId) return false;
 
-  for (const row of rows) {
-    const resendId = row.resend_id as string | null;
-    if (!resendId) continue;
+      const { data, error: getError } = await resend.emails.get(resendId);
+      if (getError || !data) return false;
 
-    const { data, error: getError } = await resend.emails.get(resendId);
-    if (getError || !data) continue;
+      const lastEvent = String(
+        (data as { last_event?: string }).last_event || "",
+      ).toLowerCase();
+      if (!lastEvent) return false;
 
-    const lastEvent = String(
-      (data as { last_event?: string }).last_event || "",
-    ).toLowerCase();
-    if (!lastEvent) continue;
+      const patch: Record<string, string> = {};
+      const now = new Date().toISOString();
+      let promoteEvent: "opened" | "clicked" | null = null;
 
-    const patch: Record<string, string> = {};
-    const now = new Date().toISOString();
-    let promoteEvent: "opened" | "clicked" | null = null;
+      if (
+        (lastEvent === "opened" || lastEvent === "clicked") &&
+        !row.opened_at
+      ) {
+        patch.opened_at = now;
+        patch.status = lastEvent === "clicked" ? "clicked" : "opened";
+        promoteEvent = "opened";
+      }
+      if (lastEvent === "clicked" && !row.clicked_at) {
+        patch.clicked_at = now;
+        patch.status = "clicked";
+        promoteEvent = "clicked";
+      }
+      if (
+        (lastEvent === "bounced" || lastEvent.includes("bounce")) &&
+        !row.bounced_at
+      ) {
+        patch.bounced_at = now;
+        patch.status = "bounced";
+      }
 
-    if (
-      (lastEvent === "opened" || lastEvent === "clicked") &&
-      !row.opened_at
-    ) {
-      patch.opened_at = now;
-      patch.status = lastEvent === "clicked" ? "clicked" : "opened";
-      promoteEvent = "opened";
-    }
-    if (lastEvent === "clicked" && !row.clicked_at) {
-      patch.clicked_at = now;
-      patch.status = "clicked";
-      promoteEvent = "clicked";
-    }
-    if (
-      (lastEvent === "bounced" || lastEvent.includes("bounce")) &&
-      !row.bounced_at
-    ) {
-      patch.bounced_at = now;
-      patch.status = "bounced";
-    }
+      if (Object.keys(patch).length === 0) return false;
 
-    if (Object.keys(patch).length === 0) continue;
+      await db.from("sends").update(patch).eq("id", row.id);
 
-    await db.from("sends").update(patch).eq("id", row.id);
-    synced += 1;
+      if (promoteEvent) {
+        await promoteProspectOnEngagement({
+          db,
+          resendId,
+          contactId: row.contact_id,
+          sendId: row.id,
+          event: promoteEvent,
+        }).catch(() => null);
+      }
+      return true;
+    }),
+  );
 
-    if (promoteEvent) {
-      await promoteProspectOnEngagement({
-        db,
-        resendId,
-        contactId: row.contact_id,
-        sendId: row.id,
-        event: promoteEvent,
-      }).catch(() => null);
-    }
-  }
-
-  return { synced, checked: rows.length, skipped: false as const };
+  return {
+    synced: results.filter(Boolean).length,
+    checked: rows.length,
+    skipped: false as const,
+  };
 }
 
 function num(value: unknown) {
@@ -236,6 +235,5 @@ function num(value: unknown) {
 function rate(value: unknown) {
   const n = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(n)) return null;
-  // Resend may return 0–1 or 0–100 depending on version — normalize to percent.
   return n <= 1 ? Math.round(n * 1000) / 10 : Math.round(n * 10) / 10;
 }

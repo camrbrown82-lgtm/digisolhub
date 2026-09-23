@@ -3,7 +3,6 @@ import { fetchDigisolGa4Summary } from "@/lib/ga4";
 import { summarizeLeadPerformance, type LeadRecord } from "@/lib/lead-pipeline";
 import {
   fetchResendAccountMetrics,
-  syncResendEngagementFromApi,
 } from "@/lib/resendStats";
 import { summarizeSiteEvents } from "@/lib/site-analytics";
 import { contactIdsForClient } from "@/lib/workspace";
@@ -41,18 +40,8 @@ export const fetchAnalytics: AgentToolDefinition = {
     const scopedIds = await contactIdsForClient(ctx.supabase, ctx.clientId);
     const emptySends = scopedIds.length === 0;
 
-    // Backfill Hub send engagement from Resend before counting.
-    const resendSync = emptySends
-      ? { synced: 0, checked: 0, skipped: true as const, reason: "no_contacts" }
-      : await syncResendEngagementFromApi(ctx.supabase, {
-          contactIds: scopedIds,
-          limit: 30,
-        }).catch((err) => ({
-          synced: 0,
-          checked: 0,
-          skipped: true as const,
-          reason: err instanceof Error ? err.message : "sync_failed",
-        }));
+    // Do not backfill Resend email-by-email here — that stalls Hub/agent UX.
+    // Opens/clicks come from the webhook; account metrics are a single timed call.
 
     let contactsQuery = ctx.supabase
       .from("contacts")
@@ -85,7 +74,7 @@ export const fetchAnalytics: AgentToolDefinition = {
       .eq("client_id", ctx.clientId)
       .gte("created_at", since)
       .order("created_at", { ascending: false })
-      .limit(4000);
+      .limit(800);
 
     const leadsQuery = ctx.supabase
       .from("leads")
@@ -94,7 +83,7 @@ export const fetchAnalytics: AgentToolDefinition = {
       )
       .eq("client_id", ctx.clientId)
       .order("created_at", { ascending: false })
-      .limit(2000);
+      .limit(500);
 
     const isDigisol =
       (client?.name || ctx.companyName || "").toLowerCase() ===
@@ -144,7 +133,6 @@ export const fetchAnalytics: AgentToolDefinition = {
         clicked: clickCount,
         openRate: sendCount ? Math.round((openCount / sendCount) * 1000) / 10 : 0,
         clickRate: sendCount ? Math.round((clickCount / sendCount) * 1000) / 10 : 0,
-        hubSyncFromResend: resendSync,
         resendAccount: resend,
       },
       website,

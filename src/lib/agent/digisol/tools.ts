@@ -13,7 +13,6 @@ import { fetchDigisolGa4Summary } from "@/lib/ga4";
 import { summarizeLeadPerformance, type LeadRecord } from "@/lib/lead-pipeline";
 import {
   fetchResendAccountMetrics,
-  syncResendEngagementFromApi,
 } from "@/lib/resendStats";
 import { summarizeSiteEvents } from "@/lib/site-analytics";
 import { contactIdsForClient } from "@/lib/workspace";
@@ -246,17 +245,6 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
             );
             const emptySends = scopedIds.length === 0;
 
-            const resendSync = emptySends
-              ? { synced: 0, checked: 0, skipped: true as const }
-              : await syncResendEngagementFromApi(ctx.supabase, {
-                  contactIds: scopedIds,
-                  limit: 30,
-                }).catch(() => ({
-                  synced: 0,
-                  checked: 0,
-                  skipped: true as const,
-                }));
-
             let sendsQuery = ctx.supabase
               .from("sends")
               .select("id", { count: "exact", head: true });
@@ -306,7 +294,7 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
                 .eq("client_id", ctx.clientId)
                 .gte("created_at", since)
                 .order("created_at", { ascending: false })
-                .limit(4000),
+                .limit(800),
               ctx.supabase
                 .from("leads")
                 .select(
@@ -314,7 +302,7 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
                 )
                 .eq("client_id", ctx.clientId)
                 .order("created_at", { ascending: false })
-                .limit(2000),
+                .limit(500),
               fetchDigisolGa4Summary(days),
               fetchResendAccountMetrics(days),
             ]);
@@ -342,7 +330,6 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
                 clickRate: sendCount
                   ? Math.round((clickCount / sendCount) * 1000) / 10
                   : 0,
-                hubSyncFromResend: resendSync,
                 resendAccount: resend,
               },
               website,

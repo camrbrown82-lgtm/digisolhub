@@ -3,7 +3,7 @@ import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { CopySnippet } from "@/components/hub/CopySnippet";
 import { WebsiteAuditPanel } from "@/components/hub/WebsiteAuditPanel";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
-import { fetchDigisolGa4Summary, ga4ConfigStatus } from "@/lib/ga4";
+import { fetchDigisolGa4Summary, ga4ConfigStatus, type Ga4Summary } from "@/lib/ga4";
 import {
   LEAD_STAGES,
   type LeadRecord,
@@ -12,7 +12,6 @@ import {
 import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
 import {
   fetchResendAccountMetrics,
-  syncResendEngagementFromApi,
 } from "@/lib/resendStats";
 import { contactIdsForClient, getActiveClient } from "@/lib/workspace";
 import { newSiteKey, summarizeSiteEvents, trackingSnippet } from "@/lib/site-analytics";
@@ -75,7 +74,7 @@ export default async function AnalyticsPage() {
     .select("client_id, visitor_id, host, path, title, referrer, created_at")
     .gte("created_at", since)
     .order("created_at", { ascending: false })
-    .limit(4000);
+    .limit(800);
   if (active) siteQuery = siteQuery.eq("client_id", active.id);
 
   let leadsQuery = supabase
@@ -84,17 +83,22 @@ export default async function AnalyticsPage() {
       "id, source, stage, estimated_value, actual_value, first_touch_at, closed_at, created_at",
     )
     .order("created_at", { ascending: false })
-    .limit(2000);
+    .limit(500);
   if (active) leadsQuery = leadsQuery.eq("client_id", active.id);
 
-  // Pull live Resend engagement into Hub sends before counting opens/clicks.
-  if (!emptySends && scopedIds) {
-    await syncResendEngagementFromApi(supabase, {
-      contactIds: scopedIds,
-      limit: 30,
-    }).catch(() => null);
-  }
+  const emptyGa4: Ga4Summary = {
+    configured: false,
+    sessions: 0,
+    users: 0,
+    pageviews: 0,
+    daily: [],
+    pages: [],
+    locations: [],
+    sources: [],
+  };
 
+  // Hub counts come from DB (Resend webhook). Metrics API is optional and
+  // time-boxed — never block Analytics on per-email Resend backfills.
   const [contacts, sends, opened, clicked, unsubscribed, site, leadsResult, ga4, latestAudit, resend] =
     await Promise.all([
       contactsQuery,
@@ -104,7 +108,7 @@ export default async function AnalyticsPage() {
       unsubQuery,
       siteQuery,
       leadsQuery,
-      fetchDigisolGa4Summary(14),
+      isDigisol ? fetchDigisolGa4Summary(14) : Promise.resolve(emptyGa4),
       active
         ? (async () => {
             const { data } = await supabase
