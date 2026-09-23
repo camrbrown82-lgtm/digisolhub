@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
 import { DigiSolSiteBeacon } from "@/components/DigiSolSiteBeacon";
+import { PublicKaylevChat } from "@/components/PublicKaylevChat";
 import { PublicSiteAnalytics } from "@/components/PublicSiteAnalytics";
 import {
   WEBSITE_AUDIT_DESCRIPTION,
@@ -164,6 +165,7 @@ export default function RootLayout({
           }}
         />
         {children}
+        <PublicKaylevChat />
         <PublicSiteAnalytics>
           <DigiSolSiteBeacon />
         </PublicSiteAnalytics>

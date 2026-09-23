@@ -1,7 +1,6 @@
 import { Footer } from "@/components/Footer";
 import { GeoHomeBanner } from "@/components/GeoHomeBanner";
 import { Navbar } from "@/components/Navbar";
-import { VisitorChat } from "@/components/VisitorChat";
 import { Audience } from "@/components/sections/Audience";
 import { Contact } from "@/components/sections/Contact";
 import { DispatchArchive } from "@/components/sections/DispatchArchive";
@@ -25,7 +24,6 @@ export default function HomePage() {
         <Contact />
       </main>
       <Footer />
-      <VisitorChat />
     </>
   );
 }
