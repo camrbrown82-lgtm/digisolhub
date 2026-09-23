@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
+import { logAbVariantEngagement } from "@/lib/abVariantTracking";
 import { assignAbVariants } from "@/lib/campaignAb";
 import { brandFromClient } from "@/lib/branding";
 import { normalizeCampaignChannel } from "@/lib/campaignChannels";
@@ -170,7 +171,7 @@ export async function POST(request: Request) {
     const templateId =
       variant === "B" ? body.templateBId : body.templateAId;
     try {
-      await sendEmailToContact({
+      const sent = await sendEmailToContact({
         contactId: contact.id,
         contact,
         db: supabase,
@@ -183,6 +184,13 @@ export async function POST(request: Request) {
         brand,
       });
       results.push({ contactId: contact.id, variant, ok: true });
+      await logAbVariantEngagement(supabase, {
+        sendId: sent.sendId || sent.resendId || contact.id,
+        contactId: contact.id,
+        campaignId: campaign.id,
+        variant,
+        event: "sent",
+      }).catch(() => null);
     } catch (err) {
       results.push({
         contactId: contact.id,

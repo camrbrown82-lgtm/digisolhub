@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { CopySnippet } from "@/components/hub/CopySnippet";
+import { WebsiteAuditPanel } from "@/components/hub/WebsiteAuditPanel";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { fetchDigisolGa4Summary, ga4ConfigStatus } from "@/lib/ga4";
 import {
@@ -81,7 +82,7 @@ export default async function AnalyticsPage() {
     .limit(2000);
   if (active) leadsQuery = leadsQuery.eq("client_id", active.id);
 
-  const [contacts, sends, opened, clicked, unsubscribed, site, leadsResult, ga4] =
+  const [contacts, sends, opened, clicked, unsubscribed, site, leadsResult, ga4, latestAudit] =
     await Promise.all([
       contactsQuery,
       emptySends ? Promise.resolve({ count: 0 }) : sendsQuery,
@@ -91,6 +92,20 @@ export default async function AnalyticsPage() {
       siteQuery,
       leadsQuery,
       fetchDigisolGa4Summary(14),
+      active
+        ? (async () => {
+            const { data } = await supabase
+              .from("website_audits")
+              .select(
+                "id, url, final_url, score, ttfb_ms, total_ms, report, created_at",
+              )
+              .eq("client_id", active.id)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            return { data };
+          })().catch(() => ({ data: null }))
+        : Promise.resolve({ data: null }),
     ]);
 
   const website = summarizeSiteEvents(site.data ?? [], active?.domain);
@@ -283,6 +298,14 @@ export default async function AnalyticsPage() {
           </div>
         </div>
       </section>
+
+      <WebsiteAuditPanel
+        companyName={active?.name}
+        domain={active?.domain}
+        initialAudit={
+          "data" in latestAudit ? latestAudit.data : latestAudit
+        }
+      />
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-white">

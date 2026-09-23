@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
+import { logAbVariantEngagement } from "@/lib/abVariantTracking";
 import { emitHubEvent } from "@/lib/events";
 
 type ResendWebhook = {
@@ -30,16 +31,20 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   const type = payload.type ?? "";
   const patch: Record<string, string> = {};
+  let event: "opened" | "clicked" | "bounced" | null = null;
 
   if (type.includes("opened") || type === "email.opened") {
     patch.opened_at = payload.data?.created_at ?? new Date().toISOString();
     patch.status = "opened";
+    event = "opened";
   } else if (type.includes("clicked") || type === "email.clicked") {
     patch.clicked_at = payload.data?.created_at ?? new Date().toISOString();
     patch.status = "clicked";
+    event = "clicked";
   } else if (type.includes("bounced") || type === "email.bounced") {
     patch.bounced_at = payload.data?.created_at ?? new Date().toISOString();
     patch.status = "bounced";
+    event = "bounced";
   }
 
   if (Object.keys(patch).length === 0) {
@@ -50,13 +55,25 @@ export async function POST(request: Request) {
     .from("sends")
     .update(patch)
     .eq("resend_id", resendId)
-    .select("id, contact_id")
+    .select("id, contact_id, campaign_id, variant")
     .maybeSingle();
 
   if (send?.contact_id && patch.opened_at) {
     await emitHubEvent("hub/email.opened", {
       contactId: send.contact_id,
       sendId: send.id,
+    });
+  }
+
+  if (send && event) {
+    await logAbVariantEngagement(admin, {
+      sendId: send.id,
+      contactId: send.contact_id,
+      campaignId: send.campaign_id,
+      variant: send.variant,
+      event,
+    }).catch((err) => {
+      console.error("logAbVariantEngagement", err);
     });
   }
 
