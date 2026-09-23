@@ -87,10 +87,15 @@ export function Footer() {
           </div>
         </div>
 
-        <p className="mt-4 border-t border-indigo-500/20 pt-3 text-xs text-indigo-200/55">
-          © {new Date().getFullYear()} DigiSol. {DIGISOL_REGION}. All rights
-          reserved.
-        </p>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-indigo-500/20 pt-3">
+          <p className="text-xs text-indigo-200/55">
+            © {new Date().getFullYear()} DigiSol. {DIGISOL_REGION}. All rights
+            reserved.
+          </p>
+          <a href="/privacy" className={linkClass}>
+            Privacy Policy
+          </a>
+        </div>
       </div>
     </footer>
   );

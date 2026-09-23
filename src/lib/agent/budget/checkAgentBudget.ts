@@ -3,6 +3,7 @@ import { AgentError } from "@/lib/agent/errors";
 import { logAgentActivity } from "@/lib/agent/digisol/activityLog";
 import {
   assertDigisolAutomatedAllowance,
+  digisolBudgetsEnforced,
   DIGISOL_DAILY_AUTOMATED_AUDIT_CAP,
   DIGISOL_DAILY_AUTOMATED_EMAIL_CAP,
   getDigisolDailyUsage,
@@ -59,12 +60,8 @@ const DIGISOL_AUTOMATED_GENERATIVE_TOOLS = new Set([
 /**
  * Pre-flight budget gate for resource-heavy agent tools.
  *
- * - External clients: scale strictly from active subscription → wallet allotments
- *   (pricing.ts amounts never modified).
- * - DigiSol automated: hard daily cap of 5 audits + 5 outreach emails; after that,
- *   block automated prospecting / token spend until the next UTC day.
- * - DigiSol manual (Hub dashboard): allowed under internal monthly wallet; does not
- *   consume the automated daily prospecting cap.
+ * - External clients: scale from active subscription → wallet allotments.
+ * - DigiSol house (growth phase): unrestricted unless DIGISOL_ENFORCE_BUDGETS=1.
  */
 export async function checkAgentBudget(
   companyId: string,
@@ -107,10 +104,59 @@ export async function checkAgentBudget(
   let reason: string | undefined;
   let digisolDaily: BudgetCheckResult["digisolDaily"];
 
+  // DigiSol house — growth phase: never block marketing / agents / prospecting.
+  if (resolved.isDigisol && !digisolBudgetsEnforced()) {
+    digisolDaily = await getDigisolDailyUsage(opts.supabase, companyId.trim());
+    const result: BudgetCheckResult = {
+      allowed: true,
+      companyId: companyId.trim(),
+      isDigisol: true,
+      invocation,
+      reason: undefined,
+      code: "ok",
+      pricingItemIds: resolved.pricingItemIds,
+      estimated,
+      remaining: {
+        tokens: digisolDaily.tokensRemaining,
+        toolCalls: Math.max(remaining.toolCalls, 1_000_000),
+        audits: digisolDaily.auditsRemaining,
+        emails: digisolDaily.emailsRemaining,
+      },
+      walletId: resolved.wallet.id,
+      periodStart: resolved.wallet.period_start,
+      periodEnd: resolved.wallet.period_end,
+      digisolDaily,
+    };
+
+    await logAgentActivity({
+      supabase: opts.supabase,
+      userId: opts.userId,
+      clientId: companyId.trim(),
+      action: "budget:check_ok",
+      toolName,
+      status: "ok",
+      input: { estimated, toolName, invocation, unrestricted: true },
+      output: {
+        allowed: true,
+        code: "ok",
+        isDigisol: true,
+        invocation,
+        unrestricted: true,
+        remaining: result.remaining,
+      },
+      metadata: {
+        periodStart: resolved.wallet.period_start,
+        periodEnd: resolved.wallet.period_end,
+      },
+    });
+
+    return result;
+  }
+
   if (resolved.isDigisol && invocation === "automated") {
     digisolDaily = await getDigisolDailyUsage(opts.supabase, companyId.trim());
 
-    // No automatic generative campaign/orchestration loops for DigiSol.
+    // Only when budgets are re-enabled: block automated generative loops.
     if (DIGISOL_AUTOMATED_GENERATIVE_TOOLS.has(toolName)) {
       allowed = false;
       code = "digisol_automated_generative_blocked";
@@ -159,8 +205,8 @@ export async function checkAgentBudget(
     reason = `Email dispatch budget exceeded (need ${estimated.emails}, remaining ${remaining.emails}).`;
   }
 
-  // DigiSol manual still respects a sane monthly internal wallet, but never the client tier.
-  if (resolved.isDigisol && invocation === "manual") {
+  // DigiSol manual with enforced budgets still respects monthly internal wallet.
+  if (resolved.isDigisol && invocation === "manual" && digisolBudgetsEnforced()) {
     if (estimated.tokens > remaining.tokens) {
       allowed = false;
       code = "token_budget_exceeded";

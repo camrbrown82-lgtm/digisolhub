@@ -60,15 +60,15 @@ export const AI_ALLOTMENTS_BY_PRICING_ID: Record<string, AiAllotment> = {
   },
 };
 
-/** DigiSol internal monthly wallet for *manual* Hub dashboard agent use only. */
+/** DigiSol internal monthly wallet for Hub dashboard + automated house ops. */
 export function digisolInternalAllotment(): AiAllotment {
+  // Growth phase: large runway. Tighten via env or DIGISOL_ENFORCE_BUDGETS later.
   return {
-    // Manual dashboard runway — automated prospecting uses digisol_daily_usage (5/day).
-    tokens: Number(process.env.DIGISOL_AI_TOKEN_BUDGET || 100_000) || 100_000,
-    toolCalls: Number(process.env.DIGISOL_AI_TOOL_CALL_BUDGET || 500) || 500,
-    audits: Number(process.env.DIGISOL_AI_AUDIT_BUDGET || 60) || 60,
+    tokens: Number(process.env.DIGISOL_AI_TOKEN_BUDGET || 5_000_000) || 5_000_000,
+    toolCalls: Number(process.env.DIGISOL_AI_TOOL_CALL_BUDGET || 50_000) || 50_000,
+    audits: Number(process.env.DIGISOL_AI_AUDIT_BUDGET || 10_000) || 10_000,
     emailDispatches:
-      Number(process.env.DIGISOL_AI_EMAIL_DISPATCH_BUDGET || 200) || 200,
+      Number(process.env.DIGISOL_AI_EMAIL_DISPATCH_BUDGET || 25_000) || 25_000,
   };
 }
 

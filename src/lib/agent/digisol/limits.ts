@@ -2,18 +2,17 @@ import type { DigisolModelTier } from "@/lib/agent/digisol/model";
 
 /** Per-completion output caps. Callers may only go lower. */
 const TIER_MAX_OUTPUT_TOKENS: Record<DigisolModelTier, number> = {
-  light: 900,
-  orchestration: 1800,
+  light: 2500,
+  orchestration: 8000,
 };
 
 /** Absolute hard ceiling — never exceed regardless of request. */
-export const DIGISOL_HARD_MAX_OUTPUT_TOKENS = 2200;
+export const DIGISOL_HARD_MAX_OUTPUT_TOKENS = 12_000;
 
 /**
  * Max streamText / tool-loop steps (each step ≈ another billed completion).
- * Hard-capped to prevent runaway orchestration costs.
  */
-export const DIGISOL_HARD_MAX_STEPS = 6;
+export const DIGISOL_HARD_MAX_STEPS = 16;
 
 export function resolveDigisolMaxOutputTokens(
   tier: DigisolModelTier,

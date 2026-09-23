@@ -62,9 +62,8 @@ export default async function ProspectsPage() {
           <h1 className="text-3xl font-semibold text-white">Prospect audits</h1>
           <WorkspaceScope companyName={active?.name} noun="prospect audits" />
           <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-            Daily automated website audits (max 5/day, CASL-gated). Each emailed
-            audit also lands in Contacts as a lead so you can see exactly who
-            received it.
+            Daily automated website audits (CASL-gated). Each emailed audit also
+            lands in Contacts as a lead so you can see exactly who received it.
           </p>
           <p className="mt-2 max-w-2xl text-sm text-zinc-500">
             Schedule:{" "}
@@ -72,7 +71,8 @@ export default async function ProspectsPage() {
             daily at <span className="text-zinc-300">15:00 UTC</span> (9:00 AM
             Mountain Daylight / 8:00 AM Mountain Standard). The cron auto-seeds
             Alberta trade sites into the queue when it is empty, then audits and
-            emails up to 5.
+            emails a growth-phase batch (DigiSol house budgets unrestricted
+            unless DIGISOL_ENFORCE_BUDGETS is enabled).
           </p>
         </div>
         <div className="flex flex-col items-end gap-3">

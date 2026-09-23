@@ -73,9 +73,8 @@ export type ProspectAuditWorkerResult = {
 export { promoteProspectOnEngagement };
 
 /**
- * Cost-capped DigiSol local prospect auditor.
- * Hard-limited to exactly 5 automated audits/emails per UTC day on gpt-4o-mini.
- * Manual Hub dashboard runs are not gated by this worker.
+ * Cost-capped DigiSol local prospect auditor when DIGISOL_ENFORCE_BUDGETS=1.
+ * Growth phase default: DigiSol house budgets are unrestricted.
  */
 export async function runProspectAuditWorker(
   opts: ProspectAuditWorkerOptions,

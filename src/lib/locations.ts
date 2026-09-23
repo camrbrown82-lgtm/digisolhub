@@ -16,12 +16,13 @@ export type LocationPage = {
 /** Same homepage copy shape — city name swapped into hero / services / contact. */
 export function homeCopyForLocation(page: LocationPage): HomeCopy {
   const base = homeCopyAlberta();
+  const isAirdrie = page.slug === "airdrie";
   return {
     ...base,
     heroEyebrow: page.regionLabel,
-    heroTitleLead: "Website Design,",
+    heroTitleLead: isAirdrie ? "Airdrie Web Design," : "Website Design,",
     heroTitleAccent: "Development & Marketing",
-    heroTitleTail: `in ${page.name}`,
+    heroTitleTail: isAirdrie ? "" : `in ${page.name}`,
     heroTagline: "Where Design, Engineering, and Growth Meet",
     heroSub: page.subhead,
     heroBody: page.intro,
@@ -164,24 +165,28 @@ export const LOCATION_PAGES: LocationPage[] = [
     slug: "airdrie",
     name: "Airdrie",
     regionLabel: "Airdrie — DigiSol home base",
-    headline: "Website design, development & local SEO in Airdrie",
+    headline: "Airdrie web design, development & marketing",
     subhead:
-      "Built in Airdrie for Airdrie companies — custom websites, local SEO, and campaigns that win nearby customers.",
+      "Airdrie-based website design, web development, SEO, and digital marketing — custom sites plus campaigns that help local customers find you.",
     intro:
-      "DigiSol is headquartered in Airdrie. We design and engineer custom websites for local businesses, then run the SEO, Google Ads, and Meta work that helps Airdrie customers find you on the map pack and organic results.",
+      "DigiSol is headquartered in Airdrie, Alberta. We design and engineer custom websites for local businesses, then run Airdrie marketing — local SEO, Google Ads, and Meta — so nearby customers find you in search and book work.",
     focus: [
-      "Airdrie website design and Next.js development",
-      "Google Business Profile and citations with our Airdrie NAP",
-      "Local SEO and ads for Airdrie and north Calgary metro",
+      "Airdrie web design and Next.js development (no template bloat)",
+      "Google Business Profile, citations, and NAP consistency for Airdrie searches",
+      "Airdrie marketing: local SEO, Google Ads, and Meta for north Calgary metro",
       "On-page CRO so Airdrie traffic books a free consultation",
     ],
     nearby: "Calgary, Cochrane, and communities across Alberta",
     keywords: [
+      "Airdrie web design",
+      "Airdrie web development",
+      "Airdrie marketing",
       "website design Airdrie",
       "web developer Airdrie",
+      "digital marketing Airdrie",
       "local SEO Airdrie",
-      "digital marketing Airdrie Alberta",
-      "website designer Airdrie",
+      "Airdrie SEO company",
+      "website designer Airdrie Alberta",
     ],
   },
 ];

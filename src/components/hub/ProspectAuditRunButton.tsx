@@ -11,12 +11,12 @@ export function ProspectAuditRunButton() {
 
   async function run(dryRun = false) {
     setBusy(true);
-    setMessage(dryRun ? "Dry-run starting…" : "Running today’s 5 audits…");
+    setMessage(dryRun ? "Dry-run starting…" : "Running prospect audits…");
     try {
       const res = await fetch("/api/cron/prospect-audit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dryRun, batchSize: 5, dailyMax: 5 }),
+        body: JSON.stringify({ dryRun, batchSize: 25, dailyMax: 25 }),
       });
       const json = (await res.json()) as {
         error?: string;
@@ -74,7 +74,7 @@ export function ProspectAuditRunButton() {
           className="hub-btn inline-flex items-center gap-1.5 text-xs"
         >
           <Play className="h-3.5 w-3.5" />
-          {busy ? "Running…" : "Run today’s audits"}
+          {busy ? "Running…" : "Run audits now"}
         </button>
       </div>
       {message ? (

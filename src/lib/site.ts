@@ -27,6 +27,11 @@ export const DIGISOL_CITY = "Airdrie";
 export const DIGISOL_POSTAL_CODE = "T4B 3J4";
 export const DIGISOL_ADDRESS_LINE =
   "969 Channelside Rd SW, Airdrie, AB T4B 3J4";
+/** Approximate HQ coordinates for LocalBusiness schema (Channelside SW, Airdrie). */
+export const DIGISOL_GEO = {
+  latitude: 51.2708,
+  longitude: -114.0315,
+} as const;
 export const DIGISOL_SERVICE_CITIES = [
   "Airdrie",
   "Calgary",

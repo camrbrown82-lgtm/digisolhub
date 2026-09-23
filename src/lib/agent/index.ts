@@ -45,6 +45,7 @@ export {
   recordAgentUsage,
   estimateToolCost,
   resolveCompanyWallet,
+  digisolBudgetsEnforced,
   DIGISOL_DAILY_AUTOMATED_AUDIT_CAP,
   DIGISOL_DAILY_AUTOMATED_EMAIL_CAP,
   getDigisolDailyUsage,

@@ -6,8 +6,8 @@ import type { ProspectTrade } from "@/lib/prospectAudit/limits";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-/** Five site fetches + mini summaries need headroom on Hobby Fluid. */
-export const maxDuration = 120;
+/** Site fetches + summaries — allow larger batches in growth phase. */
+export const maxDuration = 300;
 
 function cronAuthorized(request: Request) {
   const secret = process.env.CRON_SECRET?.trim();
@@ -46,11 +46,11 @@ function parseOptions(request: Request, body?: RunBody | null) {
     trades: trades.length ? trades : undefined,
     dailyMax:
       Number.isFinite(dailyMaxRaw) && dailyMaxRaw > 0
-        ? Math.min(5, Math.floor(dailyMaxRaw))
+        ? Math.min(100, Math.floor(dailyMaxRaw))
         : undefined,
     batchSize:
       Number.isFinite(batchSizeRaw) && batchSizeRaw > 0
-        ? Math.min(5, Math.floor(batchSizeRaw))
+        ? Math.min(50, Math.floor(batchSizeRaw))
         : undefined,
     dryRun,
   };
@@ -77,8 +77,9 @@ async function run(request: Request, body?: RunBody | null) {
  * DigiSol local prospect-audit cron.
  * GET/POST /api/cron/prospect-audit
  *
- * Protected by CRON_SECRET (Bearer). Hard-capped at 5 audits/day on gpt-4o-mini.
- * Query/body: trades=hvac,electrical&batchSize=5&dailyMax=5&dryRun=1
+ * Body: { dailyMax?: number; batchSize?: number; trades?: string; dryRun?: boolean }
+ * Protected by CRON_SECRET (Bearer). DigiSol house budgets are unrestricted
+ * unless DIGISOL_ENFORCE_BUDGETS=1. Query/body: trades=hvac&batchSize=25&dailyMax=25&dryRun=1
  */
 export async function GET(request: Request) {
   if (!cronAuthorized(request)) {

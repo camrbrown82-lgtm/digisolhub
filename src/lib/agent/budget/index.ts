@@ -25,6 +25,7 @@ export {
   type ClientAiWalletRow,
 } from "@/lib/agent/budget/wallet";
 export {
+  digisolBudgetsEnforced,
   DIGISOL_DAILY_AUTOMATED_AUDIT_CAP,
   DIGISOL_DAILY_AUTOMATED_EMAIL_CAP,
   DIGISOL_DAILY_AUTOMATED_TOKEN_CAP,

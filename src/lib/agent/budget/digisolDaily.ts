@@ -3,14 +3,26 @@ import { logAgentActivity } from "@/lib/agent/digisol/activityLog";
 import { ensureDigisolDailyUsageSchema } from "@/lib/ensureDigisolDailyUsageSchema";
 
 /**
- * DigiSol bootstrap hard cap: exactly 5 automated audits + outreach emails / UTC day.
- * Manual dashboard invocations are not counted here.
+ * DigiSol house budgets.
+ *
+ * Growth phase default: unrestricted (marketing + prospecting need runway).
+ * Set DIGISOL_ENFORCE_BUDGETS=1 on Vercel later to restore hard daily caps.
  */
-export const DIGISOL_DAILY_AUTOMATED_AUDIT_CAP = 5;
-export const DIGISOL_DAILY_AUTOMATED_EMAIL_CAP = 5;
+export function digisolBudgetsEnforced() {
+  const raw = (process.env.DIGISOL_ENFORCE_BUDGETS || "").trim().toLowerCase();
+  return raw === "1" || raw === "true" || raw === "yes";
+}
 
-/** Tiny token runway for gpt-4o-mini drafts tied to those 5 audits (~1.5k × 5). */
-export const DIGISOL_DAILY_AUTOMATED_TOKEN_CAP = 8_000;
+/** Soft defaults only used when DIGISOL_ENFORCE_BUDGETS=1. */
+export const DIGISOL_DAILY_AUTOMATED_AUDIT_CAP = digisolBudgetsEnforced()
+  ? Number(process.env.DIGISOL_DAILY_AUDIT_CAP || 5) || 5
+  : 1_000_000;
+export const DIGISOL_DAILY_AUTOMATED_EMAIL_CAP = digisolBudgetsEnforced()
+  ? Number(process.env.DIGISOL_DAILY_EMAIL_CAP || 5) || 5
+  : 1_000_000;
+export const DIGISOL_DAILY_AUTOMATED_TOKEN_CAP = digisolBudgetsEnforced()
+  ? Number(process.env.DIGISOL_DAILY_TOKEN_CAP || 8_000) || 8_000
+  : 50_000_000;
 
 export type DigisolDailyUsageRow = {
   day_key: string;
@@ -32,6 +44,7 @@ export type DigisolDailySnapshot = {
   emailsRemaining: number;
   tokensRemaining: number;
   blocked: boolean;
+  unrestricted: boolean;
   cap: {
     audits: number;
     emails: number;
@@ -49,6 +62,7 @@ export async function getDigisolDailyUsage(
 ): Promise<DigisolDailySnapshot> {
   await ensureDigisolDailyUsageSchema().catch(() => null);
   const dayKey = utcDayKey();
+  const unrestricted = !digisolBudgetsEnforced();
 
   const { data } = await supabase
     .from("digisol_daily_usage")
@@ -61,10 +75,11 @@ export async function getDigisolDailyUsage(
   const emailsUsed = row?.emails_used ?? 0;
   const tokensUsed = row?.tokens_used ?? 0;
   const toolCallsUsed = row?.tool_calls_used ?? 0;
-  const blocked =
-    Boolean(row?.blocked) ||
-    auditsUsed >= DIGISOL_DAILY_AUTOMATED_AUDIT_CAP ||
-    emailsUsed >= DIGISOL_DAILY_AUTOMATED_EMAIL_CAP;
+  const blocked = unrestricted
+    ? false
+    : Boolean(row?.blocked) ||
+      auditsUsed >= DIGISOL_DAILY_AUTOMATED_AUDIT_CAP ||
+      emailsUsed >= DIGISOL_DAILY_AUTOMATED_EMAIL_CAP;
 
   return {
     dayKey,
@@ -72,10 +87,17 @@ export async function getDigisolDailyUsage(
     emailsUsed,
     tokensUsed,
     toolCallsUsed,
-    auditsRemaining: Math.max(0, DIGISOL_DAILY_AUTOMATED_AUDIT_CAP - auditsUsed),
-    emailsRemaining: Math.max(0, DIGISOL_DAILY_AUTOMATED_EMAIL_CAP - emailsUsed),
-    tokensRemaining: Math.max(0, DIGISOL_DAILY_AUTOMATED_TOKEN_CAP - tokensUsed),
+    auditsRemaining: unrestricted
+      ? DIGISOL_DAILY_AUTOMATED_AUDIT_CAP
+      : Math.max(0, DIGISOL_DAILY_AUTOMATED_AUDIT_CAP - auditsUsed),
+    emailsRemaining: unrestricted
+      ? DIGISOL_DAILY_AUTOMATED_EMAIL_CAP
+      : Math.max(0, DIGISOL_DAILY_AUTOMATED_EMAIL_CAP - emailsUsed),
+    tokensRemaining: unrestricted
+      ? DIGISOL_DAILY_AUTOMATED_TOKEN_CAP
+      : Math.max(0, DIGISOL_DAILY_AUTOMATED_TOKEN_CAP - tokensUsed),
     blocked,
+    unrestricted,
     cap: {
       audits: DIGISOL_DAILY_AUTOMATED_AUDIT_CAP,
       emails: DIGISOL_DAILY_AUTOMATED_EMAIL_CAP,
@@ -92,10 +114,32 @@ export async function assertDigisolAutomatedAllowance(input: {
   tokens?: number;
   toolName?: string;
 }): Promise<DigisolDailySnapshot> {
+  const snap = await getDigisolDailyUsage(input.supabase, input.clientId);
+
+  // Growth phase: never block DigiSol automated work.
+  if (snap.unrestricted || !digisolBudgetsEnforced()) {
+    await logAgentActivity({
+      supabase: input.supabase,
+      clientId: input.clientId,
+      action: "budget:digisol_daily_ok",
+      toolName: input.toolName || "assertDigisolAutomatedAllowance",
+      status: "ok",
+      input: {
+        needAudits: input.audits ?? 0,
+        needEmails: input.emails ?? 0,
+        needTokens: input.tokens ?? 0,
+        invocation: "automated",
+        unrestricted: true,
+      },
+      output: snap,
+      metadata: { code: "ok", dayKey: snap.dayKey, unrestricted: true },
+    });
+    return snap;
+  }
+
   const needAudits = Math.max(0, Math.floor(input.audits ?? 0));
   const needEmails = Math.max(0, Math.floor(input.emails ?? 0));
   const needTokens = Math.max(0, Math.floor(input.tokens ?? 0));
-  const snap = await getDigisolDailyUsage(input.supabase, input.clientId);
 
   let allowed = !snap.blocked;
   let reason = "";
@@ -165,8 +209,9 @@ export async function incrementDigisolDailyUsage(input: {
   const nextTokens = current.tokensUsed + tokens;
   const nextTools = current.toolCallsUsed + toolCalls;
   const blocked =
-    nextAudits >= DIGISOL_DAILY_AUTOMATED_AUDIT_CAP ||
-    nextEmails >= DIGISOL_DAILY_AUTOMATED_EMAIL_CAP;
+    digisolBudgetsEnforced() &&
+    (nextAudits >= DIGISOL_DAILY_AUTOMATED_AUDIT_CAP ||
+      nextEmails >= DIGISOL_DAILY_AUTOMATED_EMAIL_CAP);
 
   const { error } = await input.supabase.from("digisol_daily_usage").upsert(
     {
@@ -180,6 +225,7 @@ export async function incrementDigisolDailyUsage(input: {
       metadata: {
         lastTool: input.toolName ?? null,
         updatedAt: new Date().toISOString(),
+        unrestricted: !digisolBudgetsEnforced(),
       },
     },
     { onConflict: "day_key" },

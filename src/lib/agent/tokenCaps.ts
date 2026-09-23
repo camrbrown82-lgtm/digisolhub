@@ -1,27 +1,27 @@
 import type { AgentComplexity, AgentTaskKind } from "@/lib/agent/types";
 
 /**
- * Strict completion token caps. Keep these tight — callers can only go lower,
- * never higher than the hard ceiling.
+ * Strict completion token caps for generic agent tasks.
+ * DigiSol house runners use digisol/limits.ts (higher ceilings).
  */
 const TASK_MAX_TOKENS: Record<AgentTaskKind, number> = {
-  email_draft: 700,
-  email_flare: 700,
-  campaign_strategy: 1800,
-  site_workflow: 1600,
-  general: 900,
+  email_draft: 1200,
+  email_flare: 1200,
+  campaign_strategy: 4000,
+  site_workflow: 3500,
+  general: 2000,
 };
 
 const COMPLEXITY_CEILING: Record<AgentComplexity, number> = {
-  lightweight: 900,
-  complex: 2000,
+  lightweight: 2000,
+  complex: 6000,
 };
 
 /** Absolute hard ceiling regardless of task / override. */
-export const AGENT_HARD_MAX_TOKENS = 2500;
+export const AGENT_HARD_MAX_TOKENS = 8000;
 
 /** Max tool-calling rounds per request (each round = another billed completion). */
-export const AGENT_HARD_MAX_TOOL_ROUNDS = 6;
+export const AGENT_HARD_MAX_TOOL_ROUNDS = 12;
 
 export function resolveMaxTokens(
   task: AgentTaskKind,
