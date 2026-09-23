@@ -18,9 +18,22 @@ export type ResendAccountMetrics = {
   clickRate: number | null;
 };
 
+export type ReconciledEmailStats = {
+  sends: number;
+  opened: number;
+  clicked: number;
+  openRate: number;
+  clickRate: number;
+  /** Where display opens/clicks came from after reconcile */
+  engagementSource: "hub" | "resend";
+  synced: number;
+  resend: ResendAccountMetrics;
+};
+
 type MetricsTotals = Record<string, number | null | undefined>;
 
 const METRICS_TIMEOUT_MS = 2500;
+const SYNC_TIMEOUT_MS = 4000;
 
 /**
  * Pull account-level Resend metrics (opens/clicks/etc.) for the last N days.
@@ -128,8 +141,7 @@ export async function fetchResendAccountMetrics(
 
 /**
  * Backfill Hub `sends` open/click timestamps from Resend `last_event`.
- * Only checks recent unreplied sends, in parallel, with a tight cap —
- * never call this on the Hub Analytics critical path.
+ * Parallel + capped so it can safely run during Analytics reconcile.
  */
 export async function syncResendEngagementFromApi(
   db: SupabaseClient,
@@ -140,8 +152,7 @@ export async function syncResendEngagementFromApi(
     return { synced: 0, checked: 0, skipped: true as const, reason: "no_api_key" };
   }
 
-  // Keep this small — each row is a Resend GET.
-  const limit = Math.min(8, Math.max(1, opts?.limit ?? 5));
+  const limit = Math.min(20, Math.max(1, opts?.limit ?? 12));
   let query = db
     .from("sends")
     .select("id, resend_id, contact_id, opened_at, clicked_at, bounced_at, status")
@@ -224,6 +235,108 @@ export async function syncResendEngagementFromApi(
     synced: results.filter(Boolean).length,
     checked: rows.length,
     skipped: false as const,
+  };
+}
+
+/**
+ * One source of truth for Hub Analytics + Performance dashboard.
+ * Light sync (time-boxed) → Hub recount → if Hub still empty, use Resend uniques.
+ */
+export async function reconcileHubEmailStats(
+  db: SupabaseClient,
+  contactIds: string[] | null,
+): Promise<ReconciledEmailStats> {
+  const emptySends = !contactIds || contactIds.length === 0;
+
+  const syncPromise = emptySends
+    ? Promise.resolve({ synced: 0, checked: 0, skipped: true as const })
+    : Promise.race([
+        syncResendEngagementFromApi(db, {
+          contactIds,
+          limit: 12,
+        }).catch(() => ({
+          synced: 0,
+          checked: 0,
+          skipped: true as const,
+        })),
+        new Promise<{ synced: number; checked: number; skipped: true }>(
+          (resolve) =>
+            setTimeout(
+              () => resolve({ synced: 0, checked: 0, skipped: true }),
+              SYNC_TIMEOUT_MS,
+            ),
+        ),
+      ]);
+
+  const [resend, syncResult] = await Promise.all([
+    fetchResendAccountMetrics(14),
+    syncPromise,
+  ]);
+
+  let sends = 0;
+  let hubOpened = 0;
+  let hubClicked = 0;
+
+  if (!emptySends && contactIds) {
+    let sendsQuery = db
+      .from("sends")
+      .select("id", { count: "exact", head: true })
+      .in("contact_id", contactIds);
+    let openedQuery = db
+      .from("sends")
+      .select("id", { count: "exact", head: true })
+      .in("contact_id", contactIds)
+      .not("opened_at", "is", null);
+    let clickedQuery = db
+      .from("sends")
+      .select("id", { count: "exact", head: true })
+      .in("contact_id", contactIds)
+      .not("clicked_at", "is", null);
+
+    const [sendsRes, openedRes, clickedRes] = await Promise.all([
+      sendsQuery,
+      openedQuery,
+      clickedQuery,
+    ]);
+    sends = sendsRes.count ?? 0;
+    hubOpened = openedRes.count ?? 0;
+    hubClicked = clickedRes.count ?? 0;
+  }
+
+  const resendOpened = resend.uniqueOpened || resend.opened;
+  const resendClicked = resend.uniqueClicked || resend.clicked;
+
+  // Prefer Hub after sync; if webhook never fired, mirror Resend uniques
+  // so Performance + Hub cards show the same engagement numbers.
+  let opened = hubOpened;
+  let clicked = hubClicked;
+  let engagementSource: "hub" | "resend" = "hub";
+
+  if (hubOpened === 0 && resendOpened > 0) {
+    opened = sends > 0 ? Math.min(sends, resendOpened) : resendOpened;
+    engagementSource = "resend";
+  }
+  if (hubClicked === 0 && resendClicked > 0) {
+    clicked = sends > 0 ? Math.min(sends, resendClicked) : resendClicked;
+    engagementSource = "resend";
+  }
+
+  const openRate = sends
+    ? Math.round((opened / sends) * 1000) / 10
+    : resend.openRate ?? 0;
+  const clickRate = sends
+    ? Math.round((clicked / sends) * 1000) / 10
+    : resend.clickRate ?? 0;
+
+  return {
+    sends,
+    opened,
+    clicked,
+    openRate,
+    clickRate,
+    engagementSource,
+    synced: "synced" in syncResult ? syncResult.synced : 0,
+    resend,
   };
 }
 

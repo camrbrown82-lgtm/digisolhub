@@ -1,9 +1,7 @@
 import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
 import { fetchDigisolGa4Summary } from "@/lib/ga4";
 import { summarizeLeadPerformance, type LeadRecord } from "@/lib/lead-pipeline";
-import {
-  fetchResendAccountMetrics,
-} from "@/lib/resendStats";
+import { reconcileHubEmailStats } from "@/lib/resendStats";
 import { summarizeSiteEvents } from "@/lib/site-analytics";
 import { contactIdsForClient } from "@/lib/workspace";
 import type { AgentToolDefinition } from "@/lib/agent/types";
@@ -11,7 +9,7 @@ import type { AgentToolDefinition } from "@/lib/agent/types";
 export const fetchAnalytics: AgentToolDefinition = {
   name: "fetchAnalytics",
   description:
-    "Analytics section tool. Pulls traffic, top pages/referrers, email open/click rates (Hub sends + live Resend account metrics), and lead pipeline health for the Working-on company. Includes DigiSol GA4 when that house property is configured.",
+    "Analytics section tool. Pulls traffic, top pages/referrers, reconciled email open/click rates (Hub + Resend), and lead pipeline health for the Working-on company. Includes DigiSol GA4 when that house property is configured.",
   parameters: {
     type: "object",
     properties: {
@@ -38,10 +36,6 @@ export const fetchAnalytics: AgentToolDefinition = {
       .maybeSingle();
 
     const scopedIds = await contactIdsForClient(ctx.supabase, ctx.clientId);
-    const emptySends = scopedIds.length === 0;
-
-    // Do not backfill Resend email-by-email here — that stalls Hub/agent UX.
-    // Opens/clicks come from the webhook; account metrics are a single timed call.
 
     let contactsQuery = ctx.supabase
       .from("contacts")
@@ -52,21 +46,6 @@ export const fetchAnalytics: AgentToolDefinition = {
       .select("id", { count: "exact", head: true })
       .eq("client_id", ctx.clientId)
       .not("unsubscribed_at", "is", null);
-    let sendsQuery = ctx.supabase.from("sends").select("id", { count: "exact", head: true });
-    let openedQuery = ctx.supabase
-      .from("sends")
-      .select("id", { count: "exact", head: true })
-      .not("opened_at", "is", null);
-    let clickedQuery = ctx.supabase
-      .from("sends")
-      .select("id", { count: "exact", head: true })
-      .not("clicked_at", "is", null);
-
-    if (!emptySends) {
-      sendsQuery = sendsQuery.in("contact_id", scopedIds);
-      openedQuery = openedQuery.in("contact_id", scopedIds);
-      clickedQuery = clickedQuery.in("contact_id", scopedIds);
-    }
 
     const siteQuery = ctx.supabase
       .from("site_events")
@@ -89,25 +68,18 @@ export const fetchAnalytics: AgentToolDefinition = {
       (client?.name || ctx.companyName || "").toLowerCase() ===
       DIGISOL_HOUSE_NAME.toLowerCase();
 
-    const [contacts, sends, opened, clicked, unsubscribed, site, leadsResult, resend] =
-      await Promise.all([
-        contactsQuery,
-        emptySends ? Promise.resolve({ count: 0 }) : sendsQuery,
-        emptySends ? Promise.resolve({ count: 0 }) : openedQuery,
-        emptySends ? Promise.resolve({ count: 0 }) : clickedQuery,
-        unsubQuery,
-        siteQuery,
-        leadsQuery,
-        fetchResendAccountMetrics(days),
-      ]);
+    const [contacts, unsubscribed, site, leadsResult, email] = await Promise.all([
+      contactsQuery,
+      unsubQuery,
+      siteQuery,
+      leadsQuery,
+      reconcileHubEmailStats(ctx.supabase, scopedIds),
+    ]);
 
     const ga4 = isDigisol ? await fetchDigisolGa4Summary(days) : null;
 
     const website = summarizeSiteEvents(site.data ?? [], client?.domain);
     const pipeline = summarizeLeadPerformance((leadsResult.data ?? []) as LeadRecord[]);
-    const sendCount = sends.count ?? 0;
-    const openCount = opened.count ?? 0;
-    const clickCount = clicked.count ?? 0;
 
     const weakPages = website.pages
       .filter((page) => page.count > 0)
@@ -128,12 +100,13 @@ export const fetchAnalytics: AgentToolDefinition = {
       email: {
         contacts: contacts.count ?? 0,
         unsubscribed: unsubscribed.count ?? 0,
-        sends: sendCount,
-        opened: openCount,
-        clicked: clickCount,
-        openRate: sendCount ? Math.round((openCount / sendCount) * 1000) / 10 : 0,
-        clickRate: sendCount ? Math.round((clickCount / sendCount) * 1000) / 10 : 0,
-        resendAccount: resend,
+        sends: email.sends,
+        opened: email.opened,
+        clicked: email.clicked,
+        openRate: email.openRate,
+        clickRate: email.clickRate,
+        engagementSource: email.engagementSource,
+        resendAccount: email.resend,
       },
       website,
       weakConversionHints: weakPages,

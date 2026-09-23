@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/prospect-audit",
       "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/cron/resend-sync",
+      "schedule": "15 * * * *"
     }
   ]
 }

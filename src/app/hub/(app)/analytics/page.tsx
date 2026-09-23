@@ -10,9 +10,7 @@ import {
   summarizeLeadPerformance,
 } from "@/lib/lead-pipeline";
 import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
-import {
-  fetchResendAccountMetrics,
-} from "@/lib/resendStats";
+import { reconcileHubEmailStats } from "@/lib/resendStats";
 import { contactIdsForClient, getActiveClient } from "@/lib/workspace";
 import { newSiteKey, summarizeSiteEvents, trackingSnippet } from "@/lib/site-analytics";
 import { createClient } from "@/lib/supabase/server";
@@ -30,7 +28,6 @@ export default async function AnalyticsPage() {
   const origin = hubOrigin(headerStore);
   let active = await getActiveClient(supabase);
   const scopedIds = active ? await contactIdsForClient(supabase, active.id) : null;
-  const emptySends = Boolean(active && scopedIds && scopedIds.length === 0);
   const isDigisol =
     (active?.name || "").toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase();
 
@@ -48,24 +45,10 @@ export default async function AnalyticsPage() {
     .from("contacts")
     .select("id", { count: "exact", head: true })
     .not("unsubscribed_at", "is", null);
-  let sendsQuery = supabase.from("sends").select("id", { count: "exact", head: true });
-  let openedQuery = supabase
-    .from("sends")
-    .select("id", { count: "exact", head: true })
-    .not("opened_at", "is", null);
-  let clickedQuery = supabase
-    .from("sends")
-    .select("id", { count: "exact", head: true })
-    .not("clicked_at", "is", null);
 
   if (active) {
     contactsQuery = contactsQuery.eq("client_id", active.id);
     unsubQuery = unsubQuery.eq("client_id", active.id);
-    if (scopedIds && scopedIds.length > 0) {
-      sendsQuery = sendsQuery.in("contact_id", scopedIds);
-      openedQuery = openedQuery.in("contact_id", scopedIds);
-      clickedQuery = clickedQuery.in("contact_id", scopedIds);
-    }
   }
 
   const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
@@ -97,14 +80,10 @@ export default async function AnalyticsPage() {
     sources: [],
   };
 
-  // Hub counts come from DB (Resend webhook). Metrics API is optional and
-  // time-boxed — never block Analytics on per-email Resend backfills.
-  const [contacts, sends, opened, clicked, unsubscribed, site, leadsResult, ga4, latestAudit, resend] =
+  // One reconciler for Performance + Hub cards (light sync + Resend fallback).
+  const [contacts, unsubscribed, site, leadsResult, ga4, latestAudit, email] =
     await Promise.all([
       contactsQuery,
-      emptySends ? Promise.resolve({ count: 0 }) : sendsQuery,
-      emptySends ? Promise.resolve({ count: 0 }) : openedQuery,
-      emptySends ? Promise.resolve({ count: 0 }) : clickedQuery,
       unsubQuery,
       siteQuery,
       leadsQuery,
@@ -123,7 +102,7 @@ export default async function AnalyticsPage() {
             return { data };
           })().catch(() => ({ data: null }))
         : Promise.resolve({ data: null }),
-      fetchResendAccountMetrics(14),
+      reconcileHubEmailStats(supabase, scopedIds),
     ]);
 
   const website = summarizeSiteEvents(site.data ?? [], active?.domain);
@@ -136,30 +115,17 @@ export default async function AnalyticsPage() {
       currency: "CAD",
       maximumFractionDigits: 0,
     }).format(value);
-  const sendCount = sends.count ?? 0;
-  const openCount = opened.count ?? 0;
-  const clickCount = clicked.count ?? 0;
-  const openRate = sendCount ? Math.round((openCount / sendCount) * 1000) / 10 : 0;
-  const clickRate = sendCount ? Math.round((clickCount / sendCount) * 1000) / 10 : 0;
+  const sendCount = email.sends;
+  const openCount = email.opened;
+  const clickCount = email.clicked;
+  const openRate = email.openRate;
+  const clickRate = email.clickRate;
+  const resend = email.resend;
   const cards = [
     { label: "Contacts", value: contacts.count ?? 0 },
-    { label: "Emails sent (Hub)", value: sendCount },
-    {
-      label: "Opens (Hub)",
-      value: openCount,
-    },
-    {
-      label: "Clicks (Hub)",
-      value: clickCount,
-    },
-    {
-      label: "Opens (Resend API)",
-      value: resend.uniqueOpened || resend.opened,
-    },
-    {
-      label: "Clicks (Resend API)",
-      value: resend.uniqueClicked || resend.clicked,
-    },
+    { label: "Emails sent", value: sendCount },
+    { label: "Opens", value: openCount },
+    { label: "Clicks", value: clickCount },
     { label: "Unsubscribed", value: unsubscribed.count ?? 0 },
   ];
   const gaStatus = ga4ConfigStatus();
@@ -463,25 +429,25 @@ export default async function AnalyticsPage() {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-white">Hub &amp; Resend</h2>
+        <h2 className="text-lg font-semibold text-white">Email engagement</h2>
         {resend.error ? (
           <p className="text-sm text-amber-200/90">
-            Resend API: {resend.error}. Hub open/click counts still use tracked
-            sends; point the Resend webhook at{" "}
+            Resend API: {resend.error}. Counts below use Hub sends when available;
+            point the Resend webhook at{" "}
             <code className="text-amber-50">/api/webhooks/resend</code> and keep
-            open tracking on.
+            open tracking on. Hourly sync:{" "}
+            <code className="text-amber-50">/api/cron/resend-sync</code>.
           </p>
         ) : (
           <p className="text-sm text-zinc-500">
-            Hub counts are DigiSol CRM sends. Resend API totals are account-wide
-            for the last {resend.days} days
-            {resend.openRate != null
-              ? ` · open rate ${resend.openRate}%`
-              : ""}
-            {resend.clickRate != null
-              ? ` · click rate ${resend.clickRate}%`
-              : ""}
-            .
+            Same opens/clicks as Performance (reconciled Hub + Resend, last{" "}
+            {resend.days} days
+            {email.engagementSource === "resend"
+              ? " · mirrored from Resend until webhook catches up"
+              : email.synced > 0
+                ? ` · synced ${email.synced} send${email.synced === 1 ? "" : "s"} from Resend`
+                : ""}
+            ). Open rate {openRate}% · click rate {clickRate}%.
           </p>
         )}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

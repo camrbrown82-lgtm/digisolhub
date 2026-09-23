@@ -11,9 +11,7 @@ import {
 import { getEmailLogoUrl } from "@/lib/emailLogo";
 import { fetchDigisolGa4Summary } from "@/lib/ga4";
 import { summarizeLeadPerformance, type LeadRecord } from "@/lib/lead-pipeline";
-import {
-  fetchResendAccountMetrics,
-} from "@/lib/resendStats";
+import { reconcileHubEmailStats } from "@/lib/resendStats";
 import { summarizeSiteEvents } from "@/lib/site-analytics";
 import { contactIdsForClient } from "@/lib/workspace";
 import { runWebsiteAudit } from "@/lib/agent/websiteAudit";
@@ -215,7 +213,7 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
 
     fetchDigisolAnalytics: tool({
       description:
-        "Pull DigiSol GA4 traffic/conversion metrics plus Hub email stats and live Resend account metrics (opens/clicks). Strictly DigiSol house property only.",
+        "Pull DigiSol GA4 traffic/conversion metrics plus reconciled Hub + Resend email open/click stats. Strictly DigiSol house property only.",
       inputSchema: z.object({
         days: z
           .number()
@@ -243,77 +241,43 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
               ctx.supabase,
               ctx.clientId,
             );
-            const emptySends = scopedIds.length === 0;
 
-            let sendsQuery = ctx.supabase
-              .from("sends")
-              .select("id", { count: "exact", head: true });
-            let openedQuery = ctx.supabase
-              .from("sends")
-              .select("id", { count: "exact", head: true })
-              .not("opened_at", "is", null);
-            let clickedQuery = ctx.supabase
-              .from("sends")
-              .select("id", { count: "exact", head: true })
-              .not("clicked_at", "is", null);
-
-            if (!emptySends) {
-              sendsQuery = sendsQuery.in("contact_id", scopedIds);
-              openedQuery = openedQuery.in("contact_id", scopedIds);
-              clickedQuery = clickedQuery.in("contact_id", scopedIds);
-            }
-
-            const [
-              contacts,
-              sends,
-              opened,
-              clicked,
-              unsubscribed,
-              site,
-              leadsResult,
-              ga4,
-              resend,
-            ] = await Promise.all([
-              ctx.supabase
-                .from("contacts")
-                .select("id", { count: "exact", head: true })
-                .eq("client_id", ctx.clientId),
-              emptySends ? Promise.resolve({ count: 0 }) : sendsQuery,
-              emptySends ? Promise.resolve({ count: 0 }) : openedQuery,
-              emptySends ? Promise.resolve({ count: 0 }) : clickedQuery,
-              ctx.supabase
-                .from("contacts")
-                .select("id", { count: "exact", head: true })
-                .eq("client_id", ctx.clientId)
-                .not("unsubscribed_at", "is", null),
-              ctx.supabase
-                .from("site_events")
-                .select(
-                  "client_id, visitor_id, host, path, title, referrer, created_at",
-                )
-                .eq("client_id", ctx.clientId)
-                .gte("created_at", since)
-                .order("created_at", { ascending: false })
-                .limit(800),
-              ctx.supabase
-                .from("leads")
-                .select(
-                  "id, source, stage, estimated_value, actual_value, first_touch_at, closed_at, created_at",
-                )
-                .eq("client_id", ctx.clientId)
-                .order("created_at", { ascending: false })
-                .limit(500),
-              fetchDigisolGa4Summary(days),
-              fetchResendAccountMetrics(days),
-            ]);
+            const [contacts, unsubscribed, site, leadsResult, ga4, email] =
+              await Promise.all([
+                ctx.supabase
+                  .from("contacts")
+                  .select("id", { count: "exact", head: true })
+                  .eq("client_id", ctx.clientId),
+                ctx.supabase
+                  .from("contacts")
+                  .select("id", { count: "exact", head: true })
+                  .eq("client_id", ctx.clientId)
+                  .not("unsubscribed_at", "is", null),
+                ctx.supabase
+                  .from("site_events")
+                  .select(
+                    "client_id, visitor_id, host, path, title, referrer, created_at",
+                  )
+                  .eq("client_id", ctx.clientId)
+                  .gte("created_at", since)
+                  .order("created_at", { ascending: false })
+                  .limit(800),
+                ctx.supabase
+                  .from("leads")
+                  .select(
+                    "id, source, stage, estimated_value, actual_value, first_touch_at, closed_at, created_at",
+                  )
+                  .eq("client_id", ctx.clientId)
+                  .order("created_at", { ascending: false })
+                  .limit(500),
+                fetchDigisolGa4Summary(days),
+                reconcileHubEmailStats(ctx.supabase, scopedIds),
+              ]);
 
             const website = summarizeSiteEvents(site.data ?? [], ctx.domain);
             const pipeline = summarizeLeadPerformance(
               (leadsResult.data ?? []) as LeadRecord[],
             );
-            const sendCount = sends.count ?? 0;
-            const openCount = opened.count ?? 0;
-            const clickCount = clicked.count ?? 0;
 
             return {
               operator: DIGISOL_OPERATOR.name,
@@ -321,16 +285,13 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
               email: {
                 contacts: contacts.count ?? 0,
                 unsubscribed: unsubscribed.count ?? 0,
-                sends: sendCount,
-                opened: openCount,
-                clicked: clickCount,
-                openRate: sendCount
-                  ? Math.round((openCount / sendCount) * 1000) / 10
-                  : 0,
-                clickRate: sendCount
-                  ? Math.round((clickCount / sendCount) * 1000) / 10
-                  : 0,
-                resendAccount: resend,
+                sends: email.sends,
+                opened: email.opened,
+                clicked: email.clicked,
+                openRate: email.openRate,
+                clickRate: email.clickRate,
+                engagementSource: email.engagementSource,
+                resendAccount: email.resend,
               },
               website,
               pipeline: {

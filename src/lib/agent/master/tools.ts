@@ -25,6 +25,7 @@ import {
 import type { MasterToolName } from "@/lib/agent/master/schemas";
 import { summarizeSiteEvents } from "@/lib/site-analytics";
 import { contactIdsForClient } from "@/lib/workspace";
+import { reconcileHubEmailStats } from "@/lib/resendStats";
 import {
   WORKFLOW_BUILDER_SYSTEM_PROMPT,
   buildWorkflowUserPrompt,
@@ -127,7 +128,7 @@ export async function runWebsiteAuditTool(
   };
 }
 
-/** 3. Analytics via site_events + GA4 (DigiSol house) + CRM metrics. */
+/** 3. Analytics via site_events + GA4 (DigiSol house) + reconciled CRM email metrics. */
 export async function fetchCompanyAnalyticsTool(
   args: Record<string, unknown>,
   ctx: MasterToolContext,
@@ -139,60 +140,37 @@ export async function fetchCompanyAnalyticsTool(
   );
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
   const scopedIds = await contactIdsForClient(ctx.supabase, scope.companyId);
-  const emptySends = scopedIds.length === 0;
 
-  let sendsQuery = ctx.supabase.from("sends").select("id", { count: "exact", head: true });
-  let openedQuery = ctx.supabase
-    .from("sends")
-    .select("id", { count: "exact", head: true })
-    .not("opened_at", "is", null);
-  let clickedQuery = ctx.supabase
-    .from("sends")
-    .select("id", { count: "exact", head: true })
-    .not("clicked_at", "is", null);
-
-  if (!emptySends) {
-    sendsQuery = sendsQuery.in("contact_id", scopedIds);
-    openedQuery = openedQuery.in("contact_id", scopedIds);
-    clickedQuery = clickedQuery.in("contact_id", scopedIds);
-  }
-
-  const [contacts, sends, opened, clicked, unsubscribed, site, leadsResult] =
-    await Promise.all([
-      ctx.supabase
-        .from("contacts")
-        .select("id", { count: "exact", head: true })
-        .eq("client_id", scope.companyId),
-      emptySends ? Promise.resolve({ count: 0 }) : sendsQuery,
-      emptySends ? Promise.resolve({ count: 0 }) : openedQuery,
-      emptySends ? Promise.resolve({ count: 0 }) : clickedQuery,
-      ctx.supabase
-        .from("contacts")
-        .select("id", { count: "exact", head: true })
-        .eq("client_id", scope.companyId)
-        .not("unsubscribed_at", "is", null),
-      ctx.supabase
-        .from("site_events")
-        .select("client_id, visitor_id, host, path, title, referrer, created_at")
-        .eq("client_id", scope.companyId)
-        .gte("created_at", since)
-        .order("created_at", { ascending: false })
-        .limit(4000),
-      ctx.supabase
-        .from("leads")
-        .select(
-          "id, source, stage, estimated_value, actual_value, first_touch_at, closed_at, created_at",
-        )
-        .eq("client_id", scope.companyId)
-        .order("created_at", { ascending: false })
-        .limit(2000),
-    ]);
+  const [contacts, unsubscribed, site, leadsResult, email] = await Promise.all([
+    ctx.supabase
+      .from("contacts")
+      .select("id", { count: "exact", head: true })
+      .eq("client_id", scope.companyId),
+    ctx.supabase
+      .from("contacts")
+      .select("id", { count: "exact", head: true })
+      .eq("client_id", scope.companyId)
+      .not("unsubscribed_at", "is", null),
+    ctx.supabase
+      .from("site_events")
+      .select("client_id, visitor_id, host, path, title, referrer, created_at")
+      .eq("client_id", scope.companyId)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(4000),
+    ctx.supabase
+      .from("leads")
+      .select(
+        "id, source, stage, estimated_value, actual_value, first_touch_at, closed_at, created_at",
+      )
+      .eq("client_id", scope.companyId)
+      .order("created_at", { ascending: false })
+      .limit(2000),
+    reconcileHubEmailStats(ctx.supabase, scopedIds),
+  ]);
 
   const website = summarizeSiteEvents(site.data ?? [], scope.domain);
   const pipeline = summarizeLeadPerformance((leadsResult.data ?? []) as LeadRecord[]);
-  const sendCount = sends.count ?? 0;
-  const openCount = opened.count ?? 0;
-  const clickCount = clicked.count ?? 0;
   const isDigisol =
     scope.companyName.toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase();
   const ga4 = isDigisol ? await fetchDigisolGa4Summary(days) : null;
@@ -210,11 +188,12 @@ export async function fetchCompanyAnalyticsTool(
       daily: website.daily,
     },
     conversion: {
-      emailOpenRate: sendCount ? Math.round((openCount / sendCount) * 1000) / 10 : 0,
-      emailClickRate: sendCount ? Math.round((clickCount / sendCount) * 1000) / 10 : 0,
-      sends: sendCount,
-      opened: openCount,
-      clicked: clickCount,
+      emailOpenRate: email.openRate,
+      emailClickRate: email.clickRate,
+      sends: email.sends,
+      opened: email.opened,
+      clicked: email.clicked,
+      engagementSource: email.engagementSource,
       contacts: contacts.count ?? 0,
       unsubscribed: unsubscribed.count ?? 0,
       leadWinRate: pipeline.winRate,

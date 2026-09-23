@@ -58,8 +58,16 @@ export default async function ProspectsPage() {
           <h1 className="text-3xl font-semibold text-white">Prospect audits</h1>
           <WorkspaceScope companyName={active?.name} noun="prospect audits" />
           <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-            Daily automated website audits (max 5/day). Each emailed audit also
-            lands in Contacts as a lead so you can see exactly who received it.
+            Daily automated website audits (max 5/day, CASL-gated). Each emailed
+            audit also lands in Contacts as a lead so you can see exactly who
+            received it.
+          </p>
+          <p className="mt-2 max-w-2xl text-sm text-zinc-500">
+            Schedule:{" "}
+            <code className="text-zinc-300">/api/cron/prospect-audit</code> runs
+            daily at <span className="text-zinc-300">15:00 UTC</span> (9:00 AM
+            Mountain Daylight / 8:00 AM Mountain Standard). Results appear in
+            this table and under Contacts filtered by prospect audit.
           </p>
         </div>
         <Link href="/hub/contacts?source=prospect_audit" className="hub-btn">
