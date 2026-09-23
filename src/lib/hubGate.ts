@@ -71,7 +71,10 @@ export function isHubMachineAllowed(request: NextRequest) {
   if (ip && hubAllowedIps().includes(ip)) return true;
 
   const secret = hubGateSecret();
-  if (!secret) return false;
+  // No gate secret configured yet → allow login page (owner password + email
+  // allowlist still apply). Once HUB_GATE_SECRET is set on Vercel, strangers
+  // get 404 until this browser is unlocked with ?gate=.
+  if (!secret) return true;
 
   const cookie = request.cookies.get(HUB_GATE_COOKIE)?.value ?? "";
   return timingSafeEqual(cookie, secret);
