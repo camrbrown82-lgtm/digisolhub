@@ -1,20 +1,36 @@
 import { NextResponse } from "next/server";
 import { hasAdminClient } from "@/lib/supabase/admin";
 import { normalizeLead, upsertLead } from "@/lib/leads";
+import { clientIp, rateLimit, timingSafeStringEqual } from "@/lib/security";
 
 export async function POST(request: Request) {
-  const secret = process.env.HUB_INGEST_SECRET;
-  const headerSecret = request.headers.get("x-hub-secret");
-  const origin = request.headers.get("origin");
-  const site = process.env.SITE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
-  const sameOrigin =
-    !origin ||
-    origin.includes("localhost") ||
-    origin.includes("wwwdigisol.com") ||
-    (site && origin.startsWith(site));
+  const secret = process.env.HUB_INGEST_SECRET?.trim();
+  if (!secret) {
+    return NextResponse.json(
+      { error: "HUB_INGEST_SECRET is not configured" },
+      { status: 503 },
+    );
+  }
 
-  if (secret && headerSecret !== secret && !sameOrigin) {
+  const headerSecret = request.headers.get("x-hub-secret") || "";
+  if (!timingSafeStringEqual(headerSecret, secret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const ip = clientIp(request);
+  const limited = rateLimit({
+    key: `leads:${ip}`,
+    limit: 30,
+    windowMs: 60_000,
+  });
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limited.retryAfterSec) },
+      },
+    );
   }
 
   if (!hasAdminClient()) {
@@ -38,7 +54,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const lead = normalizeLead(body);
+    const lead = normalizeLead({ ...body, pin_house_client: true });
     const result = await upsertLead(lead);
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {

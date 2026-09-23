@@ -3,19 +3,12 @@ import { requireHubSession } from "@/lib/auth";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { runProspectAuditWorker } from "@/lib/prospectAudit/worker";
 import type { ProspectTrade } from "@/lib/prospectAudit/limits";
+import { cronAuthorized } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 /** Site fetches + summaries — allow larger batches in growth phase. */
 export const maxDuration = 300;
-
-function cronAuthorized(request: Request) {
-  const secret = process.env.CRON_SECRET?.trim();
-  const header = request.headers.get("authorization") || "";
-  if (secret) return header === `Bearer ${secret}`;
-  const agent = (request.headers.get("user-agent") || "").toLowerCase();
-  return process.env.VERCEL === "1" && agent.includes("vercel-cron");
-}
 
 type RunBody = {
   trades?: string[];

@@ -3,6 +3,7 @@ import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { logAbVariantEngagement } from "@/lib/abVariantTracking";
 import { emitHubEvent } from "@/lib/events";
 import { promoteProspectOnEngagement } from "@/lib/prospectAudit/promote";
+import { verifyResendWebhookSignature } from "@/lib/resendWebhook";
 
 type ResendWebhook = {
   type?: string;
@@ -18,15 +19,30 @@ type ResendWebhook = {
  * Resend → Hub engagement.
  * Requires open/click tracking enabled on the sending domain
  * (see ensureResendOpenTracking) and this URL registered in Resend Webhooks.
+ * Verifies Svix signatures via RESEND_WEBHOOK_SECRET.
  */
 export async function POST(request: Request) {
   if (!hasAdminClient()) {
     return NextResponse.json({ ok: true, skipped: true });
   }
 
+  const rawBody = await request.text();
+  const verified = verifyResendWebhookSignature({
+    payload: rawBody,
+    svixId: request.headers.get("svix-id"),
+    svixTimestamp: request.headers.get("svix-timestamp"),
+    svixSignature: request.headers.get("svix-signature"),
+  });
+  if (!verified.ok) {
+    return NextResponse.json(
+      { error: verified.error || "Unauthorized" },
+      { status: 401 },
+    );
+  }
+
   let payload: ResendWebhook;
   try {
-    payload = (await request.json()) as ResendWebhook;
+    payload = JSON.parse(rawBody) as ResendWebhook;
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }

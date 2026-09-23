@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { CopySnippet } from "@/components/hub/CopySnippet";
 import { MetaAdsPanel } from "@/components/hub/MetaAdsPanel";
+import { InstagramInsightsPanel } from "@/components/hub/InstagramInsightsPanel";
 import { WebsiteAuditPanel } from "@/components/hub/WebsiteAuditPanel";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { fetchDigisolGa4Summary, ga4ConfigStatus, type Ga4Summary } from "@/lib/ga4";
@@ -17,6 +18,10 @@ import {
   emptyMetaAdsSummary,
   fetchMetaAdsSummary,
 } from "@/lib/meta/insights";
+import {
+  emptyInstagramInsights,
+  fetchInstagramInsights,
+} from "@/lib/meta/instagramInsights";
 import { contactIdsForClient, getActiveClient } from "@/lib/workspace";
 import { newSiteKey, summarizeSiteEvents, trackingSnippet } from "@/lib/site-analytics";
 import { createClient } from "@/lib/supabase/server";
@@ -111,7 +116,7 @@ export default async function AnalyticsPage() {
 
   // One reconciler for Performance + Hub cards (light sync + Resend fallback).
   // Time-box slow external calls so the page always paints first-party data.
-  const [contacts, unsubscribed, site, leadsResult, ga4, latestAudit, email, agentEvents, metaAds] =
+  const [contacts, unsubscribed, site, leadsResult, ga4, latestAudit, email, agentEvents, metaAds, instagram] =
     await Promise.all([
       contactsQuery,
       unsubQuery,
@@ -178,6 +183,13 @@ export default async function AnalyticsPage() {
         isDigisol ? fetchMetaAdsSummary(14) : Promise.resolve(emptyMetaAdsSummary(14)),
         8000,
         emptyMetaAdsSummary(14),
+      ),
+      withTimeout(
+        isDigisol
+          ? fetchInstagramInsights()
+          : Promise.resolve(emptyInstagramInsights()),
+        8000,
+        emptyInstagramInsights(),
       ),
     ]);
 
@@ -462,6 +474,7 @@ export default async function AnalyticsPage() {
       </section>
 
       {isDigisol ? <MetaAdsPanel summary={metaAds} /> : null}
+      {isDigisol ? <InstagramInsightsPanel summary={instagram} /> : null}
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-white">Lead pipeline</h2>

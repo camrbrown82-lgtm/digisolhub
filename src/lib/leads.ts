@@ -1,6 +1,9 @@
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { emitHubEvent } from "@/lib/events";
-import { findOrCreateClient } from "@/lib/workspace";
+import {
+  ensureDigisolClient,
+  findOrCreateClient,
+} from "@/lib/workspace";
 import {
   attributionTags,
   emptyAttribution,
@@ -21,6 +24,8 @@ export type LeadPayload = {
   tags?: string[] | null;
   attribution?: AttributionPayload;
   metaEventId?: string | null;
+  /** Public website/chat leads must stay on DigiSol house workspace. */
+  pinHouseClient?: boolean;
 };
 
 function parseCompanyDomain(raw?: string | null) {
@@ -69,6 +74,10 @@ export function normalizeLead(body: Record<string, unknown>): LeadPayload {
     tags: Array.isArray(nested.tags) ? (nested.tags as string[]) : ["lead"],
     attribution,
     metaEventId,
+    pinHouseClient:
+      nested.pin_house_client === true ||
+      nested.pinHouseClient === true ||
+      body.pin_house_client === true,
   };
 }
 
@@ -84,10 +93,12 @@ export async function upsertLead(payload: LeadPayload) {
   await ensureMetaSchema().catch(() => null);
 
   const admin = createAdminClient();
-  const clientId = await findOrCreateClient(admin, {
-    name: payload.company,
-    domain: payload.domain,
-  });
+  const clientId = payload.pinHouseClient
+    ? (await ensureDigisolClient(admin)) || null
+    : await findOrCreateClient(admin, {
+        name: payload.company,
+        domain: payload.domain,
+      });
 
   const { data: existing } = await admin
     .from("contacts")

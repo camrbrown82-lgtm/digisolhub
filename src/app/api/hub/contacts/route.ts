@@ -11,10 +11,19 @@ export async function GET() {
   if (error) return error;
 
   const clientId = await resolveClientId(supabase);
-  let query = supabase.from("contacts").select("*").order("created_at", { ascending: false });
-  if (clientId) query = query.eq("client_id", clientId);
+  if (!clientId) {
+    return NextResponse.json(
+      { error: "No workspace selected" },
+      { status: 400 },
+    );
+  }
 
-  const { data, error: queryError } = await query;
+  const { data, error: queryError } = await supabase
+    .from("contacts")
+    .select("*")
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: false });
+
   if (queryError) {
     return NextResponse.json({ error: queryError.message }, { status: 400 });
   }

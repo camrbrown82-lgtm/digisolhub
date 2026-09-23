@@ -8,6 +8,7 @@ import { sendMetaLeadEvent } from "@/lib/meta/capi";
 import { parseAttributionFromBody } from "@/lib/meta/attribution";
 import { DIGISOL_SITE_URL } from "@/lib/site";
 import { ensureMetaSchema } from "@/lib/ensureMetaSchema";
+import { clientIp, rateLimit } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -106,6 +107,21 @@ async function sendViaResend(fields: {
 }
 
 export async function POST(request: Request) {
+  const limited = rateLimit({
+    key: `contact:${clientIp(request)}`,
+    limit: 8,
+    windowMs: 60_000,
+  });
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again shortly." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limited.retryAfterSec) },
+      },
+    );
+  }
+
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
@@ -176,6 +192,7 @@ export async function POST(request: Request) {
           source: "web3forms",
           event_id: eventId,
           attribution,
+          pin_house_client: true,
         }),
       );
       leadSaved = Boolean(saved.id);

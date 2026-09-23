@@ -27,7 +27,8 @@ export async function GET() {
       response.cookies.set(HUB_CLIENT_COOKIE, resolvedId, {
         path: "/",
         sameSite: "lax",
-        httpOnly: false,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
         maxAge: 60 * 60 * 24 * 365,
       });
     } else {
@@ -66,7 +67,8 @@ export async function POST(request: Request) {
     response.cookies.set(HUB_CLIENT_COOKIE, clientId, {
       path: "/",
       sameSite: "lax",
-      httpOnly: false,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
       maxAge: 60 * 60 * 24 * 365,
     });
   }

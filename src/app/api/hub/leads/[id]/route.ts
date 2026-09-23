@@ -5,6 +5,10 @@ import {
   isLeadSource,
   isLeadStage,
 } from "@/lib/lead-pipeline";
+import {
+  assertLeadInWorkspace,
+  requireWorkspaceClientId,
+} from "@/lib/tenantGuard";
 
 type Params = { params: { id: string } };
 
@@ -33,14 +37,18 @@ export async function GET(_request: Request, { params }: Params) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
+  const workspace = await requireWorkspaceClientId(supabase);
+  if (workspace.error) return workspace.error;
+
   const { data, error: queryError } = await supabase
     .from("leads")
     .select("*, lead_activities(*)")
     .eq("id", params.id)
-    .single();
+    .eq("client_id", workspace.clientId)
+    .maybeSingle();
 
-  if (queryError) {
-    return NextResponse.json({ error: queryError.message }, { status: 404 });
+  if (queryError || !data) {
+    return NextResponse.json({ error: "Lead not found" }, { status: 404 });
   }
   return NextResponse.json({ lead: data });
 }
@@ -49,12 +57,25 @@ export async function PATCH(request: Request, { params }: Params) {
   const { user, supabase, error } = await requireHubSession();
   if (error || !user) return error;
 
+  const workspace = await requireWorkspaceClientId(supabase);
+  if (workspace.error) return workspace.error;
+
+  const allowed = await assertLeadInWorkspace(
+    supabase,
+    params.id,
+    workspace.clientId,
+  );
+  if (!allowed) {
+    return NextResponse.json({ error: "Lead not found" }, { status: 404 });
+  }
+
   const body = (await request.json()) as Record<string, unknown>;
   const { data: current, error: currentError } = await supabase
     .from("leads")
     .select("stage")
     .eq("id", params.id)
-    .single();
+    .eq("client_id", workspace.clientId)
+    .maybeSingle();
 
   if (currentError || !current) {
     return NextResponse.json({ error: "Lead not found" }, { status: 404 });
@@ -75,7 +96,6 @@ export async function PATCH(request: Request, { params }: Params) {
   const campaign = optionalText(body.campaign);
   const lostReason = optionalText(body.lost_reason);
   const notesPreview = optionalText(body.notes_preview);
-  const clientId = optionalText(body.client_id);
   const estimated = optionalNumber(body.estimated_value);
   const actual = optionalNumber(body.actual_value);
   const followUp = optionalDate(body.next_follow_up_at);
@@ -89,7 +109,7 @@ export async function PATCH(request: Request, { params }: Params) {
   if (campaign !== undefined) patch.campaign = campaign;
   if (lostReason !== undefined) patch.lost_reason = lostReason;
   if (notesPreview !== undefined) patch.notes_preview = notesPreview;
-  if (clientId !== undefined) patch.client_id = clientId;
+  // client_id reassignment is not allowed from the client.
   if (estimated !== undefined) patch.estimated_value = estimated;
   if (actual !== undefined) patch.actual_value = actual;
   if (followUp !== undefined) patch.next_follow_up_at = followUp;
@@ -108,7 +128,8 @@ export async function PATCH(request: Request, { params }: Params) {
   const { error: updateError } = await supabase
     .from("leads")
     .update(patch)
-    .eq("id", params.id);
+    .eq("id", params.id)
+    .eq("client_id", workspace.clientId);
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 400 });
@@ -133,9 +154,20 @@ export async function DELETE(_request: Request, { params }: Params) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
-  const { error: deleteError } = await supabase.from("leads").delete().eq("id", params.id);
+  const workspace = await requireWorkspaceClientId(supabase);
+  if (workspace.error) return workspace.error;
+
+  const { error: deleteError, count } = await supabase
+    .from("leads")
+    .delete({ count: "exact" })
+    .eq("id", params.id)
+    .eq("client_id", workspace.clientId);
+
   if (deleteError) {
     return NextResponse.json({ error: deleteError.message }, { status: 400 });
+  }
+  if (!count) {
+    return NextResponse.json({ error: "Lead not found" }, { status: 404 });
   }
   return NextResponse.json({ ok: true });
 }

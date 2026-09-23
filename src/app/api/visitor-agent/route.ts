@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import { createVisitorAgentTools } from "@/lib/agent/visitor/tools";
 import { DIGISOL_HOUSE_NAME, DIGISOL_BRAND } from "@/lib/branding";
 import { getOpenAIApiKey } from "@/lib/openai";
+import { clientIp, rateLimit } from "@/lib/security";
 import { hasAdminClient } from "@/lib/supabase/admin";
 import {
   countryLabel,
@@ -33,6 +34,21 @@ const MAX_STEPS = 6;
  * falls back to Vercel/Cloudflare geo headers.
  */
 export async function POST(request: Request) {
+  const limited = rateLimit({
+    key: `visitor:${clientIp(request)}`,
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many chat requests. Please wait a moment.", code: "rate_limited" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limited.retryAfterSec) },
+      },
+    );
+  }
+
   if (!getOpenAIApiKey()) {
     return NextResponse.json(
       {

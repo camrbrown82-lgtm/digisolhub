@@ -6,7 +6,7 @@ import {
   isLeadSource,
   isLeadStage,
 } from "@/lib/lead-pipeline";
-import { findOrCreateClient, getActiveClientId } from "@/lib/workspace";
+import { findOrCreateClient, resolveClientId } from "@/lib/workspace";
 
 function optionalText(value: unknown) {
   const text = String(value ?? "").trim();
@@ -30,11 +30,20 @@ export async function GET() {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
-  const clientId = await getActiveClientId();
-  let query = supabase.from("leads").select("*").order("updated_at", { ascending: false });
-  if (clientId) query = query.eq("client_id", clientId);
+  const clientId = await resolveClientId(supabase);
+  if (!clientId) {
+    return NextResponse.json(
+      { error: "No workspace selected" },
+      { status: 400 },
+    );
+  }
 
-  const { data, error: queryError } = await query;
+  const { data, error: queryError } = await supabase
+    .from("leads")
+    .select("*")
+    .eq("client_id", clientId)
+    .order("updated_at", { ascending: false });
+
   if (queryError) {
     return NextResponse.json({ error: queryError.message }, { status: 400 });
   }
@@ -66,8 +75,7 @@ export async function POST(request: Request) {
   }
 
   const clientId =
-    optionalText(body.client_id) ||
-    (await getActiveClientId()) ||
+    (await resolveClientId(supabase)) ||
     (await findOrCreateClient(supabase, { name: company, domain: null }));
 
   const notes = optionalText(body.notes);

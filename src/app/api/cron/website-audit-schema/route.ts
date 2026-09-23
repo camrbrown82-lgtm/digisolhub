@@ -1,17 +1,10 @@
 import { NextResponse } from "next/server";
 import { ensureWebsiteAuditSchema } from "@/lib/ensureWebsiteAuditSchema";
+import { cronAuthorized } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-function cronAuthorized(request: Request) {
-  const secret = process.env.CRON_SECRET?.trim();
-  const header = request.headers.get("authorization") || "";
-  if (secret) return header === `Bearer ${secret}`;
-  const agent = (request.headers.get("user-agent") || "").toLowerCase();
-  return process.env.VERCEL === "1" && agent.includes("vercel-cron");
-}
 
 /** Applies website_audits migration when POSTGRES_URL is available on Vercel. */
 export async function GET(request: Request) {

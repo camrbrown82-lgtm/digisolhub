@@ -6,6 +6,7 @@ import {
   metaCapiConfigured,
   metaPixelId,
 } from "@/lib/meta/config";
+import { instagramInsightsConfigured } from "@/lib/meta/instagramInsights";
 import { metaPixelConfigured } from "@/lib/metaPixel";
 
 function status(ok: boolean) {
@@ -51,12 +52,24 @@ export default function IntegrationsPage() {
       ok: metaAdsInsightsConfigured(),
     },
     {
+      name: "Instagram Insights",
+      ok: instagramInsightsConfigured(),
+    },
+    {
       name: "Meta Page publish",
       ok: Boolean(
         process.env.META_PAGE_ID?.trim() &&
           (process.env.META_PAGE_ACCESS_TOKEN?.trim() ||
             process.env.FACEBOOK_PAGE_ACCESS_TOKEN?.trim()),
       ),
+    },
+    {
+      name: "Hub ingest secret",
+      ok: Boolean(process.env.HUB_INGEST_SECRET?.trim()),
+    },
+    {
+      name: "Resend webhook secret",
+      ok: Boolean(process.env.RESEND_WEBHOOK_SECRET?.trim()),
     },
   ];
 

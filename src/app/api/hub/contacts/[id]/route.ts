@@ -7,6 +7,10 @@ import {
   isMissingContactChannelColumnError,
 } from "@/lib/ensureCampaignChannelSchema";
 import { emitHubEvent } from "@/lib/events";
+import {
+  assertContactInWorkspace,
+  requireWorkspaceClientId,
+} from "@/lib/tenantGuard";
 
 type Params = { params: { id: string } };
 
@@ -19,7 +23,6 @@ const PATCH_KEYS = [
   "service",
   "source",
   "tags",
-  "client_id",
   "campaign_channel",
   "ab_variant",
   "unsubscribed_at",
@@ -29,14 +32,18 @@ export async function GET(_request: Request, { params }: Params) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
+  const workspace = await requireWorkspaceClientId(supabase);
+  if (workspace.error) return workspace.error;
+
   const { data, error: queryError } = await supabase
     .from("contacts")
     .select("*, notes(*)")
     .eq("id", params.id)
-    .single();
+    .eq("client_id", workspace.clientId)
+    .maybeSingle();
 
-  if (queryError) {
-    return NextResponse.json({ error: queryError.message }, { status: 404 });
+  if (queryError || !data) {
+    return NextResponse.json({ error: "Contact not found" }, { status: 404 });
   }
   return NextResponse.json({ contact: data });
 }
@@ -44,6 +51,18 @@ export async function GET(_request: Request, { params }: Params) {
 export async function PATCH(request: Request, { params }: Params) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
+
+  const workspace = await requireWorkspaceClientId(supabase);
+  if (workspace.error) return workspace.error;
+
+  const allowed = await assertContactInWorkspace(
+    supabase,
+    params.id,
+    workspace.clientId,
+  );
+  if (!allowed) {
+    return NextResponse.json({ error: "Contact not found" }, { status: 404 });
+  }
 
   const ensured = await ensureCampaignChannelSchema().catch((err: unknown) => ({
     ok: false as const,
@@ -58,13 +77,17 @@ export async function PATCH(request: Request, { params }: Params) {
     .from("contacts")
     .select("tags")
     .eq("id", params.id)
-    .single();
+    .eq("client_id", workspace.clientId)
+    .maybeSingle();
 
   const payload: Record<string, unknown> = {};
   for (const key of PATCH_KEYS) {
     if (!(key in body)) continue;
     payload[key] = body[key];
   }
+
+  // Never allow reassignment across tenants from the client.
+  delete payload.client_id;
 
   if ("campaign_channel" in payload) {
     payload.campaign_channel = normalizeCampaignChannel(
@@ -76,20 +99,24 @@ export async function PATCH(request: Request, { params }: Params) {
       typeof payload.ab_variant === "string" ? payload.ab_variant : null,
     );
   }
-  if ("client_id" in payload && payload.client_id === "") {
-    payload.client_id = null;
-  }
 
   let updateError = (
-    await supabase.from("contacts").update(payload).eq("id", params.id)
+    await supabase
+      .from("contacts")
+      .update(payload)
+      .eq("id", params.id)
+      .eq("client_id", workspace.clientId)
   ).error;
 
   if (updateError && isMissingContactChannelColumnError(updateError.message)) {
     await ensureCampaignChannelSchema({ force: true }).catch(() => null);
-    // Brief pause so PostgREST can pick up NOTIFY reload.
     await new Promise((resolve) => setTimeout(resolve, 400));
     updateError = (
-      await supabase.from("contacts").update(payload).eq("id", params.id)
+      await supabase
+        .from("contacts")
+        .update(payload)
+        .eq("id", params.id)
+        .eq("client_id", workspace.clientId)
     ).error;
   }
 
@@ -111,13 +138,20 @@ export async function DELETE(_request: Request, { params }: Params) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
-  const { error: deleteError } = await supabase
+  const workspace = await requireWorkspaceClientId(supabase);
+  if (workspace.error) return workspace.error;
+
+  const { error: deleteError, count } = await supabase
     .from("contacts")
-    .delete()
-    .eq("id", params.id);
+    .delete({ count: "exact" })
+    .eq("id", params.id)
+    .eq("client_id", workspace.clientId);
 
   if (deleteError) {
     return NextResponse.json({ error: deleteError.message }, { status: 400 });
+  }
+  if (!count) {
+    return NextResponse.json({ error: "Contact not found" }, { status: 404 });
   }
   return NextResponse.json({ ok: true });
 }
