@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
-import { ContactInfo } from "@/components/ContactInfo";
 import { Logo } from "@/components/Logo";
 import { TrackedLink } from "@/components/TrackedLink";
 
@@ -15,6 +14,7 @@ const links = [
   { href: "/about", label: "About" },
 ];
 
+/** Fixed single-row header: logo left, nav + CTAs right. Contact lives in the footer. */
 export function Navbar() {
   const [open, setOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
@@ -24,22 +24,24 @@ export function Navbar() {
     if (!header) return;
 
     const setHeaderHeight = () => {
-      document.documentElement.style.setProperty(
-        "--header-h",
-        `${header.offsetHeight}px`,
-      );
+      const h = Math.ceil(header.getBoundingClientRect().height);
+      document.documentElement.style.setProperty("--header-h", `${h}px`);
     };
 
     setHeaderHeight();
     const observer = new ResizeObserver(setHeaderHeight);
     observer.observe(header);
-    return () => observer.disconnect();
+    window.addEventListener("resize", setHeaderHeight);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", setHeaderHeight);
+    };
   }, [open]);
 
   return (
     <header
       ref={headerRef}
-      className="border-b border-indigo-500/25 bg-zinc-950"
+      className="sticky top-0 z-50 border-b border-indigo-500/25 bg-zinc-950/95 backdrop-blur"
     >
       <a
         href="#main"
@@ -48,24 +50,20 @@ export function Navbar() {
         Skip to content
       </a>
 
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-6 px-4 py-4 sm:px-6 lg:px-8">
-        <div className="flex shrink-0 items-center self-center">
+      <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:h-[4.25rem] sm:px-6 lg:px-8">
+        <div className="flex min-w-0 shrink-0 items-center">
           <Logo />
         </div>
 
-        <div className="header-contact hidden min-w-0 flex-1 items-center justify-center self-center px-2 xl:flex">
-          <ContactInfo location="hero" />
-        </div>
-
         <nav
-          className="hidden shrink-0 items-center gap-4 self-center lg:flex xl:gap-5"
+          className="hidden items-center gap-5 lg:flex xl:gap-6"
           aria-label="Primary"
         >
           {links.map((link) => (
             <a
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-indigo-200 transition-colors hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+              className="whitespace-nowrap text-sm font-medium text-indigo-200 transition-colors hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
             >
               {link.label}
             </a>

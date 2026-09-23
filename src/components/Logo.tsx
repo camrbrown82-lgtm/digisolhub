@@ -5,7 +5,8 @@ type LogoProps = {
 };
 
 const sizeClass = {
-  header: "h-[3.25rem] w-auto sm:h-14 lg:h-16",
+  /** Fits the fixed h-16 / sm:h-[4.25rem] navbar row */
+  header: "h-9 w-auto sm:h-10",
   footer: "h-24 w-auto sm:h-32",
   hub: "h-10 w-auto",
 };

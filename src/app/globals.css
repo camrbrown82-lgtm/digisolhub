@@ -7,23 +7,18 @@
 }
 
 :root {
-  --header-h: 8.5rem;
+  --header-h: 4rem;
 }
 
 @media (min-width: 640px) {
   :root {
-    --header-h: 10.5rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  :root {
-    --header-h: 12.5rem;
+    --header-h: 4.25rem;
   }
 }
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--header-h) + 0.75rem);
 }
 
 body {
@@ -37,12 +32,6 @@ body {
 @layer utilities {
   .text-balance {
     text-wrap: balance;
-  }
-}
-
-@media (max-width: 1279px) {
-  .header-contact {
-    display: none !important;
   }
 }
 
