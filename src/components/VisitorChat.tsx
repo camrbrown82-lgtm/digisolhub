@@ -22,13 +22,13 @@ function readCookie(name: string) {
 }
 
 function greetingFor(audience: VisitorAudience) {
-  if (audience === "international") {
-    return `Hey there! I'm ${KAYLEV_NAME}, DigiSol's digital assistant. Whether you're local or scaling from afar, we help businesses fix conversion leaks and grow online.
+  if (audience === "alberta") {
+    return `Hey there! I'm ${KAYLEV_NAME}, DigiSol's digital assistant. Happy to help Alberta teams and anyone scaling from farther afield fix conversion leaks and grow online.
 
 Share your website URL anytime for a free audit — and if you'd like the full write-up, just tell me which email to send it to. Questions first? Fire away.`;
   }
 
-  return `Hey there! I'm ${KAYLEV_NAME}, DigiSol's digital assistant. Happy to help Alberta teams and anyone scaling from farther afield fix conversion leaks and grow online.
+  return `Hey there! I'm ${KAYLEV_NAME}, DigiSol's digital assistant. Whether you're local or scaling from afar, we help businesses fix conversion leaks and grow online.
 
 Share your website URL anytime for a free audit — and if you'd like the full write-up, just tell me which email to send it to. Questions first? Fire away.`;
 }
@@ -55,13 +55,13 @@ function messageText(message: UIMessage) {
 export function VisitorChat() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
-  const [audience, setAudience] = useState<VisitorAudience>("alberta");
+  const [audience, setAudience] = useState<VisitorAudience>("international");
   const [country, setCountry] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const nextAudience =
-      parseAudienceCookie(readCookie(GEO_AUDIENCE_COOKIE)) || "alberta";
+      parseAudienceCookie(readCookie(GEO_AUDIENCE_COOKIE)) || "international";
     setAudience(nextAudience);
     setCountry(readCookie(GEO_COUNTRY_COOKIE).toUpperCase());
   }, []);

@@ -30,9 +30,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "DigiSol | Website Design, Development & Marketing in Alberta",
+  title: "DigiSol | Website Design, Development & Marketing",
   description:
-    "Alberta-first website design, custom web development, and digital marketing for local companies. Custom sites, local SEO, Google Ads, and Meta campaigns in Airdrie, Calgary, Edmonton, Red Deer, Cochrane, and across Alberta.",
+    "Custom website design, Next.js development, SEO, and growth marketing for companies everywhere. DigiSol designs the site, engineers the platform, and helps the right people find you and convert.",
   metadataBase: new URL(DIGISOL_SITE_URL),
   verification: {
     google: "QwmR9VlADhodbnOuBT3FM-XaaBAyM9BLcz5bLfRdi8Y",
@@ -46,20 +46,25 @@ export const metadata: Metadata = {
     apple: "/logo.jpg",
   },
   openGraph: {
-    title: "DigiSol | Website Design, Development & Marketing in Alberta",
+    title: "DigiSol | Website Design, Development & Marketing",
     description:
-      "Custom website design, Next.js development, and growth marketing for Alberta companies. One partner from first look to closed deal.",
+      "Custom website design, Next.js development, and growth marketing. One partner from first look to closed deal.",
     url: DIGISOL_SITE_URL,
     siteName: "DigiSol",
     locale: "en_CA",
     type: "website",
-    images: [{ url: "/logo.jpg", alt: "DigiSol — Website Design, Engineering & Growth in Alberta" }],
+    images: [
+      {
+        url: "/logo.jpg",
+        alt: "DigiSol — Website Design, Engineering & Growth",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "DigiSol | Website Design, Development & Marketing in Alberta",
+    title: "DigiSol | Website Design, Development & Marketing",
     description:
-      "Custom website design, Next.js development, and growth marketing for Alberta companies. One partner from first look to closed deal.",
+      "Custom website design, Next.js development, and growth marketing. One partner from first look to closed deal.",
     images: ["/logo.jpg"],
   },
 };
@@ -78,7 +83,7 @@ const organizationJsonLd = {
   },
   image: `${DIGISOL_SITE_URL}/logo.jpg`,
   description:
-    "Alberta website design, web development, and digital marketing studio based in Airdrie. Custom websites, local SEO, Google Ads, and Meta campaigns for local companies in Airdrie, Calgary, Edmonton, Red Deer, Cochrane, and across Alberta.",
+    "Website design, web development, and digital marketing studio. Custom websites, SEO, Google Ads, and Meta campaigns for growing companies — headquartered in Airdrie, Alberta, serving clients everywhere.",
   email: "cam.r.brown82@gmail.com",
   telephone: DIGISOL_PHONE,
   address: {
@@ -97,6 +102,7 @@ const organizationJsonLd = {
     { "@type": "City", name: "Cochrane" },
     { "@type": "AdministrativeArea", name: "Alberta" },
     { "@type": "Country", name: "Canada" },
+    { "@type": "Country", name: "United States" },
   ],
   serviceType: [
     "Website Design",

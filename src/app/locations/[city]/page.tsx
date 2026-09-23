@@ -101,6 +101,7 @@ export default function LocationCityPage({ params }: PageProps) {
           copy={copy}
           kaylevLocationName={page.name}
           analyticsKaylev={`locations_kaylev_${page.slug}`}
+          market="alberta"
         />
       </main>
       <Footer />

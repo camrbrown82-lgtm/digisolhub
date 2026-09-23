@@ -12,7 +12,7 @@ const fieldClass =
 
 export function Contact({
   title = "Ready to Grow Your Business Online?",
-  body = "Get a project quote or free strategy consult for website design, custom development, SEO, and campaigns. Alberta-rooted, happy to work with companies wherever you sell.",
+  body = "Get a project quote or free strategy consult for website design, custom development, SEO, and campaigns — built for companies that sell locally or across borders.",
 }: {
   title?: string;
   body?: string;

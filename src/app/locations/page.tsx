@@ -30,6 +30,7 @@ export default function LocationsIndexPage() {
         <MarketingHomeStack
           copy={copy}
           analyticsKaylev="locations_kaylev_index"
+          market="alberta"
         />
       </main>
       <Footer />

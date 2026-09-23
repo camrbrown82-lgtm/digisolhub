@@ -13,16 +13,22 @@ type MarketingHomeStackProps = {
   /** Optional city label for Kaylev Advantage line */
   kaylevLocationName?: string;
   analyticsKaylev: string;
+  /**
+   * `general` = worldwide / non-city framing (default).
+   * `alberta` = city landers + /locations hub.
+   */
+  market?: "general" | "alberta";
 };
 
 /**
  * Exact public marketing section stack used by `/`, `/locations`, and
- * `/locations/[city]`. Layout is identical; only `copy` / analytics tags change.
+ * `/locations/[city]`. Layout is identical; only `copy` / market framing change.
  */
 export function MarketingHomeStack({
   copy,
   kaylevLocationName,
   analyticsKaylev,
+  market = "general",
 }: MarketingHomeStackProps) {
   return (
     <>
@@ -35,7 +41,7 @@ export function MarketingHomeStack({
       <Services copy={copy} />
       <WebsiteAudit copy={copy} />
       <Audience copy={copy} />
-      <DispatchArchive />
+      <DispatchArchive market={market} />
       <Contact title={copy.contactTitle} body={copy.contactBody} />
     </>
   );

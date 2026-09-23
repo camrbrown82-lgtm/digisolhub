@@ -3,7 +3,7 @@ import { ContactInfo } from "@/components/ContactInfo";
 import { GoogleRating, ListingLinks } from "@/components/LocalListings";
 import { Logo } from "@/components/Logo";
 import { LOCATION_PAGES, locationPath } from "@/lib/locations";
-import { DIGISOL_ADDRESS_LINE, DIGISOL_REGION, DIGISOL_SERVICE_CITIES } from "@/lib/site";
+import { DIGISOL_ADDRESS_LINE, DIGISOL_REGION } from "@/lib/site";
 
 const jumps = [
   { href: "/#top", label: "Top" },
@@ -53,7 +53,7 @@ export function Footer() {
 
             <nav aria-label="Service cities">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-sky-400">
-                Alberta cities
+                Service cities
               </p>
               <ul className="mt-1.5 flex flex-wrap gap-x-3.5 gap-y-1">
                 {LOCATION_PAGES.map((city) => (
@@ -74,7 +74,8 @@ export function Footer() {
             </div>
 
             <p className="text-sm leading-snug text-indigo-200/70">
-              {`Design, development, SEO & marketing for Alberta companies · ${DIGISOL_SERVICE_CITIES.join(", ")}`}
+              Website design, development, SEO &amp; marketing for growing
+              companies — headquarters in {DIGISOL_REGION}.
             </p>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
               <p className="text-xs text-sky-300/70">{DIGISOL_ADDRESS_LINE}</p>

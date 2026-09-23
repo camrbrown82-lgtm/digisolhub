@@ -9,7 +9,14 @@ import { DispatchSubscribe } from "@/components/DispatchSubscribe";
 import { TrackedLink } from "@/components/TrackedLink";
 import { DISPATCH_ISSUES, dispatchPath } from "@/lib/dispatch";
 
-export function DispatchArchive() {
+type DispatchArchiveProps = {
+  /** Alberta landers keep local SEO framing; everywhere else stays general. */
+  market?: "general" | "alberta";
+};
+
+export function DispatchArchive({ market = "general" }: DispatchArchiveProps) {
+  const isAlberta = market === "alberta";
+
   return (
     <section
       id="dispatch"
@@ -20,13 +27,14 @@ export function DispatchArchive() {
         <div className="mx-auto max-w-2xl text-center">
           <DispatchEyebrow>DigiSol Dispatch</DispatchEyebrow>
           <DispatchTitle as="h2" id="dispatch-heading" className="mt-3">
-            Monthly off-page SEO for Alberta companies
+            {isAlberta
+              ? "Monthly off-page SEO for Alberta companies"
+              : "Monthly SEO & growth notes for growing companies"}
           </DispatchTitle>
           <p className="mt-4 text-zinc-400">
-            Local SEO, citations, reviews, and Next.js engineering notes for
-            Airdrie, Calgary, Edmonton, and Red Deer. Read the issue, then
-            export it to your socials — or subscribe below for the next one
-            by email.
+            {isAlberta
+              ? "Local SEO, citations, reviews, and Next.js engineering notes for Airdrie, Calgary, Edmonton, and Red Deer. Read the issue, then export it to your socials — or subscribe below for the next one by email."
+              : "SEO, citations, reviews, and Next.js engineering notes you can apply in any market. Read the issue, then export it to your socials — or subscribe below for the next one by email."}
           </p>
         </div>
         <ul className="mt-12 grid gap-6 lg:grid-cols-1">
@@ -64,7 +72,10 @@ export function DispatchArchive() {
                     <TrackedLink
                       href={`${dispatchPath(issue.slug)}#export`}
                       eventName="dispatch_click"
-                      eventParams={{ slug: issue.slug, location: "home_export" }}
+                      eventParams={{
+                        slug: issue.slug,
+                        location: "home_export",
+                      }}
                       className="inline-flex items-center justify-center rounded-full border border-white/15 px-5 py-2.5 text-sm font-medium text-zinc-200 transition hover:bg-white/5"
                     >
                       Export to socials
