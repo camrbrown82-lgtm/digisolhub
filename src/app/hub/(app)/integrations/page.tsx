@@ -1,5 +1,6 @@
 import { parseFromAddress } from "@/lib/email";
 import { DispatchSendButton } from "@/components/hub/DispatchSendButton";
+import { ResendTrackingPanel } from "@/components/hub/ResendTrackingPanel";
 
 function status(ok: boolean) {
   return ok ? "Configured" : "Missing";
@@ -67,6 +68,9 @@ export default function IntegrationsPage() {
           sends when you open Analytics — keep open/click tracking enabled in
           Resend.
         </p>
+        <div className="mt-4">
+          <ResendTrackingPanel />
+        </div>
         <p className="mt-3">
           DigiSol Dispatch: readers subscribe after an issue. A daily cron at{" "}
           <code className="text-zinc-200">/api/cron/dispatch</code> emails the

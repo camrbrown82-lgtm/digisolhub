@@ -204,6 +204,10 @@ export async function sendEmailToContact(input: SendEmailInput) {
   );
 
   const resend = new Resend(apiKey);
+  // Open tracking is off by default on Resend domains — enable before send.
+  const { ensureResendOpenTracking } = await import("@/lib/resendTracking");
+  await ensureResendOpenTracking().catch(() => null);
+
   const payload = {
     from,
     to: contact.email,

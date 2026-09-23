@@ -152,7 +152,7 @@ export async function syncResendEngagementFromApi(
     return { synced: 0, checked: 0, skipped: true as const, reason: "no_api_key" };
   }
 
-  const limit = Math.min(20, Math.max(1, opts?.limit ?? 12));
+  const limit = Math.min(40, Math.max(1, opts?.limit ?? 24));
   let query = db
     .from("sends")
     .select("id, resend_id, contact_id, opened_at, clicked_at, bounced_at, status")
@@ -193,15 +193,19 @@ export async function syncResendEngagementFromApi(
       const now = new Date().toISOString();
       let promoteEvent: "opened" | "clicked" | null = null;
 
-      if (
-        (lastEvent === "opened" || lastEvent === "clicked") &&
-        !row.opened_at
-      ) {
+      const opened =
+        lastEvent === "opened" ||
+        lastEvent === "clicked" ||
+        lastEvent.includes("open");
+      const clicked =
+        lastEvent === "clicked" || lastEvent.includes("click");
+
+      if (opened && !row.opened_at) {
         patch.opened_at = now;
-        patch.status = lastEvent === "clicked" ? "clicked" : "opened";
+        patch.status = clicked ? "clicked" : "opened";
         promoteEvent = "opened";
       }
-      if (lastEvent === "clicked" && !row.clicked_at) {
+      if (clicked && !row.clicked_at) {
         patch.clicked_at = now;
         patch.status = "clicked";
         promoteEvent = "clicked";
@@ -253,7 +257,7 @@ export async function reconcileHubEmailStats(
     : Promise.race([
         syncResendEngagementFromApi(db, {
           contactIds,
-          limit: 12,
+          limit: 24,
         }).catch(() => ({
           synced: 0,
           checked: 0,
@@ -306,17 +310,21 @@ export async function reconcileHubEmailStats(
   const resendOpened = resend.uniqueOpened || resend.opened;
   const resendClicked = resend.uniqueClicked || resend.clicked;
 
-  // Prefer Hub after sync; if webhook never fired, mirror Resend uniques
-  // so Performance + Hub cards show the same engagement numbers.
+  // Prefer Hub after sync, but never hide Resend-reported opens when Hub lags
+  // (webhook missing / open tracking recently enabled).
   let opened = hubOpened;
   let clicked = hubClicked;
   let engagementSource: "hub" | "resend" = "hub";
 
-  if (hubOpened === 0 && resendOpened > 0) {
+  if (!resend.error && resendOpened > hubOpened) {
     opened = sends > 0 ? Math.min(sends, resendOpened) : resendOpened;
-    engagementSource = "resend";
+    engagementSource = hubOpened > 0 ? "hub" : "resend";
+    // If Hub has some opens but Resend has more, still show Resend floor.
+    if (hubOpened > 0 && resendOpened > hubOpened) {
+      engagementSource = "resend";
+    }
   }
-  if (hubClicked === 0 && resendClicked > 0) {
+  if (!resend.error && resendClicked > hubClicked) {
     clicked = sends > 0 ? Math.min(sends, resendClicked) : resendClicked;
     engagementSource = "resend";
   }
