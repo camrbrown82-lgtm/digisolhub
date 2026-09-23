@@ -10,11 +10,11 @@
     },
     {
       "path": "/api/cron/resend-sync",
-      "schedule": "15 * * * *"
+      "schedule": "30 14 * * *"
     },
     {
       "path": "/api/cron/social-dispatch",
-      "schedule": "*/15 * * * *"
+      "schedule": "45 14 * * *"
     }
   ]
 }
