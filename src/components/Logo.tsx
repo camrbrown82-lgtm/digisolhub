@@ -5,7 +5,7 @@ type LogoProps = {
 };
 
 const sizeClass = {
-  header: "h-24 w-auto sm:h-32 lg:h-40",
+  header: "h-12 w-auto max-w-[9.5rem] sm:h-14 sm:max-w-[11rem] lg:h-16 lg:max-w-[13rem]",
   footer: "h-24 w-auto sm:h-32",
   hub: "h-10 w-auto",
 };
@@ -22,7 +22,7 @@ export function Logo({ className = "", size = "header", href = "/" }: LogoProps)
         alt="DigiSol — Engineering & Growth"
         width={480}
         height={156}
-        className={`${sizeClass[size]} max-w-none object-contain object-left`}
+        className={`${sizeClass[size]} object-contain object-left`}
       />
     </a>
   );

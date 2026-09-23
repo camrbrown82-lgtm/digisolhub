@@ -175,30 +175,10 @@ export const PRICING_ADDONS: PricingItem[] = [
   },
 ];
 
-/**
- * Temporary $2 CAD Stripe live-payment smoke test.
- * Remove from the pricing page once checkout is verified.
- */
-export const PRICING_TESTING: PricingItem = {
-  id: "testing",
-  name: "Testing",
-  blurb:
-    "Temporary $2 CAD charge to verify live Stripe Checkout. Remove after payment succeeds.",
-  kind: "one_time",
-  amount: 200,
-  badge: "Internal",
-  includes: [
-    "Live Stripe Checkout smoke test",
-    "Alberta GST applied at checkout",
-    "Safe to delete after verification",
-  ],
-};
-
 export const ALL_PRICING_ITEMS = [
   ...PRICING_PACKAGES,
   ...PRICING_RETAINERS,
   ...PRICING_ADDONS,
-  PRICING_TESTING,
 ] as const;
 
 export function getPricingItem(id: string) {

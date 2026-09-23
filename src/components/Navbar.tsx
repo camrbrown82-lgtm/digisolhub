@@ -47,13 +47,13 @@ export function Navbar() {
       >
         Skip to content
       </a>
-      <div className="grid w-full items-center gap-x-6 gap-y-3 px-4 py-3 sm:px-6 xl:grid-cols-[auto_minmax(0,1fr)_auto] lg:px-8 lg:py-4">
-        <div className="flex items-center justify-between gap-3 lg:contents">
+      <div className="grid w-full items-center gap-x-3 gap-y-2 px-3 py-2 sm:px-5 xl:grid-cols-[auto_minmax(0,1fr)_auto] lg:px-6 lg:py-2.5">
+        <div className="flex min-w-0 items-center justify-between gap-3 lg:contents">
           <Logo />
           <div className="flex items-center gap-2 lg:hidden">
             <button
               type="button"
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-indigo-400/30 text-indigo-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-indigo-400/30 text-indigo-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
               aria-expanded={open}
               aria-controls="mobile-nav"
               onClick={() => setOpen((v) => !v)}
@@ -63,18 +63,18 @@ export function Navbar() {
             </button>
           </div>
         </div>
-        <div className="header-contact hidden min-w-0 w-full xl:block">
+        <div className="header-contact hidden min-w-0 overflow-hidden xl:block">
           <ContactInfo location="hero" />
         </div>
         <nav
-          className="hidden items-center justify-end gap-4 lg:flex xl:gap-5"
+          className="hidden items-center justify-end gap-2.5 whitespace-nowrap lg:flex xl:gap-3"
           aria-label="Primary"
         >
           {links.map((link) => (
             <a
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-indigo-200 transition-colors hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+              className="text-xs font-medium text-indigo-200 transition-colors hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 xl:text-sm"
             >
               {link.label}
             </a>
@@ -83,13 +83,13 @@ export function Navbar() {
             href="/#contact"
             eventName="cta_click"
             eventParams={{ cta_name: "book_consultation", location: "nav" }}
-            className="inline-flex items-center rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-sky-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+            className="inline-flex items-center rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-sky-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 xl:px-4 xl:text-sm"
           >
             Contact
           </TrackedLink>
           <a
             href="/hub"
-            className="inline-flex items-center rounded-full border border-sky-400/40 px-4 py-2 text-sm font-medium text-sky-300 transition hover:border-indigo-400 hover:bg-indigo-500/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+            className="inline-flex items-center rounded-full border border-sky-400/40 px-3 py-1.5 text-xs font-medium text-sky-300 transition hover:border-indigo-400 hover:bg-indigo-500/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 xl:px-4 xl:text-sm"
           >
             Admin
           </a>
