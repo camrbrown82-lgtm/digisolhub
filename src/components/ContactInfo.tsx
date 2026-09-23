@@ -30,7 +30,7 @@ const contacts = [
 ] as const;
 
 const linkClass = {
-  hero: "inline-flex items-center gap-1 text-[11px] text-indigo-200 transition hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 sm:text-xs",
+  hero: "inline-flex items-center gap-1.5 text-xs text-indigo-200 transition hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400",
   footer:
     "inline-flex items-center gap-1.5 text-sm text-indigo-300/90 transition hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400",
 };
@@ -76,21 +76,21 @@ export function ContactInfo({ location }: ContactInfoProps) {
         ? { target: "_blank", rel: "noopener noreferrer me" }
         : {})}
     >
-      <Icon className="h-3 w-3 shrink-0" aria-hidden="true" />
+      <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
       {label}
     </TrackedLink>
   ));
 
   if (isHero) {
+    // One centered row — same midline as logo + nav (no stacked blocks).
     return (
-      <div className="min-w-0 w-full justify-self-center overflow-hidden px-1 text-center">
-        <p className="truncate text-xs leading-snug text-indigo-100 sm:text-sm">
+      <div className="flex max-w-full items-center justify-center gap-x-3 overflow-hidden whitespace-nowrap text-sm leading-none text-indigo-100">
+        <p className="shrink-0">
           Founder &amp; CEO{" "}
           <span className="font-medium text-sky-300">Cameron Brown</span>
         </p>
-        <div className="mt-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5">
-          {links}
-        </div>
+        <span className="h-3.5 w-px shrink-0 bg-indigo-500/35" aria-hidden="true" />
+        {links}
       </div>
     );
   }
