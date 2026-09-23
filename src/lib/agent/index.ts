@@ -31,3 +31,22 @@ export {
   MASTER_DECISION_MODEL,
   MASTER_HELPER_MODEL,
 } from "@/lib/agent/master";
+export {
+  resolveDigisolScope,
+  DIGISOL_OPERATOR,
+  resolveDigisolModelTier,
+  digisolModelId,
+  createDigisolLanguageModel,
+  createDigisolAgentTools,
+  logAgentActivity,
+} from "@/lib/agent/digisol";
+export {
+  checkAgentBudget,
+  recordAgentUsage,
+  estimateToolCost,
+  resolveCompanyWallet,
+  DIGISOL_DAILY_AUTOMATED_AUDIT_CAP,
+  DIGISOL_DAILY_AUTOMATED_EMAIL_CAP,
+  getDigisolDailyUsage,
+} from "@/lib/agent/budget";
+export type { AgentInvocationMode, BudgetCheckResult } from "@/lib/agent/budget";

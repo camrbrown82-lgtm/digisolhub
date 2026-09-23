@@ -26,6 +26,21 @@ export function toAgentHttpError(err: unknown): {
   const message = openaiErrorMessage(err);
   const lower = message.toLowerCase();
 
+  if (
+    lower.includes("budget exceeded") ||
+    lower.includes("no active digisol subscription") ||
+    lower.includes("daily automated cap") ||
+    lower.includes("digisol bootstrap")
+  ) {
+    return {
+      status: 402,
+      body: {
+        error: message,
+        code: "budget_exceeded",
+      },
+    };
+  }
+
   if (lower.includes("unauthorized") || lower.includes("api key")) {
     return {
       status: 503,

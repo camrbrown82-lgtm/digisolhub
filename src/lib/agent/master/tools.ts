@@ -31,6 +31,11 @@ import {
   parseWorkflowAiResponse,
 } from "@/lib/workflowAi";
 import { AgentError } from "@/lib/agent/errors";
+import {
+  checkAgentBudget,
+  estimateToolCost,
+  recordAgentUsage,
+} from "@/lib/agent/budget";
 
 export type MasterToolContext = {
   supabase: SupabaseClient;
@@ -666,8 +671,65 @@ export async function executeMasterTool(
     throw new AgentError(`Unknown master tool: ${name}`, 400, "unknown_tool");
   }
 
+  const companyId =
+    asString(args.companyId) || ctx.workspaceClientId;
+  const heavy =
+    name === "runWebsiteAudit" ||
+    name === "generateCampaignWorkflow" ||
+    name === "dispatchEmailCampaign";
+
   try {
+    if (heavy) {
+      const confirmSend = args.confirmSend === true;
+      if (name === "dispatchEmailCampaign" && !confirmSend) {
+        // dry-run free
+      } else {
+        await checkAgentBudget(
+          companyId,
+          estimateToolCost(
+            name === "dispatchEmailCampaign"
+              ? "dispatchEmailCampaign"
+              : name,
+            {
+              emails:
+                name === "dispatchEmailCampaign" && confirmSend ? 1 : undefined,
+            },
+          ),
+          {
+            supabase: ctx.supabase,
+            userId: ctx.userId,
+            toolName: name,
+            invocation: "manual",
+            throwOnDeny: true,
+          },
+        );
+      }
+    }
+
     const result = await handler(args, ctx);
+
+    if (heavy) {
+      const confirmSend = args.confirmSend === true;
+      if (!(name === "dispatchEmailCampaign" && !confirmSend)) {
+        await recordAgentUsage(
+          companyId,
+          {
+            ...estimateToolCost(
+              name === "dispatchEmailCampaign"
+                ? "dispatchEmailCampaign"
+                : name,
+              {
+                emails:
+                  name === "dispatchEmailCampaign" && confirmSend ? 1 : undefined,
+              },
+            ),
+            toolName: name,
+          },
+          { supabase: ctx.supabase, userId: ctx.userId, invocation: "manual" },
+        );
+      }
+    }
+
     return { name, arguments: args, result };
   } catch (err) {
     if (err instanceof AgentError) throw err;

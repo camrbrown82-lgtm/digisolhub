@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { logAbVariantEngagement } from "@/lib/abVariantTracking";
 import { emitHubEvent } from "@/lib/events";
+import { promoteProspectOnEngagement } from "@/lib/prospectAudit/promote";
 
 type ResendWebhook = {
   type?: string;
@@ -74,6 +75,19 @@ export async function POST(request: Request) {
       event,
     }).catch((err) => {
       console.error("logAbVariantEngagement", err);
+    });
+  }
+
+  // Cold prospect audit → active DigiSol lead on open/click.
+  if (event === "opened" || event === "clicked") {
+    await promoteProspectOnEngagement({
+      db: admin,
+      resendId,
+      contactId: send?.contact_id ?? null,
+      sendId: send?.id ?? null,
+      event,
+    }).catch((err) => {
+      console.error("promoteProspectOnEngagement", err);
     });
   }
 

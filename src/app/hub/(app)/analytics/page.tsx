@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { CopySnippet } from "@/components/hub/CopySnippet";
 import { WebsiteAuditPanel } from "@/components/hub/WebsiteAuditPanel";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
@@ -110,7 +111,6 @@ export default async function AnalyticsPage() {
 
   const website = summarizeSiteEvents(site.data ?? [], active?.domain);
   const maxDaily = Math.max(1, ...website.daily.map((item) => item.count));
-  const maxGaDaily = Math.max(1, ...ga4.daily.map((item) => item.sessions));
   const pipeline = summarizeLeadPerformance((leadsResult.data ?? []) as LeadRecord[]);
   const maxStage = Math.max(1, ...LEAD_STAGES.map((stage) => pipeline.byStage[stage.id]));
   const money = (value: number) =>
@@ -119,14 +119,36 @@ export default async function AnalyticsPage() {
       currency: "CAD",
       maximumFractionDigits: 0,
     }).format(value);
+  const sendCount = sends.count ?? 0;
+  const openCount = opened.count ?? 0;
+  const clickCount = clicked.count ?? 0;
+  const openRate = sendCount ? Math.round((openCount / sendCount) * 1000) / 10 : 0;
+  const clickRate = sendCount ? Math.round((clickCount / sendCount) * 1000) / 10 : 0;
   const cards = [
     { label: "Contacts", value: contacts.count ?? 0 },
-    { label: "Emails sent", value: sends.count ?? 0 },
-    { label: "Opens (Resend)", value: opened.count ?? 0 },
-    { label: "Clicks (Resend)", value: clicked.count ?? 0 },
+    { label: "Emails sent", value: sendCount },
+    { label: "Opens (Resend)", value: openCount },
+    { label: "Clicks (Resend)", value: clickCount },
     { label: "Unsubscribed", value: unsubscribed.count ?? 0 },
   ];
   const gaStatus = ga4ConfigStatus();
+  const weakPoints = website.pages
+    .filter((page) => page.count > 0)
+    .slice(0, 5)
+    .map((page) => ({
+      label: page.label,
+      value: page.count,
+    }));
+  const topPages = (
+    gaStatus.ready && !ga4.error && ga4.pages.length > 0
+      ? ga4.pages.map((page) => ({ label: page.label, value: page.pageviews }))
+      : website.pages.map((page) => ({ label: page.label, value: page.count }))
+  ).slice(0, 8);
+  const topSources = (
+    gaStatus.ready && !ga4.error && ga4.sources.length > 0
+      ? ga4.sources.map((row) => ({ label: row.label, value: row.sessions }))
+      : website.referrers.map((row) => ({ label: row.label, value: row.count }))
+  ).slice(0, 8);
 
   return (
     <div className="space-y-8">
@@ -197,105 +219,59 @@ export default async function AnalyticsPage() {
           </div>
         ) : null}
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[
-            { label: "Sessions (GA4)", value: ga4.sessions },
-            { label: "Users (GA4)", value: ga4.users },
-            { label: "Pageviews (GA4)", value: ga4.pageviews },
-          ].map((card) => (
-            <div
-              key={card.label}
-              className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5"
-            >
-              <p className="text-sm text-zinc-400">{card.label}</p>
-              <p className="mt-2 text-3xl font-semibold text-white">
-                {gaStatus.ready && !ga4.error ? card.value : "—"}
-              </p>
-            </div>
-          ))}
-        </div>
+        <AnalyticsDashboard
+          companyName={active?.name}
+          gaConfigured={gaStatus.ready}
+          gaError={ga4.error}
+          traffic={{
+            sessions: ga4.sessions,
+            users: ga4.users,
+            pageviews: ga4.pageviews,
+            daily: ga4.daily.map((item) => ({
+              day: item.day,
+              value: item.sessions,
+            })),
+          }}
+          firstParty={{
+            pageviews: website.pageviews,
+            visitors: website.visitors,
+            daily: website.daily.map((item) => ({
+              day: item.day,
+              value: item.count,
+            })),
+          }}
+          conversion={{
+            openRate,
+            clickRate,
+            sends: sendCount,
+            opens: openCount,
+            clicks: clickCount,
+            winRate: pipeline.winRate,
+            pipelineOpen: pipeline.open,
+            pipelineWon: pipeline.won,
+          }}
+          weakPoints={weakPoints}
+          topPages={topPages}
+          topSources={topSources}
+        />
 
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
-          <p className="text-sm text-zinc-400">Daily sessions (GA4)</p>
-          <div className="mt-4 flex h-28 items-end gap-1">
-            {ga4.daily.map((item) => (
-              <div key={item.day} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-                <div
-                  className="w-full rounded-t bg-blue-500/80"
-                  style={{
-                    height: `${Math.max(
-                      6,
-                      gaStatus.ready && !ga4.error
-                        ? (item.sessions / maxGaDaily) * 100
-                        : 6,
-                    )}%`,
-                  }}
-                  title={`${item.day}: ${item.sessions}`}
-                />
-              </div>
-            ))}
-          </div>
-          <div className="mt-2 flex justify-between text-[11px] text-zinc-500">
-            <span>{ga4.daily[0]?.day}</span>
-            <span>{ga4.daily.at(-1)?.day}</span>
-          </div>
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-3">
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
-            <h3 className="text-sm font-semibold text-white">Top pages (GA4)</h3>
-            <ul className="mt-3 space-y-2 text-sm">
-              {!gaStatus.ready || ga4.pages.length === 0 ? (
-                <li className="text-zinc-500">No GA4 page data yet.</li>
-              ) : (
-                ga4.pages.map((page) => (
-                  <li key={page.label} className="flex justify-between gap-3">
-                    <span className="truncate text-zinc-300">{page.label}</span>
-                    <span className="text-zinc-500">{page.pageviews}</span>
-                  </li>
-                ))
-              )}
-            </ul>
-          </div>
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
-            <h3 className="text-sm font-semibold text-white">
-              City landers (GA4)
-            </h3>
-            <ul className="mt-3 space-y-2 text-sm">
-              {!gaStatus.ready || ga4.locations.length === 0 ? (
-                <li className="text-zinc-500">
-                  No /locations traffic yet — Calgary, Edmonton, Red Deer,
-                  Cochrane, Airdrie appear here after visits. Alberta visitors
-                  are now routed to their city lander so these paths register in
-                  GA4.
+          <h3 className="text-sm font-semibold text-white">City landers (GA4)</h3>
+          <ul className="mt-3 space-y-2 text-sm">
+            {!gaStatus.ready || ga4.locations.length === 0 ? (
+              <li className="text-zinc-500">
+                No /locations traffic yet — Calgary, Edmonton, Red Deer,
+                Cochrane, Airdrie appear here after visits.
+              </li>
+            ) : (
+              ga4.locations.map((row) => (
+                <li key={row.label} className="flex justify-between gap-3">
+                  <span className="truncate text-zinc-300">{row.label}</span>
+                  <span className="text-zinc-500">{row.pageviews}</span>
                 </li>
-              ) : (
-                ga4.locations.map((row) => (
-                  <li key={row.label} className="flex justify-between gap-3">
-                    <span className="truncate text-zinc-300">{row.label}</span>
-                    <span className="text-zinc-500">{row.pageviews}</span>
-                  </li>
-                ))
-              )}
-            </ul>
-          </div>
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
-            <h3 className="text-sm font-semibold text-white">
-              Channels (GA4)
-            </h3>
-            <ul className="mt-3 space-y-2 text-sm">
-              {!gaStatus.ready || ga4.sources.length === 0 ? (
-                <li className="text-zinc-500">No channel data yet.</li>
-              ) : (
-                ga4.sources.map((row) => (
-                  <li key={row.label} className="flex justify-between gap-3">
-                    <span className="truncate text-zinc-300">{row.label}</span>
-                    <span className="text-zinc-500">{row.sessions}</span>
-                  </li>
-                ))
-              )}
-            </ul>
-          </div>
+              ))
+            )}
+          </ul>
         </div>
       </section>
 

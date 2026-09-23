@@ -4,7 +4,18 @@ import type {
   AgentToolContext,
 } from "@/lib/agent/types";
 import { AgentError } from "@/lib/agent/errors";
+import {
+  checkAgentBudget,
+  estimateToolCost,
+  recordAgentUsage,
+} from "@/lib/agent/budget";
 import type { ChatCompletionTool } from "openai/resources/chat/completions";
+
+const HEAVY_TOOLS = new Set([
+  "runWebsiteAudit",
+  "generateCampaignWorkflow",
+  "dispatchAutomatedEmail",
+]);
 
 const registry = new Map<string, AgentToolDefinition>();
 
@@ -66,12 +77,54 @@ export async function executeAgentTool(
   }
 
   try {
+    if (HEAVY_TOOLS.has(name)) {
+      const confirmSend = args.confirmSend === true;
+      if (!(name === "dispatchAutomatedEmail" && !confirmSend)) {
+        const emails =
+          name === "dispatchAutomatedEmail" && confirmSend
+            ? Math.min(
+                15,
+                Array.isArray(args.contactIds) ? args.contactIds.length || 1 : 1,
+              )
+            : undefined;
+        await checkAgentBudget(
+          ctx.clientId,
+          estimateToolCost(name, { emails }),
+          {
+            supabase: ctx.supabase,
+            userId: ctx.userId,
+            toolName: name,
+            invocation: "manual",
+            throwOnDeny: true,
+          },
+        );
+      }
+    }
+
     const result = await tool.execute(args, ctx);
+
+    if (HEAVY_TOOLS.has(name)) {
+      const confirmSend = args.confirmSend === true;
+      if (!(name === "dispatchAutomatedEmail" && !confirmSend)) {
+        const emails =
+          name === "dispatchAutomatedEmail" && confirmSend
+            ? Math.min(
+                15,
+                Array.isArray(args.contactIds) ? args.contactIds.length || 1 : 1,
+              )
+            : undefined;
+        await recordAgentUsage(
+          ctx.clientId,
+          { ...estimateToolCost(name, { emails }), toolName: name },
+          { supabase: ctx.supabase, userId: ctx.userId, invocation: "manual" },
+        );
+      }
+    }
+
     return { name, arguments: args, result };
   } catch (err) {
+    if (err instanceof AgentError) throw err;
     const message = err instanceof Error ? err.message : "Tool execution failed";
-    // Return a structured failure to the model instead of aborting the whole run
-    // when the tool itself fails (e.g. empty DB). Unknown tools still throw above.
     return {
       name,
       arguments: args,

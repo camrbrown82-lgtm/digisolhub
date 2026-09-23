@@ -8,7 +8,9 @@ import {
   PRICING_ADDONS,
   PRICING_PACKAGES,
   PRICING_RETAINERS,
+  PRICING_TESTING,
   formatCad,
+  gstCents,
   summarizeSelection,
   type PricingItem,
 } from "@/lib/pricing";
@@ -92,6 +94,8 @@ export function PricingBuilder({
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [testBusy, setTestBusy] = useState(false);
+  const [testError, setTestError] = useState("");
 
   const selectedIds = useMemo(() => {
     const ids = [packageId, ...addonIds];
@@ -139,8 +143,74 @@ export function PricingBuilder({
     }
   }
 
+  async function onTestingCheckout() {
+    setTestBusy(true);
+    setTestError("");
+    trackEvent("pricing_checkout_click", {
+      package: "testing",
+      retainer: "none",
+      addons: "",
+    });
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          itemIds: [PRICING_TESTING.id],
+          email: email.trim() || undefined,
+          company: company.trim() || "DigiSol Stripe test",
+          industry: "internal_testing",
+          notes: "Temporary $2 live Stripe verification — remove after success",
+        }),
+      });
+      const result = (await response.json()) as { url?: string; error?: string };
+      if (!response.ok || !result.url) {
+        throw new Error(result.error || "Checkout unavailable");
+      }
+      window.location.href = result.url;
+    } catch (err) {
+      setTestError(err instanceof Error ? err.message : "Checkout failed");
+      setTestBusy(false);
+    }
+  }
+
   return (
     <div className="space-y-10">
+      <div className="rounded-2xl border border-amber-400/30 bg-amber-500/10 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-amber-200">
+              {PRICING_TESTING.badge} · remove after verify
+            </p>
+            <h3 className="mt-1 text-lg font-semibold text-white">
+              {PRICING_TESTING.name} · {formatCad(PRICING_TESTING.amount)}
+            </h3>
+            <p className="mt-1 max-w-xl text-sm text-amber-100/80">
+              {PRICING_TESTING.blurb} GST ({ALBERTA_GST_PERCENT}%) is added at
+              Stripe Checkout (~{formatCad(PRICING_TESTING.amount + gstCents(PRICING_TESTING.amount), 2)} total).
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void onTestingCheckout()}
+            disabled={testBusy || !stripeReady}
+            className="inline-flex items-center gap-2 rounded-full bg-amber-500 px-5 py-2.5 text-sm font-semibold text-zinc-950 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {testBusy ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : null}
+            {testBusy ? "Opening Stripe…" : "Pay $2 test"}
+          </button>
+        </div>
+        {testError ? <p className="mt-3 text-sm text-rose-300">{testError}</p> : null}
+        {!stripeReady ? (
+          <p className="mt-3 text-xs text-amber-200/90">
+            Add live <code className="text-amber-100">STRIPE_SECRET_KEY</code> on
+            Vercel Production, then redeploy, before running this test.
+          </p>
+        ) : null}
+      </div>
+
       <div>
         <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
           Scalable pricing

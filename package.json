@@ -11,10 +11,13 @@
     "pages:deploy": "echo Use Vercel for the hub. Cloudflare static export is no longer the app target."
   },
   "dependencies": {
+    "@ai-sdk/openai": "^4.0.72",
+    "@ai-sdk/react": "^4.0.114",
     "@google-analytics/data": "^7.1.0",
     "@supabase/ssr": "^0.12.6",
     "@supabase/supabase-js": "^2.116.0",
     "@xyflow/react": "^12.11.6",
+    "ai": "^7.0.111",
     "csv-parse": "^7.0.2",
     "csv-stringify": "^6.8.3",
     "grapesjs": "^0.23.6",
@@ -29,7 +32,8 @@
     "react-dom": "^18.3.1",
     "resend": "^6.26.0",
     "sharp": "^0.35.4",
-    "stripe": "^22.6.2"
+    "stripe": "^22.6.2",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/node": "^20.17.10",

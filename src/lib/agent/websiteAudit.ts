@@ -335,7 +335,10 @@ function withReport(audit: Omit<WebsiteAuditResult, "report">): WebsiteAuditResu
  * Lightweight on-demand website SEO/performance snapshot.
  * Fetches HTML once (no third-party PageSpeed dependency) and compiles actionable metrics.
  */
-export async function runWebsiteAudit(targetUrl: string): Promise<WebsiteAuditResult> {
+export async function runWebsiteAudit(
+  targetUrl: string,
+  opts?: { includeHtml?: boolean },
+): Promise<WebsiteAuditResult & { html?: string }> {
   let url: URL;
   try {
     url = new URL(targetUrl.trim());
@@ -375,7 +378,7 @@ export async function runWebsiteAudit(targetUrl: string): Promise<WebsiteAuditRe
   }
 
   if (!/^https?:$/i.test(url.protocol)) {
-    return runWebsiteAudit(`https://${targetUrl.replace(/^\/\//, "")}`);
+    return runWebsiteAudit(`https://${targetUrl.replace(/^\/\//, "")}`, opts);
   }
 
   const controller = new AbortController();
@@ -415,7 +418,7 @@ export async function runWebsiteAudit(targetUrl: string): Promise<WebsiteAuditRe
       });
     }
 
-    return withReport({
+    const result = withReport({
       ok: response.ok,
       url: url.toString(),
       finalUrl,
@@ -432,6 +435,8 @@ export async function runWebsiteAudit(targetUrl: string): Promise<WebsiteAuditRe
       score: scoreFromIssues(issues, ttfbMs),
       issues,
     });
+
+    return opts?.includeHtml ? { ...result, html } : result;
   } catch (err) {
     const timedOut = err instanceof Error && err.name === "AbortError";
     return withReport({

@@ -21,6 +21,11 @@ import {
   type MasterToolContext,
 } from "@/lib/agent/master/tools";
 import { resolveCompanyScope } from "@/lib/agent/master/companyScope";
+import {
+  checkAgentBudget,
+  estimateToolCost,
+  recordAgentUsage,
+} from "@/lib/agent/budget";
 
 export type MasterAgentRequest = {
   prompt?: string;
@@ -127,6 +132,18 @@ export async function runMasterAgent(
   const maxToolRounds = clampMasterToolRounds(body.maxToolRounds);
   const openai = createOpenAIClient();
 
+  await checkAgentBudget(
+    scope.companyId,
+    estimateToolCost("agent_orchestration", { tokens: maxTokens }),
+    {
+      supabase: ctx.supabase,
+      userId: ctx.userId,
+      toolName: "runMasterAgent",
+      invocation: "manual",
+      throwOnDeny: true,
+    },
+  );
+
   const toolCtx: MasterToolContext = {
     ...ctx,
     workspaceClientId: scope.companyId,
@@ -232,6 +249,19 @@ export async function runMasterAgent(
   if (!finalContent) {
     throw new AgentError("Master agent produced an empty response", 502, "empty_response");
   }
+
+  await recordAgentUsage(
+    scope.companyId,
+    {
+      tokens: promptTokens + completionTokens,
+      promptTokens,
+      completionTokens,
+      toolCalls: 1,
+      model: MASTER_DECISION_MODEL,
+      toolName: "runMasterAgent",
+    },
+    { supabase: ctx.supabase, userId: ctx.userId, invocation: "manual" },
+  );
 
   return {
     content: finalContent,

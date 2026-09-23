@@ -7,6 +7,11 @@ import { brandKitPrompt } from "@/lib/branding";
 import { BRAND_COPY_TEMPERATURE, createOpenAIClient } from "@/lib/openai";
 import { AgentError } from "@/lib/agent/errors";
 import {
+  checkAgentBudget,
+  estimateToolCost,
+  recordAgentUsage,
+} from "@/lib/agent/budget";
+import {
   resolveAgentTask,
   resolveComplexity,
   routeAgentModel,
@@ -90,6 +95,21 @@ export async function runAgent(
 
   const openai = createOpenAIClient();
   const tools = toOpenAITools(task);
+
+  await checkAgentBudget(
+    ctx.clientId,
+    estimateToolCost(
+      complexity === "complex" ? "agent_orchestration" : "agent_light",
+      { tokens: maxTokens },
+    ),
+    {
+      supabase: ctx.supabase,
+      userId: ctx.userId,
+      toolName: "runAgent",
+      invocation: "manual",
+      throwOnDeny: true,
+    },
+  );
 
   const messages: ChatCompletionMessageParam[] = [
     { role: "system", content: buildSystemPrompt(ctx, task) },
@@ -189,6 +209,19 @@ export async function runAgent(
   if (!finalContent) {
     throw new AgentError("Agent produced an empty response", 502, "empty_response");
   }
+
+  await recordAgentUsage(
+    ctx.clientId,
+    {
+      tokens: promptTokens + completionTokens,
+      promptTokens,
+      completionTokens,
+      toolCalls: 1,
+      model,
+      toolName: "runAgent",
+    },
+    { supabase: ctx.supabase, userId: ctx.userId, invocation: "manual" },
+  );
 
   return {
     task,

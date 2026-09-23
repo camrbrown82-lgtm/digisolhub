@@ -7,6 +7,8 @@ export function getStripeSecretKey() {
   return (
     process.env.STRIPE_SECRET_KEY?.trim() ||
     process.env.STRIPE_API_KEY?.trim() ||
+    // Stripe Marketplace / Vercel integration sometimes injects this alias
+    process.env.STRIPE_SECRET?.trim() ||
     ""
   );
 }
