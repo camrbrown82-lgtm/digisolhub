@@ -37,7 +37,7 @@ export function Audience({ copy }: { copy: HomeCopy }) {
       aria-labelledby="audience-heading"
     >
       <div className="mx-auto max-w-6xl">
-        <div className="text-center">
+        <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
           <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
             Target audience
           </p>
@@ -47,11 +47,9 @@ export function Audience({ copy }: { copy: HomeCopy }) {
           >
             Who We Help
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-zinc-400">
-            {copy.audienceIntro}
-          </p>
+          <p className="mt-4 text-zinc-400">{copy.audienceIntro}</p>
         </div>
-        <div className="mt-12 grid gap-6 lg:grid-cols-2">
+        <div className="mt-12 grid gap-6 md:grid-cols-2">
           {audiences.map((item) => {
             const Icon = item.icon;
             const styles = brandAccent[item.accent];
