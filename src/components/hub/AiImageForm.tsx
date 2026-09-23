@@ -176,28 +176,13 @@ export function AiImageForm({
           onChange={(event) => setPrompt(event.target.value)}
           required
           rows={12}
-          className="hub-field resize-y"
-          placeholder={`[SLIDE 1 / POST HEADER: THE HOOK]
-Visual Idea: Dark studio, indigo glow, bold white type.
-Headline: Why the "Silo" Model is Costing Your Business Money
-Sub-headline: Web Development + Digital Marketing = The Ultimate Growth Engine for Alberta Businesses.
-
-[SLIDE 2 / CORE MESSAGE]
-Visual Idea: Three stacked callout cards.
-Body Copy:
-The Problem: ...
-The DigiSol Way: ...
-The Result: ...
-
-[SLIDE 3 / CALL TO ACTION]
-Text:
-Read our full monthly dispatch.
-Visit us today: https://wwwdigisol.com`}
+          className="hub-field resize-y placeholder:text-zinc-600"
+          placeholder="Paste your slide brief here… Use [SLIDE 1], [SLIDE 2], … with Visual Idea, Headline, and Body Copy for each."
         />
       </label>
       <p className="text-xs text-zinc-500">
-        Paste the full brief. Each [SLIDE n] becomes its own carousel card with
-        that copy — LinkedIn, X, Facebook, Instagram, and a PDF when there are
+        Paste a fresh brief each time. Each [SLIDE n] becomes its own carousel
+        card — LinkedIn, X, Facebook, Instagram, and a PDF when there are
         multiple slides.
       </p>
       <button type="submit" disabled={busy} className="hub-btn">

@@ -1,5 +1,4 @@
 import { AiImageForm } from "@/components/hub/AiImageForm";
-import { BrandConsistencyNote } from "@/components/hub/BrandConsistencyNote";
 import { PosterActions } from "@/components/hub/PosterActions";
 import { PosterExport } from "@/components/hub/PosterExport";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
@@ -41,7 +40,6 @@ export default async function AiPage() {
           .
         </p>
       </div>
-      <BrandConsistencyNote companyName={companyName} brand={brand} />
       <AiImageForm
         companyName={companyName}
         tagline={brand.tagline}

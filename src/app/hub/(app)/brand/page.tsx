@@ -1,4 +1,3 @@
-import { BrandConsistencyNote } from "@/components/hub/BrandConsistencyNote";
 import { BrandForm } from "@/components/hub/BrandForm";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { getBrandLogoUrl } from "@/lib/brandLogo";
@@ -26,7 +25,6 @@ export default async function BrandPage() {
       </div>
       {active ? (
         <>
-          <BrandConsistencyNote companyName={companyName} brand={brand} />
           <BrandForm
           clientId={active.id}
           companyName={companyName}
