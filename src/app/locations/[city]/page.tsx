@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowRight, MapPin } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
+import { KaylevValueProp } from "@/components/sections/KaylevValueProp";
 import { TrackedLink } from "@/components/TrackedLink";
 import {
   LOCATION_PAGES,
@@ -92,110 +93,126 @@ export default function LocationCityPage({ params }: PageProps) {
   return (
     <>
       <Navbar />
-      <main id="main" className="px-4 py-16 sm:px-6 lg:px-8">
+      <main id="main">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <article className="mx-auto max-w-7xl">
-          <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-indigo-400">
-            <MapPin className="h-4 w-4" aria-hidden="true" />
-            {page.regionLabel}
-          </p>
-          <div className="mt-4 max-w-3xl">
-          <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-5xl">
-            <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-              {page.headline}
-            </span>
-          </h1>
-          <p className="mt-5 text-lg leading-relaxed text-zinc-300">{page.subhead}</p>
-          <p className="mt-4 text-base leading-relaxed text-zinc-400">{page.intro}</p>
-          </div>
-
-          <section className="mt-12" aria-labelledby="focus-heading">
-            <h2
-              id="focus-heading"
-              className="text-2xl font-semibold tracking-tight text-white"
-            >
-              What we do for {page.name} companies
-            </h2>
-            <ul className="mt-6 space-y-3">
-              {page.focus.map((item) => (
-                <li
-                  key={item}
-                  className="flex gap-3 text-base leading-relaxed text-zinc-300"
-                >
-                  <span
-                    className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400"
-                    aria-hidden="true"
-                  />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-6 text-sm text-zinc-500">
-              Also serving {page.nearby}. DigiSol headquarters: {DIGISOL_ADDRESS_LINE}.
+        <div className="px-4 py-16 sm:px-6 lg:px-8">
+          <article className="mx-auto max-w-7xl">
+            <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-indigo-400">
+              <MapPin className="h-4 w-4" aria-hidden="true" />
+              {page.regionLabel}
             </p>
-          </section>
+            <div className="mt-4 max-w-3xl">
+              <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-5xl">
+                <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                  {page.headline}
+                </span>
+              </h1>
+              <p className="mt-5 text-lg leading-relaxed text-zinc-300">
+                {page.subhead}
+              </p>
+              <p className="mt-4 text-base leading-relaxed text-zinc-400">
+                {page.intro}
+              </p>
+            </div>
 
-          <div className="mt-12 rounded-2xl border border-indigo-400/25 bg-indigo-500/10 p-6 text-center">
-            <h2 className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-xl font-semibold text-transparent">
-              Ready to grow in {page.name}?
-            </h2>
-            <p className="mt-2 text-sm text-zinc-400">
-              Book a free consultation for website design, Next.js engineering,
-              local SEO, and full-funnel CRO — we&apos;ll scale the plan to your
-              industry.
-            </p>
-            <TrackedLink
-              href="/#contact"
-              eventName="cta_click"
-              eventParams={{
-                cta_name: "book_consultation",
-                location: `locations_${page.slug}`,
-              }}
-              className="mt-5 inline-flex items-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-indigo-500"
-            >
-              Book a Free Consultation
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </TrackedLink>
-            <p className="mt-4 text-sm text-zinc-500">
-              Or{" "}
+            <section className="mt-12" aria-labelledby="focus-heading">
+              <h2
+                id="focus-heading"
+                className="text-2xl font-semibold tracking-tight text-white"
+              >
+                What we do for {page.name} companies
+              </h2>
+              <ul className="mt-6 space-y-3">
+                {page.focus.map((item) => (
+                  <li
+                    key={item}
+                    className="flex gap-3 text-base leading-relaxed text-zinc-300"
+                  >
+                    <span
+                      className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400"
+                      aria-hidden="true"
+                    />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-6 text-sm text-zinc-500">
+                Also serving {page.nearby}. DigiSol headquarters:{" "}
+                {DIGISOL_ADDRESS_LINE}.
+              </p>
+            </section>
+          </article>
+        </div>
+
+        <KaylevValueProp
+          locationName={page.name}
+          analyticsLocation={`locations_kaylev_${page.slug}`}
+        />
+
+        <div className="px-4 pb-16 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl">
+            <div className="rounded-2xl border border-indigo-400/25 bg-indigo-500/10 p-6 text-center">
+              <h2 className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-xl font-semibold text-transparent">
+                Ready to grow in {page.name}?
+              </h2>
+              <p className="mt-2 text-sm text-zinc-400">
+                Book a free consultation for website design, Next.js engineering,
+                local SEO, and full-funnel CRO — we&apos;ll scale the plan to your
+                industry.
+              </p>
               <TrackedLink
-                href="/pricing"
+                href="/#contact"
                 eventName="cta_click"
                 eventParams={{
-                  cta_name: "view_pricing",
+                  cta_name: "book_consultation",
                   location: `locations_${page.slug}`,
                 }}
-                className="font-medium text-indigo-300 underline-offset-2 hover:underline"
+                className="mt-5 inline-flex items-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-indigo-500"
               >
-                browse DigiSol pricing
+                Book a Free Consultation
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </TrackedLink>
-              .
-            </p>
-          </div>
+              <p className="mt-4 text-sm text-zinc-500">
+                Or{" "}
+                <TrackedLink
+                  href="/pricing"
+                  eventName="cta_click"
+                  eventParams={{
+                    cta_name: "view_pricing",
+                    location: `locations_${page.slug}`,
+                  }}
+                  className="font-medium text-indigo-300 underline-offset-2 hover:underline"
+                >
+                  browse DigiSol pricing
+                </TrackedLink>
+                .
+              </p>
+            </div>
 
-          <nav className="mt-12" aria-label="Other DigiSol service cities">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
-              More Alberta cities
-            </h2>
-            <ul className="mt-4 flex flex-wrap gap-3">
-              {otherCities.map((city) => (
-                <li key={city.slug}>
-                  <TrackedLink
-                    href={locationPath(city.slug)}
-                    eventName="location_nav"
-                    eventParams={{ city: city.slug, from: page.slug }}
-                    className="inline-flex rounded-full border border-white/15 px-4 py-2 text-sm text-zinc-200 transition hover:bg-white/5"
-                  >
-                    {city.name}
-                  </TrackedLink>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        </article>
+            <nav className="mt-12" aria-label="Other DigiSol service cities">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
+                More Alberta cities
+              </h2>
+              <ul className="mt-4 flex flex-wrap gap-3">
+                {otherCities.map((city) => (
+                  <li key={city.slug}>
+                    <TrackedLink
+                      href={locationPath(city.slug)}
+                      eventName="location_nav"
+                      eventParams={{ city: city.slug, from: page.slug }}
+                      className="inline-flex rounded-full border border-white/15 px-4 py-2 text-sm text-zinc-200 transition hover:bg-white/5"
+                    >
+                      {city.name}
+                    </TrackedLink>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </div>
+        </div>
       </main>
       <Footer />
     </>
