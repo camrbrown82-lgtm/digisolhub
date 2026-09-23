@@ -133,42 +133,44 @@ export function homeCopyForAudience(audience: VisitorAudience) {
     } as const;
   }
 
-  // canada + alberta share Alberta-first primary layout
+  // canada + alberta share Alberta-rooted primary layout (open to clients anywhere)
   return {
-    heroEyebrow: "Alberta-first website design, engineering & local growth",
+    heroEyebrow: "Website design, engineering & growth — rooted in Alberta",
     heroTitleLead: "Website Design,",
     heroTitleAccent: "Development & Marketing",
-    heroTitleTail: "in Alberta",
+    heroTitleTail: "",
     heroTagline: "Where Design, Engineering, and Growth Meet",
     heroSub:
-      "Custom websites we design and build — then local marketing that fills them",
+      "Custom websites we design and build — then marketing that fills them",
     heroBody:
-      "We start with local businesses. Based in Airdrie, we design the site, engineer the platform, and run local SEO, Google Ads, and Meta campaigns for Calgary, Edmonton, and companies across Alberta — so nearby customers can find you and convert.",
-    heroMarkets: "Airdrie · Calgary · Edmonton · Red Deer · Cochrane · Across Alberta",
-    whyTitle: "The DigiSol Advantage for Alberta",
+      "Based in Airdrie, DigiSol designs the site, engineers the platform, and runs SEO, Google Ads, and Meta campaigns for growing companies — from Calgary and Edmonton to clients across Canada and beyond. Alberta is home base; your market is wherever you sell.",
+    heroMarkets:
+      "Airdrie · Calgary · Edmonton · Across Alberta · Remote-friendly nationwide",
+    whyTitle: "The DigiSol Advantage",
     whyBody:
-      "We design the website, engineer it to convert, and market it locally — one partner, not a designer, a developer, and an agency.",
-    designBook: "Pages built around how Alberta customers actually book",
-    devSpeed: "Lightning-fast load times that protect Alberta SEO and conversions",
-    mktPaid: "Targeted Meta & Search campaigns for Alberta local companies",
-    mktSeo: "Local SEO that wins the Airdrie, Calgary, Edmonton, and Alberta map pack",
+      "We design the website, engineer it to convert, and market it — one partner, not a designer, a developer, and an agency. Deep Alberta roots, built to serve clients wherever they grow.",
+    designBook: "Pages built around how your customers actually inquire and buy",
+    devSpeed: "Lightning-fast load times that protect SEO and conversions",
+    mktPaid: "Targeted Meta & Search campaigns matched to the markets you sell in",
+    mktSeo:
+      "SEO and local discovery — strong in Alberta map packs, tuned to wherever you operate",
     audienceIntro:
-      "Local Alberta companies first. Startups and established businesses in Airdrie, Calgary, Edmonton, and across the province get the same playbook: a designed website, code that converts, and marketing that ships.",
+      "Startups and established companies get the same playbook: a designed website, code that converts, and marketing that ships — whether you are down the road in Alberta or scaling from farther afield.",
     audienceStartupBody:
-      "A designed site and a lean custom build so you launch looking real — then local Alberta positioning so nearby customers can find you.",
-    audienceStartupPoint: "Launch strategy and Alberta market positioning",
+      "A designed site and a lean custom build so you launch looking real — then clear positioning so the right customers can find you in your market.",
+    audienceStartupPoint: "Launch strategy and market positioning",
     audienceEstablishedBody:
-      "Redesign the site customers actually use, then modernize the platform under it — with local marketing and conversion work wired in for established Alberta companies.",
+      "Redesign the site customers actually use, then modernize the platform under it — with marketing and conversion work wired in for established companies ready to grow.",
     servicesPaid:
-      "Google Ads, Meta Ads, and local SEO for Airdrie, Calgary, Edmonton, and nearby Alberta markets — so local searches turn into customers.",
+      "Google Ads, Meta Ads, and SEO — including local Alberta search in Airdrie, Calgary, and Edmonton — so the markets you care about turn into customers.",
     servicesCommerce:
-      "Online stores and custom auction/web platforms for Alberta retailers and service businesses that need to sell, list, and grow.",
+      "Online stores and custom auction/web platforms for retailers and service businesses that need to sell, list, and grow.",
     auditBody:
-      "A short presentation on what Alberta businesses should fix first — design, speed, local SEO, and the path from visit to booked work. Export ready captions for Facebook, LinkedIn, and Instagram below.",
-    contactTitle: "Ready to Scale Your Alberta Business?",
+      "A short presentation on what businesses should fix first — design, speed, SEO, and the path from visit to booked work. Export ready captions for Facebook, LinkedIn, and Instagram below.",
+    contactTitle: "Ready to Grow Your Business Online?",
     contactBody:
-      "Get a project quote or free strategy consult for website design, custom development, local SEO, and campaigns in Airdrie, Calgary, Edmonton, and across Alberta.",
-    chatGreetingAudience: "Alberta businesses",
+      "Get a project quote or free strategy consult for website design, custom development, SEO, and campaigns. Alberta-rooted, happy to work with companies wherever you sell.",
+    chatGreetingAudience: "growing businesses",
   } as const;
 }
 

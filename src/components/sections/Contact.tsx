@@ -11,8 +11,8 @@ const fieldClass =
   "mt-1.5 w-full rounded-lg border border-indigo-400/25 bg-zinc-950/80 px-3 py-2.5 text-sm text-white placeholder:text-zinc-500 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30";
 
 export function Contact({
-  title = "Ready to Scale Your Alberta Business?",
-  body = "Get a project quote or free strategy consult for website design, custom development, local SEO, and campaigns in Airdrie, Calgary, Edmonton, and across Alberta.",
+  title = "Ready to Grow Your Business Online?",
+  body = "Get a project quote or free strategy consult for website design, custom development, SEO, and campaigns. Alberta-rooted, happy to work with companies wherever you sell.",
 }: {
   title?: string;
   body?: string;
