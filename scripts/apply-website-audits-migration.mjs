@@ -2,9 +2,12 @@ import fs from "fs";
 import pg from "pg";
 
 function loadEnvLocal() {
+  if (!fs.existsSync(".env.local")) return;
   const text = fs.readFileSync(".env.local", "utf8");
   for (const line of text.split(/\r?\n/)) {
-    const match = line.match(/^(POSTGRES_URL(?:_NON_POOLING)?|DATABASE_URL)\s*=\s*(.*)$/);
+    const match = line.match(
+      /^(POSTGRES_URL(?:_NON_POOLING)?|DATABASE_URL)\s*=\s*(.*)$/,
+    );
     if (!match) continue;
     let value = match[2].trim();
     if (
@@ -27,8 +30,9 @@ const connectionString = (
 ).trim();
 
 if (!connectionString) {
-  console.error("NO_DB_URL");
-  process.exit(1);
+  // On Vercel build secrets are injected; locally they may be absent.
+  console.log(process.env.VERCEL ? "SKIP_NO_DB_URL_ON_VERCEL" : "NO_DB_URL");
+  process.exit(process.env.VERCEL ? 0 : 1);
 }
 
 const sql = fs.readFileSync(
