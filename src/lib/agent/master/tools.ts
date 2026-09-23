@@ -93,9 +93,11 @@ export async function getCompanyProfileTool(
       fonts: scope.brand.fonts,
       visualStyle: scope.brand.visualStyle,
       visualSizes: {
-        note: "Official logo is stamped on a brand-colored bar; do not ask the model to draw logos.",
+        note: "Official logos are stamped on a brand-colored bar; do not ask the model to draw logos.",
         logoUrl: scope.brand.logoUrl || null,
         logoDescription: scope.brand.logoDescription || null,
+        secondaryLogoUrl: scope.brand.secondaryLogoUrl || null,
+        secondaryLogoDescription: scope.brand.secondaryLogoDescription || null,
       },
       colors: {
         background: scope.brand.backgroundColor,

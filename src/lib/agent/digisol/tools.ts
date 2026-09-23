@@ -130,9 +130,13 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
             visualStyle: ctx.brand.visualStyle,
             brandNotes: ctx.brand.extra,
             visualSizes: {
-              note: "Official DigiSol logo is stamped on a brand-colored bar; do not ask the model to draw logos.",
-              logoUrl: ctx.brand.logoUrl || null,
+              note: "Official DigiSol logos: primary wordmark (/logo.jpg) and secondary circular badge (/logo-badge.png). Stamp official marks; do not ask the model to draw logos.",
+              logoUrl: ctx.brand.logoUrl || "/logo.jpg",
               logoDescription: ctx.brand.logoDescription || null,
+              secondaryLogoUrl:
+                ctx.brand.secondaryLogoUrl || "/logo-badge.png",
+              secondaryLogoDescription:
+                ctx.brand.secondaryLogoDescription || null,
             },
             colors: {
               background: ctx.brand.backgroundColor,

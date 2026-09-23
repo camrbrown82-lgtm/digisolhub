@@ -79,6 +79,8 @@ export function BrandForm({
           visualStyle: data.get("visualStyle"),
           logoUrl: brand.logoUrl,
           logoDescription: brand.logoDescription,
+          secondaryLogoUrl: brand.secondaryLogoUrl,
+          secondaryLogoDescription: brand.secondaryLogoDescription,
         },
       }),
     });
@@ -101,6 +103,7 @@ export function BrandForm({
         companyName={companyName}
         logoUrl={brand.logoUrl}
         logoDescription={brand.logoDescription}
+        secondaryLogoUrl={brand.secondaryLogoUrl}
         primaryColor={brand.primaryColor}
       />
     <form onSubmit={onSubmit} className="space-y-6">
@@ -113,18 +116,32 @@ export function BrandForm({
           <img
             src={brand.logoUrl}
             alt={`${companyName} logo`}
-            className="h-14 w-14 rounded-full object-contain"
+            className="h-14 w-auto max-w-[8rem] object-contain"
           />
         ) : (
           <div className="flex h-14 w-14 items-center justify-center rounded-full text-sm font-semibold" style={{ background: brand.primaryColor, color: "#fff" }}>
             {companyName.slice(0, 2).toUpperCase()}
           </div>
         )}
+        {brand.secondaryLogoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={brand.secondaryLogoUrl}
+            alt=""
+            className="h-14 w-14 rounded-full object-cover ring-1 ring-white/20"
+            aria-hidden="true"
+          />
+        ) : null}
         <div>
           <p className="font-medium text-white">{companyName}</p>
           <p className="text-sm" style={{ color: brand.accentColor }}>
             {brand.tagline || "Add a tagline"}
           </p>
+          {brand.secondaryLogoUrl ? (
+            <p className="mt-1 text-xs text-zinc-400">
+              Primary wordmark + secondary badge on file
+            </p>
+          ) : null}
         </div>
         <div className="ml-auto flex gap-2">
           {[brand.primaryColor, brand.backgroundColor, brand.textColor, brand.highlightColor].map(

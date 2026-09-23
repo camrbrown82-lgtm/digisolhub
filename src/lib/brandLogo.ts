@@ -247,6 +247,7 @@ export async function clearClientLogo(supabase: SupabaseClient, clientId: string
         ...brand,
         logoUrl: "",
         logoDescription: "",
+        // Keep secondary badge unless cleared separately.
       },
     })
     .eq("id", clientId);

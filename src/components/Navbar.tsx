@@ -14,7 +14,10 @@ const links = [
   { href: "/about", label: "About" },
 ];
 
-/** Fixed single-row header: logo left, nav + CTAs right. Contact lives in the footer. */
+/**
+ * Tall sticky header: logos + page links start on the left (aligned with
+ * location/hero content), Contact / Admin stay on the right.
+ */
 export function Navbar() {
   const [open, setOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
@@ -50,24 +53,27 @@ export function Navbar() {
         Skip to content
       </a>
 
-      <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between gap-6 px-4 sm:h-24 sm:px-6 lg:h-[6.5rem] lg:px-8">
-        <div className="flex shrink-0 items-center justify-start">
+      <div className="mx-auto flex h-20 w-full max-w-7xl items-center gap-4 px-4 sm:h-24 sm:gap-6 sm:px-6 lg:h-[6.5rem] lg:px-8">
+        <div className="flex min-w-0 flex-1 items-center gap-4 sm:gap-6 lg:gap-8">
           <Logo />
+
+          <nav
+            className="hidden min-w-0 items-center gap-4 lg:flex xl:gap-5"
+            aria-label="Primary"
+          >
+            {links.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="whitespace-nowrap text-sm font-medium text-indigo-200 transition-colors hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+              >
+                {link.label}
+              </a>
+            ))}
+          </nav>
         </div>
 
-        <nav
-          className="ml-auto hidden items-center gap-5 lg:flex xl:gap-6"
-          aria-label="Primary"
-        >
-          {links.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="whitespace-nowrap text-sm font-medium text-indigo-200 transition-colors hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
-            >
-              {link.label}
-            </a>
-          ))}
+        <div className="hidden shrink-0 items-center gap-3 lg:flex">
           <TrackedLink
             href="/#contact"
             eventName="cta_click"
@@ -82,7 +88,7 @@ export function Navbar() {
           >
             Admin
           </a>
-        </nav>
+        </div>
 
         <button
           type="button"

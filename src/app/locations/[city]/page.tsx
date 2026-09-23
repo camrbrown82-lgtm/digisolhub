@@ -97,18 +97,20 @@ export default function LocationCityPage({ params }: PageProps) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <article className="mx-auto max-w-3xl">
+        <article className="mx-auto max-w-7xl">
           <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-indigo-400">
             <MapPin className="h-4 w-4" aria-hidden="true" />
             {page.regionLabel}
           </p>
-          <h1 className="mt-4 text-balance text-3xl font-semibold tracking-tight sm:text-5xl">
+          <div className="mt-4 max-w-3xl">
+          <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-5xl">
             <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
               {page.headline}
             </span>
           </h1>
           <p className="mt-5 text-lg leading-relaxed text-zinc-300">{page.subhead}</p>
           <p className="mt-4 text-base leading-relaxed text-zinc-400">{page.intro}</p>
+          </div>
 
           <section className="mt-12" aria-labelledby="focus-heading">
             <h2

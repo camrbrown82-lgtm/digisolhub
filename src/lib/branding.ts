@@ -13,8 +13,12 @@ export type CompanyBrand = {
   dontSay: string;
   extra: string;
   visualStyle: string;
+  /** Primary / wordmark logo URL */
   logoUrl: string;
   logoDescription: string;
+  /** Secondary circular badge / emblem URL */
+  secondaryLogoUrl: string;
+  secondaryLogoDescription: string;
 };
 
 export const DIGISOL_HOUSE_NAME = "DigiSol";
@@ -41,9 +45,12 @@ export const DIGISOL_BRAND: CompanyBrand = {
     "House brand for DigiSol (wwwdigisol.com). Dual threat: custom Next.js / React engineering plus growth marketing. Fast pages, strong SEO, forms that become leads. Based in Alberta, Canada.",
   visualStyle:
     "Dark zinc studio, indigo and ice-blue glow, cinematic light, generous negative space. Premium digital campaign — not comic, pastel, or stock.",
-  logoUrl: "",
+  logoUrl: "/logo.jpg",
   logoDescription:
-    "DigiSol wordmark: clean sans-serif lettering, indigo to ice-blue accent on a dark zinc field. No extra icon unless already present in the official mark.",
+    "DigiSol horizontal wordmark: clean sans-serif DIGISOL lettering with a stylized indigo/blue D mark on a dark field.",
+  secondaryLogoUrl: "/logo-badge.png",
+  secondaryLogoDescription:
+    "DigiSol circular badge emblem: metallic dark ring, neon blue glow, gradient D with pixel cross and upward growth arrow, DIGISOL word across center, ENGINEERING & GROWTH along the bottom arc.",
 };
 
 export const NEUTRAL_BRAND: CompanyBrand = {
@@ -63,6 +70,8 @@ export const NEUTRAL_BRAND: CompanyBrand = {
   visualStyle: "",
   logoUrl: "",
   logoDescription: "",
+  secondaryLogoUrl: "",
+  secondaryLogoDescription: "",
 };
 
 export function isBrandEmpty(value: unknown) {
@@ -142,6 +151,14 @@ export function parseBrand(value: unknown, fallback: CompanyBrand = NEUTRAL_BRAN
     visualStyle: text(row.visualStyle, fallback.visualStyle),
     logoUrl: text(row.logoUrl, fallback.logoUrl).trim(),
     logoDescription: text(row.logoDescription, fallback.logoDescription).trim(),
+    secondaryLogoUrl: text(
+      row.secondaryLogoUrl,
+      fallback.secondaryLogoUrl,
+    ).trim(),
+    secondaryLogoDescription: text(
+      row.secondaryLogoDescription,
+      fallback.secondaryLogoDescription,
+    ).trim(),
   };
 }
 
@@ -152,6 +169,9 @@ export function mergeBrand(existing: unknown, incoming: unknown, fallback?: Comp
     ...next,
     logoUrl: next.logoUrl || current.logoUrl,
     logoDescription: next.logoDescription || current.logoDescription,
+    secondaryLogoUrl: next.secondaryLogoUrl || current.secondaryLogoUrl,
+    secondaryLogoDescription:
+      next.secondaryLogoDescription || current.secondaryLogoDescription,
     textColor: next.textColor || current.textColor,
     highlightColor: next.highlightColor || current.highlightColor,
     backgroundColor: next.backgroundColor || current.backgroundColor,
@@ -161,13 +181,26 @@ export function mergeBrand(existing: unknown, incoming: unknown, fallback?: Comp
 export type BrandPromptKind = "copy" | "visual" | "logo";
 
 export function brandLogoPromptLine(brand: CompanyBrand) {
+  const lines: string[] = [];
   if (brand.logoDescription.trim()) {
-    return `Official logo — reproduce this exact mark, do not invent a new one: ${brand.logoDescription.trim()}`;
+    lines.push(
+      `Primary logo (wordmark) — reproduce this exact mark, do not invent a new one: ${brand.logoDescription.trim()}`,
+    );
+  } else if (brand.logoUrl.trim()) {
+    lines.push(
+      "A primary company logo is on file. Use that exact mark. Do not invent a substitute icon or wordmark.",
+    );
   }
-  if (brand.logoUrl.trim()) {
-    return "An official company logo is on file. Use that exact mark. Do not invent a substitute icon or wordmark.";
+  if (brand.secondaryLogoDescription.trim()) {
+    lines.push(
+      `Secondary logo (circular badge) — optional emblem: ${brand.secondaryLogoDescription.trim()}`,
+    );
+  } else if (brand.secondaryLogoUrl.trim()) {
+    lines.push(
+      "A secondary circular badge logo is on file. Prefer the primary wordmark unless a badge/emblem is requested.",
+    );
   }
-  return "";
+  return lines.join(" ");
 }
 
 export function starterBrandForCompany(companyName?: string | null): CompanyBrand {

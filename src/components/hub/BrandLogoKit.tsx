@@ -16,12 +16,14 @@ export function BrandLogoKit({
   companyName,
   logoUrl,
   logoDescription,
+  secondaryLogoUrl,
   primaryColor,
 }: {
   clientId: string;
   companyName: string;
   logoUrl: string;
   logoDescription: string;
+  secondaryLogoUrl?: string;
   primaryColor: string;
 }) {
   const router = useRouter();
@@ -121,8 +123,8 @@ export function BrandLogoKit({
         </p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[180px_1fr]">
-        <div className="flex items-center justify-center rounded-xl border border-zinc-800 bg-black p-4">
+      <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-zinc-800 bg-black p-4">
           {preview ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -138,6 +140,19 @@ export function BrandLogoKit({
               {companyName.slice(0, 2).toUpperCase()}
             </div>
           )}
+          {secondaryLogoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={secondaryLogoUrl}
+              alt={`${companyName} secondary badge`}
+              className="h-16 w-16 rounded-full object-cover ring-1 ring-indigo-400/40"
+            />
+          ) : null}
+          {secondaryLogoUrl ? (
+            <p className="text-center text-[11px] text-zinc-500">
+              Secondary badge on file
+            </p>
+          ) : null}
         </div>
 
         <div
