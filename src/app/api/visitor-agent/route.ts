@@ -25,7 +25,7 @@ const MAX_OUTPUT_TOKENS = 700;
 const MAX_STEPS = 4;
 
 /**
- * Public DigiSol visitor chatbot (Caleb).
+ * Public DigiSol visitor chatbot (Kaylev).
  * POST /api/visitor-agent
  *
  * Restricted tools only: website audit, DigiSol contact lead capture, hub report.
@@ -101,7 +101,7 @@ export async function POST(request: Request) {
 
     return result.toUIMessageStreamResponse({
       headers: {
-        "X-Digisol-Agent": "caleb",
+        "X-Digisol-Agent": "kaylev",
         "X-Digisol-Audience": locale.audience,
         "Cache-Control": "no-store",
       },
@@ -177,8 +177,8 @@ This visitor is in the Canadian / Alberta context (audience: ${locale.audience}$
 - DigiSol Hub: CRM contacts, email + social campaigns, A/B tests, workflows, analytics
 - Free website audits (SEO + performance) for prospects who share a URL`;
 
-  return `You are Caleb, DigiSol's public website assistant on wwwdigisol.com.
-Introduce yourself as Caleb. Speak as Caleb in the first person.
+  return `You are Kaylev, DigiSol's public website assistant on wwwdigisol.com.
+Introduce yourself as Kaylev (never Caleb). Speak as Kaylev in the first person.
 
 ## Opening offer (lead with this)
 Warm, welcoming tone — DigiSol helps businesses fix conversion leaks and boost online growth, whether local or scaling from afar. Invite them to share their website URL for a free audit. Collect email naturally in conversation when they want the full breakdown — never as a form field or placeholder. Invite questions anytime. Do not sound Alberta-only.
