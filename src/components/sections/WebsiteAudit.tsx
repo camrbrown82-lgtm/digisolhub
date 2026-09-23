@@ -2,8 +2,9 @@ import { TrackedLink } from "@/components/TrackedLink";
 import { WebsiteAuditExport } from "@/components/WebsiteAuditExport";
 import { WebsiteAuditVideo } from "@/components/WebsiteAuditVideo";
 import { WEBSITE_AUDIT_PAGE_PATH } from "@/lib/media";
+import type { HomeCopy } from "@/lib/visitorRegion";
 
-export function WebsiteAudit() {
+export function WebsiteAudit({ copy }: { copy: HomeCopy }) {
   return (
     <section
       id="media"
@@ -21,11 +22,7 @@ export function WebsiteAudit() {
           >
             See How DigiSol Audits Your Website
           </h2>
-          <p className="mt-4 text-zinc-400">
-            A short presentation on what Alberta businesses should fix first —
-            design, speed, local SEO, and the path from visit to booked work.
-            Export ready captions for Facebook, LinkedIn, and Instagram below.
-          </p>
+          <p className="mt-4 text-zinc-400">{copy.auditBody}</p>
         </div>
 
         <div className="mx-auto mt-12 max-w-4xl space-y-6">

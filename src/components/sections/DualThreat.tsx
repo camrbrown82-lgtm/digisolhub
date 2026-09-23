@@ -15,6 +15,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { BrandCard, brandAccent, type BrandAccent } from "@/components/BrandCard";
+import type { HomeCopy } from "@/lib/visitorRegion";
 
 type Advantage = {
   icon: LucideIcon;
@@ -23,79 +24,82 @@ type Advantage = {
   accent: BrandAccent;
 };
 
-const columns: Advantage[] = [
-  {
-    icon: Palette,
-    title: "The Design Craft",
-    accent: "sky",
-    items: [
-      {
-        icon: Palette,
-        text: "Custom website design from your brand — not a template with a logo dropped on",
-      },
-      {
-        icon: Type,
-        text: "Layout, type, and color so the next step is obvious",
-      },
-      {
-        icon: MousePointerClick,
-        text: "Pages built around how Alberta customers actually book",
-      },
-      {
-        icon: Layers,
-        text: "A visual system ads and email can reuse, not a one-off mockup",
-      },
-    ],
-  },
-  {
-    icon: Code2,
-    title: "The Developer Advantage",
-    accent: "blue",
-    items: [
-      {
-        icon: Code2,
-        text: "Modern Next.js / React engineering built for scale",
-      },
-      {
-        icon: Zap,
-        text: "Lightning-fast load times that protect Alberta SEO and conversions",
-      },
-      {
-        icon: LayoutTemplate,
-        text: "Zero template bloat — custom platforms, not page builders",
-      },
-      {
-        icon: Plug,
-        text: "Custom API integrations that connect your real stack",
-      },
-    ],
-  },
-  {
-    icon: Megaphone,
-    title: "The Marketing Engine",
-    accent: "indigo",
-    items: [
-      {
-        icon: Filter,
-        text: "High-converting funnels from first click to close",
-      },
-      {
-        icon: Target,
-        text: "Targeted Meta & Search campaigns for Alberta local companies",
-      },
-      {
-        icon: MapPin,
-        text: "Local SEO that wins the Airdrie, Calgary, Edmonton, and Alberta map pack",
-      },
-      {
-        icon: LineChart,
-        text: "Data-driven CRO so every experiment ships with evidence",
-      },
-    ],
-  },
-];
+function columnsFor(copy: HomeCopy): Advantage[] {
+  return [
+    {
+      icon: Palette,
+      title: "The Design Craft",
+      accent: "sky",
+      items: [
+        {
+          icon: Palette,
+          text: "Custom website design from your brand — not a template with a logo dropped on",
+        },
+        {
+          icon: Type,
+          text: "Layout, type, and color so the next step is obvious",
+        },
+        {
+          icon: MousePointerClick,
+          text: copy.designBook,
+        },
+        {
+          icon: Layers,
+          text: "A visual system ads and email can reuse, not a one-off mockup",
+        },
+      ],
+    },
+    {
+      icon: Code2,
+      title: "The Developer Advantage",
+      accent: "blue",
+      items: [
+        {
+          icon: Code2,
+          text: "Modern Next.js / React engineering built for scale",
+        },
+        {
+          icon: Zap,
+          text: copy.devSpeed,
+        },
+        {
+          icon: LayoutTemplate,
+          text: "Zero template bloat — custom platforms, not page builders",
+        },
+        {
+          icon: Plug,
+          text: "Custom API integrations that connect your real stack",
+        },
+      ],
+    },
+    {
+      icon: Megaphone,
+      title: "The Marketing Engine",
+      accent: "indigo",
+      items: [
+        {
+          icon: Filter,
+          text: "High-converting funnels from first click to close",
+        },
+        {
+          icon: Target,
+          text: copy.mktPaid,
+        },
+        {
+          icon: MapPin,
+          text: copy.mktSeo,
+        },
+        {
+          icon: LineChart,
+          text: "Data-driven CRO so every experiment ships with evidence",
+        },
+      ],
+    },
+  ];
+}
 
-export function DualThreat() {
+export function DualThreat({ copy }: { copy: HomeCopy }) {
+  const columns = columnsFor(copy);
   return (
     <section
       id="why-us"
@@ -111,12 +115,9 @@ export function DualThreat() {
             id="why-heading"
             className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl"
           >
-            The DigiSol Advantage for Alberta
+            {copy.whyTitle}
           </h2>
-          <p className="mt-4 text-zinc-400">
-            We design the website, engineer it to convert, and market it locally
-            — one partner, not a designer, a developer, and an agency.
-          </p>
+          <p className="mt-4 text-zinc-400">{copy.whyBody}</p>
         </div>
 
         <div className="mt-12 grid gap-6 lg:grid-cols-3">

@@ -4,17 +4,34 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { MessageCircle, Send, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  GEO_AUDIENCE_COOKIE,
+  GEO_COUNTRY_COOKIE,
+  homeCopyForAudience,
+  parseAudienceCookie,
+  type VisitorAudience,
+} from "@/lib/visitorRegion";
 
 const KAYLEV_NAME = "Kaylev";
 
-const GREETING =
-  `Hi — I'm ${KAYLEV_NAME}. DigiSol offers a free website audit for Alberta businesses. Paste your site URL and I'll check SEO, speed, and conversion basics — no cost, no commitment. Want me to run yours now?`;
+function readCookie(name: string) {
+  if (typeof document === "undefined") return "";
+  const match = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith(`${name}=`));
+  return match ? decodeURIComponent(match.split("=").slice(1).join("=")) : "";
+}
 
-function createGreetingMessage(): UIMessage {
+function greetingFor(audience: VisitorAudience) {
+  const copy = homeCopyForAudience(audience);
+  return `Hi — I'm ${KAYLEV_NAME}. DigiSol offers a free website audit for ${copy.chatGreetingAudience}. Paste your site URL and I'll check SEO, speed, and conversion basics — no cost, no commitment. Want me to run yours now?`;
+}
+
+function createGreetingMessage(audience: VisitorAudience): UIMessage {
   return {
     id: "kaylev-visitor-greeting",
     role: "assistant",
-    parts: [{ type: "text", text: GREETING }],
+    parts: [{ type: "text", text: greetingFor(audience) }],
   };
 }
 
@@ -32,7 +49,16 @@ function messageText(message: UIMessage) {
 export function VisitorChat() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
+  const [audience, setAudience] = useState<VisitorAudience>("alberta");
+  const [country, setCountry] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const nextAudience =
+      parseAudienceCookie(readCookie(GEO_AUDIENCE_COOKIE)) || "alberta";
+    setAudience(nextAudience);
+    setCountry(readCookie(GEO_COUNTRY_COOKIE).toUpperCase());
+  }, []);
 
   // Open by default on desktop; stay collapsed on small screens so copy isn't covered.
   useEffect(() => {
@@ -44,13 +70,21 @@ export function VisitorChat() {
   }, []);
 
   const transport = useMemo(
-    () => new DefaultChatTransport({ api: "/api/visitor-agent" }),
-    [],
+    () =>
+      new DefaultChatTransport({
+        api: "/api/visitor-agent",
+        body: {
+          audience,
+          country: country || undefined,
+        },
+      }),
+    [audience, country],
   );
 
   const { messages, sendMessage, status, error, clearError } = useChat({
+    id: `kaylev-${audience}-${country || "xx"}`,
     transport,
-    messages: [createGreetingMessage()],
+    messages: [createGreetingMessage(audience)],
   });
 
   const busy = status === "submitted" || status === "streaming";
@@ -84,6 +118,7 @@ export function VisitorChat() {
               </p>
               <p className="truncate text-[10px] text-zinc-400">
                 Free website audit
+                {country ? ` · ${country}` : ""}
               </p>
             </div>
             <button

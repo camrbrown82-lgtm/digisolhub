@@ -10,7 +10,13 @@ import { trackEvent } from "@/lib/analytics";
 const fieldClass =
   "mt-1.5 w-full rounded-lg border border-indigo-400/25 bg-zinc-950/80 px-3 py-2.5 text-sm text-white placeholder:text-zinc-500 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30";
 
-export function Contact() {
+export function Contact({
+  title = "Ready to Scale Your Alberta Business?",
+  body = "Get a project quote or free strategy consult for website design, custom development, local SEO, and campaigns in Airdrie, Calgary, Edmonton, and across Alberta.",
+}: {
+  title?: string;
+  body?: string;
+}) {
   const router = useRouter();
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
@@ -69,13 +75,9 @@ export function Contact() {
             id="contact-heading"
             className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl"
           >
-            Ready to Scale Your Alberta Business?
+            {title}
           </h2>
-          <p className="mt-4 text-zinc-400">
-            Get a project quote or free strategy consult for website design,
-            custom development, local SEO, and campaigns in Airdrie, Calgary,
-            Edmonton, and across Alberta.
-          </p>
+          <p className="mt-4 text-zinc-400">{body}</p>
           <p className="mt-3 text-sm text-zinc-500">
             Prefer to browse packages first?{" "}
             <a

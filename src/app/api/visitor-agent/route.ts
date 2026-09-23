@@ -10,6 +10,11 @@ import { createVisitorAgentTools } from "@/lib/agent/visitor/tools";
 import { DIGISOL_HOUSE_NAME, DIGISOL_BRAND } from "@/lib/branding";
 import { getOpenAIApiKey } from "@/lib/openai";
 import { hasAdminClient } from "@/lib/supabase/admin";
+import {
+  countryLabel,
+  parseAudienceCookie,
+  type VisitorAudience,
+} from "@/lib/visitorRegion";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,6 +29,8 @@ const MAX_STEPS = 4;
  * POST /api/visitor-agent
  *
  * Restricted tools only: website audit, DigiSol contact lead capture, hub report.
+ * Accepts optional audience/country from the client (middleware cookies) or
+ * falls back to Vercel/Cloudflare geo headers.
  */
 export async function POST(request: Request) {
   if (!getOpenAIApiKey()) {
@@ -46,9 +53,17 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: { messages?: UIMessage[] };
+  let body: {
+    messages?: UIMessage[];
+    audience?: string;
+    country?: string;
+  };
   try {
-    body = (await request.json()) as { messages?: UIMessage[] };
+    body = (await request.json()) as {
+      messages?: UIMessage[];
+      audience?: string;
+      country?: string;
+    };
   } catch {
     return NextResponse.json(
       { error: "Invalid JSON body", code: "invalid_json" },
@@ -66,13 +81,15 @@ export async function POST(request: Request) {
     );
   }
 
+  const locale = resolveVisitorLocale(request, body);
+
   try {
     const openai = createOpenAI({ apiKey: getOpenAIApiKey() });
     const tools = createVisitorAgentTools();
 
     const result = streamText({
       model: openai(process.env.OPENAI_AGENT_LIGHT_MODEL?.trim() || "gpt-4o-mini"),
-      system: buildVisitorSystemPrompt(),
+      system: buildVisitorSystemPrompt(locale),
       messages: await convertToModelMessages(messages),
       tools,
       stopWhen: isStepCount(MAX_STEPS),
@@ -85,6 +102,7 @@ export async function POST(request: Request) {
     return result.toUIMessageStreamResponse({
       headers: {
         "X-Digisol-Agent": "kaylev",
+        "X-Digisol-Audience": locale.audience,
         "Cache-Control": "no-store",
       },
     });
@@ -98,7 +116,67 @@ export async function POST(request: Request) {
   }
 }
 
-function buildVisitorSystemPrompt() {
+function resolveVisitorLocale(
+  request: Request,
+  body: { audience?: string; country?: string },
+) {
+  const headerCountry = (
+    request.headers.get("x-digisol-country") ||
+    request.headers.get("x-vercel-ip-country") ||
+    request.headers.get("cf-ipcountry") ||
+    ""
+  )
+    .trim()
+    .toUpperCase();
+  const country = (body.country || headerCountry || "").trim().toUpperCase();
+  const audience: VisitorAudience =
+    parseAudienceCookie(body.audience) ||
+    parseAudienceCookie(request.headers.get("x-digisol-audience")) ||
+    (country && country !== "CA" ? "international" : "alberta");
+
+  return {
+    audience,
+    country,
+    countryLabel: countryLabel(country),
+  };
+}
+
+function buildVisitorSystemPrompt(locale: {
+  audience: VisitorAudience;
+  country: string;
+  countryLabel: string;
+}) {
+  const international = locale.audience === "international";
+  const where =
+    locale.country === "US"
+      ? "the United States"
+      : locale.country
+        ? locale.countryLabel
+        : "outside Canada";
+
+  const marketBlock = international
+    ? `## Visitor locale (important)
+This visitor appears to be in ${where} (country code: ${locale.country || "unknown"}).
+- Speak in region-agnostic language. Do NOT assume Alberta, Airdrie, Calgary, or Canadian-only markets.
+- Frame DigiSol as a website design + engineering + growth partner for businesses wherever they operate.
+- Audit examples: use general SEO, Core Web Vitals, mobile UX, clear CTAs, and conversion paths — not Alberta map-pack or city landers.
+- Soft CTA: book a consult with Cameron or leave email. Mention DigiSol is based in Alberta, Canada only if asked about location.
+- Never invent local licensing, tax, or legal requirements for their country.`
+    : `## Visitor locale
+This visitor is in the Canadian / Alberta context (audience: ${locale.audience}${locale.country ? `, country ${locale.country}` : ""}).
+- Local SEO, Google Ads, and Meta for Alberta businesses is on-brand.
+- City examples (Airdrie, Calgary, Edmonton, Red Deer, Cochrane) are fine when helpful.`;
+
+  const offerings = international
+    ? `- Custom website design & Next.js / React engineering (no template bloat)
+- SEO, Google Ads, and Meta campaigns for the markets the visitor serves
+- DigiSol Hub: CRM contacts, email campaigns, A/B tests, workflows, analytics
+- Free website audits (SEO + performance) for prospects who share a URL`
+    : `- Custom website design & Next.js / React engineering (no template bloat)
+- Local SEO, Google Ads, and Meta campaigns for Alberta businesses
+- DigiSol Hub: CRM contacts, email campaigns, A/B tests, workflows, analytics
+- Free website audits (SEO + performance) for prospects who share a URL`;
+
   return `You are Kaylev, DigiSol's public website assistant on wwwdigisol.com.
 Introduce yourself as Kaylev. Speak as Kaylev in the first person.
 
@@ -112,11 +190,10 @@ Audience: ${DIGISOL_BRAND.audience}
 Lean on: ${DIGISOL_BRAND.doSay}
 Avoid: ${DIGISOL_BRAND.dontSay}
 
+${marketBlock}
+
 ## What DigiSol does (answer from this — do not invent packages or prices)
-- Custom website design & Next.js / React engineering (no template bloat)
-- Local SEO, Google Ads, and Meta campaigns for Alberta businesses
-- DigiSol Hub: CRM contacts, email campaigns, A/B tests, workflows, analytics
-- Free website audits (SEO + performance) for prospects who share a URL
+${offerings}
 
 ## Conversation goals
 1. Lead with the free website audit offer; ask for their URL.
