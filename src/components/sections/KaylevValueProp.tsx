@@ -17,6 +17,7 @@ type Pillar = {
   featured?: boolean;
 };
 
+/** Same BrandCard + featured layout as Services — sky / blue / indigo washes. */
 const PILLARS: Pillar[] = [
   {
     icon: MessageCircle,
