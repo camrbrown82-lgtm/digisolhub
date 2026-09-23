@@ -1,4 +1,8 @@
 import { DIGISOL_SITE_URL } from "@/lib/site";
+import {
+  homeCopyForAudience,
+  type HomeCopy,
+} from "@/lib/visitorRegion";
 
 export type LocationPage = {
   slug: string;
@@ -11,6 +15,55 @@ export type LocationPage = {
   nearby: string;
   keywords: string[];
 };
+
+/** Same homepage copy shape — city name swapped into hero / services / contact. */
+export function homeCopyForLocation(page: LocationPage): HomeCopy {
+  const base = homeCopyForAudience("alberta");
+  return {
+    ...base,
+    heroEyebrow: page.regionLabel,
+    heroTitleLead: "Website Design,",
+    heroTitleAccent: "Development & Marketing",
+    heroTitleTail: `in ${page.name}`,
+    heroTagline: "Where Design, Engineering, and Growth Meet",
+    heroSub: page.subhead,
+    heroBody: page.intro,
+    heroMarkets: `Also serving ${page.nearby}`,
+    whyTitle: "The DigiSol Advantage",
+    whyBody: `We design the website, engineer it to convert, and market it — one partner for ${page.name} companies, not a designer, a developer, and an agency.`,
+    designBook: `Pages built around how ${page.name} customers actually inquire and buy`,
+    mktPaid: `Targeted Meta & Search campaigns for ${page.name} and surrounding markets`,
+    mktSeo: `Local SEO that wins the ${page.name} map pack and nearby searches`,
+    servicesPaid: `Google Ads, Meta Ads, and local SEO for ${page.name} and nearby markets — so local searches turn into customers.`,
+    servicesCommerce: `Online stores and custom auction/web platforms for ${page.name} retailers and service businesses that need to sell, list, and grow.`,
+    auditBody: `A short presentation on what ${page.name} businesses should fix first — design, speed, local SEO, and the path from visit to booked work. Export ready captions for Facebook, LinkedIn, and Instagram below.`,
+    contactTitle: `Ready to Grow Your ${page.name} Business?`,
+    contactBody: `Get a project quote or free strategy consult for website design, custom development, local SEO, and campaigns in ${page.name} and nearby — Alberta-rooted, open to companies wherever you sell.`,
+    chatGreetingAudience: `${page.name} businesses`,
+  };
+}
+
+/** Alberta-wide `/locations` hub — same stack as home, not locked to one city. */
+export function homeCopyForLocationsHub(): HomeCopy {
+  const base = homeCopyForAudience("alberta");
+  return {
+    ...base,
+    heroEyebrow: "DigiSol service areas · Alberta-wide",
+    heroTitleLead: "Website Design,",
+    heroTitleAccent: "Development & Marketing",
+    heroTitleTail: "across Alberta",
+    heroTagline: "Where Design, Engineering, and Growth Meet",
+    heroSub:
+      "Custom websites we design and build — then marketing that fills them in every market we serve.",
+    heroBody:
+      "One DigiSol playbook for Calgary, Edmonton, Red Deer, Cochrane, and Airdrie — design, engineering, SEO, and campaigns. Alberta is home base; your market is wherever you sell.",
+    heroMarkets:
+      "Airdrie · Calgary · Edmonton · Red Deer · Cochrane · Across Alberta",
+    contactTitle: "Ready to Grow Across Alberta?",
+    contactBody:
+      "Get a project quote or free strategy consult for website design, custom development, local SEO, and campaigns — Alberta-wide, open to companies wherever you sell.",
+  };
+}
 
 /** City landing pages aimed at local search (map pack + organic). */
 export const LOCATION_PAGES: LocationPage[] = [

@@ -2,14 +2,7 @@ import { Footer } from "@/components/Footer";
 import { GeoHomeBanner } from "@/components/GeoHomeBanner";
 import { InternationalHomeBanner } from "@/components/InternationalHomeBanner";
 import { Navbar } from "@/components/Navbar";
-import { Audience } from "@/components/sections/Audience";
-import { Contact } from "@/components/sections/Contact";
-import { DispatchArchive } from "@/components/sections/DispatchArchive";
-import { DualThreat } from "@/components/sections/DualThreat";
-import { Hero } from "@/components/sections/Hero";
-import { KaylevValueProp } from "@/components/sections/KaylevValueProp";
-import { Services } from "@/components/sections/Services";
-import { WebsiteAudit } from "@/components/sections/WebsiteAudit";
+import { MarketingHomeStack } from "@/components/sections/MarketingHomeStack";
 import { getVisitorRegion } from "@/lib/getVisitorRegion";
 import { homeCopyForAudience } from "@/lib/visitorRegion";
 
@@ -26,10 +19,9 @@ export default async function HomePage() {
       <InternationalHomeBanner region={region} />
       <GeoHomeBanner />
       <main id="main">
-        <Hero copy={copy} />
-        <DualThreat copy={copy} />
-        <KaylevValueProp
-          analyticsLocation={
+        <MarketingHomeStack
+          copy={copy}
+          analyticsKaylev={
             region.audience === "international"
               ? "homepage_kaylev_international"
               : region.audience === "canada"
@@ -37,11 +29,6 @@ export default async function HomePage() {
                 : "homepage_kaylev_alberta"
           }
         />
-        <Services copy={copy} />
-        <WebsiteAudit copy={copy} />
-        <Audience copy={copy} />
-        <DispatchArchive />
-        <Contact title={copy.contactTitle} body={copy.contactBody} />
       </main>
       <Footer />
     </>

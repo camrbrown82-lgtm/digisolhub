@@ -92,8 +92,36 @@ export function parseAudienceCookie(
   return null;
 }
 
+/** Homepage / city-lander marketing copy. */
+export type HomeCopy = {
+  heroEyebrow: string;
+  heroTitleLead: string;
+  heroTitleAccent: string;
+  heroTitleTail: string;
+  heroTagline: string;
+  heroSub: string;
+  heroBody: string;
+  heroMarkets: string;
+  whyTitle: string;
+  whyBody: string;
+  designBook: string;
+  devSpeed: string;
+  mktPaid: string;
+  mktSeo: string;
+  audienceIntro: string;
+  audienceStartupBody: string;
+  audienceStartupPoint: string;
+  audienceEstablishedBody: string;
+  servicesPaid: string;
+  servicesCommerce: string;
+  auditBody: string;
+  contactTitle: string;
+  contactBody: string;
+  chatGreetingAudience: string;
+};
+
 /** Homepage / chat copy keyed by audience. */
-export function homeCopyForAudience(audience: VisitorAudience) {
+export function homeCopyForAudience(audience: VisitorAudience): HomeCopy {
   if (audience === "international") {
     return {
       heroEyebrow: "Website design, engineering & growth marketing",
@@ -130,7 +158,7 @@ export function homeCopyForAudience(audience: VisitorAudience) {
       contactBody:
         "Get a project quote or free strategy consult for website design, custom development, SEO, and campaigns — built for companies that sell locally or across borders.",
       chatGreetingAudience: "businesses",
-    } as const;
+    };
   }
 
   // canada + alberta share Alberta-rooted primary layout (open to clients anywhere)
@@ -171,7 +199,5 @@ export function homeCopyForAudience(audience: VisitorAudience) {
     contactBody:
       "Get a project quote or free strategy consult for website design, custom development, SEO, and campaigns. Alberta-rooted, happy to work with companies wherever you sell.",
     chatGreetingAudience: "growing businesses",
-  } as const;
+  };
 }
-
-export type HomeCopy = ReturnType<typeof homeCopyForAudience>;
