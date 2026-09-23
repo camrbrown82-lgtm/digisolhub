@@ -1,5 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isLikelyBot, locationSlugFromGeo } from "@/lib/geoRouting";
+import {
+  hubForbiddenResponse,
+  isHubMachineAllowed,
+  isHubProtectedPath,
+  unlockHubGateIfRequested,
+} from "@/lib/hubGate";
 import { updateSession } from "@/lib/supabase/middleware";
 import {
   GEO_AUDIENCE_COOKIE,
@@ -134,13 +140,11 @@ function nextWithGeo(request: NextRequest, geo: VisitorGeo) {
   });
   applyGeoCookies(response, geo);
 
-  // Remember Alberta city slug when available (analytics / soft banner).
   const slug = locationSlugFromGeo(geo);
   if (slug && !request.cookies.get(GEO_SLUG_COOKIE)?.value) {
     response.cookies.set(GEO_SLUG_COOKIE, slug, COOKIE_BASE);
   }
 
-  // Help CDNs vary HTML for international vs Alberta copy.
   response.headers.set(
     "Vary",
     "X-Vercel-IP-Country, X-Vercel-IP-Country-Region, Cookie",
@@ -153,24 +157,28 @@ export async function middleware(request: NextRequest) {
   const hostRedirect = canonicalHostRedirect(request);
   if (hostRedirect) return hostRedirect;
 
-  const geo = readRequestGeo(request);
+  const path = request.nextUrl.pathname;
 
+  // Hub / admin: machine gate first — strangers never see a login prompt.
+  if (isHubProtectedPath(path)) {
+    const unlock = unlockHubGateIfRequested(request);
+    if (unlock) return unlock;
+
+    if (!isHubMachineAllowed(request)) {
+      return hubForbiddenResponse();
+    }
+
+    const geo = readRequestGeo(request);
+    const sessionResponse = await updateSession(request);
+    applyGeoCookies(sessionResponse, geo);
+    return sessionResponse;
+  }
+
+  const geo = readRequestGeo(request);
   const geoRedirect = albertaHomeGeoRedirect(request, geo);
   if (geoRedirect) return geoRedirect;
 
-  const path = request.nextUrl.pathname;
-  const needsAuth =
-    path === "/hub" ||
-    path.startsWith("/hub/") ||
-    path.startsWith("/auth/");
-
-  if (!needsAuth) {
-    return nextWithGeo(request, geo);
-  }
-
-  const sessionResponse = await updateSession(request);
-  applyGeoCookies(sessionResponse, geo);
-  return sessionResponse;
+  return nextWithGeo(request, geo);
 }
 
 export const config = {

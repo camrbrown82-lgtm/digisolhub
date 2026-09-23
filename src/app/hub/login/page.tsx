@@ -11,8 +11,8 @@ export default function HubLoginPage() {
           Sign in to DigiSol Hub
         </h1>
         <p className="mt-2 text-sm text-zinc-400">
-          Owner password only. Magic links and one-time codes are disabled. The
-          public site stays at /.
+          Owner password only on an unlocked machine. Public visitors never see
+          this page.
         </p>
         <div className="mt-6">
           <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
