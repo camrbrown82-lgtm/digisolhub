@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
 import { DigiSolSiteBeacon } from "@/components/DigiSolSiteBeacon";
+import { MetaPixel } from "@/components/MetaPixel";
 import { PublicKaylevChat } from "@/components/PublicKaylevChat";
 import { PublicSiteAnalytics } from "@/components/PublicSiteAnalytics";
 import {
@@ -190,6 +191,7 @@ export default function RootLayout({
         <PublicSiteAnalytics>
           <DigiSolSiteBeacon />
         </PublicSiteAnalytics>
+        <MetaPixel />
       </body>
     </html>
   );

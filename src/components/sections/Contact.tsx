@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Send } from "lucide-react";
 import { BrandCard } from "@/components/BrandCard";
 import { GoogleRating } from "@/components/LocalListings";
+import { trackMetaEvent } from "@/components/MetaPixel";
 import { trackEvent } from "@/lib/analytics";
 
 const fieldClass =
@@ -39,7 +40,7 @@ export function Contact({
           company: data.get("business"),
           service: data.get("service"),
           message: data.get("details"),
-          botcheck: data.get("botcheck"),
+          website_url: data.get("website_url"),
         }),
       });
       const result = (await response.json()) as { ok?: boolean; error?: string };
@@ -47,13 +48,20 @@ export function Contact({
         throw new Error(result.error || "Could not send the request.");
       }
       trackEvent("generate_lead", {
-        method: "web3forms",
+        method: "contact_form",
         service: String(data.get("service") ?? ""),
       });
+      trackMetaEvent("Lead", {
+        content_name: "consultation_request",
+        content_category: String(data.get("service") ?? ""),
+      });
       router.push("/confirmation");
-    } catch {
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : "";
       setError(
-        "Something went wrong sending the form. Email cam.r.brown82@gmail.com or call 1-587-577-0782.",
+        detail && !/failed to fetch|network/i.test(detail)
+          ? detail
+          : "Something went wrong sending the form. Email cam.r.brown82@gmail.com or call 1-587-577-0782.",
       );
     } finally {
       setSending(false);
@@ -101,15 +109,21 @@ export function Contact({
           innerClassName="p-6 sm:p-8"
           className="mt-8"
         >
-          <form onSubmit={onSubmit} className="space-y-4">
-              <input
-                type="checkbox"
-                name="botcheck"
-                className="hidden"
-                tabIndex={-1}
-                autoComplete="off"
+          <form onSubmit={onSubmit} className="relative space-y-4">
+              {/* Honeypot — leave empty. Text field (not checkbox) so FB autofill tools do not trip spam. */}
+              <div
+                className="absolute -left-[9999px] h-0 w-0 overflow-hidden"
                 aria-hidden="true"
-              />
+              >
+                <label htmlFor="website_url">Website</label>
+                <input
+                  id="website_url"
+                  name="website_url"
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+              </div>
               <div>
                 <label
                   htmlFor="fullName"
