@@ -12,6 +12,7 @@ export { draftProspectAuditSummary } from "@/lib/prospectAudit/summary";
 export { sendProspectAuditEmail } from "@/lib/prospectAudit/email";
 export {
   sendAuditFollowUpEmail,
+  sendConsultationFollowUpEmail,
   buildAuditFollowUpHtml,
 } from "@/lib/prospectAudit/followUpEmail";
 export { promoteProspectOnEngagement } from "@/lib/prospectAudit/promote";

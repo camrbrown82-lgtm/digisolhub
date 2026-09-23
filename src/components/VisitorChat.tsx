@@ -25,12 +25,12 @@ function greetingFor(audience: VisitorAudience) {
   if (audience === "alberta") {
     return `Hey there! I'm ${KAYLEV_NAME}, DigiSol's digital assistant. Happy to help Alberta teams and anyone scaling from farther afield fix conversion leaks and grow online.
 
-Share your website URL anytime for a free audit — and if you'd like the full write-up, just tell me which email to send it to. Questions first? Fire away.`;
+Got a website? Share the URL and I'll run a free audit. No site yet, or curious about cost / what you'd need? I can set you up with a free consultation with Cameron — just tell me your email.`;
   }
 
   return `Hey there! I'm ${KAYLEV_NAME}, DigiSol's digital assistant. Whether you're local or scaling from afar, we help businesses fix conversion leaks and grow online.
 
-Share your website URL anytime for a free audit — and if you'd like the full write-up, just tell me which email to send it to. Questions first? Fire away.`;
+Got a website? Share the URL and I'll run a free audit. No site yet, or curious about cost / what you'd need? I can set you up with a free consultation with Cameron — just tell me your email.`;
 }
 
 function createGreetingMessage(audience: VisitorAudience): UIMessage {

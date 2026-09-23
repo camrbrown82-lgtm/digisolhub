@@ -6,7 +6,7 @@ import { DIGISOL_OPERATOR } from "@/lib/agent/digisol/scope";
 import { logAnalyticsEvent } from "@/lib/analyticsEvents";
 import { emitHubEvent } from "@/lib/events";
 import { ensureWebsiteAuditSchema } from "@/lib/ensureWebsiteAuditSchema";
-import { sendAuditFollowUpEmail } from "@/lib/prospectAudit/followUpEmail";
+import { sendAuditFollowUpEmail, sendConsultationFollowUpEmail } from "@/lib/prospectAudit/followUpEmail";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { ensureDigisolClient } from "@/lib/workspace";
 
@@ -15,6 +15,7 @@ const LEAD_TYPES = [
   "marketing",
   "seo",
   "audit",
+  "consultation",
   "general",
   "other",
 ] as const;
@@ -121,7 +122,7 @@ export function createVisitorAgentTools() {
 
     captureVisitorLead: tool({
       description:
-        "Create or update a DigiSol Hub contact when the visitor shares email and what they need. Stores lead type + requirements. DigiSol CRM only.",
+        "Create or update a DigiSol Hub contact + pipeline lead immediately when the visitor shares email. Use leadType=consultation for no-website / cost / unsure-what-they-need paths; audit when they had a site audit. Always call this as soon as you have an email.",
       inputSchema: z.object({
         email: z.string().email().describe("Visitor email address."),
         name: z.string().optional().describe("Visitor name if provided."),
@@ -130,12 +131,14 @@ export function createVisitorAgentTools() {
         leadType: z
           .enum(LEAD_TYPES)
           .describe(
-            "Lead type: website_build | marketing | seo | audit | general | other.",
+            "Lead type: consultation | website_build | marketing | seo | audit | general | other.",
           ),
         requirements: z
           .string()
           .min(3)
-          .describe("What the visitor is looking for / project requirements."),
+          .describe(
+            "What they asked about. For cost/no-website, summarize briefly — do not invent technical requirements.",
+          ),
         websiteUrl: z
           .string()
           .optional()
@@ -167,6 +170,7 @@ export function createVisitorAgentTools() {
             "lead",
             "visitor_chat",
             `lead_type:${leadType}`,
+            ...(leadType === "consultation" ? ["consultation"] : []),
           ]),
         );
 
@@ -215,50 +219,17 @@ export function createVisitorAgentTools() {
           await emitHubEvent("hub/lead.created", { contactId }).catch(() => null);
         }
 
-        // Best-effort pipeline lead row for DigiSol hub.
+        let leadId: string | null = null;
         if (contactId) {
-          try {
-            const { data: existingLead } = await admin
-              .from("leads")
-              .select("id")
-              .eq("contact_id", contactId)
-              .eq("client_id", clientId)
-              .maybeSingle();
-
-            if (!existingLead) {
-              const { data: pipelineLead } = await admin
-                .from("leads")
-                .insert({
-                  contact_id: contactId,
-                  client_id: clientId,
-                  name: row.name,
-                  email,
-                  phone: row.phone,
-                  company: row.company,
-                  service: row.service,
-                  source: "website",
-                  channel: "visitor_chat",
-                  stage: "new",
-                  notes_preview: requirements.slice(0, 280),
-                })
-                .select("id")
-                .maybeSingle();
-
-              if (pipelineLead?.id) {
-                await admin.from("lead_activities").insert({
-                  lead_id: pipelineLead.id,
-                  type: "created",
-                  body: requirements.slice(0, 500),
-                  to_stage: "new",
-                });
-              }
-            }
-          } catch (err) {
-            console.warn(
-              "[visitor-agent] lead pipeline skipped",
-              err instanceof Error ? err.message : err,
-            );
-          }
+          leadId = await upsertVisitorPipelineLead({
+            admin,
+            clientId,
+            contactId,
+            row,
+            email,
+            leadType,
+            requirements,
+          });
         }
 
         await logAgentActivity({
@@ -272,7 +243,7 @@ export function createVisitorAgentTools() {
             leadType,
             requirementsPreview: requirements.slice(0, 200),
           },
-          output: { contactId, created },
+          output: { contactId, leadId, created },
         });
 
         await logAnalyticsEvent(admin, {
@@ -282,15 +253,14 @@ export function createVisitorAgentTools() {
           success: true,
           contactId: contactId ?? null,
           source: "visitor_chat",
-          metadata: { leadType, created, email },
+          metadata: { leadType, created, email, leadId },
         });
 
-        // If they asked for an audit (or shared a URL), email the breakdown + soft CTA.
+        // Immediately email: audit write-up if audit path, else consult invite.
         let followUp: Record<string, unknown> | null = null;
         const wantsAuditEmail =
           leadType === "audit" ||
-          Boolean(input.websiteUrl?.trim()) ||
-          /audit/i.test(requirements);
+          (Boolean(input.websiteUrl?.trim()) && leadType !== "consultation");
 
         if (wantsAuditEmail && contactId) {
           followUp = await sendVisitorAuditEmail({
@@ -301,19 +271,151 @@ export function createVisitorAgentTools() {
             company: input.company,
             websiteUrl: input.websiteUrl,
           });
+        } else if (contactId) {
+          const consult = await sendConsultationFollowUpEmail({
+            db: admin,
+            clientId,
+            email,
+            name: input.name,
+            company: input.company,
+            phone: input.phone,
+            requirements,
+            leadType,
+          });
+          followUp = {
+            emailed: consult.emailed,
+            contactId: consult.contactId,
+            kind: "consultation",
+            reason: "reason" in consult ? consult.reason : undefined,
+          };
         }
 
         return {
           operator: DIGISOL_OPERATOR.name,
           reportedToHub: true,
           contactId,
+          leadId,
           created,
           leadType,
           leadTypeLabel: leadTypeLabel(leadType),
           email,
           requirementsPreview: requirements.slice(0, 160),
-          auditFollowUpEmailed: Boolean(followUp?.emailed),
-          auditFollowUp: followUp,
+          followUpEmailed: Boolean(followUp?.emailed),
+          followUpKind: wantsAuditEmail ? "audit" : "consultation",
+          followUp,
+        };
+      },
+    }),
+
+    emailVisitorConsultationInvite: tool({
+      description:
+        "Email a free consultation invite with Cameron after the visitor shared their email (no website / cost / unsure path). Also ensures Hub contact + lead exist. Call as soon as you have an email on Path B.",
+      inputSchema: z.object({
+        email: z.string().email(),
+        name: z.string().optional(),
+        company: z.string().optional(),
+        phone: z.string().optional(),
+        requirements: z
+          .string()
+          .optional()
+          .describe("Short note on what they asked (cost, new website, etc.)."),
+      }),
+      execute: async (input) => {
+        if (!hasAdminClient()) {
+          throw new Error("Hub database is not configured");
+        }
+        const admin = createAdminClient();
+        const clientId = await ensureDigisolClient(admin);
+        if (!clientId) throw new Error("DigiSol profile missing");
+
+        const email = input.email.trim().toLowerCase();
+        const requirements =
+          input.requirements?.trim() ||
+          "Requested free consultation via Kaylev (cost / no website / unsure)";
+
+        const result = await sendConsultationFollowUpEmail({
+          db: admin,
+          clientId,
+          email,
+          name: input.name,
+          company: input.company,
+          phone: input.phone,
+          requirements,
+          leadType: "consultation",
+        });
+
+        // Mirror capture tags/notes for Hub visibility.
+        if (result.contactId) {
+          const { data: existing } = await admin
+            .from("contacts")
+            .select("tags")
+            .eq("id", result.contactId)
+            .maybeSingle();
+          const tags = Array.from(
+            new Set([
+              ...((existing?.tags as string[] | null) ?? []),
+              "lead",
+              "visitor_chat",
+              "consultation",
+              "lead_type:consultation",
+            ]),
+          );
+          await admin
+            .from("contacts")
+            .update({
+              tags,
+              service: "Free consultation",
+              notes_preview: requirements.slice(0, 280),
+            })
+            .eq("id", result.contactId);
+
+          await admin.from("notes").insert({
+            contact_id: result.contactId,
+            body: `[Visitor chat · Free consultation]\n${requirements}`,
+          });
+        }
+
+        await logAgentActivity({
+          supabase: admin,
+          clientId,
+          action: "visitor:consultation_invite_emailed",
+          toolName: "emailVisitorConsultationInvite",
+          status: result.emailed ? "ok" : "error",
+          input: { email },
+          output: result,
+        });
+
+        await logAnalyticsEvent(admin, {
+          companyId: clientId,
+          eventType: "visitor_chat_lead",
+          channel: "email",
+          success: true,
+          contactId: result.contactId,
+          source: "visitor_chat",
+          metadata: { leadType: "consultation", email },
+        });
+
+        await logAnalyticsEvent(admin, {
+          companyId: clientId,
+          eventType: "email_sent",
+          channel: "email",
+          success: Boolean(result.emailed),
+          contactId: result.contactId,
+          source: "visitor_chat",
+          metadata: {
+            kind: "consultation_followup",
+            email,
+            reason: "reason" in result ? result.reason : null,
+          },
+        });
+
+        return {
+          operator: DIGISOL_OPERATOR.name,
+          ...result,
+          message: result.emailed
+            ? "Free consultation invite emailed; contact and lead are in DigiSol Hub."
+            : ("reason" in result && result.reason) ||
+              "Could not send consultation email.",
         };
       },
     }),
@@ -458,11 +560,104 @@ function leadTypeLabel(type: VisitorLeadType) {
       return "Local SEO";
     case "audit":
       return "Website audit";
+    case "consultation":
+      return "Free consultation";
     case "general":
       return "General inquiry";
     default:
       return "Other";
   }
+}
+
+async function upsertVisitorPipelineLead(input: {
+  admin: ReturnType<typeof createAdminClient>;
+  clientId: string;
+  contactId: string;
+  email: string;
+  leadType: VisitorLeadType;
+  requirements: string;
+  row: {
+    name: string | null;
+    phone: string | null;
+    company: string | null;
+    service: string;
+  };
+}) {
+  try {
+    const stage =
+      input.leadType === "consultation" || input.leadType === "audit"
+        ? "contacted"
+        : "new";
+
+    const { data: existingLead } = await input.admin
+      .from("leads")
+      .select("id, stage")
+      .eq("contact_id", input.contactId)
+      .eq("client_id", input.clientId)
+      .maybeSingle();
+
+    if (existingLead?.id) {
+      await input.admin
+        .from("leads")
+        .update({
+          notes_preview: input.requirements.slice(0, 280),
+          service: input.row.service,
+          stage:
+            existingLead.stage === "new" || !existingLead.stage
+              ? stage
+              : existingLead.stage,
+        })
+        .eq("id", existingLead.id);
+
+      await input.admin.from("lead_activities").insert({
+        lead_id: existingLead.id,
+        type: "note",
+        body: `[Kaylev] ${leadTypeLabel(input.leadType)} · ${input.requirements}`.slice(
+          0,
+          500,
+        ),
+        to_stage:
+          existingLead.stage === "new" || !existingLead.stage
+            ? stage
+            : existingLead.stage,
+      });
+      return existingLead.id as string;
+    }
+
+    const { data: pipelineLead } = await input.admin
+      .from("leads")
+      .insert({
+        contact_id: input.contactId,
+        client_id: input.clientId,
+        name: input.row.name,
+        email: input.email,
+        phone: input.row.phone,
+        company: input.row.company,
+        service: input.row.service,
+        source: "website",
+        channel: "visitor_chat",
+        stage,
+        notes_preview: input.requirements.slice(0, 280),
+      })
+      .select("id")
+      .maybeSingle();
+
+    if (pipelineLead?.id) {
+      await input.admin.from("lead_activities").insert({
+        lead_id: pipelineLead.id,
+        type: "created",
+        body: input.requirements.slice(0, 500),
+        to_stage: stage,
+      });
+      return pipelineLead.id as string;
+    }
+  } catch (err) {
+    console.warn(
+      "[visitor-agent] lead pipeline skipped",
+      err instanceof Error ? err.message : err,
+    );
+  }
+  return null;
 }
 
 async function sendVisitorAuditEmail(input: {
