@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
-import { Logo } from "@/components/Logo";
+import {
+  DIGISOL_LOGO_BADGE,
+  DIGISOL_LOGO_WORDMARK,
+} from "@/components/Logo";
 import { TrackedLink } from "@/components/TrackedLink";
 
 const links = [
@@ -15,8 +18,7 @@ const links = [
 ];
 
 /**
- * Tall sticky header: logos + page links start on the left (aligned with
- * location/hero content), Contact / Admin stay on the right.
+ * Header: wordmark left · centered page links + Contact/Admin · badge right.
  */
 export function Navbar() {
   const [open, setOpen] = useState(false);
@@ -53,27 +55,37 @@ export function Navbar() {
         Skip to content
       </a>
 
-      <div className="mx-auto flex h-20 w-full max-w-7xl items-center gap-4 px-4 sm:h-24 sm:gap-6 sm:px-6 lg:h-[6.5rem] lg:px-8">
-        <div className="flex min-w-0 flex-1 items-center gap-4 sm:gap-6 lg:gap-8">
-          <Logo />
+      <div className="relative mx-auto flex h-20 w-full max-w-7xl items-center px-4 sm:h-24 sm:px-6 lg:h-[6.5rem] lg:px-8">
+        {/* Left — primary wordmark */}
+        <a
+          href="/"
+          className="relative z-10 inline-flex shrink-0 items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+          aria-label="DigiSol home"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={DIGISOL_LOGO_WORDMARK}
+            alt="DigiSol — Engineering & Growth"
+            width={480}
+            height={156}
+            className="h-12 w-auto max-w-[min(100%,16rem)] object-contain object-left sm:h-14 lg:h-16"
+          />
+        </a>
 
-          <nav
-            className="hidden min-w-0 items-center gap-4 lg:flex xl:gap-5"
-            aria-label="Primary"
-          >
-            {links.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="whitespace-nowrap text-sm font-medium text-indigo-200 transition-colors hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
-              >
-                {link.label}
-              </a>
-            ))}
-          </nav>
-        </div>
-
-        <div className="hidden shrink-0 items-center gap-3 lg:flex">
+        {/* Center — page links + Contact + Admin */}
+        <nav
+          className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-4 lg:flex xl:gap-5"
+          aria-label="Primary"
+        >
+          {links.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              className="whitespace-nowrap text-sm font-medium text-indigo-200 transition-colors hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+            >
+              {link.label}
+            </a>
+          ))}
           <TrackedLink
             href="/#contact"
             eventName="cta_click"
@@ -88,11 +100,28 @@ export function Navbar() {
           >
             Admin
           </a>
-        </div>
+        </nav>
+
+        {/* Right — secondary badge */}
+        <a
+          href="/"
+          className="relative z-10 ml-auto hidden shrink-0 items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 lg:inline-flex"
+          aria-label="DigiSol"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={DIGISOL_LOGO_BADGE}
+            alt=""
+            width={256}
+            height={256}
+            className="h-12 w-12 rounded-full object-cover ring-1 ring-indigo-400/30 sm:h-14 sm:w-14 lg:h-16 lg:w-16"
+            aria-hidden="true"
+          />
+        </a>
 
         <button
           type="button"
-          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-indigo-400/30 text-indigo-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 lg:hidden"
+          className="relative z-10 ml-auto inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-indigo-400/30 text-indigo-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 lg:hidden"
           aria-expanded={open}
           aria-controls="mobile-nav"
           onClick={() => setOpen((v) => !v)}
@@ -108,6 +137,17 @@ export function Navbar() {
           className="border-t border-indigo-500/20 px-4 py-4 lg:hidden"
           aria-label="Mobile"
         >
+          <div className="mx-auto mb-3 flex max-w-7xl justify-center lg:hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={DIGISOL_LOGO_BADGE}
+              alt=""
+              width={256}
+              height={256}
+              className="h-14 w-14 rounded-full object-cover ring-1 ring-indigo-400/30"
+              aria-hidden="true"
+            />
+          </div>
           <ul className="mx-auto flex max-w-7xl flex-col gap-2">
             {links.map((link) => (
               <li key={link.href}>

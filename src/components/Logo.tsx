@@ -9,9 +9,9 @@ type LogoProps = {
   className?: string;
   size?: "header" | "footer" | "hub";
   href?: string;
-  /** Show the circular DigiSol secondary badge beside the wordmark. Default true. */
+  /** Show the circular DigiSol secondary badge beside the wordmark. Default true for footer/hub. */
   showBadge?: boolean;
-  /** Wordmark only (no badge) — e.g. tight spaces. */
+  /** Wordmark only (no badge). */
   wordmarkOnly?: boolean;
 };
 
@@ -27,6 +27,10 @@ const badgeClass = {
   hub: "h-9 w-9",
 };
 
+/**
+ * DigiSol logos for footer / hub. Public navbar places wordmark and badge
+ * on opposite ends — see Navbar.tsx.
+ */
 export function Logo({
   className = "",
   size = "header",
