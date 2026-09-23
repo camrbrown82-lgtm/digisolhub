@@ -1,6 +1,10 @@
 import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
 import { fetchDigisolGa4Summary } from "@/lib/ga4";
 import { summarizeLeadPerformance, type LeadRecord } from "@/lib/lead-pipeline";
+import {
+  fetchResendAccountMetrics,
+  syncResendEngagementFromApi,
+} from "@/lib/resendStats";
 import { summarizeSiteEvents } from "@/lib/site-analytics";
 import { contactIdsForClient } from "@/lib/workspace";
 import type { AgentToolDefinition } from "@/lib/agent/types";
@@ -8,7 +12,7 @@ import type { AgentToolDefinition } from "@/lib/agent/types";
 export const fetchAnalytics: AgentToolDefinition = {
   name: "fetchAnalytics",
   description:
-    "Analytics section tool. Pulls traffic, top pages/referrers, email open/click rates, and lead pipeline health for the Working-on company. Includes DigiSol GA4 when that house property is configured.",
+    "Analytics section tool. Pulls traffic, top pages/referrers, email open/click rates (Hub sends + live Resend account metrics), and lead pipeline health for the Working-on company. Includes DigiSol GA4 when that house property is configured.",
   parameters: {
     type: "object",
     properties: {
@@ -36,6 +40,19 @@ export const fetchAnalytics: AgentToolDefinition = {
 
     const scopedIds = await contactIdsForClient(ctx.supabase, ctx.clientId);
     const emptySends = scopedIds.length === 0;
+
+    // Backfill Hub send engagement from Resend before counting.
+    const resendSync = emptySends
+      ? { synced: 0, checked: 0, skipped: true as const, reason: "no_contacts" }
+      : await syncResendEngagementFromApi(ctx.supabase, {
+          contactIds: scopedIds,
+          limit: 30,
+        }).catch((err) => ({
+          synced: 0,
+          checked: 0,
+          skipped: true as const,
+          reason: err instanceof Error ? err.message : "sync_failed",
+        }));
 
     let contactsQuery = ctx.supabase
       .from("contacts")
@@ -83,7 +100,7 @@ export const fetchAnalytics: AgentToolDefinition = {
       (client?.name || ctx.companyName || "").toLowerCase() ===
       DIGISOL_HOUSE_NAME.toLowerCase();
 
-    const [contacts, sends, opened, clicked, unsubscribed, site, leadsResult] =
+    const [contacts, sends, opened, clicked, unsubscribed, site, leadsResult, resend] =
       await Promise.all([
         contactsQuery,
         emptySends ? Promise.resolve({ count: 0 }) : sendsQuery,
@@ -92,6 +109,7 @@ export const fetchAnalytics: AgentToolDefinition = {
         unsubQuery,
         siteQuery,
         leadsQuery,
+        fetchResendAccountMetrics(days),
       ]);
 
     const ga4 = isDigisol ? await fetchDigisolGa4Summary(days) : null;
@@ -126,6 +144,8 @@ export const fetchAnalytics: AgentToolDefinition = {
         clicked: clickCount,
         openRate: sendCount ? Math.round((openCount / sendCount) * 1000) / 10 : 0,
         clickRate: sendCount ? Math.round((clickCount / sendCount) * 1000) / 10 : 0,
+        hubSyncFromResend: resendSync,
+        resendAccount: resend,
       },
       website,
       weakConversionHints: weakPages,

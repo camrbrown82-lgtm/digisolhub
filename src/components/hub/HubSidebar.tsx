@@ -13,6 +13,7 @@ import {
   Mail,
   Palette,
   Plug,
+  Radar,
   Workflow,
 } from "lucide-react";
 import { createBrowserSupabase } from "@/lib/supabase/client";
@@ -22,13 +23,13 @@ const nav = [
   { href: "/hub/clients", label: "Companies", icon: Building2 },
   { href: "/hub/brand", label: "Brand", icon: Palette },
   { href: "/hub/contacts", label: "Contacts", icon: Contact },
+  { href: "/hub/prospects", label: "Prospect audits", icon: Radar },
   { href: "/hub/email", label: "Email", icon: Mail },
   { href: "/hub/campaigns", label: "Campaigns", icon: Workflow },
   { href: "/hub/assets", label: "Files", icon: Files },
   { href: "/hub/ai", label: "AI posters", icon: Bot },
   { href: "/hub/integrations", label: "Integrations", icon: Plug },
 ];
-
 export function HubSidebar() {
   const pathname = usePathname();
   const router = useRouter();

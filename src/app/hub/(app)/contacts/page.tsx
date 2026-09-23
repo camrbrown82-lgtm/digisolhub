@@ -36,10 +36,16 @@ type ContactListRow = {
   ab_variant: string | null;
 };
 
+const SOURCE_FILTERS = [
+  { id: "prospect_audit", label: "Prospect audits" },
+  { id: "visitor_chat", label: "Chat leads" },
+  { id: "prospect_audit_engaged", label: "Engaged audits" },
+] as const;
+
 export default async function ContactsPage({
   searchParams,
 }: {
-  searchParams: { channel?: string; ab?: string };
+  searchParams: { channel?: string; ab?: string; source?: string };
 }) {
   const schema = await ensureCampaignChannelSchema().catch((err: unknown) => ({
     ok: false as const,
@@ -50,6 +56,9 @@ export default async function ContactsPage({
   const clientId = (await resolveClientId(supabase)) || active?.id || "";
   const channelFilter = normalizeCampaignChannel(searchParams.channel);
   const abFilter = normalizeContactAbVariant(searchParams.ab);
+  const sourceFilter = SOURCE_FILTERS.some((s) => s.id === searchParams.source)
+    ? (searchParams.source as (typeof SOURCE_FILTERS)[number]["id"])
+    : null;
 
   async function loadContacts(includeChannelFields: boolean): Promise<{
     data: ContactListRow[] | null;
@@ -69,6 +78,11 @@ export default async function ContactsPage({
     }
     if (includeChannelFields && abFilter) {
       next = next.eq("ab_variant", abFilter);
+    }
+    if (sourceFilter) {
+      next = next.or(
+        `source.eq.${sourceFilter},tags.cs.{"${sourceFilter}"}`,
+      );
     }
     const result = await next;
     return {
@@ -100,12 +114,18 @@ export default async function ContactsPage({
     }));
   }
 
-  function hrefFor(next: { channel?: string | null; ab?: string | null }) {
+  function hrefFor(next: {
+    channel?: string | null;
+    ab?: string | null;
+    source?: string | null;
+  }) {
     const params = new URLSearchParams();
     const channel = next.channel === undefined ? channelFilter : next.channel;
     const ab = next.ab === undefined ? abFilter : next.ab;
+    const source = next.source === undefined ? sourceFilter : next.source;
     if (channel) params.set("channel", channel);
     if (ab) params.set("ab", ab);
+    if (source) params.set("source", source);
     const qs = params.toString();
     return qs ? `/hub/contacts?${qs}` : "/hub/contacts";
   }
@@ -143,6 +163,32 @@ export default async function ContactsPage({
 
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+          Source
+        </span>
+        <Link
+          href={hrefFor({ source: null })}
+          className={`rounded-full px-3 py-1 text-xs ${
+            !sourceFilter
+              ? "bg-indigo-600 text-white"
+              : "border border-zinc-700 text-zinc-300 hover:border-indigo-500"
+          }`}
+        >
+          All
+        </Link>
+        {SOURCE_FILTERS.map((source) => (
+          <Link
+            key={source.id}
+            href={hrefFor({ source: source.id })}
+            className={`rounded-full px-3 py-1 text-xs ${
+              sourceFilter === source.id
+                ? "bg-indigo-600 text-white"
+                : "border border-zinc-700 text-zinc-300 hover:border-indigo-500"
+            }`}
+          >
+            {source.label}
+          </Link>
+        ))}
+        <span className="ml-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
           Channel
         </span>
         <Link
@@ -216,7 +262,10 @@ export default async function ContactsPage({
               <tr>
                 <td colSpan={9} className="px-4 py-8 text-zinc-500">
                   No contacts yet
-                  {channelFilter || abFilter ? " for this filter" : ""}.
+                  {channelFilter || abFilter || sourceFilter
+                    ? " for this filter"
+                    : ""}
+                  .
                 </td>
               </tr>
             ) : (

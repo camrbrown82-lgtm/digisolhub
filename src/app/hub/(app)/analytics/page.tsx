@@ -10,6 +10,10 @@ import {
   summarizeLeadPerformance,
 } from "@/lib/lead-pipeline";
 import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
+import {
+  fetchResendAccountMetrics,
+  syncResendEngagementFromApi,
+} from "@/lib/resendStats";
 import { contactIdsForClient, getActiveClient } from "@/lib/workspace";
 import { newSiteKey, summarizeSiteEvents, trackingSnippet } from "@/lib/site-analytics";
 import { createClient } from "@/lib/supabase/server";
@@ -83,7 +87,15 @@ export default async function AnalyticsPage() {
     .limit(2000);
   if (active) leadsQuery = leadsQuery.eq("client_id", active.id);
 
-  const [contacts, sends, opened, clicked, unsubscribed, site, leadsResult, ga4, latestAudit] =
+  // Pull live Resend engagement into Hub sends before counting opens/clicks.
+  if (!emptySends && scopedIds) {
+    await syncResendEngagementFromApi(supabase, {
+      contactIds: scopedIds,
+      limit: 30,
+    }).catch(() => null);
+  }
+
+  const [contacts, sends, opened, clicked, unsubscribed, site, leadsResult, ga4, latestAudit, resend] =
     await Promise.all([
       contactsQuery,
       emptySends ? Promise.resolve({ count: 0 }) : sendsQuery,
@@ -107,6 +119,7 @@ export default async function AnalyticsPage() {
             return { data };
           })().catch(() => ({ data: null }))
         : Promise.resolve({ data: null }),
+      fetchResendAccountMetrics(14),
     ]);
 
   const website = summarizeSiteEvents(site.data ?? [], active?.domain);
@@ -126,9 +139,23 @@ export default async function AnalyticsPage() {
   const clickRate = sendCount ? Math.round((clickCount / sendCount) * 1000) / 10 : 0;
   const cards = [
     { label: "Contacts", value: contacts.count ?? 0 },
-    { label: "Emails sent", value: sendCount },
-    { label: "Opens (Resend)", value: openCount },
-    { label: "Clicks (Resend)", value: clickCount },
+    { label: "Emails sent (Hub)", value: sendCount },
+    {
+      label: "Opens (Hub)",
+      value: openCount,
+    },
+    {
+      label: "Clicks (Hub)",
+      value: clickCount,
+    },
+    {
+      label: "Opens (Resend API)",
+      value: resend.uniqueOpened || resend.opened,
+    },
+    {
+      label: "Clicks (Resend API)",
+      value: resend.uniqueClicked || resend.clicked,
+    },
     { label: "Unsubscribed", value: unsubscribed.count ?? 0 },
   ];
   const gaStatus = ga4ConfigStatus();
@@ -432,8 +459,28 @@ export default async function AnalyticsPage() {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-white">Hub</h2>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <h2 className="text-lg font-semibold text-white">Hub &amp; Resend</h2>
+        {resend.error ? (
+          <p className="text-sm text-amber-200/90">
+            Resend API: {resend.error}. Hub open/click counts still use tracked
+            sends; point the Resend webhook at{" "}
+            <code className="text-amber-50">/api/webhooks/resend</code> and keep
+            open tracking on.
+          </p>
+        ) : (
+          <p className="text-sm text-zinc-500">
+            Hub counts are DigiSol CRM sends. Resend API totals are account-wide
+            for the last {resend.days} days
+            {resend.openRate != null
+              ? ` · open rate ${resend.openRate}%`
+              : ""}
+            {resend.clickRate != null
+              ? ` · click rate ${resend.clickRate}%`
+              : ""}
+            .
+          </p>
+        )}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {cards.map((card) => (
             <div
               key={card.label}

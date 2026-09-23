@@ -59,8 +59,13 @@ export default function IntegrationsPage() {
         </p>
         <p className="mt-3">
           Resend webhook URL:{" "}
-          <code className="text-zinc-200">/api/webhooks/resend</code> for
-          opened/clicked/bounced.
+          <code className="text-zinc-200">https://wwwdigisol.com/api/webhooks/resend</code>{" "}
+          for <code className="text-zinc-200">email.opened</code> /{" "}
+          <code className="text-zinc-200">email.clicked</code> /{" "}
+          <code className="text-zinc-200">email.bounced</code>. Hub Analytics and
+          the DigiSol agent also call Resend&apos;s metrics API and backfill recent
+          sends when you open Analytics — keep open/click tracking enabled in
+          Resend.
         </p>
         <p className="mt-3">
           DigiSol Dispatch: readers subscribe after an issue. A daily cron at{" "}

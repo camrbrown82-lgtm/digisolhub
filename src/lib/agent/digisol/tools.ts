@@ -11,6 +11,10 @@ import {
 import { getEmailLogoUrl } from "@/lib/emailLogo";
 import { fetchDigisolGa4Summary } from "@/lib/ga4";
 import { summarizeLeadPerformance, type LeadRecord } from "@/lib/lead-pipeline";
+import {
+  fetchResendAccountMetrics,
+  syncResendEngagementFromApi,
+} from "@/lib/resendStats";
 import { summarizeSiteEvents } from "@/lib/site-analytics";
 import { contactIdsForClient } from "@/lib/workspace";
 import { runWebsiteAudit } from "@/lib/agent/websiteAudit";
@@ -208,7 +212,7 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
 
     fetchDigisolAnalytics: tool({
       description:
-        "Pull DigiSol GA4 traffic/conversion metrics plus Hub email and site analytics. Strictly DigiSol house property only.",
+        "Pull DigiSol GA4 traffic/conversion metrics plus Hub email stats and live Resend account metrics (opens/clicks). Strictly DigiSol house property only.",
       inputSchema: z.object({
         days: z
           .number()
@@ -238,6 +242,17 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
             );
             const emptySends = scopedIds.length === 0;
 
+            const resendSync = emptySends
+              ? { synced: 0, checked: 0, skipped: true as const }
+              : await syncResendEngagementFromApi(ctx.supabase, {
+                  contactIds: scopedIds,
+                  limit: 30,
+                }).catch(() => ({
+                  synced: 0,
+                  checked: 0,
+                  skipped: true as const,
+                }));
+
             let sendsQuery = ctx.supabase
               .from("sends")
               .select("id", { count: "exact", head: true });
@@ -265,6 +280,7 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
               site,
               leadsResult,
               ga4,
+              resend,
             ] = await Promise.all([
               ctx.supabase
                 .from("contacts")
@@ -296,6 +312,7 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
                 .order("created_at", { ascending: false })
                 .limit(2000),
               fetchDigisolGa4Summary(days),
+              fetchResendAccountMetrics(days),
             ]);
 
             const website = summarizeSiteEvents(site.data ?? [], ctx.domain);
@@ -321,6 +338,8 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
                 clickRate: sendCount
                   ? Math.round((clickCount / sendCount) * 1000) / 10
                   : 0,
+                hubSyncFromResend: resendSync,
+                resendAccount: resend,
               },
               website,
               pipeline: {

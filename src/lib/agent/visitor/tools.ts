@@ -5,6 +5,7 @@ import { logAgentActivity } from "@/lib/agent/digisol/activityLog";
 import { DIGISOL_OPERATOR } from "@/lib/agent/digisol/scope";
 import { emitHubEvent } from "@/lib/events";
 import { ensureWebsiteAuditSchema } from "@/lib/ensureWebsiteAuditSchema";
+import { sendAuditFollowUpEmail } from "@/lib/prospectAudit/followUpEmail";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { ensureDigisolClient } from "@/lib/workspace";
 
@@ -259,6 +260,24 @@ export function createVisitorAgentTools() {
           output: { contactId, created },
         });
 
+        // If they asked for an audit (or shared a URL), email the breakdown + soft CTA.
+        let followUp: Record<string, unknown> | null = null;
+        const wantsAuditEmail =
+          leadType === "audit" ||
+          Boolean(input.websiteUrl?.trim()) ||
+          /audit/i.test(requirements);
+
+        if (wantsAuditEmail && contactId) {
+          followUp = await sendVisitorAuditEmail({
+            admin,
+            clientId,
+            email,
+            name: input.name,
+            company: input.company,
+            websiteUrl: input.websiteUrl,
+          });
+        }
+
         return {
           operator: DIGISOL_OPERATOR.name,
           reportedToHub: true,
@@ -268,6 +287,63 @@ export function createVisitorAgentTools() {
           leadTypeLabel: leadTypeLabel(leadType),
           email,
           requirementsPreview: requirements.slice(0, 160),
+          auditFollowUpEmailed: Boolean(followUp?.emailed),
+          auditFollowUp: followUp,
+        };
+      },
+    }),
+
+    emailVisitorAuditBreakdown: tool({
+      description:
+        "Email the visitor a full audit breakdown (findings + soft DigiSol product ideas, no pricing) and offer a consultation with Cameron. Only call when the visitor shared their email and wants the write-up.",
+      inputSchema: z.object({
+        email: z.string().email(),
+        name: z.string().optional(),
+        company: z.string().optional(),
+        websiteUrl: z
+          .string()
+          .optional()
+          .describe("Site URL from the audit conversation."),
+        auditId: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Optional website_audits id from runVisitorWebsiteAudit."),
+      }),
+      execute: async (input) => {
+        if (!hasAdminClient()) {
+          throw new Error("Hub database is not configured");
+        }
+        const admin = createAdminClient();
+        const clientId = await ensureDigisolClient(admin);
+        if (!clientId) throw new Error("DigiSol profile missing");
+
+        const result = await sendVisitorAuditEmail({
+          admin,
+          clientId,
+          email: input.email.trim().toLowerCase(),
+          name: input.name,
+          company: input.company,
+          websiteUrl: input.websiteUrl,
+          auditId: input.auditId,
+        });
+
+        await logAgentActivity({
+          supabase: admin,
+          clientId,
+          action: "visitor:audit_followup_emailed",
+          toolName: "emailVisitorAuditBreakdown",
+          status: result.emailed ? "ok" : "error",
+          input: { email: input.email, auditId: input.auditId ?? null },
+          output: result,
+        });
+
+        return {
+          operator: DIGISOL_OPERATOR.name,
+          ...result,
+          message: result.emailed
+            ? "Audit breakdown emailed with soft product ideas and Cameron consultation CTA."
+            : result.reason || "Could not send audit email.",
         };
       },
     }),
@@ -347,4 +423,102 @@ function leadTypeLabel(type: VisitorLeadType) {
     default:
       return "Other";
   }
+}
+
+async function sendVisitorAuditEmail(input: {
+  admin: ReturnType<typeof createAdminClient>;
+  clientId: string;
+  email: string;
+  name?: string | null;
+  company?: string | null;
+  websiteUrl?: string | null;
+  auditId?: string | null;
+}) {
+  let auditQuery = input.admin
+    .from("website_audits")
+    .select("id, url, score, report, raw, created_at")
+    .eq("client_id", input.clientId)
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  if (input.auditId) {
+    auditQuery = input.admin
+      .from("website_audits")
+      .select("id, url, score, report, raw, created_at")
+      .eq("client_id", input.clientId)
+      .eq("id", input.auditId)
+      .limit(1);
+  }
+
+  const { data: rows } = await auditQuery;
+  let audit = rows?.[0] as
+    | {
+        id: string;
+        url: string;
+        score: number;
+        report: {
+          summary?: string;
+          weaknesses?: string[];
+          strengths?: string[];
+        } | null;
+        raw: { issues?: Array<{ message?: string }>; source?: string } | null;
+      }
+    | undefined;
+
+  // Prefer matching URL if several recent audits exist.
+  if (!input.auditId && input.websiteUrl) {
+    const host = normalizeDomain(input.websiteUrl);
+    if (host) {
+      const { data: byUrl } = await input.admin
+        .from("website_audits")
+        .select("id, url, score, report, raw, created_at")
+        .eq("client_id", input.clientId)
+        .ilike("url", `%${host}%`)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (byUrl?.[0]) audit = byUrl[0] as typeof audit;
+    }
+  }
+
+  if (!audit) {
+    return {
+      emailed: false,
+      reason: "no_audit_found",
+      contactId: undefined as string | undefined,
+    };
+  }
+
+  const report = audit.report || {};
+  const weaknesses =
+    (report.weaknesses || []).slice(0, 5).filter(Boolean).length > 0
+      ? (report.weaknesses || []).slice(0, 5)
+      : (audit.raw?.issues || [])
+          .map((issue) => issue.message || "")
+          .filter(Boolean)
+          .slice(0, 5);
+
+  const sent = await sendAuditFollowUpEmail({
+    db: input.admin,
+    clientId: input.clientId,
+    email: input.email,
+    name: input.name,
+    company: input.company,
+    url: audit.url || input.websiteUrl || "",
+    score: audit.score ?? 0,
+    summary:
+      report.summary ||
+      `We reviewed ${audit.url} and scored it ${audit.score}/100 on SEO, speed, and conversion basics.`,
+    weaknesses,
+    source: "visitor_chat",
+  });
+
+  return {
+    emailed: Boolean(sent.emailed),
+    reason: "reason" in sent ? sent.reason : undefined,
+    contactId: sent.contactId,
+    sendId: sent.sendId,
+    resendId: sent.resendId,
+    auditId: audit.id,
+    score: audit.score,
+  };
 }
