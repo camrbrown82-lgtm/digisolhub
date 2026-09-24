@@ -199,7 +199,6 @@ export default function RootLayout({
   );
 }
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css"; // (Keep whatever other imports you already have here)
 
 export default function RootLayout({
