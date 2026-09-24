@@ -16,6 +16,7 @@
     "@google-analytics/data": "^7.1.0",
     "@supabase/ssr": "^0.12.6",
     "@supabase/supabase-js": "^2.116.0",
+    "@vercel/speed-insights": "^2.0.0",
     "@xyflow/react": "^12.11.6",
     "ai": "^7.0.111",
     "csv-parse": "^7.0.2",

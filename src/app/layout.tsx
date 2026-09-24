@@ -198,3 +198,21 @@ export default function RootLayout({
     </html>
   );
 }
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import "./globals.css"; // (Keep whatever other imports you already have here)
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body>
+        {children}
+        <SpeedInsights />
+      </body>
+    </html>
+  );
+}
