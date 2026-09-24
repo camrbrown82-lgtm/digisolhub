@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { DigiSolSiteBeacon } from "@/components/DigiSolSiteBeacon";
 import { MetaPixel } from "@/components/MetaPixel";
 import { PublicKaylevChat } from "@/components/PublicKaylevChat";
@@ -194,22 +195,6 @@ export default function RootLayout({
         </PublicSiteAnalytics>
         <MetaPixel />
         <AttributionCaptureBoundary />
-      </body>
-    </html>
-  );
-}
-import { SpeedInsights } from "@vercel/speed-insights/next";
-import "./globals.css"; // (Keep whatever other imports you already have here)
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html lang="en">
-      <body>
-        {children}
         <SpeedInsights />
       </body>
     </html>
