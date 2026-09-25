@@ -22,7 +22,7 @@ import {
   emptyInstagramInsights,
   fetchInstagramInsights,
 } from "@/lib/meta/instagramInsights";
-import { contactIdsForClient, getActiveClient } from "@/lib/workspace";
+import { contactIdsForClient, getWorkspaceClient } from "@/lib/workspace";
 import { newSiteKey, summarizeSiteEvents, trackingSnippet } from "@/lib/site-analytics";
 import { createClient } from "@/lib/supabase/server";
 
@@ -37,10 +37,13 @@ export default async function AnalyticsPage() {
   const supabase = await createClient();
   const headerStore = await headers();
   const origin = hubOrigin(headerStore);
-  let active = await getActiveClient(supabase);
+  // Fall back to DigiSol house when Working-on cookie is missing/stale —
+  // otherwise GA4/Meta cards render as "0 / No signal" with env configured.
+  let active = await getWorkspaceClient(supabase);
   const scopedIds = active ? await contactIdsForClient(supabase, active.id) : null;
   const isDigisol =
     (active?.name || "").toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase();
+  const gaStatus = ga4ConfigStatus();
 
   if (active && !active.site_key) {
     const siteKey = newSiteKey();
@@ -123,7 +126,10 @@ export default async function AnalyticsPage() {
       siteQuery,
       leadsQuery,
       withTimeout(
-        isDigisol ? fetchDigisolGa4Summary(14) : Promise.resolve(emptyGa4),
+        // DigiSol GA4 is house-level — always pull when credentials exist.
+        gaStatus.ready
+          ? fetchDigisolGa4Summary(14)
+          : Promise.resolve(emptyGa4),
         7000,
         ga4TimeoutFallback,
       ),
@@ -216,7 +222,6 @@ export default async function AnalyticsPage() {
     { label: "Clicks", value: clickCount },
     { label: "Unsubscribed", value: unsubscribed.count ?? 0 },
   ];
-  const gaStatus = ga4ConfigStatus();
   const weakPoints = (
     agentEvents.weakPoints.length
       ? agentEvents.weakPoints
