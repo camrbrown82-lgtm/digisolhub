@@ -1,11 +1,19 @@
 export const DIGISOL_SITE_URL = "https://wwwdigisol.com";
 export const DIGISOL_FOUNDER = "Cameron Brown";
 export const DIGISOL_FOUNDER_TITLE = "Founder & CEO";
+/** Public business inbox — use everywhere visitors / schema / Kaylev see email. */
+export const DIGISOL_EMAIL = "digisol2026@yahoo.com";
+/**
+ * Facebook Page (not a personal profile). Override with
+ * NEXT_PUBLIC_DIGISOL_FACEBOOK_URL if the vanity URL changes.
+ */
 export const DIGISOL_FACEBOOK_URL =
-  "https://www.facebook.com/profile.php?id=61594465430522&sk=about";
+  process.env.NEXT_PUBLIC_DIGISOL_FACEBOOK_URL?.trim() ||
+  "https://www.facebook.com/profile.php?id=61594718912547";
 export const DIGISOL_LINKEDIN_URL =
   "https://www.linkedin.com/in/cameron-brown-digisol";
-export const DIGISOL_INSTAGRAM_HANDLE = "Digi.Sol2026";
+export const DIGISOL_INSTAGRAM_HANDLE =
+  process.env.NEXT_PUBLIC_DIGISOL_INSTAGRAM_HANDLE?.trim() || "digi.sol20269";
 export const DIGISOL_INSTAGRAM_URL =
   `https://www.instagram.com/${DIGISOL_INSTAGRAM_HANDLE}/`;
 export const DIGISOL_GOOGLE_LISTING_URL =

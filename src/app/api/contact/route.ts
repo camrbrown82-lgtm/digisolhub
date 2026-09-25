@@ -6,14 +6,14 @@ import { hasAdminClient, createAdminClient } from "@/lib/supabase/admin";
 import { normalizeLead, upsertLead } from "@/lib/leads";
 import { sendMetaLeadEvent } from "@/lib/meta/capi";
 import { parseAttributionFromBody } from "@/lib/meta/attribution";
-import { DIGISOL_SITE_URL } from "@/lib/site";
+import { DIGISOL_EMAIL, DIGISOL_SITE_URL } from "@/lib/site";
 import { ensureMetaSchema } from "@/lib/ensureMetaSchema";
 import { clientIp, rateLimit } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const OWNER_EMAIL = "cam.r.brown82@gmail.com";
+const OWNER_EMAIL = DIGISOL_EMAIL;
 
 function str(value: unknown) {
   return typeof value === "string" ? value.trim() : "";

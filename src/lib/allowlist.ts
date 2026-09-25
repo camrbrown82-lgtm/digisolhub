@@ -1,4 +1,9 @@
-const OWNER_EMAIL = "cam.r.brown82@gmail.com";
+import { DIGISOL_EMAIL } from "@/lib/site";
+
+/** Primary Hub owner login — DigiSol business inbox. */
+const OWNER_EMAIL = DIGISOL_EMAIL;
+/** Legacy personal inbox kept so existing Hub sessions still work. */
+const LEGACY_OWNER_EMAIL = "cam.r.brown82@gmail.com";
 
 /**
  * DigiSol Hub is owner-only.
@@ -18,7 +23,7 @@ function allowedEmails() {
         email !== "all",
     );
 
-  const set = new Set<string>([OWNER_EMAIL, ...fromEnv]);
+  const set = new Set<string>([OWNER_EMAIL, LEGACY_OWNER_EMAIL, ...fromEnv]);
   return Array.from(set);
 }
 

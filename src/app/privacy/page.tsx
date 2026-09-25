@@ -4,6 +4,7 @@ import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import {
   DIGISOL_ADDRESS_LINE,
+  DIGISOL_EMAIL,
   DIGISOL_PHONE,
   DIGISOL_SITE_URL,
 } from "@/lib/site";
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
 
 const EFFECTIVE_DATE = "September 23, 2026";
 
-const PRIVACY_EMAIL = "cam.r.brown82@gmail.com";
+const PRIVACY_EMAIL = DIGISOL_EMAIL;
 
 export default function PrivacyPolicyPage() {
   return (

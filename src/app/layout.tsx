@@ -17,6 +17,7 @@ import {
 } from "@/lib/media";
 import {
   DIGISOL_CITY,
+  DIGISOL_EMAIL,
   DIGISOL_GEO,
   DIGISOL_GOOGLE_LISTING_URL,
   DIGISOL_LINKEDIN_URL,
@@ -89,7 +90,7 @@ const organizationJsonLd = {
   image: `${DIGISOL_SITE_URL}/logo.jpg`,
   description:
     "Airdrie web design, web development, and digital marketing studio. Custom websites, SEO, Google Ads, and Meta campaigns — headquartered in Airdrie, Alberta, serving clients everywhere.",
-  email: "cam.r.brown82@gmail.com",
+  email: DIGISOL_EMAIL,
   telephone: DIGISOL_PHONE,
   priceRange: "$$",
   address: {

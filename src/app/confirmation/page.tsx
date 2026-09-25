@@ -5,7 +5,7 @@ import { MetaLeadConversion } from "@/components/MetaLeadConversion";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { TrackedLink } from "@/components/TrackedLink";
-import { DIGISOL_LINKEDIN_URL } from "@/lib/site";
+import { DIGISOL_EMAIL, DIGISOL_LINKEDIN_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Confirmation | DigiSol",
@@ -53,13 +53,13 @@ export default function ConfirmationPage() {
               1-587-577-0782
             </TrackedLink>
             <TrackedLink
-              href="mailto:cam.r.brown82@gmail.com"
+              href={`mailto:${DIGISOL_EMAIL}`}
               eventName="contact_click"
-              eventParams={{ method: "email_gmail", location: "confirmation" }}
+              eventParams={{ method: "email", location: "confirmation" }}
               className="inline-flex items-center gap-2 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
             >
               <Mail className="h-4 w-4 text-indigo-400" aria-hidden="true" />
-              cam.r.brown82@gmail.com
+              {DIGISOL_EMAIL}
             </TrackedLink>
             <TrackedLink
               href={DIGISOL_LINKEDIN_URL}

@@ -12,6 +12,15 @@ import { getOpenAIApiKey } from "@/lib/openai";
 import { clientIp, rateLimit } from "@/lib/security";
 import { hasAdminClient } from "@/lib/supabase/admin";
 import {
+  DIGISOL_EMAIL,
+  DIGISOL_FACEBOOK_URL,
+  DIGISOL_GOOGLE_LISTING_URL,
+  DIGISOL_INSTAGRAM_HANDLE,
+  DIGISOL_INSTAGRAM_URL,
+  DIGISOL_PHONE,
+  DIGISOL_SITE_URL,
+} from "@/lib/site";
+import {
   countryLabel,
   parseAudienceCookie,
   type VisitorAudience,
@@ -207,6 +216,15 @@ Voice: ${DIGISOL_BRAND.voice}
 Audience: ${DIGISOL_BRAND.audience}
 Lean on: ${DIGISOL_BRAND.doSay}
 Avoid: ${DIGISOL_BRAND.dontSay}
+
+## Official DigiSol contact (use these — never invent others)
+- Email: ${DIGISOL_EMAIL} (business inbox; prefer this over any personal address)
+- Phone: ${DIGISOL_PHONE}
+- Website: ${DIGISOL_SITE_URL}
+- Facebook Page: ${DIGISOL_FACEBOOK_URL}
+- Instagram: @${DIGISOL_INSTAGRAM_HANDLE} (${DIGISOL_INSTAGRAM_URL})
+- Google Business Profile: ${DIGISOL_GOOGLE_LISTING_URL}
+If a visitor asks how to reach DigiSol, share the email/phone above. DigiSol's Facebook presence is a **Page** (not a personal profile).
 
 ${marketBlock}
 

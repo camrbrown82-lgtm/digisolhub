@@ -1,6 +1,6 @@
 import { Linkedin, Mail, Phone } from "lucide-react";
 import { TrackedLink } from "@/components/TrackedLink";
-import { DIGISOL_LINKEDIN_URL } from "@/lib/site";
+import { DIGISOL_EMAIL, DIGISOL_LINKEDIN_URL } from "@/lib/site";
 
 const contacts = [
   {
@@ -10,15 +10,9 @@ const contacts = [
     icon: Phone,
   },
   {
-    href: "mailto:cam.r.brown82@gmail.com",
-    method: "email_gmail",
-    label: "cam.r.brown82@gmail.com",
-    icon: Mail,
-  },
-  {
-    href: "mailto:digisol2026@yahoo.com",
-    method: "email_yahoo",
-    label: "digisol2026@yahoo.com",
+    href: `mailto:${DIGISOL_EMAIL}`,
+    method: "email",
+    label: DIGISOL_EMAIL,
     icon: Mail,
   },
   {

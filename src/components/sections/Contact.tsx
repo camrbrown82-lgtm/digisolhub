@@ -11,9 +11,13 @@ import {
   getAttributionForSubmit,
   newMetaEventId,
 } from "@/lib/attributionClient";
+import { DIGISOL_EMAIL, DIGISOL_PHONE } from "@/lib/site";
 
 const fieldClass =
   "mt-1.5 w-full rounded-lg border border-indigo-400/25 bg-zinc-950/80 px-3 py-2.5 text-sm text-white placeholder:text-zinc-500 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30";
+
+const phoneDisplay = DIGISOL_PHONE.replace("+1-", "1-");
+const formErrorFallback = `Something went wrong sending the form. Email ${DIGISOL_EMAIL} or call ${phoneDisplay}.`;
 
 export function Contact({
   title = "Ready to Grow Your Business Online?",
@@ -85,7 +89,7 @@ export function Contact({
       setError(
         detail && !/failed to fetch|network/i.test(detail)
           ? detail
-          : "Something went wrong sending the form. Email cam.r.brown82@gmail.com or call 1-587-577-0782.",
+          : formErrorFallback,
       );
     } finally {
       setSending(false);

@@ -6,6 +6,7 @@ import {
   sendEmailToContact,
 } from "@/lib/email";
 import {
+  DIGISOL_EMAIL,
   DIGISOL_FOUNDER,
   DIGISOL_FOUNDER_TITLE,
   DIGISOL_PHONE,
@@ -203,7 +204,7 @@ export function buildAuditFollowUpHtml(input: {
 <p><strong>Ways DigiSol can help (no obligation):</strong></p>
 <ul>${productHtml}</ul>
 <p>If you want a direct walkthrough, ${escapeHtml(DIGISOL_FOUNDER)} (${escapeHtml(DIGISOL_FOUNDER_TITLE)}) is happy to hop on a short consultation — no hard sell, just clarity on what would move the needle for your site.</p>
-<p><a href="${consultUrl}">Book a consultation</a> · ${escapeHtml(DIGISOL_PHONE)} · <a href="mailto:cam.r.brown82@gmail.com">cam.r.brown82@gmail.com</a></p>
+<p><a href="${consultUrl}">Book a consultation</a> · ${escapeHtml(DIGISOL_PHONE)} · <a href="mailto:${DIGISOL_EMAIL}">${escapeHtml(DIGISOL_EMAIL)}</a></p>
 <p style="color:#71717a;font-size:12px;">${casl} DigiSol · Alberta, Canada. Reply to unsubscribe anytime.</p>
 `.trim();
 }
@@ -321,7 +322,7 @@ export async function sendConsultationFollowUpEmail(
 <p>Hi${first ? ` ${escapeHtml(first)}` : ""} — thanks for chatting with Kaylev on DigiSol.</p>
 <p>You asked about next steps${requirements ? ` (${escapeHtml(requirements.slice(0, 180))})` : ""} — and you do not need to figure out every detail alone. ${escapeHtml(DIGISOL_FOUNDER)} (${escapeHtml(DIGISOL_FOUNDER_TITLE)}) offers a <strong>free consultation</strong>: a short, no-pressure call to clarify what would help your business grow online.</p>
 <p><a href="${consultUrl}">Book your free consultation</a></p>
-<p>Or reach Cameron directly: ${escapeHtml(DIGISOL_PHONE)} · <a href="mailto:cam.r.brown82@gmail.com">cam.r.brown82@gmail.com</a></p>
+<p>Or reach Cameron directly: ${escapeHtml(DIGISOL_PHONE)} · <a href="mailto:${DIGISOL_EMAIL}">${escapeHtml(DIGISOL_EMAIL)}</a></p>
 <p style="color:#71717a;font-size:12px;">You are receiving this because you requested a DigiSol consultation via Kaylev. DigiSol · Alberta, Canada. Reply to unsubscribe anytime.</p>
 `.trim();
 
