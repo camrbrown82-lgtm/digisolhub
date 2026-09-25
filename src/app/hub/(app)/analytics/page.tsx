@@ -185,18 +185,8 @@ export default async function AnalyticsPage() {
         4000,
         emptyAgent,
       ),
-      withTimeout(
-        isDigisol ? fetchMetaAdsSummary(14) : Promise.resolve(emptyMetaAdsSummary(14)),
-        8000,
-        emptyMetaAdsSummary(14),
-      ),
-      withTimeout(
-        isDigisol
-          ? fetchInstagramInsights()
-          : Promise.resolve(emptyInstagramInsights()),
-        8000,
-        emptyInstagramInsights(),
-      ),
+      withTimeout(fetchMetaAdsSummary(14), 8000, emptyMetaAdsSummary(14)),
+      withTimeout(fetchInstagramInsights(), 8000, emptyInstagramInsights()),
     ]);
 
   const website = summarizeSiteEvents(site.data ?? [], active?.domain);
@@ -478,8 +468,8 @@ export default async function AnalyticsPage() {
         </div>
       </section>
 
-      {isDigisol ? <MetaAdsPanel summary={metaAds} /> : null}
-      {isDigisol ? <InstagramInsightsPanel summary={instagram} /> : null}
+      <MetaAdsPanel summary={metaAds} />
+      <InstagramInsightsPanel summary={instagram} />
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-white">Lead pipeline</h2>
