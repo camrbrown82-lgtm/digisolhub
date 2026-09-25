@@ -121,9 +121,11 @@ export default function IntegrationsPage() {
         <DispatchSendButton />
         <p className="mt-3">
           Google Ads: set <code className="text-zinc-200">NEXT_PUBLIC_GOOGLE_ADS_ID</code>{" "}
-          to the <code className="text-zinc-200">AW-***********</code> ID, and{" "}
+          to the <code className="text-zinc-200">AW-***********</code> ID, and either{" "}
           <code className="text-zinc-200">NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL</code>{" "}
-          to the consult conversion label. Then open{" "}
+          or <code className="text-zinc-200">NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_EVENT</code>{" "}
+          (e.g. <code className="text-zinc-200">ads_conversion_Book_appointment_1</code>).
+          The confirmation page fires that conversion on page load. Then open{" "}
           <a
             href="https://ads.google.com/"
             className="text-indigo-300 underline-offset-2 hover:underline"
