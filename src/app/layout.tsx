@@ -38,7 +38,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "DigiSol | Airdrie Web Design, Development & Marketing",
   description:
-    "Airdrie-based website design, Next.js development, SEO, and digital marketing. DigiSol designs the site, engineers the platform, and helps local customers find you and convert — serving Airdrie, Calgary, and beyond.",
+    "Airdrie web design, Next.js development, SEO & digital marketing. DigiSol builds fast sites that help local customers find you and convert.",
   metadataBase: new URL(DIGISOL_SITE_URL),
   verification: {
     google: "QwmR9VlADhodbnOuBT3FM-XaaBAyM9BLcz5bLfRdi8Y",
@@ -54,15 +54,18 @@ export const metadata: Metadata = {
   openGraph: {
     title: "DigiSol | Airdrie Web Design, Development & Marketing",
     description:
-      "Custom website design, Next.js development, and growth marketing from Airdrie, Alberta. One partner from first look to closed deal.",
+      "Custom websites, SEO, and growth marketing from Airdrie, Alberta — one partner from first look to closed deal.",
     url: DIGISOL_SITE_URL,
     siteName: "DigiSol",
     locale: "en_CA",
     type: "website",
     images: [
       {
-        url: "/logo.jpg",
+        url: `${DIGISOL_SITE_URL}/logo.jpg`,
+        width: 1024,
+        height: 559,
         alt: "DigiSol — Website Design, Engineering & Growth",
+        type: "image/jpeg",
       },
     ],
   },
@@ -70,8 +73,15 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "DigiSol | Airdrie Web Design, Development & Marketing",
     description:
-      "Custom website design, Next.js development, and growth marketing from Airdrie, Alberta. One partner from first look to closed deal.",
-    images: ["/logo.jpg"],
+      "Custom websites, SEO, and growth marketing from Airdrie, Alberta — one partner from first look to closed deal.",
+    images: [
+      {
+        url: `${DIGISOL_SITE_URL}/logo.jpg`,
+        width: 1024,
+        height: 559,
+        alt: "DigiSol — Website Design, Engineering & Growth",
+      },
+    ],
   },
 };
 
@@ -89,7 +99,7 @@ const organizationJsonLd = {
   },
   image: `${DIGISOL_SITE_URL}/logo.jpg`,
   description:
-    "Airdrie web design, web development, and digital marketing studio. Custom websites, SEO, Google Ads, and Meta campaigns — headquartered in Airdrie, Alberta, serving clients everywhere.",
+    "Airdrie web design, development, and digital marketing. Custom websites, SEO, Google Ads, and Meta campaigns from Airdrie, Alberta.",
   email: DIGISOL_EMAIL,
   telephone: DIGISOL_PHONE,
   priceRange: "$$",
