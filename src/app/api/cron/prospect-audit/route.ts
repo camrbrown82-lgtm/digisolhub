@@ -15,6 +15,8 @@ type RunBody = {
   dailyMax?: number;
   batchSize?: number;
   dryRun?: boolean;
+  manual?: boolean;
+  resendDryRuns?: boolean;
 };
 
 function parseOptions(request: Request, body?: RunBody | null) {
@@ -34,6 +36,14 @@ function parseOptions(request: Request, body?: RunBody | null) {
     body?.dryRun === true ||
     url.searchParams.get("dryRun") === "1" ||
     url.searchParams.get("dryRun") === "true";
+  const manual =
+    body?.manual === true ||
+    url.searchParams.get("manual") === "1" ||
+    url.searchParams.get("manual") === "true";
+  const resendDryRuns =
+    body?.resendDryRuns === true ||
+    url.searchParams.get("resendDryRuns") === "1" ||
+    url.searchParams.get("resendDryRuns") === "true";
 
   return {
     trades: trades.length ? trades : undefined,
@@ -46,10 +56,16 @@ function parseOptions(request: Request, body?: RunBody | null) {
         ? Math.min(50, Math.floor(batchSizeRaw))
         : undefined,
     dryRun,
+    manual,
+    resendDryRuns,
   };
 }
 
-async function run(request: Request, body?: RunBody | null) {
+async function run(
+  request: Request,
+  body?: RunBody | null,
+  extras?: { forceManual?: boolean },
+) {
   if (!hasAdminClient()) {
     return NextResponse.json(
       { error: "Supabase service role is not configured" },
@@ -58,6 +74,7 @@ async function run(request: Request, body?: RunBody | null) {
   }
 
   const options = parseOptions(request, body);
+  if (extras?.forceManual) options.manual = true;
   const result = await runProspectAuditWorker({
     db: createAdminClient(),
     ...options,
@@ -70,16 +87,16 @@ async function run(request: Request, body?: RunBody | null) {
  * DigiSol local prospect-audit cron.
  * GET/POST /api/cron/prospect-audit
  *
- * Body: { dailyMax?: number; batchSize?: number; trades?: string; dryRun?: boolean }
- * Protected by CRON_SECRET (Bearer). DigiSol house budgets are unrestricted
- * unless DIGISOL_ENFORCE_BUDGETS=1. Query/body: trades=hvac&batchSize=25&dailyMax=25&dryRun=1
+ * Cron defaults: 5 audits/day. Hub session POST sets manual=true (run anytime).
+ * Body: { dailyMax?, batchSize?, trades?, dryRun?, manual?, resendDryRuns? }
  */
 export async function GET(request: Request) {
   if (!cronAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
-    return await run(request);
+    // Scheduled tick: hard default 5/day unless query overrides.
+    return await run(request, { dailyMax: 5, batchSize: 5 });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Prospect audit failed";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -107,7 +124,7 @@ export async function POST(request: Request) {
   if (error) return error;
 
   try {
-    return await run(request, body);
+    return await run(request, body, { forceManual: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Prospect audit failed";
     return NextResponse.json({ error: message }, { status: 500 });

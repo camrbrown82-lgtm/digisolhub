@@ -69,10 +69,12 @@ export default async function ProspectsPage() {
             Schedule:{" "}
             <code className="text-zinc-300">/api/cron/prospect-audit</code> runs
             daily at <span className="text-zinc-300">15:00 UTC</span> (9:00 AM
-            Mountain Daylight / 8:00 AM Mountain Standard). The cron auto-seeds
-            Alberta trade sites into the queue when it is empty, then audits and
-            emails a growth-phase batch (DigiSol house budgets unrestricted
-            unless DIGISOL_ENFORCE_BUDGETS is enabled).
+            Mountain Daylight / 8:00 AM Mountain Standard) and processes{" "}
+            <span className="text-zinc-300">up to 5</span> prospects. Prefer
+            trades first, then expand to other Alberta sectors if the trade queue
+            is empty. Use <span className="text-zinc-300">Run audits now</span>{" "}
+            anytime — that bypasses the cron daily ceiling and re-queues prior
+            dry-runs / Resend failures for a live send.
           </p>
         </div>
         <div className="flex flex-col items-end gap-3">
@@ -114,8 +116,8 @@ export default async function ProspectsPage() {
                 <td colSpan={7} className="px-4 py-8 text-zinc-500">
                   No prospects yet. Click{" "}
                   <strong className="text-zinc-300">Run today&apos;s audits</strong>{" "}
-                  to seed Alberta trade sites and process up to 5 (or wait for the
-                  15:00 UTC cron).
+                  to seed Alberta sites and process a batch (or wait for the
+                  15:00 UTC cron · 5/day).
                 </td>
               </tr>
             ) : (

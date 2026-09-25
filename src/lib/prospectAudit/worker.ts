@@ -14,6 +14,8 @@ import { ensureProspectQueue } from "@/lib/prospectAudit/ensureQueue";
 import {
   DEFAULT_PROSPECT_TRADES,
   PROSPECT_AUDIT_BATCH_DEFAULT,
+  PROSPECT_AUDIT_CRON_DAILY_MAX,
+  PROSPECT_AUDIT_MANUAL_BATCH_MAX,
   PROSPECT_AUDIT_MAX_OUTPUT_TOKENS,
   PROSPECT_AUDIT_MODEL,
   resolveProspectBatchSize,
@@ -21,6 +23,7 @@ import {
   utcDayStartIso,
   type ProspectTrade,
 } from "@/lib/prospectAudit/limits";
+import { digisolBudgetsEnforced } from "@/lib/agent/budget/digisolDaily";
 import { promoteProspectOnEngagement } from "@/lib/prospectAudit/promote";
 import { draftProspectAuditSummary } from "@/lib/prospectAudit/summary";
 import { ensureDigisolClient } from "@/lib/workspace";
@@ -39,6 +42,13 @@ export type ProspectAuditWorkerOptions = {
   batchSize?: number;
   /** When true, audit + CASL check run but Resend is skipped. */
   dryRun?: boolean;
+  /**
+   * Hub / operator run — may run anytime and does not use the cron daily
+   * ceiling of 5 (still respects DIGISOL_ENFORCE_BUDGETS when enabled).
+   */
+  manual?: boolean;
+  /** Re-queue dry-run / Resend-failed audits so they can be emailed. */
+  resendDryRuns?: boolean;
 };
 
 export type ProspectAuditWorkerResult = {
@@ -51,6 +61,9 @@ export type ProspectAuditWorkerResult = {
   model: string;
   maxOutputTokens: number;
   dryRun: boolean;
+  manual?: boolean;
+  expandedSectors?: boolean;
+  requeuedDryRuns?: number;
   queueSeed?: {
     pendingBefore: number;
     inserted: number;
@@ -115,8 +128,8 @@ export async function runProspectAuditWorker(
   let queueSeed: ProspectAuditWorkerResult["queueSeed"];
   try {
     queueSeed = await ensureProspectQueue(opts.db, clientId, {
-      minPending: PROSPECT_AUDIT_BATCH_DEFAULT,
-      fillCount: 12,
+      minPending: Math.max(PROSPECT_AUDIT_BATCH_DEFAULT, 8),
+      fillCount: 16,
     });
   } catch (seedErr) {
     console.warn(
@@ -131,10 +144,15 @@ export async function runProspectAuditWorker(
     };
   }
 
+  const manual = opts.manual === true;
+  let requeuedDryRuns = 0;
+  if (opts.resendDryRuns === true || (manual && opts.dryRun !== true)) {
+    requeuedDryRuns = await requeueDryRunProspects(opts.db, clientId);
+  }
+
   // DigiSol bootstrap: hard stop when daily automated audit/email cap is spent.
   const digisolDaily = await getDigisolDailyUsage(opts.db, clientId);
-  const dailyMax = resolveProspectDailyMax(opts.dailyMax);
-  const remainingFromDigisolCap = digisolDaily.auditsRemaining;
+  const dailyMax = resolveProspectDailyMax(opts.dailyMax, { manual });
   const dayStart = utcDayStartIso();
   const { count: processedTodayBefore } = await opts.db
     .from("prospects")
@@ -143,16 +161,28 @@ export async function runProspectAuditWorker(
     .gte("last_audited_at", dayStart);
 
   const usedToday = Math.max(processedTodayBefore ?? 0, digisolDaily.auditsUsed);
-  const remainingDaily = Math.min(
-    Math.max(0, dailyMax - usedToday),
-    remainingFromDigisolCap,
-  );
-  const batchSize = resolveProspectBatchSize(remainingDaily, opts.batchSize);
+  // Manual Hub runs ignore the cron "5/day" ceiling when budgets are open.
+  const remainingDaily =
+    manual && !digisolBudgetsEnforced()
+      ? Math.min(
+          opts.batchSize ?? 10,
+          PROSPECT_AUDIT_MANUAL_BATCH_MAX,
+          digisolDaily.auditsRemaining,
+        )
+      : Math.min(
+          Math.max(0, dailyMax - usedToday),
+          digisolDaily.auditsRemaining,
+        );
+  const batchSize = resolveProspectBatchSize(remainingDaily, opts.batchSize, {
+    manual,
+  });
   const dryRun = opts.dryRun === true;
-  const trades =
+  const preferredTrades =
     opts.trades && opts.trades.length > 0
       ? opts.trades.map((t) => String(t).toLowerCase())
       : [...DEFAULT_PROSPECT_TRADES];
+  let trades = preferredTrades;
+  let expandedSectors = false;
 
   await checkAgentBudget(
     clientId,
@@ -179,6 +209,9 @@ export async function runProspectAuditWorker(
       batchSize,
       trades,
       dryRun,
+      manual,
+      requeuedDryRuns,
+      cronDailyMax: PROSPECT_AUDIT_CRON_DAILY_MAX,
       maxOutputTokens: PROSPECT_AUDIT_MAX_OUTPUT_TOKENS,
     },
   });
@@ -222,7 +255,7 @@ export async function runProspectAuditWorker(
     };
   }
 
-  const { data: prospects, error: listError } = await opts.db
+  let { data: prospects, error: listError } = await opts.db
     .from("prospects")
     .select(
       "id, business_name, url, trade, city, contact_email, audit_status, casl_status",
@@ -237,6 +270,29 @@ export async function runProspectAuditWorker(
     throw new Error(listError.message);
   }
 
+  // Prefer trades / requested sectors; if none pending, expand to all sectors.
+  if (!prospects?.length) {
+    const expanded = await opts.db
+      .from("prospects")
+      .select(
+        "id, business_name, url, trade, city, contact_email, audit_status, casl_status",
+      )
+      .eq("client_id", clientId)
+      .in("audit_status", ["pending", "failed"])
+      .order("created_at", { ascending: true })
+      .limit(batchSize);
+    if (expanded.error) throw new Error(expanded.error.message);
+    if (expanded.data?.length) {
+      prospects = expanded.data;
+      expandedSectors = true;
+      trades = [
+        ...new Set(
+          expanded.data.map((row) => String(row.trade || "general").toLowerCase()),
+        ),
+      ];
+    }
+  }
+
   if (!prospects?.length) {
     await logAgentActivity({
       supabase: opts.db,
@@ -245,7 +301,7 @@ export async function runProspectAuditWorker(
       toolName: "runProspectAuditWorker",
       status: "finished",
       model: PROSPECT_AUDIT_MODEL,
-      output: { queueSeed, trades },
+      output: { queueSeed, trades: preferredTrades, expandedSectors },
     });
     return {
       ok: true,
@@ -355,10 +411,14 @@ export async function runProspectAuditWorker(
     metadata: {
       dailyMax,
       remainingAfter: Math.max(0, remainingDaily - totals.attempted),
+      manual,
+      expandedSectors,
+      requeuedDryRuns,
       costControls: {
         model: PROSPECT_AUDIT_MODEL,
         maxOutputTokens: PROSPECT_AUDIT_MAX_OUTPUT_TOKENS,
         dailyMax,
+        cronDailyMax: PROSPECT_AUDIT_CRON_DAILY_MAX,
         digisolDailyCap: digisolDaily.cap,
       },
     },
@@ -377,7 +437,51 @@ export async function runProspectAuditWorker(
     queueSeed,
     results,
     totals,
+    manual,
+    expandedSectors,
+    requeuedDryRuns,
   };
+}
+
+/** Move dry-run / Resend-failed audited rows back to pending for a live send. */
+async function requeueDryRunProspects(db: SupabaseClient, clientId: string) {
+  const { data, error } = await db
+    .from("prospects")
+    .select("id, error_message, audit_status, emailed_at")
+    .eq("client_id", clientId)
+    .eq("audit_status", "audited")
+    .is("emailed_at", null)
+    .limit(100);
+
+  if (error || !data?.length) return 0;
+
+  const ids = data
+    .filter((row) => {
+      const err = String(row.error_message || "");
+      return (
+        /dry_run/i.test(err) ||
+        /RESEND/i.test(err) ||
+        /requeued_for_email_send/i.test(err) ||
+        !err
+      );
+    })
+    .map((row) => row.id as string);
+
+  if (!ids.length) return 0;
+
+  const { error: patchError } = await db
+    .from("prospects")
+    .update({
+      audit_status: "pending",
+      error_message: null,
+    })
+    .in("id", ids);
+
+  if (patchError) {
+    console.warn("[prospect-audit] requeue dry runs failed", patchError.message);
+    return 0;
+  }
+  return ids.length;
 }
 
 async function processOneProspect(input: {

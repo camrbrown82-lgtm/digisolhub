@@ -1,6 +1,9 @@
 /**
  * DigiSol local prospect-audit worker limits.
- * Daily ceiling follows DigiSol house budget mode (unrestricted by default).
+ *
+ * Cron: 5 audits/day by default.
+ * Hub "Run now": manual — can run anytime (does not wait on the cron quota).
+ * DIGISOL_ENFORCE_BUDGETS=1 still applies DigiSol house hard caps when set.
  */
 
 import {
@@ -8,11 +11,17 @@ import {
   DIGISOL_DAILY_AUTOMATED_AUDIT_CAP,
 } from "@/lib/agent/budget/digisolDaily";
 
-/** Absolute daily ceiling when budgets are enforced. */
+/** Scheduled cron daily ceiling (UTC day). */
+export const PROSPECT_AUDIT_CRON_DAILY_MAX = 5;
+
+/** Hub / Kaylev manual run — batch ceiling when not enforcing house budgets. */
+export const PROSPECT_AUDIT_MANUAL_BATCH_MAX = 25;
+
+/** Absolute daily ceiling when DIGISOL_ENFORCE_BUDGETS=1. */
 export const PROSPECT_AUDIT_DAILY_MAX = DIGISOL_DAILY_AUTOMATED_AUDIT_CAP;
 
 /** Default batch size per cron tick. */
-export const PROSPECT_AUDIT_BATCH_DEFAULT = digisolBudgetsEnforced() ? 5 : 25;
+export const PROSPECT_AUDIT_BATCH_DEFAULT = PROSPECT_AUDIT_CRON_DAILY_MAX;
 
 /** Only gpt-4o-mini for background scraping / summary work. */
 export const PROSPECT_AUDIT_MODEL =
@@ -31,17 +40,45 @@ export const PROSPECT_AUDIT_MAX_PAGE_CHARS = digisolBudgetsEnforced()
   ? 2800
   : 6000;
 
+/**
+ * Preferred trades first. Worker expands to any pending sector when the
+ * preferred queues are empty.
+ */
 export const DEFAULT_PROSPECT_TRADES = [
   "hvac",
   "electrical",
   "plumbing",
   "general",
+  "construction",
+  "landscaping",
+  "cleaning",
+  "auto",
+  "dental",
+  "legal",
+  "accounting",
+  "restaurant",
+  "retail",
+  "salon",
+  "fitness",
+  "realestate",
+  "photography",
+  "healthcare",
+  "professional",
 ] as const;
 
-export type ProspectTrade = (typeof DEFAULT_PROSPECT_TRADES)[number] | (string & {});
+export type ProspectTrade =
+  | (typeof DEFAULT_PROSPECT_TRADES)[number]
+  | (string & {});
 
-export function resolveProspectDailyMax(requested?: number) {
-  const hard = DIGISOL_DAILY_AUTOMATED_AUDIT_CAP;
+export function resolveProspectDailyMax(
+  requested?: number,
+  opts?: { manual?: boolean },
+) {
+  const hard = digisolBudgetsEnforced()
+    ? DIGISOL_DAILY_AUTOMATED_AUDIT_CAP
+    : opts?.manual
+      ? PROSPECT_AUDIT_MANUAL_BATCH_MAX
+      : PROSPECT_AUDIT_CRON_DAILY_MAX;
   let cap = hard;
   if (typeof requested === "number" && Number.isFinite(requested) && requested > 0) {
     cap = Math.min(cap, Math.floor(requested));
@@ -52,15 +89,20 @@ export function resolveProspectDailyMax(requested?: number) {
 export function resolveProspectBatchSize(
   remainingDaily: number,
   requested?: number,
+  opts?: { manual?: boolean },
 ) {
   const preferred =
     typeof requested === "number" && Number.isFinite(requested) && requested > 0
       ? Math.floor(requested)
-      : PROSPECT_AUDIT_BATCH_DEFAULT;
-  return Math.max(
-    0,
-    Math.min(preferred, remainingDaily, DIGISOL_DAILY_AUTOMATED_AUDIT_CAP),
-  );
+      : opts?.manual
+        ? Math.min(10, PROSPECT_AUDIT_MANUAL_BATCH_MAX)
+        : PROSPECT_AUDIT_BATCH_DEFAULT;
+  const hard = digisolBudgetsEnforced()
+    ? DIGISOL_DAILY_AUTOMATED_AUDIT_CAP
+    : opts?.manual
+      ? PROSPECT_AUDIT_MANUAL_BATCH_MAX
+      : PROSPECT_AUDIT_CRON_DAILY_MAX;
+  return Math.max(0, Math.min(preferred, remainingDaily, hard));
 }
 
 export function utcDayStartIso(now = new Date()) {

@@ -11,12 +11,22 @@ export function ProspectAuditRunButton() {
 
   async function run(dryRun = false) {
     setBusy(true);
-    setMessage(dryRun ? "Dry-run starting…" : "Running prospect audits…");
+    setMessage(
+      dryRun
+        ? "Dry-run starting…"
+        : "Running audits (incl. re-send of prior dry-runs)…",
+    );
     try {
       const res = await fetch("/api/cron/prospect-audit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dryRun, batchSize: 25, dailyMax: 25 }),
+        body: JSON.stringify({
+          dryRun,
+          manual: true,
+          resendDryRuns: !dryRun,
+          batchSize: dryRun ? 5 : 10,
+          dailyMax: 25,
+        }),
       });
       const json = (await res.json()) as {
         error?: string;
@@ -28,6 +38,8 @@ export function ProspectAuditRunButton() {
           failed?: number;
         };
         queueSeed?: { inserted?: number; pendingBefore?: number };
+        requeuedDryRuns?: number;
+        expandedSectors?: boolean;
         results?: Array<{ reason?: string; note?: string }>;
       };
       if (!res.ok) {
@@ -39,6 +51,10 @@ export function ProspectAuditRunButton() {
       setMessage(
         [
           seeded ? `Seeded ${seeded} prospect${seeded === 1 ? "" : "s"}.` : null,
+          json.requeuedDryRuns
+            ? `Re-queued ${json.requeuedDryRuns} dry-run/Resend row${json.requeuedDryRuns === 1 ? "" : "s"}.`
+            : null,
+          json.expandedSectors ? "Expanded beyond preferred trades." : null,
           `Attempted ${t.attempted ?? 0} · audited ${t.audited ?? 0} · emailed ${t.emailed ?? 0} · CASL blocked ${t.caslBlocked ?? 0} · failed ${t.failed ?? 0}.`,
           json.results?.[0]?.reason === "empty_queue"
             ? json.results[0].note || "Queue still empty."

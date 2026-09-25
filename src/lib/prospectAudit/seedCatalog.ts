@@ -7,13 +7,14 @@
 export type ProspectSeed = {
   businessName: string;
   url: string;
-  trade: "hvac" | "electrical" | "plumbing" | "general";
+  trade: string;
   city: string;
   region?: string;
 };
 
 /** Rotating inventory — worker tops up the pending queue from this list. */
 export const ALBERTA_PROSPECT_SEED: ProspectSeed[] = [
+  // —— Trades (preferred) ——
   {
     businessName: "YYC Heating & Cooling Pros",
     url: "https://yychvac.com/",
@@ -120,6 +121,115 @@ export const ALBERTA_PROSPECT_SEED: ProspectSeed[] = [
     businessName: "Infills Mechanical",
     url: "https://infillsmechanical.ca/",
     trade: "hvac",
+    city: "Calgary",
+  },
+  // —— Broader Alberta SMB sectors (used when trades queue is thin) ——
+  {
+    businessName: "Calgary Denture Clinic",
+    url: "https://www.calgarydentureclinic.com/",
+    trade: "dental",
+    city: "Calgary",
+  },
+  {
+    businessName: "Southcentre Dental",
+    url: "https://www.southcentredental.ca/",
+    trade: "dental",
+    city: "Calgary",
+  },
+  {
+    businessName: "McLeod Law",
+    url: "https://www.mcleod-law.com/",
+    trade: "legal",
+    city: "Calgary",
+  },
+  {
+    businessName: "Vogel LLP",
+    url: "https://www.vogel-llp.ca/",
+    trade: "legal",
+    city: "Edmonton",
+  },
+  {
+    businessName: "Charcut Roast House",
+    url: "https://www.charcut.com/",
+    trade: "restaurant",
+    city: "Calgary",
+  },
+  {
+    businessName: "Packrat Louie Kitchen & Bar",
+    url: "https://www.packratlouie.com/",
+    trade: "restaurant",
+    city: "Edmonton",
+  },
+  {
+    businessName: "Alberta Motor Association",
+    url: "https://www.ama.ab.ca/",
+    trade: "auto",
+    city: "Edmonton",
+  },
+  {
+    businessName: "Kal Tire Calgary",
+    url: "https://www.kaltire.com/",
+    trade: "auto",
+    city: "Calgary",
+  },
+  {
+    businessName: "Yardley Landscaping",
+    url: "https://www.yardleylandscaping.com/",
+    trade: "landscaping",
+    city: "Calgary",
+  },
+  {
+    businessName: "The Cleaning Authority Calgary",
+    url: "https://www.thecleaningauthority.com/calgary/",
+    trade: "cleaning",
+    city: "Calgary",
+  },
+  {
+    businessName: "Fit Body Boot Camp Airdrie",
+    url: "https://fitbodybootcamp.com/locations/airdrie-ab/",
+    trade: "fitness",
+    city: "Airdrie",
+  },
+  {
+    businessName: "RE/MAX Real Estate (Central)",
+    url: "https://www.remax.ca/",
+    trade: "realestate",
+    city: "Calgary",
+  },
+  {
+    businessName: "MNP Calgary",
+    url: "https://www.mnp.ca/en/offices/calgary",
+    trade: "accounting",
+    city: "Calgary",
+  },
+  {
+    businessName: "Salon Monique",
+    url: "https://www.salonmonique.ca/",
+    trade: "salon",
+    city: "Calgary",
+  },
+  {
+    businessName: "Airdrie Echo",
+    url: "https://www.airdrieecho.com/",
+    trade: "retail",
+    city: "Airdrie",
+  },
+  {
+    businessName: "Cochrane Times",
+    url: "https://www.cochranetimes.com/",
+    trade: "professional",
+    city: "Cochrane",
+  },
+  {
+    businessName: "Red Deer Advocate",
+    url: "https://www.reddeeradvocate.com/",
+    trade: "professional",
+    city: "Red Deer",
+  },
+  {
+    businessName: "Bird Construction",
+    url: "https://www.bird.ca/",
+    trade: "construction",
     city: "Calgary",
   },
 ];
