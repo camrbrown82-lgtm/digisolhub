@@ -285,11 +285,13 @@ export async function runProspectAuditWorker(
     if (expanded.data?.length) {
       prospects = expanded.data;
       expandedSectors = true;
-      trades = [
-        ...new Set(
-          expanded.data.map((row) => String(row.trade || "general").toLowerCase()),
+      trades = Array.from(
+        new Set(
+          expanded.data.map((row) =>
+            String(row.trade || "general").toLowerCase(),
+          ),
         ),
-      ];
+      );
     }
   }
 
