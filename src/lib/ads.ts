@@ -75,10 +75,12 @@ export function fireAdsConversion(
 ) {
   const sendTo = googleAdsSendTo(kind);
   if (!sendTo || typeof window === "undefined") return false;
+  // Matches the Google Ads snippets: lead-style actions report 1 CAD each.
+  const value = typeof params.value === "number" ? params.value : 1;
   const payload = {
     send_to: sendTo,
-    ...(typeof params.value === "number" ? { value: params.value } : {}),
-    ...(params.currency ? { currency: params.currency } : {}),
+    value,
+    currency: params.currency || "CAD",
     ...(params.transactionId ? { transaction_id: params.transactionId } : {}),
   };
   // gtag loads afterInteractive, so page-load conversions can run before it exists.
