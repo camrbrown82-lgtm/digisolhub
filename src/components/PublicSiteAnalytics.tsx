@@ -3,6 +3,7 @@
 import { type ReactNode, useEffect, useState } from "react";
 import Script from "next/script";
 import { usePathname } from "next/navigation";
+import { AdsContactClickTracker } from "@/components/AdsLeadConversion";
 import { GaRouteTrackerBoundary } from "@/components/GaRouteTrackerBoundary";
 import { GOOGLE_ADS_ID } from "@/lib/ads";
 import {
@@ -50,6 +51,7 @@ export function PublicSiteAnalytics({ children }: { children?: ReactNode }) {
         `}
       </Script>
       <GaRouteTrackerBoundary />
+      <AdsContactClickTracker />
       {children}
     </>
   );

@@ -25,6 +25,7 @@ import {
 } from "@/lib/meta/instagramInsights";
 import { contactIdsForClient, getWorkspaceClient } from "@/lib/workspace";
 import { newSiteKey, summarizeSiteEvents, trackingSnippet } from "@/lib/site-analytics";
+import { GOOGLE_ADS_CONVERSIONS, GOOGLE_ADS_ID, GOOGLE_ADS_LABELS } from "@/lib/ads";
 import { createClient } from "@/lib/supabase/server";
 
 function hubOrigin(headerStore: Headers) {
@@ -303,6 +304,24 @@ export default async function AnalyticsPage() {
           sessions={ga4.googleAds.sessions}
           landings={isDigisol ? website.googleAdsPageviews : 0}
           campaigns={ga4.googleAds.campaigns}
+          adsTagReady={Boolean(GOOGLE_ADS_ID)}
+          conversions={GOOGLE_ADS_CONVERSIONS.map((row) => ({
+            ...row,
+            ready: Boolean(GOOGLE_ADS_ID && GOOGLE_ADS_LABELS[row.kind]),
+            count: !isDigisol
+              ? null
+              : row.kind === "consult"
+                ? website.conversionPageviews.consult
+                : row.kind === "purchase"
+                  ? website.conversionPageviews.purchase
+                  : row.kind === "chat_lead"
+                    ? (leadsResult.data ?? []).filter(
+                        (lead) =>
+                          lead.source === "visitor_chat" &&
+                          String(lead.created_at) >= since,
+                      ).length
+                    : null,
+          }))}
         />
 
         <AnalyticsDashboard

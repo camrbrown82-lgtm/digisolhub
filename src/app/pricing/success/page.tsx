@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AdsPurchaseConversion } from "@/components/AdsLeadConversion";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
+import { createStripeClient, stripeConfigured } from "@/lib/stripe";
 
 export const metadata: Metadata = {
   title: "Payment received | DigiSol",
@@ -9,13 +11,30 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function PricingSuccessPage({
+async function paidCheckout(sessionId: string | undefined) {
+  if (!sessionId || !/^cs_[\w]+$/.test(sessionId) || !stripeConfigured()) return null;
+  try {
+    const session = await createStripeClient().checkout.sessions.retrieve(sessionId);
+    if (session.payment_status !== "paid" || session.amount_total == null) return null;
+    return {
+      value: session.amount_total / 100,
+      currency: (session.currency || "cad").toUpperCase(),
+      transactionId: session.id,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export default async function PricingSuccessPage({
   searchParams,
 }: {
   searchParams: { session_id?: string };
 }) {
+  const purchase = await paidCheckout(searchParams.session_id);
   return (
     <>
+      {purchase ? <AdsPurchaseConversion {...purchase} /> : null}
       <Navbar />
       <main id="main" className="px-4 py-20 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-xl text-center">

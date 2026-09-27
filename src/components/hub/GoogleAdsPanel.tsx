@@ -1,9 +1,21 @@
+type ConversionRow = {
+  kind: string;
+  label: string;
+  envVar: string;
+  firesOn: string;
+  ready: boolean;
+  /** First-party count for the window; null when only Google Ads can count it. */
+  count: number | null;
+};
+
 type GoogleAdsPanelProps = {
   days: number;
   configured: boolean;
   sessions: number;
   landings: number;
   campaigns: { label: string; sessions: number }[];
+  adsTagReady: boolean;
+  conversions: ConversionRow[];
 };
 
 export function GoogleAdsPanel({
@@ -12,8 +24,11 @@ export function GoogleAdsPanel({
   sessions,
   landings,
   campaigns,
+  adsTagReady,
+  conversions,
 }: GoogleAdsPanelProps) {
   const visits = Math.max(sessions, landings);
+  const readyCount = conversions.filter((row) => row.ready).length;
 
   return (
     <section className="space-y-4">
@@ -27,12 +42,12 @@ export function GoogleAdsPanel({
           </p>
         </div>
         <a
-          href="https://ads.google.com/"
+          href="https://ads.google.com/aw/conversions"
           className="text-sm text-indigo-400 hover:text-indigo-300"
           target="_blank"
           rel="noreferrer"
         >
-          Open Google Ads
+          Open Google Ads conversions
         </a>
       </div>
 
@@ -55,6 +70,62 @@ export function GoogleAdsPanel({
           </p>
           <p className="mt-1 text-xs text-zinc-500">pages opened with a Google click id</p>
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-white">Conversion tracking</h3>
+          <span
+            className={`rounded-full px-2.5 py-1 text-xs ${
+              adsTagReady && readyCount === conversions.length
+                ? "bg-emerald-500/15 text-emerald-300"
+                : "bg-amber-500/15 text-amber-200"
+            }`}
+          >
+            {adsTagReady
+              ? `${readyCount} of ${conversions.length} conversions live`
+              : "Google Ads tag not installed"}
+          </span>
+        </div>
+        <p className="mt-1 text-xs text-zinc-500">
+          Google Ads only credits a conversion to an ad click when its tag fires.
+          Counts below are what the site recorded in the last {days} days; Google
+          Ads shows the ad-attributed share under Goals → Conversions.
+        </p>
+        <ul className="mt-3 divide-y divide-zinc-800 text-sm">
+          {conversions.map((row) => (
+            <li key={row.kind} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
+              <div className="min-w-0">
+                <p className="text-zinc-100">{row.label}</p>
+                <p className="text-xs text-zinc-500">{row.firesOn}</p>
+                {!row.ready ? (
+                  <p className="mt-0.5 text-xs text-amber-200/80">
+                    Needs {adsTagReady ? "" : "NEXT_PUBLIC_GOOGLE_ADS_ID + "}
+                    <code className="text-amber-100">{row.envVar}</code>
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-right text-zinc-300">
+                  {row.count === null ? (
+                    <span className="text-xs text-zinc-500">counted in Google Ads</span>
+                  ) : (
+                    row.count.toLocaleString("en-CA")
+                  )}
+                </span>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs ${
+                    row.ready
+                      ? "bg-emerald-500/15 text-emerald-300"
+                      : "bg-zinc-800 text-zinc-400"
+                  }`}
+                >
+                  {row.ready ? "Live" : "Off"}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
 
       {campaigns.length > 0 ? (

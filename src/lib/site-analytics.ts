@@ -100,6 +100,12 @@ export function summarizeSiteEvents(events: SiteEvent[], host?: string | null) {
     ),
     googleAdsPageviews: events.filter((event) => isGoogleAdsLanding(event.path))
       .length,
+    conversionPageviews: {
+      consult: events.filter((event) => (event.path || "").startsWith("/confirmation"))
+        .length,
+      purchase: events.filter((event) => (event.path || "").startsWith("/pricing/success"))
+        .length,
+    },
     daily: days.map((day) => ({ day, count: byDay.get(day) ?? 0 })),
   };
 }

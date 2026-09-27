@@ -5,6 +5,8 @@ import { DefaultChatTransport, type UIMessage } from "ai";
 import { MessageCircle, Send, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MicDictateButton, appendDictation } from "@/components/hub/MicDictateButton";
+import { fireAdsConversion } from "@/lib/ads";
+import { trackEvent } from "@/lib/analytics";
 import {
   GEO_AUDIENCE_COOKIE,
   GEO_COUNTRY_COOKIE,
@@ -95,6 +97,26 @@ export function VisitorChat() {
   });
 
   const busy = status === "submitted" || status === "streaming";
+
+  const countedLeads = useRef(new Set<string>());
+  useEffect(() => {
+    for (const message of messages) {
+      for (const part of message.parts ?? []) {
+        if (part.type !== "tool-captureVisitorLead") continue;
+        const toolPart = part as {
+          toolCallId?: string;
+          state?: string;
+          output?: { reportedToHub?: boolean };
+        };
+        if (toolPart.state !== "output-available" || !toolPart.output?.reportedToHub) continue;
+        const key = toolPart.toolCallId || message.id;
+        if (countedLeads.current.has(key)) continue;
+        countedLeads.current.add(key);
+        fireAdsConversion("chat_lead");
+        trackEvent("generate_lead", { method: "kaylev_chat" });
+      }
+    }
+  }, [messages]);
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
