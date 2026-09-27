@@ -70,6 +70,7 @@ async function runGraph(opts: {
   const visited = new Set<string>();
   let current: FlowNode | undefined = start;
   let failed = false;
+  let stopped = false;
 
   try {
     while (current && !visited.has(current.id)) {
@@ -93,12 +94,29 @@ async function runGraph(opts: {
         if (!templateId) {
           log.push(`skipped send ${current.id}: no template selected`);
         } else {
-          await opts.step.run(`send-${current.id}`, async () => {
+          const outcome = await opts.step.run(`send-${current.id}`, async () => {
+            const { data: contact } = await admin
+              .from("contacts")
+              .select("id, unsubscribed_at")
+              .eq("id", opts.contactId)
+              .maybeSingle();
+            if (!contact) return "missing" as const;
+            if (contact.unsubscribed_at) return "unsubscribed" as const;
             await sendEmailToContact({
               contactId: opts.contactId,
               templateId,
             });
+            return "sent" as const;
           });
+          if (outcome !== "sent") {
+            log.push(
+              outcome === "unsubscribed"
+                ? "stopped: contact unsubscribed — no more emails"
+                : "stopped: contact was removed",
+            );
+            stopped = true;
+            break;
+          }
           log.push(`sent template ${templateId}`);
         }
       } else if (action === "add_tag" && current.data?.tag) {
@@ -136,7 +154,7 @@ async function runGraph(opts: {
       await admin
         .from("workflow_runs")
         .update({
-          status: failed ? "failed" : "completed",
+          status: failed ? "failed" : stopped ? "stopped" : "completed",
           log,
           finished_at: new Date().toISOString(),
         })

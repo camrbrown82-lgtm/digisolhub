@@ -8,7 +8,7 @@ import {
   resolveEmailLogoFile,
 } from "@/lib/emailLogo";
 import { mergeVarsFromBrand, renderMergeFields } from "@/lib/emailTemplates";
-import { unsubscribeUrl, wrapCampaignHtml } from "@/lib/unsubscribe";
+import { oneClickUnsubscribeUrl, wrapCampaignHtml } from "@/lib/unsubscribe";
 import { Resend } from "resend";
 
 function firstEnv(...names: string[]) {
@@ -193,7 +193,7 @@ export async function sendEmailToContact(input: SendEmailInput) {
     fonts: brand.fonts,
   });
   const personalized = wrapCampaignHtml(branded, contact.email);
-  const unsub = unsubscribeUrl(contact.email);
+  const unsub = oneClickUnsubscribeUrl(contact.email);
 
   const bcc = Array.from(
     new Set(

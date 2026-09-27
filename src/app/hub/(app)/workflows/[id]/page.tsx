@@ -29,6 +29,7 @@ export default async function WorkflowDetailPage({
   let contactsQuery = supabase
     .from("contacts")
     .select("id, email, name, company, tags, source")
+    .is("unsubscribed_at", null)
     .order("created_at", { ascending: false })
     .limit(200);
   if (clientId) contactsQuery = contactsQuery.eq("client_id", clientId);

@@ -128,7 +128,8 @@ export async function POST(request: Request, { params }: Params) {
   let contactsQuery = supabase
     .from("contacts")
     .select("id, name, email, company, source, service, tags")
-    .in("id", contactIds);
+    .in("id", contactIds)
+    .is("unsubscribed_at", null);
   if (clientId) contactsQuery = contactsQuery.eq("client_id", clientId);
 
   const [{ data: templateRows }, { data: contactRows }, { data: prospectRows }] =

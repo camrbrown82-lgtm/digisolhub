@@ -43,6 +43,7 @@ export function ContactImportExport() {
         error?: string;
         created?: number;
         updated?: number;
+        skippedUnsubscribed?: number;
         failed?: { email: string; error: string }[];
       };
       if (!response.ok) {
@@ -50,9 +51,14 @@ export function ContactImportExport() {
         return;
       }
       const failed = result.failed?.length ?? 0;
+      const unsubscribed = result.skippedUnsubscribed ?? 0;
       setStatus(
         `Created ${result.created ?? 0}, updated ${result.updated ?? 0}${
           failed ? `, ${failed} row${failed === 1 ? "" : "s"} skipped` : ""
+        }${
+          unsubscribed
+            ? `, ${unsubscribed} left out because they unsubscribed`
+            : ""
         }.`,
       );
       if (inputRef.current) inputRef.current.value = "";

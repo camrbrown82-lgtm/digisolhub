@@ -35,6 +35,20 @@ export async function POST(request: Request, { params }: Params) {
     );
   }
 
+  const { data: unsubscribedRows } = await supabase
+    .from("contacts")
+    .select("id")
+    .in("id", ids)
+    .not("unsubscribed_at", "is", null);
+  const unsubscribed = new Set((unsubscribedRows ?? []).map((row) => row.id as string));
+  const runIds = ids.filter((id) => !unsubscribed.has(id));
+  if (runIds.length === 0) {
+    return NextResponse.json(
+      { error: "Everyone selected has unsubscribed — Kaylev won't email them." },
+      { status: 400 },
+    );
+  }
+
   const plan =
     body.emailPlan && typeof body.emailPlan === "object" ? body.emailPlan : {};
   const planTemplateIds = Array.from(
@@ -59,7 +73,7 @@ export async function POST(request: Request, { params }: Params) {
     }
   }
 
-  for (const contactId of ids) {
+  for (const contactId of runIds) {
     const overrides = plan[contactId];
     await emitHubEvent("hub/workflow.run", {
       workflowId: params.id,
@@ -70,5 +84,9 @@ export async function POST(request: Request, { params }: Params) {
     });
   }
 
-  return NextResponse.json({ ok: true, queued: ids.length });
+  return NextResponse.json({
+    ok: true,
+    queued: runIds.length,
+    skippedUnsubscribed: unsubscribed.size,
+  });
 }

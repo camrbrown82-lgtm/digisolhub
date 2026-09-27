@@ -4,6 +4,7 @@ import { logAbVariantEngagement } from "@/lib/abVariantTracking";
 import { emitHubEvent } from "@/lib/events";
 import { promoteProspectOnEngagement } from "@/lib/prospectAudit/promote";
 import { verifyResendWebhookSignature } from "@/lib/resendWebhook";
+import { unsubscribeContactsByEmail } from "@/lib/unsubscribeContact";
 
 type ResendWebhook = {
   type?: string;
@@ -54,6 +55,28 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient();
   const type = String(payload.type ?? "").toLowerCase();
+
+  // Spam complaint = strongest unsubscribe signal; never email them again.
+  if (type === "email.complained" || type.includes("complained")) {
+    const { data: send } = await admin
+      .from("sends")
+      .select("contact_id")
+      .eq("resend_id", resendId)
+      .maybeSingle();
+    let email = payload.data?.to?.[0] ?? "";
+    if (send?.contact_id) {
+      const { data: contact } = await admin
+        .from("contacts")
+        .select("email")
+        .eq("id", send.contact_id)
+        .maybeSingle();
+      email = contact?.email || email;
+    }
+    const result = email
+      ? await unsubscribeContactsByEmail(admin, email, "spam_complaint")
+      : { removed: 0 };
+    return NextResponse.json({ ok: true, event: "complained", ...result });
+  }
   const eventAt =
     payload.data?.created_at ||
     payload.created_at ||

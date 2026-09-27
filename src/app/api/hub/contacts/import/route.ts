@@ -4,6 +4,7 @@ import { normalizeCampaignChannel } from "@/lib/campaignChannels";
 import { normalizeContactAbVariant } from "@/lib/contactAbVariants";
 import { parseCsv } from "@/lib/csv";
 import { ensureCampaignChannelSchema } from "@/lib/ensureCampaignChannelSchema";
+import { ilikeExact } from "@/lib/unsubscribeContact";
 import { findOrCreateClient, resolveClientId } from "@/lib/workspace";
 
 function parseTags(value: string) {
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
   const activeClientId = await resolveClientId(supabase);
   let created = 0;
   let updated = 0;
+  let skippedUnsubscribed = 0;
   const failed: { email: string; error: string }[] = [];
 
   for (const row of rows.slice(0, 500)) {
@@ -63,9 +65,13 @@ export async function POST(request: Request) {
 
     const { data: existing } = await supabase
       .from("contacts")
-      .select("id, tags")
-      .ilike("email", email)
+      .select("id, tags, unsubscribed_at")
+      .ilike("email", ilikeExact(email))
       .maybeSingle();
+    if (existing?.unsubscribed_at) {
+      skippedUnsubscribed += 1;
+      continue;
+    }
 
     const tags = Array.from(new Set([...(existing?.tags ?? []), ...parseTags(row.tags ?? "")]));
     const payload = {
@@ -113,5 +119,11 @@ export async function POST(request: Request) {
     created += 1;
   }
 
-  return NextResponse.json({ created, updated, failed, total: rows.length });
+  return NextResponse.json({
+    created,
+    updated,
+    skippedUnsubscribed,
+    failed,
+    total: rows.length,
+  });
 }

@@ -9,6 +9,7 @@ import { emailCtaButton, escapeHtml } from "@/lib/emailHtml";
 import { getEmailLogoUrl } from "@/lib/emailLogo";
 import { sendEmailToContact } from "@/lib/email";
 import { DIGISOL_SITE_URL } from "@/lib/site";
+import { UNSUBSCRIBED_TAG } from "@/lib/unsubscribeContact";
 import { ensureDigisolClient, getDigisolClient } from "@/lib/workspace";
 
 export const DISPATCH_TAG = "dispatch";
@@ -230,8 +231,12 @@ export async function subscribeToDispatch(
     .ilike("email", email)
     .maybeSingle();
 
+  // Signing up again is an explicit re-opt-in, so drop the unsubscribe marker.
   const tags = Array.from(
-    new Set([...(existing?.tags ?? []), DISPATCH_TAG]),
+    new Set([
+      ...(existing?.tags ?? []).filter((tag: string) => tag !== UNSUBSCRIBED_TAG),
+      DISPATCH_TAG,
+    ]),
   );
 
   let contactId = existing?.id as string | undefined;

@@ -4,6 +4,7 @@ import { normalizeCampaignChannel } from "@/lib/campaignChannels";
 import { normalizeContactAbVariant } from "@/lib/contactAbVariants";
 import { ensureCampaignChannelSchema } from "@/lib/ensureCampaignChannelSchema";
 import { emitHubEvent } from "@/lib/events";
+import { ilikeExact } from "@/lib/unsubscribeContact";
 import { findOrCreateClient, resolveClientId } from "@/lib/workspace";
 
 export async function GET() {
@@ -22,6 +23,7 @@ export async function GET() {
     .from("contacts")
     .select("*")
     .eq("client_id", clientId)
+    .is("unsubscribed_at", null)
     .order("created_at", { ascending: false });
 
   if (queryError) {
@@ -53,6 +55,22 @@ export async function POST(request: Request) {
   const email = body.email?.trim().toLowerCase();
   if (!email) {
     return NextResponse.json({ error: "Email is required" }, { status: 400 });
+  }
+
+  const { data: suppressed } = await supabase
+    .from("contacts")
+    .select("id")
+    .ilike("email", ilikeExact(email))
+    .not("unsubscribed_at", "is", null)
+    .limit(1)
+    .maybeSingle();
+  if (suppressed) {
+    return NextResponse.json(
+      {
+        error: `${email} unsubscribed, so Kaylev won't add them back. They're kept under Contacts → Show unsubscribed as a do-not-contact record.`,
+      },
+      { status: 409 },
+    );
   }
 
   const clientId =

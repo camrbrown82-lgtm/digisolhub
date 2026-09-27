@@ -26,6 +26,12 @@ export function unsubscribeUrl(email: string) {
   return `${getOutboundSiteUrl()}/unsubscribe?email=${encodeURIComponent(email)}&token=${token}`;
 }
 
+/** List-Unsubscribe header target — accepts the inbox's one-click POST. */
+export function oneClickUnsubscribeUrl(email: string) {
+  const token = unsubscribeToken(email);
+  return `${getOutboundSiteUrl()}/api/unsubscribe?email=${encodeURIComponent(email)}&token=${token}`;
+}
+
 export function campaignFooterHtml(email: string) {
   const address =
     process.env.HUB_PHYSICAL_ADDRESS ?? "Alberta, Canada";

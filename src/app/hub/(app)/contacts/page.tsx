@@ -49,7 +49,12 @@ const SOURCE_FILTERS = [
 export default async function ContactsPage({
   searchParams,
 }: {
-  searchParams: { channel?: string; ab?: string; source?: string };
+  searchParams: {
+    channel?: string;
+    ab?: string;
+    source?: string;
+    unsubscribed?: string;
+  };
 }) {
   const schema = await ensureCampaignChannelSchema().catch((err: unknown) => ({
     ok: false as const,
@@ -63,6 +68,14 @@ export default async function ContactsPage({
   const sourceFilter = SOURCE_FILTERS.some((s) => s.id === searchParams.source)
     ? (searchParams.source as (typeof SOURCE_FILTERS)[number]["id"])
     : null;
+  const showUnsubscribed = searchParams.unsubscribed === "1";
+
+  let unsubscribedCountQuery = supabase
+    .from("contacts")
+    .select("id", { count: "exact", head: true })
+    .not("unsubscribed_at", "is", null);
+  if (clientId) unsubscribedCountQuery = unsubscribedCountQuery.eq("client_id", clientId);
+  const { count: unsubscribedCount } = await unsubscribedCountQuery;
 
   async function loadContacts(includeChannelFields: boolean): Promise<{
     data: ContactListRow[] | null;
@@ -77,6 +90,9 @@ export default async function ContactsPage({
       )
       .order("created_at", { ascending: false });
     if (clientId) next = next.eq("client_id", clientId);
+    next = showUnsubscribed
+      ? next.not("unsubscribed_at", "is", null)
+      : next.is("unsubscribed_at", null);
     if (includeChannelFields && channelFilter) {
       next = next.eq("campaign_channel", channelFilter);
     }
@@ -130,6 +146,7 @@ export default async function ContactsPage({
     if (channel) params.set("channel", channel);
     if (ab) params.set("ab", ab);
     if (source) params.set("source", source);
+    if (showUnsubscribed) params.set("unsubscribed", "1");
     const qs = params.toString();
     return qs ? `/hub/contacts?${qs}` : "/hub/contacts";
   }
@@ -185,6 +202,29 @@ export default async function ContactsPage({
         Workflow/campaign tags are separate and get applied when automations
         run; edit tags on each contact&apos;s detail page.
       </p>
+
+      {showUnsubscribed ? (
+        <div className="rounded-xl border border-zinc-700 bg-zinc-900/60 px-4 py-3 text-sm text-zinc-300">
+          Showing people who unsubscribed. Kaylev keeps them here as
+          do-not-contact records so audits and imports can&apos;t re-add them —
+          they&apos;re never emailed.{" "}
+          <Link href="/hub/contacts" className="text-indigo-300 hover:text-indigo-200">
+            Back to active contacts
+          </Link>
+        </div>
+      ) : unsubscribedCount ? (
+        <p className="text-xs text-zinc-500">
+          {unsubscribedCount} unsubscribed{" "}
+          {unsubscribedCount === 1 ? "person is" : "people are"} hidden and
+          never emailed.{" "}
+          <Link
+            href="/hub/contacts?unsubscribed=1"
+            className="text-indigo-300 hover:text-indigo-200"
+          >
+            Show
+          </Link>
+        </p>
+      ) : null}
 
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
@@ -269,7 +309,7 @@ export default async function ContactsPage({
 
       {grouped.length === 0 ? (
         <p className="rounded-2xl border border-zinc-800 px-4 py-8 text-sm text-zinc-500">
-          No contacts yet
+          {showUnsubscribed ? "No unsubscribed contacts" : "No contacts yet"}
           {channelFilter || abFilter || sourceFilter ? " for this filter" : ""}.
         </p>
       ) : (
