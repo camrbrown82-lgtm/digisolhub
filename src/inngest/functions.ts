@@ -40,6 +40,7 @@ async function runGraph(opts: {
   contactId: string;
   graph: Graph;
   step: StepTools;
+  templateOverrides?: Record<string, string>;
 }) {
   const admin = createAdminClient();
   const nodes = opts.graph.nodes ?? [];
@@ -75,7 +76,9 @@ async function runGraph(opts: {
         await opts.step.sleep(`wait-${current.id}`, duration);
         log.push(`waited ${duration}`);
       } else if (action === "send_template") {
-        const templateId = String(current.data?.templateId || "").trim();
+        const templateId = String(
+          opts.templateOverrides?.[current.id] || current.data?.templateId || "",
+        ).trim();
         if (!templateId) {
           log.push(`skipped send ${current.id}: no template selected`);
         } else {
@@ -181,6 +184,10 @@ export const runSingleWorkflow = inngest.createFunction(
       contactId: event.data.contactId as string,
       graph: (workflow.graph ?? {}) as Graph,
       step,
+      templateOverrides:
+        event.data.templateOverrides && typeof event.data.templateOverrides === "object"
+          ? (event.data.templateOverrides as Record<string, string>)
+          : undefined,
     });
   },
 );

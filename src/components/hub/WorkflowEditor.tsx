@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Edge, Node } from "@xyflow/react";
 import {
@@ -35,6 +35,15 @@ type ContactOption = {
 };
 
 type TemplateOption = { id: string; name: string; subject: string | null };
+
+type EmailMatchRow = {
+  contactId: string;
+  label: string;
+  trade: string | null;
+  auditScore: number | null;
+  steps: Record<string, string>;
+  reason: string;
+};
 
 let nodeCount = 0;
 
@@ -153,6 +162,11 @@ export function WorkflowEditor({
   const [audienceScope, setAudienceScope] = useState<"all" | "audited">("all");
   const [status, setStatus] = useState("");
   const [running, setRunning] = useState(false);
+  const [emailPlanRows, setEmailPlanRows] = useState<EmailMatchRow[] | null>(null);
+  const [emailPlanApproved, setEmailPlanApproved] = useState(false);
+  const [matchRules, setMatchRules] = useState("");
+  const [matching, setMatching] = useState(false);
+  const autoMatchStarted = useRef(false);
 
   const selectedNode = useMemo(
     () => graph.nodes.find((node) => node.id === selectedNodeId) ?? null,
@@ -348,9 +362,115 @@ export function WorkflowEditor({
     [sendSteps],
   );
 
+  const planActive = emailPlanRows !== null;
+
+  const planByContact = useMemo(
+    () => new Map((emailPlanRows ?? []).map((row) => [row.contactId, row])),
+    [emailPlanRows],
+  );
+
+  const contactsMissingEmail = useMemo(
+    () =>
+      selectedContactIds.filter((contactId) =>
+        sendSteps.some((step) => {
+          const planned = planActive ? planByContact.get(contactId)?.steps[step.id] : "";
+          const fallback = String(
+            ((step.data || {}) as Record<string, unknown>).templateId || "",
+          );
+          return !(planned || fallback);
+        }),
+      ),
+    [selectedContactIds, sendSteps, planActive, planByContact],
+  );
+
+  const contactsOutsidePlan = planActive
+    ? selectedContactIds.filter((id) => !planByContact.has(id)).length
+    : 0;
+
   const readyToRun =
     selectedContactIds.length > 0 &&
-    (sendSteps.length === 0 || sendStepsMissingTemplate.length === 0);
+    (sendSteps.length === 0 || contactsMissingEmail.length === 0) &&
+    (!planActive || emailPlanApproved);
+
+  async function matchEmails() {
+    if (selectedContactIds.length === 0) {
+      setStatus("Add contacts to Will run for, then let Kaylev match emails.");
+      return;
+    }
+    if (sendSteps.length === 0) {
+      setStatus("Add a Send step first — Kaylev fills Send steps.");
+      return;
+    }
+    setMatching(true);
+    setStatus(`Kaylev is matching emails for ${selectedContactIds.length} contact(s)…`);
+    try {
+      const response = await fetch(`/api/hub/workflows/${workflow.id}/match-emails`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contactIds: selectedContactIds,
+          rules: matchRules,
+          graph: { nodes: graph.nodes },
+        }),
+      });
+      const json = (await response.json().catch(() => ({}))) as {
+        rows?: EmailMatchRow[];
+        error?: string;
+      };
+      if (!response.ok || !json.rows) {
+        setStatus(json.error || "Kaylev could not match emails");
+        return;
+      }
+      setEmailPlanRows(json.rows);
+      setEmailPlanApproved(false);
+      setStatus(
+        `Kaylev matched ${json.rows.length} contact(s). Review the emails below, change any you disagree with, then Approve.`,
+      );
+    } catch {
+      setStatus("Kaylev could not match emails — check your connection.");
+    } finally {
+      setMatching(false);
+    }
+  }
+
+  function setPlanTemplate(contactId: string, stepId: string, templateId: string) {
+    setEmailPlanRows((rows) =>
+      (rows ?? []).map((row) =>
+        row.contactId === contactId
+          ? { ...row, steps: { ...row.steps, [stepId]: templateId } }
+          : row,
+      ),
+    );
+    setEmailPlanApproved(false);
+  }
+
+  function applyTemplateToAll(stepId: string, templateId: string) {
+    if (!templateId) return;
+    setEmailPlanRows((rows) =>
+      (rows ?? []).map((row) =>
+        selectedContactIds.includes(row.contactId)
+          ? { ...row, steps: { ...row.steps, [stepId]: templateId } }
+          : row,
+      ),
+    );
+    setEmailPlanApproved(false);
+  }
+
+  function clearEmailPlan() {
+    setEmailPlanRows(null);
+    setEmailPlanApproved(false);
+    setStatus("Email plan cleared — each Send step uses its own template.");
+  }
+
+  useEffect(() => {
+    if (autoMatchStarted.current) return;
+    if (!initialAudience || selectedContactIds.length === 0) return;
+    if (sendSteps.length === 0 || templates.length < 2) return;
+    autoMatchStarted.current = true;
+    void matchEmails();
+    // Only once, when arriving from the AI generator with an audience.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function updateSelectedData(patch: Record<string, unknown>) {
     if (!selectedNodeId) return;
@@ -492,9 +612,15 @@ export function WorkflowEditor({
       setStatus("Add at least one contact to the run list");
       return;
     }
-    if (sendStepsMissingTemplate.length > 0) {
+    if (planActive && !emailPlanApproved) {
+      setStatus("Approve Kaylev's email plan (or clear it) before running.");
+      return;
+    }
+    if (contactsMissingEmail.length > 0) {
       setStatus(
-        `Pick an email template on ${sendStepsMissingTemplate.length} send step(s) before running`,
+        planActive
+          ? `${contactsMissingEmail.length} contact(s) still have no email on a Send step — pick one in the plan or re-run Kaylev's match.`
+          : `Pick an email template on ${sendStepsMissingTemplate.length} send step(s), or let Kaylev match emails per contact.`,
       );
       return;
     }
@@ -510,7 +636,19 @@ export function WorkflowEditor({
       const response = await fetch(`/api/hub/workflows/${workflow.id}/run`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contactIds: selectedContactIds }),
+        body: JSON.stringify({
+          contactIds: selectedContactIds,
+          emailPlan: planActive
+            ? Object.fromEntries(
+                selectedContactIds
+                  .map((id) => [id, planByContact.get(id)?.steps] as const)
+                  .filter(
+                    (entry): entry is readonly [string, Record<string, string>] =>
+                      Boolean(entry[1]),
+                  ),
+              )
+            : undefined,
+        }),
       });
       const json = (await response.json().catch(() => ({}))) as {
         queued?: number;
@@ -917,21 +1055,199 @@ export function WorkflowEditor({
             className={
               sendSteps.length === 0
                 ? "text-amber-200/90"
-                : sendStepsMissingTemplate.length > 0
-                  ? "text-rose-300"
-                  : "text-emerald-300/90"
+                : planActive
+                  ? emailPlanApproved && contactsMissingEmail.length === 0
+                    ? "text-emerald-300/90"
+                    : "text-amber-200/90"
+                  : sendStepsMissingTemplate.length > 0
+                    ? "text-rose-300"
+                    : "text-emerald-300/90"
             }
           >
             {sendSteps.length === 0
               ? "○ No Send step yet — Add send, click it, pick an email template"
-              : sendStepsMissingTemplate.length > 0
-                ? `○ ${sendStepsMissingTemplate.length} send step(s) need a template`
-                : `✓ ${sendSteps.length} send step(s) have templates`}
+              : planActive
+                ? emailPlanApproved
+                  ? contactsMissingEmail.length > 0
+                    ? `○ ${contactsMissingEmail.length} contact(s) still need an email in the plan`
+                    : `✓ Kaylev's email plan approved for ${selectedContactIds.length} contact(s)`
+                  : "○ Review and approve Kaylev's email plan below"
+                : sendStepsMissingTemplate.length > 0
+                  ? `○ ${sendStepsMissingTemplate.length} send step(s) need a template — or let Kaylev match emails per contact`
+                  : `✓ ${sendSteps.length} send step(s) have templates`}
           </li>
           <li className="text-zinc-500">
             Results: Campaigns → Workflow runs · opens in Analytics after you open the email
           </li>
         </ul>
+
+        {sendSteps.length > 0 ? (
+          <div className="mt-4 rounded-xl border border-indigo-500/30 bg-indigo-500/5 p-3">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-semibold text-white">Emails per contact</h3>
+                <p className="mt-1 max-w-2xl text-xs text-zinc-400">
+                  Kaylev picks the best saved email for each company at every Send
+                  step — restaurant vs trades, high vs low audit score, new lead vs
+                  audit, or your general business email. Nothing sends until you
+                  approve.
+                </p>
+              </div>
+              {planActive ? (
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs ${
+                    emailPlanApproved
+                      ? "bg-emerald-500/15 text-emerald-300"
+                      : "bg-amber-500/15 text-amber-200"
+                  }`}
+                >
+                  {emailPlanApproved ? "Approved" : "Waiting for approval"}
+                </span>
+              ) : null}
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-end gap-2">
+              <label className="min-w-[16rem] flex-1 text-xs text-zinc-400">
+                <span className="flex items-center justify-between gap-2">
+                  Rules for Kaylev (optional)
+                  <MicDictateButton
+                    onText={(chunk) =>
+                      setMatchRules((current) => appendDictation(current, chunk))
+                    }
+                  />
+                </span>
+                <input
+                  value={matchRules}
+                  onChange={(event) => setMatchRules(event.target.value)}
+                  className="hub-field mt-1 py-1.5 text-sm"
+                  placeholder="e.g. Restaurants under 60 get Restaurant low score; everyone else General business"
+                />
+              </label>
+              <button
+                type="button"
+                className="hub-btn text-xs"
+                onClick={() => void matchEmails()}
+                disabled={matching || selectedContactIds.length === 0}
+              >
+                {matching
+                  ? "Kaylev is matching…"
+                  : planActive
+                    ? `Re-match emails (${selectedContactIds.length})`
+                    : `Kaylev: match emails (${selectedContactIds.length})`}
+              </button>
+            </div>
+
+            {planActive && emailPlanRows ? (
+              <div className="mt-3 space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  {sendSteps.map((step, index) => (
+                    <label key={step.id} className="text-xs text-zinc-400">
+                      Set everyone · step {index + 1}
+                      <select
+                        value=""
+                        onChange={(event) => applyTemplateToAll(step.id, event.target.value)}
+                        className="hub-field mt-1 min-w-[12rem] py-1.5 text-sm"
+                      >
+                        <option value="">Choose email…</option>
+                        {templates.map((template) => (
+                          <option key={template.id} value={template.id}>
+                            {template.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ))}
+                </div>
+
+                <div className="max-h-[28rem] overflow-auto rounded-lg border border-zinc-800">
+                  <table className="w-full min-w-[40rem] text-left text-xs">
+                    <thead className="sticky top-0 bg-zinc-900 text-zinc-400">
+                      <tr>
+                        <th className="px-3 py-2 font-medium">Company</th>
+                        {sendSteps.map((step, index) => (
+                          <th key={step.id} className="px-3 py-2 font-medium">
+                            Step {index + 1}:{" "}
+                            {String(((step.data || {}) as Record<string, unknown>).label || "Send")}
+                          </th>
+                        ))}
+                        <th className="px-3 py-2 font-medium">Why</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800">
+                      {emailPlanRows
+                        .filter((row) => selectedContactIds.includes(row.contactId))
+                        .map((row) => (
+                          <tr key={row.contactId} className="align-top">
+                            <td className="px-3 py-2 text-zinc-200">
+                              <span className="block font-medium">{row.label}</span>
+                              <span className="text-zinc-500">
+                                {[
+                                  row.trade && row.trade !== "general" ? row.trade : null,
+                                  row.auditScore !== null ? `audit ${row.auditScore}` : null,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ") || "not audited"}
+                              </span>
+                            </td>
+                            {sendSteps.map((step) => (
+                              <td key={step.id} className="px-3 py-2">
+                                <select
+                                  value={row.steps[step.id] || ""}
+                                  onChange={(event) =>
+                                    setPlanTemplate(row.contactId, step.id, event.target.value)
+                                  }
+                                  className={`hub-field py-1 text-xs ${
+                                    row.steps[step.id] ? "" : "border-rose-400/60"
+                                  }`}
+                                >
+                                  <option value="">No email picked</option>
+                                  {templates.map((template) => (
+                                    <option key={template.id} value={template.id}>
+                                      {template.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                            ))}
+                            <td className="px-3 py-2 text-zinc-400">{row.reason}</td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {contactsOutsidePlan > 0 ? (
+                  <p className="text-xs text-amber-200/90">
+                    {contactsOutsidePlan} contact(s) in Will run for were added after
+                    this match and will get each step&apos;s default email. Click
+                    Re-match to include them.
+                  </p>
+                ) : null}
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="hub-btn text-xs"
+                    disabled={emailPlanApproved || contactsMissingEmail.length > 0}
+                    onClick={() => {
+                      setEmailPlanApproved(true);
+                      setStatus("Email plan approved — click Run now when ready.");
+                    }}
+                  >
+                    {emailPlanApproved ? "Approved ✓" : "Approve email plan"}
+                  </button>
+                  <button
+                    type="button"
+                    className="hub-btn-secondary text-xs"
+                    onClick={clearEmailPlan}
+                  >
+                    Clear plan
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="mt-3 flex flex-wrap items-end gap-2">
           <label className="text-xs text-zinc-400">

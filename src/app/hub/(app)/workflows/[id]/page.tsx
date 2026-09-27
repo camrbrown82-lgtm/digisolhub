@@ -37,7 +37,7 @@ export default async function WorkflowDetailPage({
     .from("email_templates")
     .select("id, name, subject")
     .order("updated_at", { ascending: false })
-    .limit(40);
+    .limit(60);
   if (clientId) templatesQuery = templatesQuery.eq("client_id", clientId);
 
   let prospectsQuery = supabase
