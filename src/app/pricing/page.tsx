@@ -21,8 +21,9 @@ export const metadata: Metadata = {
 export default function PricingPage({
   searchParams,
 }: {
-  searchParams: { cancelled?: string };
+  searchParams: { cancelled?: string; view?: string };
 }) {
+  const view = searchParams.view === "strong" ? "strong" : "default";
   return (
     <>
       <Navbar />
@@ -32,7 +33,7 @@ export default function PricingPage({
             Checkout cancelled — adjust your stack and try again anytime.
           </p>
         ) : null}
-        <PricingSection />
+        <PricingSection view={view} />
       </main>
       <Footer />
     </>

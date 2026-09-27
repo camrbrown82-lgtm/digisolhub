@@ -36,7 +36,7 @@ export function HubShell({
   }, []);
 
   return (
-    <div className="flex h-dvh max-h-dvh flex-col overflow-hidden bg-zinc-950">
+    <div className="hub-app flex h-dvh max-h-dvh flex-col overflow-hidden bg-zinc-950 text-indigo-100">
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-zinc-800 bg-zinc-950 px-3 sm:px-4">
         <button
           type="button"
@@ -50,7 +50,9 @@ export function HubShell({
           <HubBackButton className="shrink-0" label="Back" />
         ) : null}
         <Logo href="/hub/analytics" size="hub" />
-        <p className="hidden text-sm text-zinc-500 sm:block">Hub</p>
+        <p className="hidden text-sm font-medium tracking-wide text-sky-300 sm:block">
+          Hub
+        </p>
         <div className="min-w-0 flex-1 sm:max-w-xs sm:ml-auto">
           <ClientSwitcher clients={clients} activeClientId={activeClientId} compact />
         </div>
@@ -71,7 +73,7 @@ export function HubShell({
         }`}
       >
         <div className="flex items-center justify-between border-b border-zinc-800 px-3 py-3">
-          <p className="text-sm text-white">Menu</p>
+          <p className="text-sm font-medium text-sky-300">Menu</p>
           <button
             type="button"
             onClick={() => setOpen(false)}

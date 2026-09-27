@@ -10,7 +10,9 @@ export function verifyResendWebhookSignature(options: {
   svixTimestamp: string | null;
   svixSignature: string | null;
 }): { ok: boolean; error?: string } {
-  const secret = process.env.RESEND_WEBHOOK_SECRET?.trim();
+  const secret =
+    process.env.RESEND_WEBHOOK_SECRET?.trim() ||
+    process.env.RESEND_WEBHOOKS_SECRET?.trim();
   if (!secret) {
     return { ok: false, error: "RESEND_WEBHOOK_SECRET is not configured" };
   }

@@ -53,6 +53,10 @@ export async function draftProspectAuditSummary(input: {
     temperature: 0.3,
     prompt: `You write short DigiSol local website audit notes for Alberta ${input.trade} businesses.
 Never invent prices, rankings, or legal claims. Be specific and useful.
+Pay attention to the audit score:
+- 80+: site is largely fine — congratulate briefly, then emphasize DigiSol Hub (leads, nurture, workflows) so the audit is not wasted.
+- 60-79: balanced — a few upgrades plus Hub.
+- under 60: lead with concrete site fixes, still mention Hub.
 
 Business: ${input.businessName || "Local business"}
 URL: ${input.url}
@@ -67,8 +71,8 @@ Page text excerpt:
 ${pageText || "(unavailable)"}
 
 Return plain text in exactly this shape:
-SUBJECT: <email subject under 70 chars>
-OPENER: <1 short greeting sentence>
+SUBJECT: <email subject under 70 chars — mention score and Hub if score >= 80>
+OPENER: <1 short greeting sentence matching the score tier>
 SUMMARY: <2-3 short sentences for the email body>
 WEAKNESSES:
 - <weakness 1>

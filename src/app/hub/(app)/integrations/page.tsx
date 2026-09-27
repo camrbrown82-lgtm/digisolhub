@@ -29,7 +29,27 @@ export default function IntegrationsPage() {
     { name: "Inngest", ok: Boolean(process.env.INNGEST_EVENT_KEY) },
     { name: "Dispatch cron secret", ok: Boolean(process.env.CRON_SECRET?.trim()) },
     { name: "Web3Forms", ok: Boolean(process.env.WEB3FORMS_ACCESS_KEY || process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY) },
-    { name: "Google Ads", ok: Boolean(process.env.NEXT_PUBLIC_GOOGLE_ADS_ID?.trim()) },
+    {
+      name: "Google Ads",
+      ok: Boolean(
+        (process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || process.env.GOOGLE_ADS_ID || "")
+          .trim()
+          .replace(/^["']|["']$/g, "")
+          .match(/^AW-\d+$/),
+      ),
+      detail: (() => {
+        const raw = (
+          process.env.NEXT_PUBLIC_GOOGLE_ADS_ID ||
+          process.env.GOOGLE_ADS_ID ||
+          ""
+        )
+          .trim()
+          .replace(/^["']|["']$/g, "");
+        if (!raw) return "Missing NEXT_PUBLIC_GOOGLE_ADS_ID on this deploy";
+        if (!/^AW-\d+$/.test(raw)) return `Invalid value (need AW-…): ${raw.slice(0, 24)}`;
+        return raw;
+      })(),
+    },
     {
       name: "GA4 Data API",
       ok: Boolean(
@@ -69,7 +89,10 @@ export default function IntegrationsPage() {
     },
     {
       name: "Resend webhook secret",
-      ok: Boolean(process.env.RESEND_WEBHOOK_SECRET?.trim()),
+      ok: Boolean(
+        process.env.RESEND_WEBHOOK_SECRET?.trim() ||
+          process.env.RESEND_WEBHOOKS_SECRET?.trim(),
+      ),
     },
   ];
 
@@ -107,6 +130,17 @@ export default function IntegrationsPage() {
           the DigiSol agent also call Resend&apos;s metrics API and backfill recent
           sends when you open Analytics — keep open/click tracking enabled in
           Resend.
+        </p>
+        <p className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-amber-100/90">
+          <strong className="text-amber-100">DMARC (required for Google / Yahoo / Microsoft):</strong>{" "}
+          In Cloudflare DNS for <code className="text-zinc-200">wwwdigisol.com</code>, add
+          a TXT record — Name: <code className="text-zinc-200">_dmarc</code>, Value:{" "}
+          <code className="text-zinc-200">
+            v=DMARC1; p=none; rua=mailto:digisol2026@yahoo.com;
+          </code>
+          . Start with <code className="text-zinc-200">p=none</code>, then move to{" "}
+          <code className="text-zinc-200">quarantine</code> after reports look clean.
+          SPF/DKIM are already on Resend; DMARC is the missing piece.
         </p>
         <div className="mt-4">
           <ResendTrackingPanel />

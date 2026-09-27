@@ -4,6 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { MessageCircle, Send, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { MicDictateButton, appendDictation } from "@/components/hub/MicDictateButton";
 import {
   GEO_AUDIENCE_COOKIE,
   GEO_COUNTRY_COOKIE,
@@ -202,9 +203,14 @@ export function VisitorChat() {
                   void onSubmit(event);
                 }
               }}
-              placeholder="Type a message…"
+              placeholder="Type or use the mic…"
               className="min-h-[2rem] max-h-16 flex-1 resize-none rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
               disabled={busy}
+            />
+            <MicDictateButton
+              disabled={busy}
+              label="Mic"
+              onText={(chunk) => setInput((current) => appendDictation(current, chunk))}
             />
             <button
               type="submit"

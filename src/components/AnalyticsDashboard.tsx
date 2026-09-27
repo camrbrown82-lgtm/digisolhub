@@ -353,10 +353,10 @@ export function AnalyticsDashboard({
           empty="No page data yet."
         />
         <RankList
-          title="Event channels"
-          items={agentActivity?.byChannel?.length ? agentActivity.byChannel : topSources}
+          title="Traffic sources"
+          items={topSources}
           accent="bg-violet-500"
-          empty="No channel telemetry yet."
+          empty="No source data yet."
         />
         <div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-5">
           <div className="flex items-center justify-between gap-2">
@@ -381,8 +381,8 @@ export function AnalyticsDashboard({
                     <span className="shrink-0 text-rose-200/80">{item.value}</span>
                   </div>
                   <p className="mt-1 text-xs text-rose-100/60">
-                    Failed or low-performing signal — review CTA, deliverability, or
-                    social publish status.
+                    Failed events in the last 14 days. Check that action&apos;s
+                    deliverability or publish status — this is not a page score.
                   </p>
                 </li>
               ))}

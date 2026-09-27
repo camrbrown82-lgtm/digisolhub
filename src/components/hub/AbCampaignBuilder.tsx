@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FlaskConical, Loader2 } from "lucide-react";
+import { MicDictateButton, appendDictation } from "@/components/hub/MicDictateButton";
 import {
   CAMPAIGN_CHANNELS,
   CAMPAIGN_CHANNEL_LABELS,
@@ -114,7 +115,13 @@ export function AbCampaignBuilder({
 
       <form onSubmit={onSubmit} className="mt-5 grid gap-4 sm:grid-cols-2">
         <label className="text-sm text-zinc-300">
-          Campaign name
+          <span className="flex items-center justify-between gap-2">
+            Campaign name
+            <MicDictateButton
+              disabled={busy}
+              onText={(chunk) => setName((current) => appendDictation(current, chunk))}
+            />
+          </span>
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
@@ -123,7 +130,13 @@ export function AbCampaignBuilder({
           />
         </label>
         <label className="text-sm text-zinc-300">
-          Industry / service
+          <span className="flex items-center justify-between gap-2">
+            Industry / audience
+            <MicDictateButton
+              disabled={busy}
+              onText={(chunk) => setIndustry((current) => appendDictation(current, chunk))}
+            />
+          </span>
           <input
             value={industry}
             onChange={(event) => setIndustry(event.target.value)}
@@ -224,7 +237,13 @@ export function AbCampaignBuilder({
         </label>
         {segment === "tag" && !to.trim() ? (
           <label className="sm:col-span-2 text-sm text-zinc-300">
-            Tag
+            <span className="flex items-center justify-between gap-2">
+              Tag
+              <MicDictateButton
+                disabled={busy}
+                onText={(chunk) => setTag((current) => appendDictation(current, chunk))}
+              />
+            </span>
             <input
               value={tag}
               onChange={(event) => setTag(event.target.value)}
@@ -235,7 +254,13 @@ export function AbCampaignBuilder({
           </label>
         ) : null}
         <label className="sm:col-span-2 text-sm text-zinc-300">
-          Or paste recipient emails (optional override)
+          <span className="flex items-center justify-between gap-2">
+            Or paste recipient emails (optional override)
+            <MicDictateButton
+              disabled={busy}
+              onText={(chunk) => setTo((current) => appendDictation(current, chunk))}
+            />
+          </span>
           <input
             value={to}
             onChange={(event) => setTo(event.target.value)}

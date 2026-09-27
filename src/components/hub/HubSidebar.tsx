@@ -59,8 +59,8 @@ export function HubSidebar() {
               href={item.href}
               className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition ${
                 active
-                  ? "bg-indigo-600/20 text-white"
-                  : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
+                  ? "bg-indigo-600/25 text-sky-200 ring-1 ring-indigo-400/40"
+                  : "text-indigo-300/80 hover:bg-indigo-500/10 hover:text-sky-200"
               }`}
             >
               <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -72,8 +72,8 @@ export function HubSidebar() {
           href="/hub/archives"
           className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition ${
             pathname.startsWith("/hub/archives")
-              ? "bg-indigo-600/20 text-white"
-              : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300"
+              ? "bg-indigo-600/25 text-sky-200 ring-1 ring-indigo-400/40"
+              : "text-indigo-300/70 hover:bg-indigo-500/10 hover:text-sky-200"
           }`}
         >
           <Archive className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -83,14 +83,14 @@ export function HubSidebar() {
       <div className="border-t border-zinc-800 p-3">
         <Link
           href="/"
-          className="mb-2 block rounded-lg px-3 py-2 text-sm text-zinc-500 hover:text-white"
+          className="mb-2 block rounded-lg px-3 py-2 text-sm text-indigo-300/70 hover:text-sky-200"
         >
           View public site
         </Link>
         <button
           type="button"
           onClick={signOut}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-900 hover:text-white"
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-indigo-300/80 hover:bg-indigo-500/10 hover:text-sky-200"
         >
           <LogOut className="h-4 w-4" aria-hidden="true" />
           Sign out

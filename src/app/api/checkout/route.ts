@@ -45,7 +45,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unknown pricing selection." }, { status: 400 });
   }
 
-  // Prefer a single core package if several were sent.
+  // Prefer a single core website package if several were sent.
+  // Hub-only checkouts (addon_hub without foundation/growth/full_funnel) are allowed.
   const packages = items.filter((item) =>
     ["foundation", "growth", "full_funnel"].includes(item.id),
   );

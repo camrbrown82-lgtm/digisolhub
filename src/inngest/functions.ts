@@ -45,7 +45,8 @@ async function runGraph(opts: {
   const nodes = opts.graph.nodes ?? [];
   const edges = opts.graph.edges ?? [];
   const start =
-    nodes.find((node) => node.type === "trigger" || node.data?.trigger) ?? nodes[0];
+    nodes.find((node) => node.type === "trigger" || node.data?.trigger) ??
+    nodes[0];
   if (!start) return;
 
   const { data: run } = await admin
@@ -62,53 +63,73 @@ async function runGraph(opts: {
   const log: string[] = [];
   const visited = new Set<string>();
   let current: FlowNode | undefined = start;
+  let failed = false;
 
-  while (current && !visited.has(current.id)) {
-    visited.add(current.id);
-    const action = current.data?.action;
-    const duration = current.data?.duration || "1h";
+  try {
+    while (current && !visited.has(current.id)) {
+      visited.add(current.id);
+      const action = current.data?.action;
+      const duration = current.data?.duration || "1h";
 
-    if (action === "wait") {
-      await opts.step.sleep(`wait-${current.id}`, duration);
-      log.push(`waited ${duration}`);
-    } else if (action === "send_template" && current.data?.templateId) {
-      const templateId = current.data.templateId;
-      await opts.step.run(`send-${current.id}`, async () => {
-        await sendEmailToContact({
-          contactId: opts.contactId,
-          templateId,
+      if (action === "wait") {
+        await opts.step.sleep(`wait-${current.id}`, duration);
+        log.push(`waited ${duration}`);
+      } else if (action === "send_template") {
+        const templateId = String(current.data?.templateId || "").trim();
+        if (!templateId) {
+          log.push(`skipped send ${current.id}: no template selected`);
+        } else {
+          await opts.step.run(`send-${current.id}`, async () => {
+            await sendEmailToContact({
+              contactId: opts.contactId,
+              templateId,
+            });
+          });
+          log.push(`sent template ${templateId}`);
+        }
+      } else if (action === "add_tag" && current.data?.tag) {
+        const tag = current.data.tag;
+        await opts.step.run(`tag-${current.id}`, async () => {
+          const { data: contact } = await admin
+            .from("contacts")
+            .select("tags")
+            .eq("id", opts.contactId)
+            .single();
+          const tags = Array.from(new Set([...(contact?.tags ?? []), tag]));
+          await admin.from("contacts").update({ tags }).eq("id", opts.contactId);
         });
-      });
-      log.push(`sent template ${templateId}`);
-    } else if (action === "add_tag" && current.data?.tag) {
-      const tag = current.data.tag;
-      await opts.step.run(`tag-${current.id}`, async () => {
-        const { data: contact } = await admin
-          .from("contacts")
-          .select("tags")
-          .eq("id", opts.contactId)
-          .single();
-        const tags = Array.from(new Set([...(contact?.tags ?? []), tag]));
-        await admin.from("contacts").update({ tags }).eq("id", opts.contactId);
-      });
-      log.push(`tagged ${tag}`);
-    } else {
-      log.push(`node ${current.id}`);
-    }
+        log.push(`tagged ${tag}`);
+      } else if (current.data?.trigger) {
+        log.push(`trigger ${current.data.trigger}`);
+      } else {
+        log.push(`node ${current.id}`);
+      }
 
-    const edge = edges.find((item) => item.source === current?.id);
-    current = edge ? nodes.find((node) => node.id === edge.target) : undefined;
+      const edge = edges.find((item) => item.source === current?.id);
+      current = edge
+        ? nodes.find((node) => node.id === edge.target)
+        : undefined;
+    }
+  } catch (err) {
+    failed = true;
+    log.push(
+      `failed: ${err instanceof Error ? err.message : "unknown error"}`,
+    );
   }
 
   if (run?.id) {
     await admin
       .from("workflow_runs")
       .update({
-        status: "completed",
+        status: failed ? "failed" : "completed",
         log,
         finished_at: new Date().toISOString(),
       })
       .eq("id", run.id);
+  }
+
+  if (failed) {
+    throw new Error(log[log.length - 1] || "Workflow run failed");
   }
 }
 

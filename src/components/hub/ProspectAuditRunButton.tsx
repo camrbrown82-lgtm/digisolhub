@@ -47,6 +47,8 @@ export function ProspectAuditRunButton() {
         return;
       }
       const t = json.totals || {};
+      const ran = t.attempted ?? 0;
+      const compliant = t.audited ?? 0;
       const seeded = json.queueSeed?.inserted ?? 0;
       setMessage(
         [
@@ -55,7 +57,12 @@ export function ProspectAuditRunButton() {
             ? `Re-queued ${json.requeuedDryRuns} dry-run/Resend row${json.requeuedDryRuns === 1 ? "" : "s"}.`
             : null,
           json.expandedSectors ? "Expanded beyond preferred trades." : null,
-          `Attempted ${t.attempted ?? 0} · audited ${t.audited ?? 0} · emailed ${t.emailed ?? 0} · CASL blocked ${t.caslBlocked ?? 0} · failed ${t.failed ?? 0}.`,
+          ran
+            ? `Ran ${ran}. ${compliant} ${compliant === 1 ? "was" : "were"} email compliant.`
+            : "Ran 0.",
+          (t.failed ?? 0) > 0
+            ? `${t.failed} failed before the CASL check finished.`
+            : null,
           json.results?.[0]?.reason === "empty_queue"
             ? json.results[0].note || "Queue still empty."
             : null,

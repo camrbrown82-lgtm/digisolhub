@@ -1,7 +1,14 @@
 import { PricingBuilder } from "@/components/sections/Pricing";
 import { stripeConfigured } from "@/lib/stripe";
 
-export function PricingSection({ cityHint }: { cityHint?: string }) {
+export function PricingSection({
+  cityHint,
+  view = "default",
+}: {
+  cityHint?: string;
+  /** strong = high-score audit email: Hub, retainers, and growth add-ons first. */
+  view?: "default" | "strong";
+}) {
   const stripeReady = stripeConfigured();
   return (
     <section
@@ -10,7 +17,11 @@ export function PricingSection({ cityHint }: { cityHint?: string }) {
       aria-labelledby="pricing-heading"
     >
       <div className="mx-auto max-w-6xl">
-        <PricingBuilder stripeReady={stripeReady} cityHint={cityHint} />
+        <PricingBuilder
+          stripeReady={stripeReady}
+          cityHint={cityHint}
+          view={view}
+        />
       </div>
     </section>
   );

@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { MicDictateButton, appendDictation } from "@/components/hub/MicDictateButton";
 import { PosterExport } from "@/components/hub/PosterExport";
 import { type PosterFormat } from "@/lib/poster";
 import { type PosterSocialPack } from "@/lib/posterSocial";
@@ -169,17 +170,23 @@ export function AiImageForm({
         </div>
       </fieldset>
 
-      <label className="block text-sm">
-        Slide blueprint
+      <div className="block text-sm">
+        <span className="flex items-center justify-between gap-2">
+          Slide blueprint
+          <MicDictateButton
+            disabled={busy}
+            onText={(chunk) => setPrompt((current) => appendDictation(current, chunk))}
+          />
+        </span>
         <textarea
           value={prompt}
           onChange={(event) => setPrompt(event.target.value)}
           required
           rows={12}
-          className="hub-field resize-y placeholder:text-zinc-600"
-          placeholder="Paste your slide brief here… Use [SLIDE 1], [SLIDE 2], … with Visual Idea, Headline, and Body Copy for each."
+          className="hub-field mt-1.5 resize-y placeholder:text-zinc-600"
+          placeholder="Paste or dictate your slide brief… Use [SLIDE 1], [SLIDE 2], … with Visual Idea, Headline, and Body Copy for each."
         />
-      </label>
+      </div>
       <p className="text-xs text-zinc-500">
         Paste a fresh brief each time. Each [SLIDE n] becomes its own carousel
         card — LinkedIn, X, Facebook, Instagram, and a PDF when there are

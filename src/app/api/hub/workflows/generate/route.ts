@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
+import {
+  AUDITED_PROSPECT_STATUSES,
+  audienceLooksAuditedOnly,
+  isAuditedContact,
+} from "@/lib/auditedContacts";
+import { parseAudiencePreset, type AudiencePreset } from "@/lib/contactAudiences";
 import { brandFromClient } from "@/lib/branding";
 import { ensureTagDescriptionSchema } from "@/lib/ensureTagSchema";
 import {
@@ -32,6 +38,8 @@ export async function POST(request: Request) {
     goal?: string;
     timeline?: string;
     audience?: string;
+    audienceDetail?: string;
+    audiencePreset?: "audited" | "custom" | AudiencePreset;
     offer?: string;
     triggerHint?: string;
     notes?: string;
@@ -42,7 +50,10 @@ export async function POST(request: Request) {
   const goal = body.goal?.trim();
   if (!goal) {
     return NextResponse.json(
-      { error: "Describe the campaign goal so the workflow builder can plan steps." },
+      {
+        error:
+          "Describe the campaign goal so the workflow builder can plan steps.",
+      },
       { status: 400 },
     );
   }
@@ -53,6 +64,95 @@ export async function POST(request: Request) {
   const clientId = await resolveClientId(supabase);
   const { companyName } = brandFromClient(active);
   const openai = createOpenAIClient();
+
+  const preset = parseAudiencePreset(body.audiencePreset);
+  const audienceDetail = body.audienceDetail?.trim().slice(0, 400) || "";
+  const auditedOnly =
+    body.audiencePreset === "audited" ||
+    preset === "audits" ||
+    preset === "trades" ||
+    audienceLooksAuditedOnly(body.audience) ||
+    audienceLooksAuditedOnly(audienceDetail) ||
+    audienceLooksAuditedOnly(body.notes);
+
+  let audienceLine = body.audience?.trim() || "";
+  let auditedCount = 0;
+  let auditedSample: string[] = [];
+
+  if (auditedOnly && clientId) {
+    const [{ data: contacts }, { data: prospects }] = await Promise.all([
+      supabase
+        .from("contacts")
+        .select("id, name, company, email, tags, source")
+        .eq("client_id", clientId)
+        .is("unsubscribed_at", null)
+        .order("created_at", { ascending: false })
+        .limit(200),
+      supabase
+        .from("prospects")
+        .select("contact_id, business_name")
+        .eq("client_id", clientId)
+        .not("contact_id", "is", null)
+        .in("audit_status", [...AUDITED_PROSPECT_STATUSES])
+        .limit(500),
+    ]);
+
+    const auditedIds = new Set(
+      (prospects ?? [])
+        .map((row) => row.contact_id as string | null)
+        .filter((id): id is string => Boolean(id)),
+    );
+
+    const auditedContacts = (contacts ?? []).filter((row) =>
+      isAuditedContact({
+        id: row.id as string,
+        tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
+        source: (row.source as string | null) ?? null,
+        auditedIds,
+      }),
+    );
+
+    auditedCount = auditedContacts.length;
+    auditedSample = auditedContacts
+      .slice(0, 8)
+      .map(
+        (row) =>
+          (row.company as string) ||
+          (row.name as string) ||
+          (row.email as string),
+      )
+      .filter(Boolean);
+
+    audienceLine = [
+      "HARD LOCK — audited DigiSol prospect companies ONLY.",
+      `${auditedCount} CRM contacts currently match (prospect audit / prospect_audit tags).`,
+      auditedSample.length
+        ? `Sample: ${auditedSample.join("; ")}.`
+        : "No audited contacts linked yet — still design for that audience only.",
+      "Do NOT design for the full CRM, DigiSol staff, or random leads.",
+      "The operator will multi-select these audited contacts in the workflow Run audience panel.",
+      preset === "trades"
+        ? "Narrow to TRADE businesses only (HVAC, plumbing, electrical, mechanical). Return audience \"trades\"."
+        : "Return audience \"audits\".",
+    ].join(" ");
+  } else if (preset === "leads") {
+    audienceLine =
+      "Organic new leads only — forms, Facebook, Kaylev chat, consult requests. Not prospect-audit companies.";
+  } else if (preset === "engaged") {
+    audienceLine =
+      "Engaged contacts only — people who opened or clicked a tracked email, or are tagged engaged / warm-lead / prospect_audit_engaged. They already know us: skip cold intros and move toward a consult. Return audience \"engaged\".";
+  } else if (preset === "me") {
+    audienceLine =
+      "Self-test only. Design the same steps the operator will run on themselves first. Do not target the full CRM.";
+  } else if (!audienceLine && !audienceDetail) {
+    audienceLine = "Workspace CRM contacts (operator will pick run audience)";
+  }
+
+  if (audienceDetail) {
+    audienceLine = [audienceLine, `Operator audience detail: ${audienceDetail}`]
+      .filter(Boolean)
+      .join(" ");
+  }
 
   const completion = await openai.chat.completions.create({
     model: getOpenAITextModel(),
@@ -65,10 +165,17 @@ export async function POST(request: Request) {
         content: buildWorkflowUserPrompt({
           goal,
           timeline: body.timeline?.trim(),
-          audience: body.audience?.trim(),
+          audience: audienceLine,
           offer: body.offer?.trim(),
           triggerHint: body.triggerHint?.trim(),
-          notes: body.notes?.trim(),
+          notes: [
+            body.notes?.trim(),
+            auditedOnly
+              ? "Audience lock confirmed: audited prospect companies only. Summary must say the run list is audited contacts, not the whole CRM."
+              : "",
+          ]
+            .filter(Boolean)
+            .join("\n"),
           tagGuidance: body.tagGuidance?.trim(),
           companyName,
         }),
@@ -78,7 +185,10 @@ export async function POST(request: Request) {
 
   const content = completion.choices[0]?.message?.content?.trim();
   if (!content) {
-    return NextResponse.json({ error: "AI returned an empty workflow" }, { status: 502 });
+    return NextResponse.json(
+      { error: "AI returned an empty workflow" },
+      { status: 502 },
+    );
   }
 
   let plan;
@@ -86,16 +196,23 @@ export async function POST(request: Request) {
     plan = parseWorkflowAiResponse(content);
   } catch {
     return NextResponse.json(
-      { error: "Could not parse the AI workflow. Try again with a clearer goal." },
+      {
+        error:
+          "Could not parse the AI workflow. Try again with a clearer goal.",
+      },
       { status: 502 },
     );
   }
 
   if (body.save === false) {
-    return NextResponse.json({ workflow: plan, tags: plan.tags, saved: false });
+    return NextResponse.json({
+      workflow: plan,
+      tags: plan.tags,
+      saved: false,
+      audience: { auditedOnly, auditedCount },
+    });
   }
 
-  // Upsert tag catalogue so descriptions live in Hub CRM tags.
   for (const tag of plan.tags) {
     const { data: existing } = await supabase
       .from("tags")
@@ -137,11 +254,30 @@ export async function POST(request: Request) {
     );
   }
 
+  const audienceKey: AudiencePreset | null =
+    preset ||
+    plan.audience ||
+    (auditedOnly ? (preset === "trades" ? "trades" : "audits") : null);
+
+  const audienceNote =
+    audienceKey === "trades"
+      ? " Will run for is set to trades prospect audits — review the list before Run now."
+      : audienceKey === "audits"
+        ? ` Will run for is set to prospect audits${auditedCount ? ` (${auditedCount})` : ""} — review the list before Run now.`
+        : audienceKey === "leads"
+          ? " Will run for is set to new leads — review the list before Run now."
+          : audienceKey === "engaged"
+            ? " Will run for is set to engaged contacts (opened, clicked, or tagged engaged) — review the list before Run now."
+            : audienceKey === "me"
+              ? " Will run for is set to you — review, then Run now."
+              : " Run list starts empty. Use Add me, Trades audits, All prospect audits, New leads, or Engaged.";
+
   return NextResponse.json({
     id: data.id,
     workflow: data,
-    summary: plan.summary,
+    summary: `${plan.summary || "Workflow created."}${audienceNote}`,
     tags: plan.tags,
     saved: true,
+    audience: audienceKey,
   });
 }

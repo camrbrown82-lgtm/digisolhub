@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { MicDictateButton, appendDictation } from "@/components/hub/MicDictateButton";
 import {
   type AbAuditPeriod,
   type AbSendRow,
@@ -151,7 +152,13 @@ export function AbCampaignResults({
       </p>
 
       <div className="mt-4 space-y-3 border-t border-zinc-800 pt-4">
-        <p className="text-sm font-medium text-zinc-200">Audit log</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-medium text-zinc-200">Audit log</p>
+          <MicDictateButton
+            disabled={busy}
+            onText={(chunk) => setNote((current) => appendDictation(current, chunk))}
+          />
+        </div>
         <textarea
           value={note}
           onChange={(event) => setNote(event.target.value)}

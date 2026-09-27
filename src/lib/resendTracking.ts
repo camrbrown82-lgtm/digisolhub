@@ -129,23 +129,37 @@ export async function getResendTrackingStatus(): Promise<ResendTrackingStatus> {
     const openTracking = Boolean(domain.open_tracking);
     const clickTracking = Boolean(domain.click_tracking);
     const trackingSubdomain = domain.tracking_subdomain || null;
-    const trackingRecord = (domain.records || []).find(
-      (r) => /tracking/i.test(String(r.record || "")) || r.type === "CNAME",
-    );
+    // Prefer the Tracking record — never the first SPF CNAME (e.g. rsend).
+    const trackingRecord =
+      (domain.records || []).find((r) =>
+        /tracking/i.test(String(r.record || "")),
+      ) ||
+      (domain.records || []).find(
+        (r) =>
+          r.type === "CNAME" &&
+          /^(links|click|open)/i.test(String(r.name || "")),
+      ) ||
+      null;
     const trackingDnsOk =
       !trackingRecord ||
-      String(trackingRecord.status || "").toLowerCase() === "verified" ||
-      String(domain.status || "").toLowerCase() === "verified";
+      String(trackingRecord.status || "").toLowerCase() === "verified";
 
     const trackingReady =
       openTracking && Boolean(trackingSubdomain) && trackingDnsOk;
 
     let dnsHint: string | null = null;
     if (trackingSubdomain && trackingRecord && !trackingDnsOk) {
-      dnsHint = `Add CNAME ${trackingRecord.name || `${trackingSubdomain}.${domain.name}`} → ${trackingRecord.value || "links.resend-dns.com"} and verify in Resend.`;
+      const host =
+        trackingRecord.name?.includes(".")
+          ? trackingRecord.name
+          : `${trackingRecord.name || trackingSubdomain}.${domain.name || domainName}`;
+      dnsHint = `Add CNAME ${host} → ${trackingRecord.value || "links.resend-dns.com"} and verify in Resend.`;
     } else if (!openTracking) {
       dnsHint =
         "Open tracking is disabled on this domain in Resend (default). DigiSol can enable it via API.";
+    } else if (!trackingSubdomain) {
+      dnsHint =
+        "Set a tracking subdomain (e.g. links) on this domain in Resend, then add the Tracking CNAME.";
     }
 
     return {

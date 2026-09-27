@@ -11,6 +11,7 @@ import {
   starterKeyOf,
 } from "@/lib/emailTemplates";
 import { MergeFieldBar } from "@/components/hub/MergeFieldBar";
+import { MicDictateButton, appendDictation } from "@/components/hub/MicDictateButton";
 
 type Template = {
   id: string;
@@ -535,7 +536,13 @@ export function EmailComposer({
           </div>
         </div>
         <label className="block text-sm">
-          Subject
+          <span className="flex items-center justify-between gap-2">
+            Subject
+            <MicDictateButton
+              disabled={busy === "ai"}
+              onText={(chunk) => setSubject((current) => appendDictation(current, chunk))}
+            />
+          </span>
           <input
             ref={subjectRef}
             value={subject}
@@ -546,7 +553,15 @@ export function EmailComposer({
           />
         </label>
         <label className="block text-sm">
-          Recipients
+          <span className="flex items-center justify-between gap-2">
+            Recipients
+            <MicDictateButton
+              disabled={busy === "ai"}
+              onText={(chunk) =>
+                setRecipients((current) => appendDictation(current, chunk))
+              }
+            />
+          </span>
           <input
             value={recipients}
             onChange={(event) => setRecipients(event.target.value)}
@@ -628,7 +643,13 @@ export function EmailComposer({
           </span>
         </label>
         <label className="block text-sm">
-          Body
+          <span className="flex items-center justify-between gap-2">
+            Body
+            <MicDictateButton
+              disabled={busy === "ai"}
+              onText={(chunk) => setBody((current) => appendDictation(current, chunk))}
+            />
+          </span>
           <textarea
             ref={bodyRef}
             value={body}
@@ -642,11 +663,19 @@ export function EmailComposer({
 
         <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/5 p-4">
           <p className="text-sm font-medium text-white">AI draft</p>
-          <p className="mt-1 text-xs text-zinc-400">
-            Locked to the {companyName} brand kit — voice, colors, tagline, and
-            official logo. Generate a full email, or add flare to what you
-            already wrote.
-          </p>
+          <div className="mt-1 flex items-center justify-between gap-2">
+            <p className="text-xs text-zinc-400">
+              Locked to the {companyName} brand kit — voice, colors, tagline, and
+              official logo. Generate a full email, or add flare to what you
+              already wrote.
+            </p>
+            <MicDictateButton
+              disabled={busy === "ai"}
+              onText={(chunk) =>
+                setAiPrompt((current) => appendDictation(current, chunk))
+              }
+            />
+          </div>
           <textarea
             ref={aiRef}
             value={aiPrompt}

@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { CopySnippet } from "@/components/hub/CopySnippet";
+import { GoogleAdsPanel } from "@/components/hub/GoogleAdsPanel";
 import { MetaAdsPanel } from "@/components/hub/MetaAdsPanel";
 import { InstagramInsightsPanel } from "@/components/hub/InstagramInsightsPanel";
 import { WebsiteAuditPanel } from "@/components/hub/WebsiteAuditPanel";
@@ -92,6 +93,7 @@ export default async function AnalyticsPage() {
     pages: [],
     locations: [],
     sources: [],
+    googleAds: { sessions: 0, campaigns: [] },
   };
 
   const emptyAgent = {
@@ -212,17 +214,9 @@ export default async function AnalyticsPage() {
     { label: "Clicks", value: clickCount },
     { label: "Unsubscribed", value: unsubscribed.count ?? 0 },
   ];
-  const weakPoints = (
-    agentEvents.weakPoints.length
-      ? agentEvents.weakPoints
-      : website.pages
-          .filter((page) => page.count > 0)
-          .slice(0, 5)
-          .map((page) => ({
-            label: page.label,
-            value: page.count,
-          }))
-  );
+  // Only real failed agent events. Pageview counts belong in Top pages —
+  // using them here made the busiest URLs look like failing scores.
+  const weakPoints = agentEvents.weakPoints;
   const topPages = (
     gaStatus.ready && !ga4.error && ga4.pages.length > 0
       ? ga4.pages.map((page) => ({ label: page.label, value: page.pageviews }))
@@ -302,6 +296,14 @@ export default async function AnalyticsPage() {
             Could not load GA4: {ga4.error}
           </div>
         ) : null}
+
+        <GoogleAdsPanel
+          days={14}
+          configured={gaStatus.ready && !ga4.error}
+          sessions={ga4.googleAds.sessions}
+          landings={isDigisol ? website.googleAdsPageviews : 0}
+          campaigns={ga4.googleAds.campaigns}
+        />
 
         <AnalyticsDashboard
           companyName={active?.name}

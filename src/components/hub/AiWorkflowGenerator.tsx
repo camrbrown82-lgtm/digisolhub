@@ -3,12 +3,28 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { Sparkles, Wand2 } from "lucide-react";
+import { MicDictateButton, appendDictation } from "@/components/hub/MicDictateButton";
+
+import { parseAudiencePreset, type AudiencePreset } from "@/lib/contactAudiences";
+
+type AudienceChoice = AudiencePreset | "custom";
+
+const AUDIENCE_COPY: Record<AudiencePreset, string> = {
+  trades:
+    "Trades prospect audits only — HVAC, mechanical, and similar cold audits.",
+  audits: "All prospect audits (trades and other audited companies).",
+  leads: "New leads — forms, Facebook, Kaylev chat, consult requests.",
+  engaged:
+    "Engaged contacts — opened or clicked an email, or tagged engaged / warm-lead.",
+  me: "Me only — a self-test on my DigiSol contact.",
+};
 
 export function AiWorkflowGenerator() {
   const router = useRouter();
   const [goal, setGoal] = useState("");
-  const [timeline, setTimeline] = useState("7 days");
+  const [timeline, setTimeline] = useState("welcome, wait 1 day, then a follow-up");
   const [audience, setAudience] = useState("");
+  const [audiencePreset, setAudiencePreset] = useState<AudienceChoice>("audits");
   const [offer, setOffer] = useState("Book a free consultation");
   const [triggerHint, setTriggerHint] = useState("new_lead");
   const [tagGuidance, setTagGuidance] = useState("");
@@ -33,17 +49,26 @@ export function AiWorkflowGenerator() {
         body: JSON.stringify({
           goal,
           timeline,
-          audience,
+          audiencePreset,
+          audience:
+            audiencePreset === "custom" ? audience.trim() : AUDIENCE_COPY[audiencePreset],
+          audienceDetail: audiencePreset === "custom" ? "" : audience.trim(),
           offer,
           triggerHint,
           tagGuidance,
-          notes,
+          notes: [
+            notes.trim(),
+            "Build the full plan: welcome (video or poster if I mentioned one), a wait, a follow-up, and the tags. I will review before sending.",
+          ]
+            .filter(Boolean)
+            .join("\n"),
           save: true,
         }),
       });
       const result = (await response.json()) as {
         id?: string;
         summary?: string;
+        audience?: string;
         tags?: { name: string; description: string }[];
         error?: string;
       };
@@ -51,11 +76,10 @@ export function AiWorkflowGenerator() {
         throw new Error(result.error || "Could not generate workflow");
       }
       setCreatedTags(result.tags ?? []);
-      setSummary(
-        result.summary ||
-          "Workflow created — open the canvas to attach email templates and tweak tags.",
-      );
-      router.push(`/hub/workflows/${result.id}`);
+      setSummary(result.summary || "Workflow created. Review the steps, then Run now.");
+      const presetKey = parseAudiencePreset(result.audience);
+      const audienceQuery = presetKey ? `?audience=${presetKey}` : "";
+      router.push(`/hub/workflows/${result.id}${audienceQuery}`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Generation failed");
@@ -73,32 +97,44 @@ export function AiWorkflowGenerator() {
         <div>
           <h2 className="text-lg font-semibold text-white">AI workflow generator</h2>
           <p className="mt-1 text-sm text-zinc-400">
-            Describe the goal and any tag ideas. DigiSol builds the canvas
-            (trigger → emails → waits → tags), writes a short description for
-            each tag, saves them in Hub, then opens the editor so you can change
-            names, descriptions, and templates.
+            Tell Kaylev the goal, who it is for, and how long to wait. It
+            builds the whole path — welcome (audit video or a poster you name),
+            wait, follow-up, and tags — then loads that audience into Will run
+            for. You review the steps and the people before anything sends.
           </p>
         </div>
       </div>
 
       <form onSubmit={onSubmit} className="mt-5 grid gap-4 sm:grid-cols-2">
         <label className="sm:col-span-2 text-sm text-zinc-300">
-          Goal *
+          <span className="flex items-center justify-between gap-2">
+            Goal *
+            <MicDictateButton
+              disabled={busy}
+              onText={(chunk) => setGoal((current) => appendDictation(current, chunk))}
+            />
+          </span>
           <textarea
             required
             rows={3}
             value={goal}
             onChange={(event) => setGoal(event.target.value)}
-            placeholder="e.g. Nurture new website leads into a booked DigiSol consult within 10 days"
+            placeholder="e.g. Prospect audit for trades: welcome with the website-audit video, wait a day, then a follow-up"
             className="hub-field mt-1.5 min-h-[88px]"
           />
         </label>
         <label className="text-sm text-zinc-300">
-          Timeline
+          <span className="flex items-center justify-between gap-2">
+            Timeline
+            <MicDictateButton
+              disabled={busy}
+              onText={(chunk) => setTimeline((current) => appendDictation(current, chunk))}
+            />
+          </span>
           <input
             value={timeline}
             onChange={(event) => setTimeline(event.target.value)}
-            placeholder="7 days, 2 weeks…"
+            placeholder="1 day between welcome and follow-up"
             className="hub-field mt-1.5"
           />
         </label>
@@ -116,16 +152,53 @@ export function AiWorkflowGenerator() {
           </select>
         </label>
         <label className="text-sm text-zinc-300">
-          Audience
+          Audience preset
+          <select
+            value={audiencePreset}
+            onChange={(event) => setAudiencePreset(event.target.value as AudienceChoice)}
+            className="hub-field mt-1.5"
+          >
+            <option value="trades">Trades prospect audits</option>
+            <option value="audits">All prospect audits</option>
+            <option value="leads">New leads</option>
+            <option value="engaged">Engaged (opened / clicked)</option>
+            <option value="me">Me (self-test)</option>
+            <option value="custom">Custom (type below)</option>
+          </select>
+          <span className="mt-1 block text-xs text-zinc-500">
+            {audiencePreset === "custom"
+              ? "Kaylev designs for exactly who you type in Audience detail."
+              : AUDIENCE_COPY[audiencePreset]}
+          </span>
+        </label>
+        <label className="text-sm text-zinc-300">
+          <span className="flex items-center justify-between gap-2">
+            Audience detail {audiencePreset === "custom" ? "*" : "(optional)"}
+            <MicDictateButton
+              disabled={busy}
+              onText={(chunk) => setAudience((current) => appendDictation(current, chunk))}
+            />
+          </span>
           <input
             value={audience}
             onChange={(event) => setAudience(event.target.value)}
-            placeholder="Airdrie retailers, Calgary contractors…"
+            required={audiencePreset === "custom"}
+            placeholder={
+              audiencePreset === "custom"
+                ? "e.g. Airdrie retailers, Calgary contractors…"
+                : "Narrow it, e.g. HVAC owners in Airdrie who watched the video"
+            }
             className="hub-field mt-1.5"
           />
         </label>
         <label className="text-sm text-zinc-300">
-          Offer / CTA
+          <span className="flex items-center justify-between gap-2">
+            Offer / CTA
+            <MicDictateButton
+              disabled={busy}
+              onText={(chunk) => setOffer((current) => appendDictation(current, chunk))}
+            />
+          </span>
           <input
             value={offer}
             onChange={(event) => setOffer(event.target.value)}
@@ -134,7 +207,15 @@ export function AiWorkflowGenerator() {
           />
         </label>
         <label className="sm:col-span-2 text-sm text-zinc-300">
-          Tag guidance (optional)
+          <span className="flex items-center justify-between gap-2">
+            Tag guidance (optional)
+            <MicDictateButton
+              disabled={busy}
+              onText={(chunk) =>
+                setTagGuidance((current) => appendDictation(current, chunk))
+              }
+            />
+          </span>
           <input
             value={tagGuidance}
             onChange={(event) => setTagGuidance(event.target.value)}
@@ -143,7 +224,13 @@ export function AiWorkflowGenerator() {
           />
         </label>
         <label className="sm:col-span-2 text-sm text-zinc-300">
-          Extra notes
+          <span className="flex items-center justify-between gap-2">
+            Extra notes
+            <MicDictateButton
+              disabled={busy}
+              onText={(chunk) => setNotes((current) => appendDictation(current, chunk))}
+            />
+          </span>
           <input
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
@@ -158,7 +245,7 @@ export function AiWorkflowGenerator() {
             className="hub-btn inline-flex items-center gap-2"
           >
             <Sparkles className="h-4 w-4" aria-hidden="true" />
-            {busy ? "Building workflow + tags…" : "Generate workflow & tags"}
+            {busy ? "Building the plan…" : "Build the workflow"}
           </button>
           {summary ? <p className="text-sm text-indigo-200">{summary}</p> : null}
           {error ? <p className="text-sm text-rose-300">{error}</p> : null}

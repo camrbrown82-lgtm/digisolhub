@@ -18,6 +18,10 @@ import {
 } from "@/lib/contactAbVariants";
 import { ensureCampaignChannelSchema } from "@/lib/ensureCampaignChannelSchema";
 import { createClient } from "@/lib/supabase/server";
+import {
+  CONTACT_AUDIENCE_SECTIONS,
+  classifyContact,
+} from "@/lib/contactAudiences";
 import { getActiveClient, resolveClientId } from "@/lib/workspace";
 
 type ContactListRow = {
@@ -130,6 +134,26 @@ export default async function ContactsPage({
     return qs ? `/hub/contacts?${qs}` : "/hub/contacts";
   }
 
+  const operatorEmails = String(process.env.HUB_ALLOWED_EMAIL || "")
+    .split(",")
+    .map((email) => email.trim())
+    .filter(Boolean);
+
+  const grouped = CONTACT_AUDIENCE_SECTIONS.map((section) => ({
+    ...section,
+    rows: contacts.filter(
+      (contact) =>
+        classifyContact({
+          email: contact.email,
+          tags: contact.tags,
+          source: contact.source,
+          service: contact.service,
+          company: contact.company,
+          operatorEmails,
+        }) === section.id,
+    ),
+  })).filter((section) => section.rows.length > 0);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
@@ -137,8 +161,9 @@ export default async function ContactsPage({
           <h1 className="text-3xl font-semibold text-white">Contacts</h1>
           <WorkspaceScope companyName={active?.name} noun="contacts" />
           <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-            People and leads live here — set source, channel, A/B group, and
-            tags on each contact. Counts and funnel stats are on Analytics.
+            Contacts are grouped by audience so a workflow can target one
+            group — trades audits, other audits, or organic new leads — without
+            mixing everyone together.
           </p>
         </div>
         <Link href="/hub/contacts/new" className="hub-btn">
@@ -242,80 +267,101 @@ export default async function ContactsPage({
         ))}
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-zinc-800">
-        <table className="min-w-full text-left text-sm">
-          <thead className="bg-zinc-900 text-zinc-400">
-            <tr>
-              <th className="px-4 py-3 font-medium">Name</th>
-              <th className="px-4 py-3 font-medium">Email</th>
-              <th className="px-4 py-3 font-medium">Phone</th>
-              <th className="px-4 py-3 font-medium">Company</th>
-              <th className="px-4 py-3 font-medium">Channel</th>
-              <th className="px-4 py-3 font-medium">A/B</th>
-              <th className="px-4 py-3 font-medium">Service</th>
-              <th className="px-4 py-3 font-medium">Tags</th>
-              <th className="px-4 py-3 font-medium"> </th>
-            </tr>
-          </thead>
-          <tbody>
-            {contacts.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="px-4 py-8 text-zinc-500">
-                  No contacts yet
-                  {channelFilter || abFilter || sourceFilter
-                    ? " for this filter"
-                    : ""}
-                  .
-                </td>
-              </tr>
-            ) : (
-              contacts.map((contact) => (
-                <tr key={contact.id} className="border-t border-zinc-800">
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/hub/contacts/${contact.id}`}
-                      className="text-white hover:text-indigo-300"
-                    >
-                      {contact.name || "—"}
-                    </Link>
-                    {contact.unsubscribed_at ? (
-                      <span className="ml-2 text-xs text-zinc-500">unsubscribed</span>
-                    ) : null}
-                  </td>
-                  <td className="px-4 py-3 text-zinc-300">{contact.email}</td>
-                  <td className="px-4 py-3 text-zinc-300">{contact.phone || "—"}</td>
-                  <td className="px-4 py-3 text-zinc-400">{contact.company || "—"}</td>
-                  <td className="px-4 py-3">
-                    <ContactChannelSelect
-                      contactId={contact.id}
-                      value={contact.campaign_channel ?? null}
-                      compact
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    <ContactAbVariantSelect
-                      contactId={contact.id}
-                      value={contact.ab_variant ?? null}
-                      compact
-                    />
-                  </td>
-                  <td className="px-4 py-3 text-zinc-400">{contact.service || "—"}</td>
-                  <td className="px-4 py-3 text-zinc-400">
-                    {(contact.tags ?? []).join(", ") || "—"}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <ContactDeleteButton
-                      contactId={contact.id}
-                      label="Delete"
-                      className="inline-flex items-center gap-1 rounded-lg border border-rose-500/30 px-2 py-1 text-xs text-rose-300 hover:bg-rose-500/10"
-                    />
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      {grouped.length === 0 ? (
+        <p className="rounded-2xl border border-zinc-800 px-4 py-8 text-sm text-zinc-500">
+          No contacts yet
+          {channelFilter || abFilter || sourceFilter ? " for this filter" : ""}.
+        </p>
+      ) : (
+        grouped.map((section) => (
+          <section key={section.id} className="space-y-2">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="text-lg font-semibold text-white">
+                {section.label}
+                <span className="ml-2 text-sm font-normal text-zinc-500">
+                  {section.rows.length}
+                </span>
+              </h2>
+              <p className="text-xs text-zinc-500">
+                {section.hint}{" "}
+                <Link href="/hub/campaigns" className="text-indigo-300 hover:text-indigo-200">
+                  Build a workflow for this group
+                </Link>
+              </p>
+            </div>
+            <div className="overflow-x-auto rounded-2xl border border-zinc-800">
+              <table className="min-w-full text-left text-sm">
+                <thead className="bg-zinc-900 text-zinc-400">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Name</th>
+                    <th className="px-4 py-3 font-medium">Email</th>
+                    <th className="px-4 py-3 font-medium">Phone</th>
+                    <th className="px-4 py-3 font-medium">Company</th>
+                    <th className="px-4 py-3 font-medium">Channel</th>
+                    <th className="px-4 py-3 font-medium">A/B</th>
+                    <th className="px-4 py-3 font-medium">Service</th>
+                    <th className="px-4 py-3 font-medium">Tags</th>
+                    <th className="px-4 py-3 font-medium"> </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {section.rows.map((contact) => (
+                    <tr key={contact.id} className="border-t border-zinc-800">
+                      <td className="px-4 py-3">
+                        <Link
+                          href={`/hub/contacts/${contact.id}`}
+                          className="text-white hover:text-indigo-300"
+                        >
+                          {contact.name || "—"}
+                        </Link>
+                        {contact.unsubscribed_at ? (
+                          <span className="ml-2 text-xs text-zinc-500">
+                            unsubscribed
+                          </span>
+                        ) : null}
+                      </td>
+                      <td className="px-4 py-3 text-zinc-300">{contact.email}</td>
+                      <td className="px-4 py-3 text-zinc-300">
+                        {contact.phone || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-zinc-400">
+                        {contact.company || "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <ContactChannelSelect
+                          contactId={contact.id}
+                          value={contact.campaign_channel ?? null}
+                          compact
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <ContactAbVariantSelect
+                          contactId={contact.id}
+                          value={contact.ab_variant ?? null}
+                          compact
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-zinc-400">
+                        {contact.service || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-zinc-400">
+                        {(contact.tags ?? []).join(", ") || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <ContactDeleteButton
+                          contactId={contact.id}
+                          label="Delete"
+                          className="inline-flex items-center gap-1 rounded-lg border border-rose-500/30 px-2 py-1 text-xs text-rose-300 hover:bg-rose-500/10"
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ))
+      )}
     </div>
   );
 }

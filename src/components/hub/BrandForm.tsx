@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { type CompanyBrand } from "@/lib/branding";
 import { BrandLogoKit } from "@/components/hub/BrandLogoKit";
+import { DictatedField } from "@/components/hub/MicDictateButton";
 
 function ColorField({
   label,
@@ -166,18 +167,28 @@ export function BrandForm({
           Domain
           <input name="domain" defaultValue={domain ?? ""} className="hub-field" placeholder="acme.com" />
         </label>
-        <label className="block text-sm sm:col-span-2">
-          Tagline
-          <input name="tagline" defaultValue={brand.tagline} className="hub-field" />
-        </label>
-        <label className="block text-sm sm:col-span-2">
-          Voice / tone
-          <textarea name="voice" defaultValue={brand.voice} rows={3} className="hub-field resize-y" />
-        </label>
-        <label className="block text-sm sm:col-span-2">
-          Audience
-          <input name="audience" defaultValue={brand.audience} className="hub-field" />
-        </label>
+        <DictatedField
+          className="block text-sm sm:col-span-2"
+          label="Tagline"
+          name="tagline"
+          defaultValue={brand.tagline}
+          disabled={saving}
+        />
+        <DictatedField
+          className="block text-sm sm:col-span-2"
+          label="Voice / tone"
+          name="voice"
+          defaultValue={brand.voice}
+          multiline
+          disabled={saving}
+        />
+        <DictatedField
+          className="block text-sm sm:col-span-2"
+          label="Audience"
+          name="audience"
+          defaultValue={brand.audience}
+          disabled={saving}
+        />
         <ColorField label="Primary color" name="primaryColor" value={brand.primaryColor} />
         <ColorField label="Secondary / header" name="secondaryColor" value={brand.secondaryColor} />
         <ColorField label="Accent" name="accentColor" value={brand.accentColor} />
@@ -188,34 +199,39 @@ export function BrandForm({
           Fonts
           <input name="fonts" defaultValue={brand.fonts} className="hub-field" />
         </label>
-        <label className="block text-sm sm:col-span-2">
-          Poster / visual style
-          <textarea
-            name="visualStyle"
-            defaultValue={brand.visualStyle}
-            rows={3}
-            className="hub-field resize-y"
-            placeholder="Materials, lighting, mood. Example: dark zinc, indigo glow, cinematic, lots of empty space."
-          />
-        </label>
-        <label className="block text-sm">
-          Words to lean on
-          <textarea name="doSay" defaultValue={brand.doSay} rows={3} className="hub-field resize-y" />
-        </label>
-        <label className="block text-sm">
-          Words to avoid
-          <textarea name="dontSay" defaultValue={brand.dontSay} rows={3} className="hub-field resize-y" />
-        </label>
-        <label className="block text-sm sm:col-span-2">
-          Other brand notes
-          <textarea
-            name="extra"
-            defaultValue={brand.extra}
-            rows={4}
-            className="hub-field resize-y"
-            placeholder="Offer, proof points, cities, products, legal lines…"
-          />
-        </label>
+        <DictatedField
+          className="block text-sm sm:col-span-2"
+          label="Poster / visual style"
+          name="visualStyle"
+          defaultValue={brand.visualStyle}
+          multiline
+          disabled={saving}
+          placeholder="Materials, lighting, mood. Example: dark zinc, indigo glow, cinematic, lots of empty space."
+        />
+        <DictatedField
+          label="Words to lean on"
+          name="doSay"
+          defaultValue={brand.doSay}
+          multiline
+          disabled={saving}
+        />
+        <DictatedField
+          label="Words to avoid"
+          name="dontSay"
+          defaultValue={brand.dontSay}
+          multiline
+          disabled={saving}
+        />
+        <DictatedField
+          className="block text-sm sm:col-span-2"
+          label="Other brand notes"
+          name="extra"
+          defaultValue={brand.extra}
+          multiline
+          rows={4}
+          disabled={saving}
+          placeholder="Offer, proof points, cities, products, legal lines…"
+        />
       </div>
 
       <button type="submit" disabled={saving} className="hub-btn">

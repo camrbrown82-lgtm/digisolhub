@@ -19,7 +19,28 @@ export type PricingItem = {
   featured?: boolean;
 };
 
-/** Core engagement tiers — pick one to start, then stack add-ons. */
+/** DigiSol Hub — shown first; can be bought alone (no website package required). */
+export const PRICING_HUB: PricingItem[] = [
+  {
+    id: "addon_hub",
+    name: "DigiSol Hub",
+    blurb:
+      "CRM, nurture workflows, audit follow-ups, and campaign results — for teams that already have a site (or want Hub before a rebuild).",
+    kind: "one_time",
+    amount: 750_00,
+    badge: "Start with Hub",
+    featured: true,
+    includes: [
+      "Dedicated company workspace in DigiSol Hub",
+      "Lead capture + pipeline seed",
+      "Email / nurture workflows",
+      "Audit follow-ups & campaign monitoring",
+      "Tracking snippet for your existing site",
+    ],
+  },
+];
+
+/** Core website engagement tiers — optional when buying Hub alone. */
 export const PRICING_PACKAGES: PricingItem[] = [
   {
     id: "foundation",
@@ -165,21 +186,16 @@ export const PRICING_ADDONS: PricingItem[] = [
     amount: 1200_00,
     includes: ["Logo / color kit", "Voice notes", "Poster-ready assets"],
   },
-  {
-    id: "addon_hub",
-    name: "Client Hub workspace",
-    blurb: "Dedicated DigiSol Hub company with brand, leads, and analytics.",
-    kind: "one_time",
-    amount: 750_00,
-    includes: ["Company workspace", "Tracking snippet", "Lead pipeline seed"],
-  },
 ];
 
 export const ALL_PRICING_ITEMS = [
+  ...PRICING_HUB,
   ...PRICING_PACKAGES,
   ...PRICING_RETAINERS,
   ...PRICING_ADDONS,
 ] as const;
+
+export const CORE_PACKAGE_IDS = PRICING_PACKAGES.map((item) => item.id);
 
 export function getPricingItem(id: string) {
   return ALL_PRICING_ITEMS.find((item) => item.id === id) ?? null;

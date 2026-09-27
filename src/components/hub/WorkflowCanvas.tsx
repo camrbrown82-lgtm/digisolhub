@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   ReactFlow,
   Background,
@@ -91,6 +91,22 @@ function withStepType(nodes: Node[]): Node[] {
   }));
 }
 
+/** Stable identity for graph content (ignore React Flow selection/measured fields). */
+function graphFingerprint(nodes: Node[], edges: Edge[]) {
+  return JSON.stringify({
+    nodes: nodes.map((n) => ({
+      id: n.id,
+      position: n.position,
+      data: n.data,
+    })),
+    edges: edges.map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+    })),
+  });
+}
+
 export function WorkflowCanvas({
   initialNodes,
   initialEdges,
@@ -98,38 +114,32 @@ export function WorkflowCanvas({
   onChange,
   onSelectNode,
 }: Props) {
-  const seeded = useMemo(() => withStepType(initialNodes), [initialNodes]);
-  const [nodes, setNodes, onNodesChange] = useNodesState(seeded);
+  const seededNodes = useMemo(() => withStepType(initialNodes), [initialNodes]);
+  const [nodes, setNodes, onNodesChange] = useNodesState(seededNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  useEffect(() => {
-    setNodes((current) => {
-      const incoming = withStepType(initialNodes);
-      if (
-        current.length !== incoming.length ||
-        current.some((node) => !incoming.find((row) => row.id === node.id))
-      ) {
-        return incoming;
-      }
-      return current.map((node) => {
-        const fresh = incoming.find((row) => row.id === node.id);
-        if (!fresh) return node;
-        return {
-          ...node,
-          data: fresh.data,
-          type: "workflowStep",
-        };
-      });
-    });
-  }, [initialNodes, setNodes]);
+  const syncedFp = useRef(graphFingerprint(seededNodes, initialEdges));
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
+  // Parent → canvas (sidebar / Add step). No-op when content already matches.
   useEffect(() => {
+    const incoming = withStepType(initialNodes);
+    const fp = graphFingerprint(incoming, initialEdges);
+    if (fp === syncedFp.current) return;
+    syncedFp.current = fp;
+    setNodes(incoming);
     setEdges(initialEdges);
-  }, [initialEdges, setEdges]);
+  }, [initialNodes, initialEdges, setNodes, setEdges]);
 
+  // Canvas → parent. Skip when fingerprint already matches what we last synced
+  // (stops setNodes → onChange → setGraph → setNodes loops).
   useEffect(() => {
-    onChange({ nodes, edges });
-  }, [nodes, edges, onChange]);
+    const fp = graphFingerprint(nodes, edges);
+    if (fp === syncedFp.current) return;
+    syncedFp.current = fp;
+    onChangeRef.current({ nodes, edges });
+  }, [nodes, edges]);
 
   const onConnect = useCallback(
     (connection: Connection) => {
@@ -138,13 +148,19 @@ export function WorkflowCanvas({
     [setEdges],
   );
 
+  const displayNodes = useMemo(
+    () =>
+      nodes.map((node) => ({
+        ...node,
+        selected: node.id === selectedNodeId,
+      })),
+    [nodes, selectedNodeId],
+  );
+
   return (
     <div className="h-[calc(100dvh-14rem)] min-h-[28rem] w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900">
       <ReactFlow
-        nodes={nodes.map((node) => ({
-          ...node,
-          selected: node.id === selectedNodeId,
-        }))}
+        nodes={displayNodes}
         edges={edges}
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}

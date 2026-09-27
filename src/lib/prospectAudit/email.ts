@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ProspectAuditSummary } from "@/lib/prospectAudit/summary";
 import { sendAuditFollowUpEmail } from "@/lib/prospectAudit/followUpEmail";
+import { prospectSendBlockReason } from "@/lib/prospectAudit/sendGate";
 
 export async function sendProspectAuditEmail(input: {
   db: SupabaseClient;
@@ -13,6 +14,11 @@ export async function sendProspectAuditEmail(input: {
   score: number;
   summary: ProspectAuditSummary;
 }) {
+  const block = await prospectSendBlockReason(input.db, input.email);
+  if (block) {
+    throw new Error(block);
+  }
+
   const sent = await sendAuditFollowUpEmail({
     db: input.db,
     clientId: input.clientId,

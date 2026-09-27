@@ -2,6 +2,7 @@
 
 import { DragEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { MicDictateButton, appendDictation } from "@/components/hub/MicDictateButton";
 import { LOGO_STYLES, type LogoStyle } from "@/lib/logoStyles";
 
 const STYLE_LABELS: Record<LogoStyle, { label: string; hint: string }> = {
@@ -232,12 +233,18 @@ export function BrandLogoKit({
           </div>
         </fieldset>
         <label className="block text-sm">
-          What the mark should feel like
+          <span className="flex items-center justify-between gap-2">
+            What the mark should feel like
+            <MicDictateButton
+              disabled={Boolean(busy)}
+              onText={(chunk) => setBrief((current) => appendDictation(current, chunk))}
+            />
+          </span>
           <textarea
             value={brief}
             onChange={(event) => setBrief(event.target.value)}
             rows={3}
-            className="hub-field resize-y"
+            className="hub-field mt-1.5 resize-y"
             placeholder="Clean wordmark with a small geometric mark. No slogan. Should still read at 24px."
           />
         </label>

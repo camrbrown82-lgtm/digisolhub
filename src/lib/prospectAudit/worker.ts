@@ -9,6 +9,7 @@ import { ensureWebsiteAuditSchema } from "@/lib/ensureWebsiteAuditSchema";
 import { getOpenAIApiKey } from "@/lib/openai";
 import { getResendApiKey } from "@/lib/email";
 import { evaluateCaslPublishedContact } from "@/lib/prospectAudit/casl";
+import { prospectSendBlockReason } from "@/lib/prospectAudit/sendGate";
 import { sendProspectAuditEmail } from "@/lib/prospectAudit/email";
 import { ensureProspectQueue } from "@/lib/prospectAudit/ensureQueue";
 import {
@@ -512,7 +513,13 @@ async function processOneProspect(input: {
   try {
     const audit = await runWebsiteAudit(prospect.url, { includeHtml: true });
     const html = audit.html || "";
-    const casl = evaluateCaslPublishedContact(html, audit.finalUrl || prospect.url);
+    let casl = evaluateCaslPublishedContact(html, audit.finalUrl || prospect.url);
+    if (casl.eligible && casl.email) {
+      const block = await prospectSendBlockReason(db, casl.email);
+      if (block) {
+        casl = { ...casl, eligible: false, basis: "blocked", reason: block };
+      }
+    }
 
     if (!casl.eligible || !casl.email) {
       await db

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { MicDictateButton, appendDictation } from "@/components/hub/MicDictateButton";
 
 type ReportItem = {
   kind: "strength" | "weakness";
@@ -88,7 +89,11 @@ export function WebsiteAuditPanel({
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <MicDictateButton
+          disabled={busy}
+          onText={(chunk) => setUrl((current) => appendDictation(current, chunk))}
+        />
         <input
           value={url}
           onChange={(event) => setUrl(event.target.value)}

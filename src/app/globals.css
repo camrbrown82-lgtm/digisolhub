@@ -42,7 +42,7 @@ body {
 }
 
 .hub-field {
-  @apply mt-1.5 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2.5 text-sm text-white placeholder:text-zinc-500 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30;
+  @apply mt-1.5 w-full rounded-lg border border-indigo-500/30 bg-zinc-950 px-3 py-2.5 text-sm text-indigo-100 placeholder:text-indigo-300/40 transition-colors focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30;
 }
 
 .hub-btn {
@@ -57,6 +57,84 @@ html.hub-lock,
 body.hub-lock {
   height: 100%;
   overflow: hidden;
+}
+
+/* DigiSol house palette inside Hub: indigo + ice blue, not flat white. */
+.hub-app {
+  --hub-ice: #7dd3fc;
+  --hub-sky: #93c5fd;
+  --hub-indigo: #c7d2fe;
+  --hub-muted: #8b9cf0;
+  --hub-quiet: #6d7cb8;
+  background:
+    radial-gradient(900px 420px at 0% -10%, rgba(79, 70, 229, 0.22), transparent 55%),
+    radial-gradient(700px 360px at 100% 0%, rgba(96, 165, 250, 0.12), transparent 50%),
+    #09090b;
+  color: var(--hub-indigo);
+}
+
+.hub-app h1 {
+  color: var(--hub-ice);
+}
+
+.hub-app h2 {
+  color: var(--hub-sky);
+}
+
+.hub-app h3,
+.hub-app .text-white {
+  color: var(--hub-indigo);
+}
+
+.hub-app .text-zinc-100,
+.hub-app .text-zinc-200 {
+  color: #c7d2fe;
+}
+
+.hub-app .text-zinc-300 {
+  color: #a5b4fc;
+}
+
+.hub-app .text-zinc-400 {
+  color: var(--hub-muted);
+}
+
+.hub-app .text-zinc-500,
+.hub-app .text-zinc-600 {
+  color: var(--hub-quiet);
+}
+
+.hub-app .border-zinc-800,
+.hub-app .border-zinc-700 {
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.hub-app .hub-btn,
+.hub-app :is(a, button)[class*="bg-indigo-5"],
+.hub-app :is(a, button)[class*="bg-indigo-6"],
+.hub-app :is(a, button)[class*="bg-rose-"],
+.hub-app :is(a, button)[class*="bg-emerald-"],
+.hub-app .bg-indigo-600.text-white,
+.hub-app .bg-indigo-500.text-white,
+.hub-app .bg-rose-500.text-white,
+.hub-app .bg-emerald-500.text-white,
+.hub-app .bg-emerald-600.text-white {
+  color: #f8fafc;
+}
+
+.hub-app .hub-btn-secondary:hover {
+  color: var(--hub-ice);
+  border-color: #818cf8;
+}
+
+.hub-app .react-flow,
+.hub-app .hub-email-editor {
+  color: #e4e4e7;
+}
+
+.hub-app .react-flow .text-white,
+.hub-app .hub-email-editor .text-white {
+  color: #f4f4f5;
 }
 
 .hub-email-editor,

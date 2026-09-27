@@ -32,6 +32,11 @@ export function sanitizePath(value: string) {
   return raw.slice(0, 500);
 }
 
+/** Auto-tagged Google Ads landings (gclid / gad_source), even when the referrer is blank. */
+export function isGoogleAdsLanding(path: string | null | undefined) {
+  return /(?:^|[?&#])(?:gclid|gad_source|gad_campaignid)=/i.test(path || "");
+}
+
 export function referrerHost(referrer: string | null | undefined, host?: string | null) {
   if (!referrer) return "Direct";
   try {
@@ -83,8 +88,18 @@ export function summarizeSiteEvents(events: SiteEvent[], host?: string | null) {
   return {
     pageviews: events.length,
     visitors: visitors.size,
-    pages: topCounts(events.map((event) => event.path || "/")),
-    referrers: topCounts(events.map((event) => referrerHost(event.referrer, host))),
+    pages: topCounts(
+      events.map((event) => (event.path || "/").split("?")[0] || "/"),
+    ),
+    referrers: topCounts(
+      events.map((event) =>
+        isGoogleAdsLanding(event.path)
+          ? "Google Ads"
+          : referrerHost(event.referrer, host),
+      ),
+    ),
+    googleAdsPageviews: events.filter((event) => isGoogleAdsLanding(event.path))
+      .length,
     daily: days.map((day) => ({ day, count: byDay.get(day) ?? 0 })),
   };
 }

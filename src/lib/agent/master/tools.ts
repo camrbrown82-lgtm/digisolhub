@@ -200,11 +200,7 @@ export async function fetchCompanyAnalyticsTool(
       pipelineValue: pipeline.pipelineValue,
       byStage: pipeline.byStage,
     },
-    weakPoints: website.pages.slice(0, 5).map((page) => ({
-      path: page.label,
-      pageviews: page.count,
-      hint: "Review CTA clarity and exit intent on this path",
-    })),
+    weakPoints: [],
     ga4: ga4
       ? {
           configured: ga4.configured,
@@ -398,8 +394,9 @@ export async function generateCampaignWorkflowTool(
     },
     campaignId,
     saved: save,
-    nextStep:
-      "Review variants, then call dispatchEmailCampaign with campaignId + variantData.confirmSend=true when ready to send.",
+    nextStep: workflowId
+      ? `Review the numbered plan at /hub/workflows/${workflowId}${plan.audience ? `?audience=${plan.audience}` : ""}. Confirm Will run for, attach templates, then Run now. Leave Enabled off until the self-test looks right.`
+      : "Review the numbered plan, then save and open the workflow in Hub before sending.",
   };
 }
 

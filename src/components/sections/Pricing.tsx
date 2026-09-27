@@ -6,6 +6,7 @@ import { trackEvent } from "@/lib/analytics";
 import {
   ALBERTA_GST_PERCENT,
   PRICING_ADDONS,
+  PRICING_HUB,
   PRICING_PACKAGES,
   PRICING_RETAINERS,
   formatCad,
@@ -67,7 +68,10 @@ function ItemCard({
       <ul className="mt-4 space-y-1.5">
         {item.includes.map((line) => (
           <li key={line} className="flex gap-2 text-sm text-zinc-300">
-            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-400" aria-hidden="true" />
+            <Check
+              className="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-400"
+              aria-hidden="true"
+            />
             <span>{line}</span>
           </li>
         ))}
@@ -76,43 +80,73 @@ function ItemCard({
   );
 }
 
+const STRONG_ADDON_IDS = ["addon_pages", "addon_city", "addon_brand"];
+
 export function PricingBuilder({
   stripeReady = false,
   cityHint,
+  view = "default",
 }: {
   stripeReady?: boolean;
   cityHint?: string;
+  view?: "default" | "strong";
 }) {
-  const [packageId, setPackageId] = useState("growth");
+  const strong = view === "strong";
+  const [packageId, setPackageId] = useState(strong ? "" : "growth");
   const [retainerId, setRetainerId] = useState<string>("");
-  const [addonIds, setAddonIds] = useState<string[]>(["addon_hub"]);
+  const [hubSelected, setHubSelected] = useState(true);
+  const [addonIds, setAddonIds] = useState<string[]>(
+    strong ? [] : ["addon_hub"],
+  );
   const [email, setEmail] = useState("");
   const [company, setCompany] = useState("");
-  const [industry, setIndustry] = useState(cityHint ? `${cityHint} businesses` : "");
+  const [industry, setIndustry] = useState(
+    cityHint ? `${cityHint} businesses` : "",
+  );
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  const growthAddons = useMemo(
+    () => PRICING_ADDONS.filter((item) => STRONG_ADDON_IDS.includes(item.id)),
+    [],
+  );
+
   const selectedIds = useMemo(() => {
+    if (strong) {
+      const ids: string[] = [];
+      if (hubSelected) ids.push("addon_hub");
+      if (packageId) ids.push(packageId);
+      if (retainerId) ids.push(retainerId);
+      ids.push(...addonIds);
+      return Array.from(new Set(ids));
+    }
     const ids = [packageId, ...addonIds];
     if (retainerId) ids.push(retainerId);
     return ids;
-  }, [packageId, addonIds, retainerId]);
+  }, [strong, hubSelected, packageId, addonIds, retainerId]);
 
   const totals = useMemo(() => summarizeSelection(selectedIds), [selectedIds]);
 
   function toggleAddon(id: string) {
     setAddonIds((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id],
     );
   }
 
   async function onCheckout(event: FormEvent) {
     event.preventDefault();
+    if (selectedIds.length === 0) {
+      setError("Select at least one option to continue.");
+      return;
+    }
     setBusy(true);
     setError("");
     trackEvent("pricing_checkout_click", {
-      package: packageId,
+      view,
+      package: packageId || "none",
       retainer: retainerId || "none",
       addons: addonIds.join(","),
     });
@@ -137,6 +171,272 @@ export function PricingBuilder({
       setError(err instanceof Error ? err.message : "Checkout failed");
       setBusy(false);
     }
+  }
+
+  const checkoutForm = (
+    <form
+      onSubmit={onCheckout}
+      className="rounded-2xl border border-indigo-400/25 bg-indigo-500/10 p-6"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="flex items-center gap-2 text-sm font-semibold text-white">
+            <Sparkles className="h-4 w-4 text-indigo-300" aria-hidden="true" />
+            Your stack
+          </p>
+          {totals.items.length === 0 ? (
+            <p className="mt-3 text-sm text-amber-200/90">
+              Select Hub, a retainer, or an add-on.
+            </p>
+          ) : (
+            <ul className="mt-3 space-y-1 text-sm text-zinc-300">
+              {totals.items.map((item) => (
+                <li key={item.id}>
+                  {item.name} · {formatCad(item.amount)}
+                  {item.kind === "recurring" ? "/mo" : ""}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="min-w-[12rem] space-y-3 text-right text-sm">
+          <div>
+            <p className="text-zinc-400">One-time subtotal</p>
+            <p className="text-lg font-semibold text-white">
+              {formatCad(totals.oneTime)}
+            </p>
+            <p className="text-zinc-500">
+              GST ({ALBERTA_GST_PERCENT}%) {formatCad(totals.oneTimeGst, 2)}
+            </p>
+            <p className="mt-1 text-xl font-semibold text-white">
+              {formatCad(totals.oneTimeTotal, 2)}
+            </p>
+          </div>
+          <div>
+            <p className="text-zinc-400">Monthly subtotal</p>
+            <p className="text-lg font-semibold text-white">
+              {formatCad(totals.monthly)}
+              <span className="text-sm font-normal text-zinc-400"> /mo</span>
+            </p>
+            <p className="text-zinc-500">
+              GST ({ALBERTA_GST_PERCENT}%) {formatCad(totals.monthlyGst, 2)}
+              /mo
+            </p>
+            <p className="mt-1 text-xl font-semibold text-white">
+              {formatCad(totals.monthlyTotal, 2)}
+              <span className="text-sm font-normal text-zinc-400"> /mo</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        <label className="text-sm text-zinc-300">
+          Work email
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            className="hub-field mt-1.5 border-indigo-400/20 bg-zinc-950/70"
+            placeholder="you@company.ca"
+          />
+        </label>
+        <label className="text-sm text-zinc-300">
+          Company
+          <input
+            value={company}
+            onChange={(event) => setCompany(event.target.value)}
+            className="hub-field mt-1.5 border-indigo-400/20 bg-zinc-950/70"
+            placeholder="Your company"
+          />
+        </label>
+        <label className="text-sm text-zinc-300">
+          Industry
+          <input
+            value={industry}
+            onChange={(event) => setIndustry(event.target.value)}
+            className="hub-field mt-1.5 border-indigo-400/20 bg-zinc-950/70"
+            placeholder="Trades, retail, clinic, hospitality…"
+          />
+        </label>
+        <label className="text-sm text-zinc-300">
+          Notes
+          <input
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+            className="hub-field mt-1.5 border-indigo-400/20 bg-zinc-950/70"
+            placeholder="Cities served, must-haves…"
+          />
+        </label>
+      </div>
+
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <button
+          type="submit"
+          disabled={busy || !email.trim() || selectedIds.length === 0}
+          className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-indigo-500 disabled:opacity-60"
+        >
+          {busy ? (
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+          ) : null}
+          {busy ? "Redirecting to Stripe…" : "Pay securely with Stripe"}
+        </button>
+        <a
+          href="/#contact"
+          className="inline-flex items-center rounded-full border border-white/15 px-5 py-3 text-sm font-medium text-zinc-200 transition hover:bg-white/5"
+        >
+          Prefer a consult first
+        </a>
+      </div>
+      {!stripeReady ? (
+        <p className="mt-3 text-xs text-amber-200/90">
+          Stripe checkout activates once DigiSol&apos;s Stripe keys are on
+          Vercel. You can still build your stack now — if payment is offline,
+          use Book a consult and we&apos;ll invoice the same package.
+        </p>
+      ) : (
+        <p className="mt-3 text-xs text-zinc-500">
+          Secure Stripe Checkout · CAD · {ALBERTA_GST_PERCENT}% GST (Alberta)
+          added at payment · scope confirmed after payment.
+        </p>
+      )}
+      {error ? <p className="mt-3 text-sm text-rose-300">{error}</p> : null}
+    </form>
+  );
+
+  if (strong) {
+    return (
+      <div className="space-y-10" id="growth">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
+            Your site scored well
+          </p>
+          <h2
+            id="pricing-heading"
+            className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl"
+          >
+            Use the traffic you already have
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-zinc-400">
+            A strong audit does not need a rebuild first. These are the Hub,
+            retainer, and growth options that turn a good site into booked
+            work. A full website package stays optional at the bottom.
+          </p>
+        </div>
+
+        <div id="hub">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
+            DigiSol Hub
+          </h3>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            {PRICING_HUB.map((item) => (
+              <ItemCard
+                key={item.id}
+                item={item}
+                selected={hubSelected}
+                mode="check"
+                onToggle={() => setHubSelected((current) => !current)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
+            Monthly retainers
+          </h3>
+          <p className="mt-2 text-sm text-zinc-500">
+            Local growth, paid media, or the full growth retainer. Pick one, or
+            skip.
+          </p>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+            <button
+              type="button"
+              onClick={() => setRetainerId("")}
+              aria-pressed={!retainerId}
+              className={`rounded-2xl border p-5 text-left transition ${
+                !retainerId
+                  ? "border-indigo-400/60 bg-indigo-500/15"
+                  : "border-white/10 bg-zinc-900/40 hover:border-indigo-400/30"
+              }`}
+            >
+              <h3 className="text-lg font-semibold text-white">No retainer</h3>
+              <p className="mt-2 text-sm text-zinc-400">
+                Hub and one-time add-ons only.
+              </p>
+            </button>
+            {PRICING_RETAINERS.map((item) => (
+              <ItemCard
+                key={item.id}
+                item={item}
+                selected={retainerId === item.id}
+                mode="radio"
+                onToggle={() => setRetainerId(item.id)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
+            Growth add-ons
+          </h3>
+          <p className="mt-2 text-sm text-zinc-500">
+            Extra pages, city landings, and brand — layered on the site you
+            already have.
+          </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {growthAddons.map((item) => (
+              <ItemCard
+                key={item.id}
+                item={item}
+                selected={addonIds.includes(item.id)}
+                mode="check"
+                onToggle={() => toggleAddon(item.id)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <details className="rounded-2xl border border-white/10 bg-zinc-900/30 p-5">
+          <summary className="cursor-pointer text-sm font-semibold text-zinc-300">
+            Need a full website rebuild instead? Open Foundation, Growth Engine,
+            and Full Funnel
+          </summary>
+          <div className="mt-4 grid gap-4 lg:grid-cols-3">
+            <button
+              type="button"
+              onClick={() => setPackageId("")}
+              aria-pressed={!packageId}
+              className={`rounded-2xl border p-5 text-left transition ${
+                !packageId
+                  ? "border-indigo-400/60 bg-indigo-500/15"
+                  : "border-white/10 bg-zinc-900/40"
+              }`}
+            >
+              <h3 className="text-lg font-semibold text-white">
+                No website package
+              </h3>
+              <p className="mt-2 text-sm text-zinc-400">
+                Stay on Hub, retainers, and add-ons only.
+              </p>
+            </button>
+            {PRICING_PACKAGES.map((item) => (
+              <ItemCard
+                key={item.id}
+                item={item}
+                selected={packageId === item.id}
+                mode="radio"
+                onToggle={() => setPackageId(item.id)}
+              />
+            ))}
+          </div>
+        </details>
+
+        {checkoutForm}
+      </div>
+    );
   }
 
   return (
@@ -214,7 +514,7 @@ export function PricingBuilder({
           3 · Scale modules
         </h3>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {PRICING_ADDONS.map((item) => (
+          {[...PRICING_ADDONS, ...PRICING_HUB].map((item) => (
             <ItemCard
               key={item.id}
               item={item}
@@ -226,129 +526,7 @@ export function PricingBuilder({
         </div>
       </div>
 
-      <form
-        onSubmit={onCheckout}
-        className="rounded-2xl border border-indigo-400/25 bg-indigo-500/10 p-6"
-      >
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="flex items-center gap-2 text-sm font-semibold text-white">
-              <Sparkles className="h-4 w-4 text-indigo-300" aria-hidden="true" />
-              Your stack
-            </p>
-            <ul className="mt-3 space-y-1 text-sm text-zinc-300">
-              {totals.items.map((item) => (
-                <li key={item.id}>
-                  {item.name} · {formatCad(item.amount)}
-                  {item.kind === "recurring" ? "/mo" : ""}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="min-w-[12rem] space-y-3 text-right text-sm">
-            <div>
-              <p className="text-zinc-400">One-time subtotal</p>
-              <p className="text-lg font-semibold text-white">
-                {formatCad(totals.oneTime)}
-              </p>
-              <p className="text-zinc-500">
-                GST ({ALBERTA_GST_PERCENT}%) {formatCad(totals.oneTimeGst, 2)}
-              </p>
-              <p className="mt-1 text-xl font-semibold text-white">
-                {formatCad(totals.oneTimeTotal, 2)}
-              </p>
-            </div>
-            <div>
-              <p className="text-zinc-400">Monthly subtotal</p>
-              <p className="text-lg font-semibold text-white">
-                {formatCad(totals.monthly)}
-                <span className="text-sm font-normal text-zinc-400"> /mo</span>
-              </p>
-              <p className="text-zinc-500">
-                GST ({ALBERTA_GST_PERCENT}%) {formatCad(totals.monthlyGst, 2)}
-                /mo
-              </p>
-              <p className="mt-1 text-xl font-semibold text-white">
-                {formatCad(totals.monthlyTotal, 2)}
-                <span className="text-sm font-normal text-zinc-400"> /mo</span>
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <label className="text-sm text-zinc-300">
-            Work email
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="hub-field mt-1.5 border-indigo-400/20 bg-zinc-950/70"
-              placeholder="you@company.ca"
-            />
-          </label>
-          <label className="text-sm text-zinc-300">
-            Company
-            <input
-              value={company}
-              onChange={(event) => setCompany(event.target.value)}
-              className="hub-field mt-1.5 border-indigo-400/20 bg-zinc-950/70"
-              placeholder="Your company"
-            />
-          </label>
-          <label className="text-sm text-zinc-300">
-            Industry
-            <input
-              value={industry}
-              onChange={(event) => setIndustry(event.target.value)}
-              className="hub-field mt-1.5 border-indigo-400/20 bg-zinc-950/70"
-              placeholder="Trades, retail, clinic, hospitality…"
-            />
-          </label>
-          <label className="text-sm text-zinc-300">
-            Notes
-            <input
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              className="hub-field mt-1.5 border-indigo-400/20 bg-zinc-950/70"
-              placeholder="Cities served, must-haves…"
-            />
-          </label>
-        </div>
-
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <button
-            type="submit"
-            disabled={busy || !email.trim()}
-            className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-indigo-500 disabled:opacity-60"
-          >
-            {busy ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            ) : null}
-            {busy ? "Redirecting to Stripe…" : "Pay securely with Stripe"}
-          </button>
-          <a
-            href="/#contact"
-            className="inline-flex items-center rounded-full border border-white/15 px-5 py-3 text-sm font-medium text-zinc-200 transition hover:bg-white/5"
-          >
-            Prefer a consult first
-          </a>
-        </div>
-        {!stripeReady ? (
-          <p className="mt-3 text-xs text-amber-200/90">
-            Stripe checkout activates once DigiSol&apos;s Stripe keys are on
-            Vercel. You can still build your stack now — if payment is offline,
-            use Book a consult and we&apos;ll invoice the same package.
-          </p>
-        ) : (
-          <p className="mt-3 text-xs text-zinc-500">
-            Secure Stripe Checkout · CAD · {ALBERTA_GST_PERCENT}% GST (Alberta)
-            added at payment · scope confirmed after payment.
-          </p>
-        )}
-        {error ? <p className="mt-3 text-sm text-rose-300">{error}</p> : null}
-      </form>
+      {checkoutForm}
     </div>
   );
 }

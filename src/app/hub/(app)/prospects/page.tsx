@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ProspectAuditChat } from "@/components/hub/ProspectAuditChat";
 import { ProspectAuditRunButton } from "@/components/hub/ProspectAuditRunButton";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { ensureProspectsSchema } from "@/lib/ensureProspectsSchema";
@@ -32,28 +33,54 @@ export default async function ProspectsPage() {
   const active = await getActiveClient(supabase);
   const clientId = (await resolveClientId(supabase)) || active?.id || "";
 
-  let query = supabase
+  const todayStart = new Date();
+  todayStart.setUTCHours(0, 0, 0, 0);
+  const todayIso = todayStart.toISOString();
+
+  let listQuery = supabase
     .from("prospects")
     .select(
       "id, business_name, url, trade, city, contact_email, audit_status, audit_score, casl_status, emailed_at, last_audited_at, engaged_at, contact_id, error_message, created_at",
     )
-    .order("last_audited_at", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false })
+    .in("audit_status", ["audited", "emailed", "promoted"])
+    .neq("casl_status", "blocked")
+    .not("last_audited_at", "is", null)
+    .order("last_audited_at", { ascending: false })
     .limit(200);
 
-  if (clientId) query = query.eq("client_id", clientId);
+  let pendingQuery = supabase
+    .from("prospects")
+    .select("id", { count: "exact", head: true })
+    .in("audit_status", ["pending", "failed"]);
 
-  const { data, error } = await query;
+  let ranTodayQuery = supabase
+    .from("prospects")
+    .select("id", { count: "exact", head: true })
+    .gte("last_audited_at", todayIso);
+
+  let compliantTodayQuery = supabase
+    .from("prospects")
+    .select("id", { count: "exact", head: true })
+    .gte("last_audited_at", todayIso)
+    .in("audit_status", ["audited", "emailed", "promoted"])
+    .neq("casl_status", "blocked");
+
+  if (clientId) {
+    listQuery = listQuery.eq("client_id", clientId);
+    pendingQuery = pendingQuery.eq("client_id", clientId);
+    ranTodayQuery = ranTodayQuery.eq("client_id", clientId);
+    compliantTodayQuery = compliantTodayQuery.eq("client_id", clientId);
+  }
+
+  const [{ data, error }, pendingResult, ranTodayResult, compliantTodayResult] =
+    await Promise.all([listQuery, pendingQuery, ranTodayQuery, compliantTodayQuery]);
   const rows = (data ?? []) as ProspectRow[];
-
-  const emailed = rows.filter((r) => r.emailed_at || r.audit_status === "emailed" || r.audit_status === "promoted").length;
-  const pending = rows.filter((r) => r.audit_status === "pending" || r.audit_status === "failed").length;
-  const todayStart = new Date();
-  todayStart.setUTCHours(0, 0, 0, 0);
-  const todayIso = todayStart.toISOString();
-  const auditedToday = rows.filter(
-    (r) => r.last_audited_at && r.last_audited_at >= todayIso,
+  const emailed = rows.filter(
+    (r) => r.emailed_at || r.audit_status === "emailed" || r.audit_status === "promoted",
   ).length;
+  const pending = pendingResult.count ?? 0;
+  const ranToday = ranTodayResult.count ?? 0;
+  const compliantToday = compliantTodayResult.count ?? 0;
 
   return (
     <div className="space-y-6">
@@ -62,8 +89,11 @@ export default async function ProspectsPage() {
           <h1 className="text-3xl font-semibold text-white">Prospect audits</h1>
           <WorkspaceScope companyName={active?.name} noun="prospect audits" />
           <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-            Daily automated website audits (CASL-gated). Each emailed audit also
-            lands in Contacts as a lead so you can see exactly who received it.
+            Daily automated website audits. Kaylev emails a business only when
+            its own site conspicuously publishes that address, the domain has a
+            mail server, and the address has never bounced. This list keeps
+            those email-compliant audits. Sites that fail the CASL check are
+            counted in the run summary and then left off the list.
           </p>
           <p className="mt-2 max-w-2xl text-sm text-zinc-500">
             Schedule:{" "}
@@ -91,8 +121,11 @@ export default async function ProspectsPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Stat label="Audited today (UTC)" value={auditedToday} />
+      <ProspectAuditChat />
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat label="Ran today (UTC)" value={ranToday} />
+        <Stat label="Email compliant today" value={compliantToday} />
         <Stat label="Emailed / promoted" value={emailed} />
         <Stat label="Still in queue" value={pending} />
       </div>
@@ -114,10 +147,8 @@ export default async function ProspectsPage() {
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-8 text-zinc-500">
-                  No prospects yet. Click{" "}
-                  <strong className="text-zinc-300">Run today&apos;s audits</strong>{" "}
-                  to seed Alberta sites and process a batch (or wait for the
-                  15:00 UTC cron · 5/day).
+                  No email-compliant audits yet. A run can check five sites and
+                  keep only the ones allowed to email.
                 </td>
               </tr>
             ) : (

@@ -731,6 +731,7 @@ async function sendVisitorAuditEmail(input: {
           .map((issue) => issue.message || "")
           .filter(Boolean)
           .slice(0, 5);
+  const strengths = (report.strengths || []).slice(0, 4).filter(Boolean);
 
   const sent = await sendAuditFollowUpEmail({
     db: input.admin,
@@ -742,8 +743,9 @@ async function sendVisitorAuditEmail(input: {
     score: audit.score ?? 0,
     summary:
       report.summary ||
-      `We reviewed ${audit.url} and scored it ${audit.score}/100 on SEO, speed, and conversion basics.`,
+      `DigiSol reviewed ${audit.url || input.websiteUrl || "your site"} and prepared a short follow-up.`,
     weaknesses,
+    strengths,
     source: "visitor_chat",
   });
 

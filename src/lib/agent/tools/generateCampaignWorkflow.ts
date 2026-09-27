@@ -266,8 +266,9 @@ export const generateCampaignWorkflow: AgentToolDefinition = {
         saved,
       },
       abVariants: abCopy,
-      nextStep:
-        "Review A/B copy, optionally save templates, then call dispatchAutomatedEmail with confirmSend=true when ready.",
+      nextStep: saved?.id
+        ? `Review the numbered plan, then open /hub/workflows/${saved.id}${plan.audience ? `?audience=${plan.audience}` : ""} and confirm Will run for before Run now.`
+        : "Review the numbered plan. Save the workflow, then open it in Hub and confirm Will run for before Run now.",
     };
   },
 };

@@ -11,6 +11,10 @@ export type Ga4Summary = {
   pages: { label: string; pageviews: number }[];
   locations: { label: string; pageviews: number }[];
   sources: { label: string; sessions: number }[];
+  googleAds: {
+    sessions: number;
+    campaigns: { label: string; sessions: number }[];
+  };
 };
 
 function lastDays(count: number) {
@@ -34,6 +38,7 @@ function emptySummary(partial?: Partial<Ga4Summary>): Ga4Summary {
     pages: [],
     locations: [],
     sources: [],
+    googleAds: { sessions: 0, campaigns: [] },
     ...partial,
   };
 }
@@ -60,6 +65,26 @@ export function ga4ConfigStatus() {
     clientEmail,
     ready: Boolean(propertyId && clientEmail && privateKey),
   };
+}
+
+const UNNAMED_CAMPAIGN = /^\((not set|direct|referral|organic|cross-network)\)$/i;
+
+function summarizeGoogleAds(
+  rows: {
+    dimensionValues?: ({ value?: string | null } | null)[] | null;
+    metricValues?: ({ value?: string | null } | null)[] | null;
+  }[],
+) {
+  const campaigns: { label: string; sessions: number }[] = [];
+  let sessions = 0;
+  for (const row of rows) {
+    const count = metricInt(row);
+    sessions += count;
+    const label = row.dimensionValues?.[0]?.value?.trim() || "";
+    if (!label || UNNAMED_CAMPAIGN.test(label)) continue;
+    campaigns.push({ label, sessions: count });
+  }
+  return { sessions, campaigns };
 }
 
 function metricInt(
@@ -141,7 +166,7 @@ async function fetchDigisolGa4SummaryInner(
       },
     };
 
-    const [totalsRes, dailyRes, pagesRes, locationsRes, sourcesRes] =
+    const [totalsRes, dailyRes, pagesRes, locationsRes, sourcesRes, adsRes] =
       await Promise.all([
         client.runReport({
           property,
@@ -179,10 +204,44 @@ async function fetchDigisolGa4SummaryInner(
         client.runReport({
           property,
           dateRanges: [{ startDate, endDate }],
-          dimensions: [{ name: "sessionDefaultChannelGroup" }],
+          dimensions: [{ name: "sessionSource" }, { name: "sessionMedium" }],
           metrics: [{ name: "sessions" }],
           orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
           limit: 8,
+        }),
+        client.runReport({
+          property,
+          dateRanges: [{ startDate, endDate }],
+          dimensions: [{ name: "sessionCampaignName" }],
+          metrics: [{ name: "sessions" }],
+          dimensionFilter: {
+            andGroup: {
+              expressions: [
+                {
+                  filter: {
+                    fieldName: "sessionSource",
+                    stringFilter: {
+                      matchType: "EXACT",
+                      value: "google",
+                      caseSensitive: false,
+                    },
+                  },
+                },
+                {
+                  filter: {
+                    fieldName: "sessionMedium",
+                    stringFilter: {
+                      matchType: "EXACT",
+                      value: "cpc",
+                      caseSensitive: false,
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+          limit: 12,
         }),
       ]);
 
@@ -227,9 +286,10 @@ async function fetchDigisolGa4SummaryInner(
         .map(([label, pageviews]) => ({ label, pageviews }))
         .sort((a, b) => b.pageviews - a.pageviews),
       sources: (sourcesRes[0]?.rows ?? []).map((row) => ({
-        label: row.dimensionValues?.[0]?.value || "Unknown",
+        label: `${row.dimensionValues?.[0]?.value || "(not set)"} / ${row.dimensionValues?.[1]?.value || "(not set)"}`,
         sessions: metricInt(row),
       })),
+      googleAds: summarizeGoogleAds(adsRes[0]?.rows ?? []),
     };
   } catch (error) {
     const message =
