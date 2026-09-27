@@ -25,9 +25,13 @@ export function clearInternalTraffic() {
   document.cookie = `${INTERNAL_TRAFFIC_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
 }
 
+/** Only the production domain loads GA4 / Google Ads — previews and localhost stay out of Ads diagnostics. */
+const ANALYTICS_HOST = "wwwdigisol.com";
+
 export function shouldSkipSiteAnalytics(pathname?: string | null) {
   if (isHubPath(pathname)) return true;
   if (typeof window !== "undefined") {
+    if (window.location.hostname !== ANALYTICS_HOST) return true;
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get("notrack") === "1") {
