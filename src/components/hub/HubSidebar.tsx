@@ -35,6 +35,7 @@ export function HubSidebar() {
   const router = useRouter();
 
   async function signOut() {
+    await fetch("/api/hub/unlock", { method: "DELETE" }).catch(() => undefined);
     const supabase = await createBrowserSupabase();
     await supabase.auth.signOut();
     router.push("/hub/login");

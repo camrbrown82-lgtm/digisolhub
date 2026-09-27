@@ -6,6 +6,12 @@ import {
   isHubProtectedPath,
   unlockHubGateIfRequested,
 } from "@/lib/hubGate";
+import {
+  HUB_PASS_COOKIE,
+  cameFromHub,
+  clearHubPass,
+  isPageNavigation,
+} from "@/lib/hubPass";
 import { updateSession } from "@/lib/supabase/middleware";
 import {
   GEO_AUDIENCE_COOKIE,
@@ -176,9 +182,18 @@ export async function middleware(request: NextRequest) {
 
   const geo = readRequestGeo(request);
   const geoRedirect = albertaHomeGeoRedirect(request, geo);
-  if (geoRedirect) return geoRedirect;
+  const response = geoRedirect ?? nextWithGeo(request, geo);
 
-  return nextWithGeo(request, geo);
+  // Leaving the Hub for the public site means the password is asked again.
+  if (
+    request.cookies.has(HUB_PASS_COOKIE) &&
+    !path.startsWith("/api/") &&
+    isPageNavigation(request) &&
+    !cameFromHub(request)
+  ) {
+    clearHubPass(response);
+  }
+  return response;
 }
 
 export const config = {

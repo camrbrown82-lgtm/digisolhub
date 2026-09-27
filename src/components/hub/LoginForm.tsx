@@ -71,6 +71,16 @@ export function LoginForm() {
         throw new Error("That account is not allowed to access the hub.");
       }
 
+      const unlock = await withTimeout(
+        fetch("/api/hub/unlock", { method: "POST", credentials: "same-origin" }),
+        15000,
+        "Timed out opening the hub.",
+      );
+      if (!unlock.ok) {
+        await supabase.auth.signOut();
+        throw new Error("Could not open the hub. Try signing in again.");
+      }
+
       window.location.assign(nextPath());
     } catch (err) {
       setStatus("idle");

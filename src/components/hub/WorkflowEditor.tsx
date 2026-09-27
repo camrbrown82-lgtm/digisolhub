@@ -918,7 +918,7 @@ export function WorkflowEditor({
                 <a
                   href={`/hub/email?template=${String(selectedData.templateId)}`}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener"
                   className="block text-xs text-indigo-300 hover:text-indigo-200"
                 >
                   Edit or rename this email in Email ↗
