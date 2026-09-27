@@ -8,6 +8,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { NextResponse } from "next/server";
 import { createVisitorAgentTools } from "@/lib/agent/visitor/tools";
 import { DIGISOL_HOUSE_NAME, DIGISOL_BRAND } from "@/lib/branding";
+import { parseAttributionFromBody } from "@/lib/meta/attribution";
 import { getOpenAIApiKey } from "@/lib/openai";
 import { clientIp, rateLimit } from "@/lib/security";
 import { hasAdminClient } from "@/lib/supabase/admin";
@@ -82,13 +83,10 @@ export async function POST(request: Request) {
     messages?: UIMessage[];
     audience?: string;
     country?: string;
+    attribution?: Record<string, unknown>;
   };
   try {
-    body = (await request.json()) as {
-      messages?: UIMessage[];
-      audience?: string;
-      country?: string;
-    };
+    body = (await request.json()) as typeof body;
   } catch {
     return NextResponse.json(
       { error: "Invalid JSON body", code: "invalid_json" },
@@ -110,7 +108,12 @@ export async function POST(request: Request) {
 
   try {
     const openai = createOpenAI({ apiKey: getOpenAIApiKey() });
-    const tools = createVisitorAgentTools();
+    const tools = createVisitorAgentTools({
+      attribution:
+        body.attribution && typeof body.attribution === "object"
+          ? parseAttributionFromBody({ attribution: body.attribution })
+          : null,
+    });
 
     const result = streamText({
       model: openai(process.env.OPENAI_AGENT_LIGHT_MODEL?.trim() || "gpt-4o-mini"),

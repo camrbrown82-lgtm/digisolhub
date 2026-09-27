@@ -51,6 +51,10 @@ export default function IntegrationsPage() {
       })(),
     },
     {
+      name: "Google Ads lead form webhook",
+      ok: Boolean(process.env.GOOGLE_ADS_LEAD_KEY?.trim()),
+    },
+    {
       name: "GA4 Data API",
       ok: Boolean(
         process.env.GA4_PROPERTY_ID?.trim() &&
@@ -169,6 +173,17 @@ export default function IntegrationsPage() {
             ads.google.com
           </a>{" "}
           and link that account to Analytics property G-4ZBG4VPC9C.
+        </p>
+        <p className="mt-3">
+          Google Ads lead forms: in Google Ads, open the lead form asset → Lead
+          delivery → Webhook integration. Webhook URL:{" "}
+          <code className="text-zinc-200">https://wwwdigisol.com/api/webhooks/google-ads-lead</code>
+          , Key: the <code className="text-zinc-200">GOOGLE_ADS_LEAD_KEY</code>{" "}
+          value from Vercel. Each submission with an email becomes a DigiSol
+          contact tagged <code className="text-zinc-200">google_ads</code> and
+          starts any enabled &quot;New lead&quot; workflow. Clicks that land on the
+          site keep their <code className="text-zinc-200">gclid</code> on the
+          contact when they fill the form or chat with Kaylev.
         </p>
         <p className="mt-3">
           GA4 into Hub Analytics: set{" "}

@@ -5,7 +5,13 @@ import { logAgentActivity } from "@/lib/agent/digisol/activityLog";
 import { DIGISOL_OPERATOR } from "@/lib/agent/digisol/scope";
 import { logAnalyticsEvent } from "@/lib/analyticsEvents";
 import { emitHubEvent } from "@/lib/events";
+import { ensureMetaSchema } from "@/lib/ensureMetaSchema";
 import { ensureWebsiteAuditSchema } from "@/lib/ensureWebsiteAuditSchema";
+import {
+  attributionTags,
+  isGoogleAdsTouch,
+  type AttributionPayload,
+} from "@/lib/meta/attribution";
 import { sendAuditFollowUpEmail, sendConsultationFollowUpEmail } from "@/lib/prospectAudit/followUpEmail";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { ensureDigisolClient } from "@/lib/workspace";
@@ -26,7 +32,9 @@ export type VisitorLeadType = (typeof LEAD_TYPES)[number];
  * Restricted public tools for the homepage visitor chatbot.
  * Always writes into DigiSol's house client — never creates external tenants.
  */
-export function createVisitorAgentTools() {
+export function createVisitorAgentTools(opts: { attribution?: AttributionPayload | null } = {}) {
+  const attr = opts.attribution ?? null;
+  const fromGoogleAds = attr ? isGoogleAdsTouch(attr) : false;
   return {
     runVisitorWebsiteAudit: tool({
       description:
@@ -171,6 +179,7 @@ export function createVisitorAgentTools() {
             "visitor_chat",
             `lead_type:${leadType}`,
             ...(leadType === "consultation" ? ["consultation"] : []),
+            ...(attr ? attributionTags(attr) : []),
           ]),
         );
 
@@ -187,23 +196,51 @@ export function createVisitorAgentTools() {
           client_id: clientId,
         };
 
+        // Ad click ids ride along when present; retry without them on older DBs.
+        const clickFields: Record<string, string> = {};
+        if (attr?.gclid) clickFields.gclid = attr.gclid;
+        if (attr?.gbraid) clickFields.gbraid = attr.gbraid;
+        if (attr?.wbraid) clickFields.wbraid = attr.wbraid;
+        if (attr?.utm_source) clickFields.utm_source = attr.utm_source;
+        if (attr?.utm_medium) clickFields.utm_medium = attr.utm_medium;
+        if (attr?.utm_campaign) clickFields.utm_campaign = attr.utm_campaign;
+        if (attr?.utm_term) clickFields.utm_term = attr.utm_term;
+        if (Object.keys(clickFields).length) {
+          await ensureMetaSchema().catch(() => null);
+        }
+        const isColumnError = (message: string) => /column|schema cache/i.test(message);
+
         let contactId = existing?.id as string | undefined;
         let created = false;
 
         if (existing?.id) {
-          const { error } = await admin
+          let { error } = await admin
             .from("contacts")
-            .update(row)
+            .update({ ...row, ...clickFields })
             .eq("id", existing.id)
             .eq("client_id", clientId);
+          if (error && isColumnError(error.message)) {
+            ({ error } = await admin
+              .from("contacts")
+              .update(row)
+              .eq("id", existing.id)
+              .eq("client_id", clientId));
+          }
           if (error) throw new Error(error.message);
         } else {
-          const { data, error } = await admin
+          let { data, error } = await admin
             .from("contacts")
-            .insert(row)
+            .insert({ ...row, ...clickFields })
             .select("id")
             .single();
-          if (error) throw new Error(error.message);
+          if (error && isColumnError(error.message)) {
+            ({ data, error } = await admin
+              .from("contacts")
+              .insert(row)
+              .select("id")
+              .single());
+          }
+          if (error || !data) throw new Error(error?.message || "Could not save lead");
           contactId = data.id;
           created = true;
         }
@@ -229,6 +266,7 @@ export function createVisitorAgentTools() {
             email,
             leadType,
             requirements,
+            fromGoogleAds,
           });
         }
 
@@ -576,6 +614,7 @@ async function upsertVisitorPipelineLead(input: {
   email: string;
   leadType: VisitorLeadType;
   requirements: string;
+  fromGoogleAds?: boolean;
   row: {
     name: string | null;
     phone: string | null;
@@ -634,7 +673,7 @@ async function upsertVisitorPipelineLead(input: {
         phone: input.row.phone,
         company: input.row.company,
         service: input.row.service,
-        source: "website",
+        source: input.fromGoogleAds ? "google_ads" : "website",
         channel: "visitor_chat",
         stage,
         notes_preview: input.requirements.slice(0, 280),

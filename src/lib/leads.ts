@@ -7,6 +7,7 @@ import {
 import {
   attributionTags,
   emptyAttribution,
+  isGoogleAdsTouch,
   parseAttributionFromBody,
   type AttributionPayload,
 } from "@/lib/meta/attribution";
@@ -119,6 +120,8 @@ export async function upsertLead(payload: LeadPayload) {
     attr.campaign_channel === "facebook" ||
     attr.campaign_channel === "instagram" ||
     Boolean(attr.fbclid);
+  const fromGoogleAds = !fromFacebook && isGoogleAdsTouch(attr);
+  const clickSource = fromFacebook ? "facebook" : fromGoogleAds ? "google_ads" : null;
 
   const row: Record<string, unknown> = {
     name: payload.name,
@@ -127,10 +130,10 @@ export async function upsertLead(payload: LeadPayload) {
     domain: payload.domain,
     phone: payload.phone,
     service: payload.service,
-    source: fromFacebook
+    source: clickSource
       ? payload.source === "web3forms"
-        ? "facebook"
-        : payload.source ?? "facebook"
+        ? clickSource
+        : payload.source ?? clickSource
       : payload.source ?? "web3forms",
     tags,
     notes_preview: payload.message?.slice(0, 280) ?? null,
@@ -152,6 +155,9 @@ export async function upsertLead(payload: LeadPayload) {
   if (attr.fbclid) row.fbclid = attr.fbclid;
   if (attr.fbp) row.fbp = attr.fbp;
   if (attr.fbc) row.fbc = attr.fbc;
+  if (attr.gclid) row.gclid = attr.gclid;
+  if (attr.gbraid) row.gbraid = attr.gbraid;
+  if (attr.wbraid) row.wbraid = attr.wbraid;
   if (attr.landing_path) row.landing_path = attr.landing_path;
   if (payload.metaEventId) row.meta_event_id = payload.metaEventId;
 
@@ -173,6 +179,9 @@ export async function upsertLead(payload: LeadPayload) {
           fbc: _f3,
           landing_path: _l,
           meta_event_id: _m,
+          gclid: _g1,
+          gbraid: _g2,
+          wbraid: _g3,
           ...core
         } = row;
         const { error: retryError } = await admin
@@ -199,6 +208,9 @@ export async function upsertLead(payload: LeadPayload) {
           fbc: _f3,
           landing_path: _l,
           meta_event_id: _m,
+          gclid: _g1,
+          gbraid: _g2,
+          wbraid: _g3,
           ...core
         } = row;
         const { data: retryData, error: retryError } = await admin
@@ -246,7 +258,7 @@ export async function upsertLead(payload: LeadPayload) {
             phone: payload.phone,
             company: payload.company,
             service: payload.service,
-            source: fromFacebook ? "facebook" : "website",
+            source: fromFacebook ? "facebook" : fromGoogleAds ? "google_ads" : "website",
             channel: fromFacebook ? "facebook" : "web",
             stage: "new",
             notes_preview: payload.message?.slice(0, 280) ?? null,
@@ -273,5 +285,6 @@ export async function upsertLead(payload: LeadPayload) {
     created: !existing,
     attribution: attr,
     fromFacebook,
+    fromGoogleAds,
   };
 }

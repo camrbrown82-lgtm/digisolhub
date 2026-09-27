@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { MicDictateButton, appendDictation } from "@/components/hub/MicDictateButton";
 import { fireAdsConversion } from "@/lib/ads";
 import { trackEvent } from "@/lib/analytics";
+import { readStoredAttribution } from "@/lib/attributionClient";
 import {
   GEO_AUDIENCE_COOKIE,
   GEO_COUNTRY_COOKIE,
@@ -82,10 +83,11 @@ export function VisitorChat() {
     () =>
       new DefaultChatTransport({
         api: "/api/visitor-agent",
-        body: {
+        body: () => ({
           audience,
           country: country || undefined,
-        },
+          attribution: readStoredAttribution() ?? undefined,
+        }),
       }),
     [audience, country],
   );

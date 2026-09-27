@@ -17,6 +17,7 @@ export const LEAD_SOURCES = [
   { id: "walk_in", label: "Walk-in" },
   { id: "website", label: "Website" },
   { id: "facebook", label: "Facebook / Meta" },
+  { id: "google_ads", label: "Google Ads" },
   { id: "other", label: "Other" },
 ] as const;
 

@@ -9,6 +9,10 @@ export type AttributionPayload = {
   fbclid: string | null;
   fbp: string | null;
   fbc: string | null;
+  /** Google Ads click ids (gbraid/wbraid replace gclid on iOS app traffic). */
+  gclid: string | null;
+  gbraid: string | null;
+  wbraid: string | null;
   landing_path: string | null;
   campaign_channel: CampaignChannel | null;
   ab_variant: string | null;
@@ -24,10 +28,23 @@ export function emptyAttribution(): AttributionPayload {
     fbclid: null,
     fbp: null,
     fbc: null,
+    gclid: null,
+    gbraid: null,
+    wbraid: null,
     landing_path: null,
     campaign_channel: null,
     ab_variant: null,
   };
+}
+
+export function isGoogleAdsTouch(attr: AttributionPayload) {
+  if (attr.gclid || attr.gbraid || attr.wbraid) return true;
+  const source = (attr.utm_source || "").toLowerCase();
+  const medium = (attr.utm_medium || "").toLowerCase();
+  return (
+    (source === "google" || source === "adwords" || source === "google_ads") &&
+    (medium === "cpc" || medium === "ppc" || medium === "paid" || medium === "paidsearch")
+  );
 }
 
 function pick(value: unknown) {
@@ -60,6 +77,9 @@ export function parseAttributionFromBody(
   const fbp = pick(nested.fbp);
   const fbc =
     pick(nested.fbc) || fbcFromFbclid(fbclid);
+  const gclid = pick(nested.gclid);
+  const gbraid = pick(nested.gbraid);
+  const wbraid = pick(nested.wbraid);
   const landing_path = pick(nested.landing_path ?? nested.landingPath);
 
   let campaign_channel =
@@ -96,6 +116,9 @@ export function parseAttributionFromBody(
     fbclid,
     fbp,
     fbc,
+    gclid,
+    gbraid,
+    wbraid,
     landing_path,
     campaign_channel,
     ab_variant,
@@ -106,6 +129,7 @@ export function attributionTags(attr: AttributionPayload): string[] {
   const tags: string[] = [];
   if (attr.campaign_channel === "facebook" || attr.fbclid) tags.push("facebook");
   if (attr.campaign_channel === "instagram") tags.push("instagram");
+  if (isGoogleAdsTouch(attr)) tags.push("google_ads");
   if (attr.utm_campaign) tags.push(`utm:${attr.utm_campaign.slice(0, 40)}`);
   if (attr.ab_variant) tags.push(`variant:${attr.ab_variant.slice(0, 20)}`);
   return tags;

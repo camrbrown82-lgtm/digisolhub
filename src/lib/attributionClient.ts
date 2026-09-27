@@ -1,5 +1,5 @@
 /**
- * Client-side first-touch attribution (UTM + Meta click ids).
+ * Client-side first-touch attribution (UTM + Meta and Google Ads click ids).
  * Stored in sessionStorage so contact forms / Kaylev can attach it later.
  */
 
@@ -14,9 +14,20 @@ export type ClientAttribution = {
   fbclid: string | null;
   fbp: string | null;
   fbc: string | null;
+  gclid: string | null;
+  gbraid: string | null;
+  wbraid: string | null;
   landing_path: string | null;
   captured_at: string;
 };
+
+/** Google tag's conversion-linker cookie: GCL.<timestamp>.<gclid> */
+function gclidFromCookie() {
+  const raw = readCookie("_gcl_aw");
+  if (!raw) return null;
+  const parts = raw.split(".");
+  return parts.length >= 3 ? parts.slice(2).join(".") || null : null;
+}
 
 function readCookie(name: string) {
   if (typeof document === "undefined") return null;
@@ -60,6 +71,9 @@ export function captureAttributionFromLocation(
     fbclid: param(search, "fbclid"),
     fbp: readCookie("_fbp"),
     fbc: readCookie("_fbc"),
+    gclid: param(search, "gclid"),
+    gbraid: param(search, "gbraid"),
+    wbraid: param(search, "wbraid"),
     landing_path: `${url.pathname}${url.search}`,
     captured_at: new Date().toISOString(),
   };
@@ -67,7 +81,8 @@ export function captureAttributionFromLocation(
   const hasTouch =
     Boolean(incoming.utm_source) ||
     Boolean(incoming.utm_campaign) ||
-    Boolean(incoming.fbclid);
+    Boolean(incoming.fbclid) ||
+    Boolean(incoming.gclid || incoming.gbraid || incoming.wbraid);
 
   // First-touch: keep original UTMs; always refresh fbp/fbc cookies.
   const merged: ClientAttribution = {
@@ -84,11 +99,14 @@ export function captureAttributionFromLocation(
       (incoming.fbclid || existing?.fbclid
         ? `fb.1.${Date.now()}.${incoming.fbclid || existing?.fbclid}`
         : null),
+    gclid: existing?.gclid || incoming.gclid || gclidFromCookie(),
+    gbraid: existing?.gbraid || incoming.gbraid,
+    wbraid: existing?.wbraid || incoming.wbraid,
     landing_path: existing?.landing_path || incoming.landing_path,
     captured_at: existing?.captured_at || incoming.captured_at,
   };
 
-  if (hasTouch || merged.fbp || merged.fbc || existing) {
+  if (hasTouch || merged.fbp || merged.fbc || merged.gclid || existing) {
     try {
       sessionStorage.setItem(ATTRIBUTION_STORAGE_KEY, JSON.stringify(merged));
     } catch {
