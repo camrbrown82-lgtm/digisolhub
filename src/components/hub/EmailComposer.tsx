@@ -65,6 +65,7 @@ export function EmailComposer({
   const aiRef = useRef<HTMLTextAreaElement>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [activeId, setActiveId] = useState(initialTemplateId ?? "");
+  const [templateName, setTemplateName] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [recipients, setRecipients] = useState("");
@@ -102,6 +103,7 @@ export function EmailComposer({
     setActiveId(pick);
     const selected = next.find((row) => row.id === pick);
     if (selected) {
+      setTemplateName(selected.name);
       setSubject(selected.subject ?? "");
       setBody(selected.html ?? "");
     } else {
@@ -140,6 +142,7 @@ export function EmailComposer({
 
   function selectTemplate(template: Template) {
     setActiveId(template.id);
+    setTemplateName(template.name);
     setSubject(template.subject ?? "");
     setBody(template.html ?? "");
     setStatus("");
@@ -202,20 +205,22 @@ export function EmailComposer({
     }
     setBusy("save");
     setStatus("");
+    const name = templateName.trim() || active.name;
     try {
       const response = await fetch(`/api/hub/templates/${active.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject, html: body, name: active.name }),
+        body: JSON.stringify({ subject, html: body, name }),
       });
       const json = (await response.json()) as { error?: string };
       if (!response.ok) {
         setStatus(json.error || "Save failed");
         return false;
       }
+      setTemplateName(name);
       setTemplates((list) =>
         list.map((row) =>
-          row.id === active.id ? { ...row, subject, html: body } : row,
+          row.id === active.id ? { ...row, name, subject, html: body } : row,
         ),
       );
       setStatus("Saved");
@@ -385,22 +390,38 @@ export function EmailComposer({
     setRecipients(emails.join(", "));
   }
 
-  async function addBlank() {
+  async function createTemplate(input: { name: string; subject: string; html: string }) {
     const response = await fetch("/api/hub/templates", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: "Custom",
-        subject: "",
-        html: `Hey {{name}},\n\n{{logo}}\n\n{{tagline}}\n\n{{company}}`,
-      }),
+      body: JSON.stringify(input),
     });
     const json = (await response.json()) as { id?: string; error?: string };
     if (!json.id) {
       setStatus(json.error || "Could not create template");
-      return;
+      return null;
     }
     await loadTemplates(json.id);
+    return json.id;
+  }
+
+  async function addBlank() {
+    const id = await createTemplate({
+      name: "Untitled template",
+      subject: "",
+      html: `Hey {{name}},\n\n{{logo}}\n\n{{tagline}}\n\n{{company}}`,
+    });
+    if (id) setStatus("New template — give it a name Kaylev can find, e.g. Restaurant welcome.");
+  }
+
+  async function saveAsCopy() {
+    const base = templateName.trim() || active?.name || "Template";
+    const id = await createTemplate({
+      name: base === active?.name ? `${base} (copy)` : base,
+      subject,
+      html: body,
+    });
+    if (id) setStatus("Saved as a new template — rename it anytime.");
   }
 
   return (
@@ -495,7 +516,7 @@ export function EmailComposer({
 
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold text-white">Example templates</h2>
+          <h2 className="text-lg font-semibold text-white">Templates</h2>
           <button type="button" className="hub-btn-secondary" onClick={() => void addBlank()}>
             New blank
           </button>
@@ -535,6 +556,28 @@ export function EmailComposer({
             <MergeFieldBar onInsert={insertToken} disabled={busy === "ai"} />
           </div>
         </div>
+        <label className="block text-sm">
+          <span className="flex items-center justify-between gap-2">
+            Template name
+            <MicDictateButton
+              disabled={busy === "ai" || !active}
+              onText={(chunk) =>
+                setTemplateName((current) => appendDictation(current, chunk))
+              }
+            />
+          </span>
+          <input
+            value={templateName}
+            onChange={(event) => setTemplateName(event.target.value)}
+            disabled={!active}
+            className="hub-field"
+            placeholder="e.g. Restaurant welcome"
+          />
+          <span className="mt-1 block text-xs text-zinc-500">
+            Kaylev and the workflow builder find emails by this name. Include the
+            industry and purpose, then Save.
+          </span>
+        </label>
         <label className="block text-sm">
           <span className="flex items-center justify-between gap-2">
             Subject
@@ -725,6 +768,14 @@ export function EmailComposer({
             onClick={() => void save()}
           >
             {busy === "save" ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            className="hub-btn-secondary"
+            disabled={!active || busy === "save"}
+            onClick={() => void saveAsCopy()}
+          >
+            Save as new copy
           </button>
           <button
             type="button"

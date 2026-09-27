@@ -15,8 +15,10 @@ import {
 } from "@/lib/openai";
 import {
   WORKFLOW_BUILDER_SYSTEM_PROMPT,
+  attachWorkflowTemplates,
   buildWorkflowUserPrompt,
   parseWorkflowAiResponse,
+  type WorkflowTemplateRef,
 } from "@/lib/workflowAi";
 import { resolveClientId, getWorkspaceClient } from "@/lib/workspace";
 
@@ -64,6 +66,19 @@ export async function POST(request: Request) {
   const clientId = await resolveClientId(supabase);
   const { companyName } = brandFromClient(active);
   const openai = createOpenAIClient();
+
+  let templatesQuery = supabase
+    .from("email_templates")
+    .select("id, name, subject")
+    .order("updated_at", { ascending: false })
+    .limit(40);
+  if (clientId) templatesQuery = templatesQuery.eq("client_id", clientId);
+  const { data: templateRows } = await templatesQuery;
+  const templates: WorkflowTemplateRef[] = (templateRows ?? []).map((row) => ({
+    id: row.id as string,
+    name: (row.name as string) || "Untitled template",
+    subject: (row.subject as string | null) ?? null,
+  }));
 
   const preset = parseAudiencePreset(body.audiencePreset);
   const audienceDetail = body.audienceDetail?.trim().slice(0, 400) || "";
@@ -178,6 +193,7 @@ export async function POST(request: Request) {
             .join("\n"),
           tagGuidance: body.tagGuidance?.trim(),
           companyName,
+          templates,
         }),
       },
     ],
@@ -194,6 +210,7 @@ export async function POST(request: Request) {
   let plan;
   try {
     plan = parseWorkflowAiResponse(content);
+    plan.graph = attachWorkflowTemplates(plan.graph, templates);
   } catch {
     return NextResponse.json(
       {
@@ -272,10 +289,20 @@ export async function POST(request: Request) {
               ? " Will run for is set to you — review, then Run now."
               : " Run list starts empty. Use Add me, Trades audits, All prospect audits, New leads, or Engaged.";
 
+  const sendNodes = plan.graph.nodes.filter(
+    (node) => (node.data as { action?: string }).action === "send_template",
+  );
+  const linkedSends = sendNodes.filter(
+    (node) => (node.data as { templateId?: string }).templateId,
+  ).length;
+  const templateNote = sendNodes.length
+    ? ` Linked ${linkedSends} of ${sendNodes.length} send steps to your email templates.`
+    : "";
+
   return NextResponse.json({
     id: data.id,
     workflow: data,
-    summary: `${plan.summary || "Workflow created."}${audienceNote}`,
+    summary: `${plan.summary || "Workflow created."}${audienceNote}${templateNote}`,
     tags: plan.tags,
     saved: true,
     audience: audienceKey,

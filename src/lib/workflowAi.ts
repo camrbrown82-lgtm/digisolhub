@@ -18,6 +18,13 @@ export type WorkflowBrief = {
   notes?: string;
   companyName?: string;
   tagGuidance?: string;
+  templates?: WorkflowTemplateRef[];
+};
+
+export type WorkflowTemplateRef = {
+  id: string;
+  name: string;
+  subject?: string | null;
 };
 
 export type AiWorkflowTag = {
@@ -36,7 +43,7 @@ You ONLY design automations for DigiSol's visual workflow builder (React Flow). 
   - tag_added: fires when a CRM tag is applied
   - email_opened: fires when a tracked email is opened
 - Allowed actions (exact strings in data.action): ${WORKFLOW_ACTIONS.join(", ")}.
-  - send_template: send an email template. Leave templateId as "". Put the purpose in label (e.g. "Welcome + book consult").
+  - send_template: send an email template. If the brief lists "Available email templates", set data.templateId to the id of the best match (the operator names templates by industry and purpose, e.g. "Restaurant welcome") and set label to that template's name. Only use ids from that list. If nothing fits, leave templateId as "" and put the purpose in label (e.g. "Welcome + book consult").
   - wait: pause. data.duration MUST be like "1h", "2d", "3d", "1w" (Inngest sleep format). Never use minutes under 1h unless "30m".
   - add_tag: apply a CRM tag. data.tag is lowercase kebab, e.g. "warm-lead". Also set data.tagDescription to a short plain-English explanation (why this tag exists / when it is applied).
 - Trigger node id MUST be "trigger" with type "trigger" and data.trigger set.
@@ -92,6 +99,14 @@ export function buildWorkflowUserPrompt(brief: WorkflowBrief) {
       ? `Tag guidance from operator: ${brief.tagGuidance}`
       : "Invent clear CRM tags with descriptions that match the nurture stages.",
     brief.notes ? `Extra notes: ${brief.notes}` : null,
+    brief.templates?.length
+      ? [
+          "Available email templates (id — name — subject):",
+          ...brief.templates.map(
+            (row) => `- ${row.id} — ${row.name}${row.subject ? ` — ${row.subject}` : ""}`,
+          ),
+        ].join("\n")
+      : "No saved email templates yet — leave templateId empty.",
     "",
     "Design the best DigiSol Hub workflow graph AND the tag catalogue for this brief.",
   ]
@@ -139,6 +154,37 @@ function ensureWelcomeWait(graph: WorkflowGraph): WorkflowGraph {
     });
   }
   return { nodes, edges };
+}
+
+/**
+ * Keep only template ids that exist for this company. Falls back to matching
+ * the step label against template names so "Restaurant welcome" still links.
+ */
+export function attachWorkflowTemplates(
+  graph: WorkflowGraph,
+  templates: WorkflowTemplateRef[],
+): WorkflowGraph {
+  if (templates.length === 0) return graph;
+  const byId = new Map(templates.map((row) => [row.id, row]));
+  const normalize = (value: string) => value.trim().toLowerCase();
+  const nodes = graph.nodes.map((node) => {
+    const data = { ...((node.data || {}) as Record<string, unknown>) };
+    if (data.action !== "send_template") return node;
+    const currentId = String(data.templateId || "");
+    let match = byId.get(currentId);
+    if (!match) {
+      const label = normalize(String(data.label || ""));
+      match =
+        templates.find((row) => normalize(row.name) === label) ||
+        templates.find(
+          (row) => normalize(row.name).length >= 8 && label.includes(normalize(row.name)),
+        );
+    }
+    data.templateId = match?.id || "";
+    if (match) data.label = match.name;
+    return { ...node, data };
+  });
+  return { ...graph, nodes };
 }
 
 export function parseWorkflowAiResponse(content: string): {

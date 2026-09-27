@@ -50,7 +50,7 @@ function slugTag(value: string) {
 export function WorkflowEditor({
   workflow,
   contacts,
-  templates = [],
+  templates: initialTemplates = [],
   knownTags = [],
   operatorEmails = [],
   initialAudience = null,
@@ -74,6 +74,13 @@ export function WorkflowEditor({
   });
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [newTagDraft, setNewTagDraft] = useState("nurture");
+  const [templates, setTemplates] = useState<TemplateOption[]>(initialTemplates);
+  const [emailDraft, setEmailDraft] = useState<{
+    name: string;
+    subject: string;
+    body: string;
+  } | null>(null);
+  const [emailDraftBusy, setEmailDraftBusy] = useState(false);
   const persistGraph = useCallback((next: { nodes: Node[]; edges: Edge[] }) => {
     setGraph((current) => {
       // Avoid re-render loops when the canvas echoes the same graph.
@@ -423,6 +430,41 @@ export function WorkflowEditor({
     setStatus(kind === "add_tag" ? `Added tag step “${tag}” — edit it on the right.` : "Step added");
   }
 
+  async function createEmailForStep() {
+    if (!emailDraft) return;
+    const name = emailDraft.name.trim();
+    if (!name || !emailDraft.subject.trim() || !emailDraft.body.trim()) {
+      setStatus("Give the new email a name, subject, and body.");
+      return;
+    }
+    setEmailDraftBusy(true);
+    try {
+      const response = await fetch("/api/hub/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          subject: emailDraft.subject.trim(),
+          html: emailDraft.body,
+        }),
+      });
+      const json = (await response.json()) as { id?: string; error?: string };
+      if (!response.ok || !json.id) {
+        setStatus(json.error || "Could not create the email");
+        return;
+      }
+      const created = { id: json.id, name, subject: emailDraft.subject.trim() };
+      setTemplates((list) => [created, ...list]);
+      updateSelectedData({ templateId: created.id, label: created.name });
+      setEmailDraft(null);
+      setStatus(`Created “${name}” and attached it to this step. Save workflow to keep it.`);
+    } catch {
+      setStatus("Could not create the email — check your connection.");
+    } finally {
+      setEmailDraftBusy(false);
+    }
+  }
+
   function removeSelected() {
     if (!selectedNodeId || selectedData.trigger) return;
     setGraph((current) => ({
@@ -734,9 +776,84 @@ export function WorkflowEditor({
                   className="hub-field mt-1.5"
                 />
               </label>
+              {selectedData.templateId ? (
+                <a
+                  href={`/hub/email?template=${String(selectedData.templateId)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block text-xs text-indigo-300 hover:text-indigo-200"
+                >
+                  Edit or rename this email in Email ↗
+                </a>
+              ) : null}
+              {emailDraft ? (
+                <div className="space-y-2 rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-3">
+                  <p className="text-xs font-medium text-white">New custom email</p>
+                  <input
+                    value={emailDraft.name}
+                    onChange={(event) =>
+                      setEmailDraft({ ...emailDraft, name: event.target.value })
+                    }
+                    className="hub-field py-1.5 text-sm"
+                    placeholder="Name, e.g. Restaurant welcome"
+                  />
+                  <input
+                    value={emailDraft.subject}
+                    onChange={(event) =>
+                      setEmailDraft({ ...emailDraft, subject: event.target.value })
+                    }
+                    className="hub-field py-1.5 text-sm"
+                    placeholder="Subject, e.g. {{name}}, a quick idea for your restaurant"
+                  />
+                  <textarea
+                    value={emailDraft.body}
+                    onChange={(event) =>
+                      setEmailDraft({ ...emailDraft, body: event.target.value })
+                    }
+                    rows={6}
+                    className="hub-field resize-y font-mono text-xs"
+                  />
+                  <p className="text-[11px] text-zinc-500">
+                    Uses this company&apos;s brand kit. Merge fields like {"{{name}}"}{" "}
+                    and {"{{logo}}"} work here too.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="hub-btn flex-1 text-xs"
+                      disabled={emailDraftBusy}
+                      onClick={() => void createEmailForStep()}
+                    >
+                      {emailDraftBusy ? "Creating…" : "Create & use"}
+                    </button>
+                    <button
+                      type="button"
+                      className="hub-btn-secondary text-xs"
+                      disabled={emailDraftBusy}
+                      onClick={() => setEmailDraft(null)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="hub-btn-secondary w-full"
+                  onClick={() =>
+                    setEmailDraft({
+                      name: "",
+                      subject: "",
+                      body: "Hey {{name}},\n\n\n\n{{company}}",
+                    })
+                  }
+                >
+                  + Write a new email for this step
+                </button>
+              )}
               {templates.length === 0 ? (
                 <p className="text-xs text-amber-200/90">
-                  No templates yet — create one under Email, then pick it here.
+                  No templates yet — write one above, or create one under Email.
                 </p>
               ) : null}
               <button
@@ -760,8 +877,8 @@ export function WorkflowEditor({
             {planText}
           </p>
           <p className="mt-2 text-xs text-zinc-400">
-            Send steps still need an email template. Nothing sends until you
-            click Run now.
+            Click a send step to pick a saved email or write a new one. Nothing
+            sends until you click Run now.
           </p>
         </div>
       ) : null}
@@ -942,8 +1059,8 @@ export function WorkflowEditor({
 
         {templates.length === 0 ? (
           <p className="mt-3 text-xs text-amber-200/90">
-            No email templates in Hub yet — create one under Email before a Send
-            step can deliver mail.
+            No email templates in Hub yet — click a send step and use Write a new
+            email, or create one under Email.
           </p>
         ) : null}
 
