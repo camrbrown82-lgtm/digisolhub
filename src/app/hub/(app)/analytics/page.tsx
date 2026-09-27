@@ -378,9 +378,11 @@ export default async function AnalyticsPage() {
               </li>
             ) : (
               ga4.locations.map((row) => (
-                <li key={row.label} className="flex justify-between gap-3">
-                  <span className="truncate text-zinc-300">{row.label}</span>
-                  <span className="text-zinc-500">{row.pageviews}</span>
+                <li key={row.label} className="flex min-w-0 items-baseline justify-between gap-3">
+                  <span className="min-w-0 flex-1 truncate text-zinc-300" title={row.label}>
+                    {row.label}
+                  </span>
+                  <span className="shrink-0 tabular-nums text-zinc-500">{row.pageviews}</span>
                 </li>
               ))
             )}
@@ -434,31 +436,35 @@ export default async function AnalyticsPage() {
           </div>
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+          <div className="min-w-0 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 sm:p-5">
             <h3 className="text-sm font-semibold text-white">Top pages</h3>
             <ul className="mt-3 space-y-2 text-sm">
               {website.pages.length === 0 ? (
                 <li className="text-zinc-500">No pageviews yet.</li>
               ) : (
                 website.pages.map((page) => (
-                  <li key={page.label} className="flex justify-between gap-3">
-                    <span className="truncate text-zinc-300">{page.label}</span>
-                    <span className="text-zinc-500">{page.count}</span>
+                  <li key={page.label} className="flex min-w-0 items-baseline justify-between gap-3">
+                    <span className="min-w-0 flex-1 truncate text-zinc-300" title={page.label}>
+                      {page.label}
+                    </span>
+                    <span className="shrink-0 tabular-nums text-zinc-500">{page.count}</span>
                   </li>
                 ))
               )}
             </ul>
           </div>
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+          <div className="min-w-0 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 sm:p-5">
             <h3 className="text-sm font-semibold text-white">Top referrers</h3>
             <ul className="mt-3 space-y-2 text-sm">
               {website.referrers.length === 0 ? (
                 <li className="text-zinc-500">No referrers yet.</li>
               ) : (
                 website.referrers.map((item) => (
-                  <li key={item.label} className="flex justify-between gap-3">
-                    <span className="truncate text-zinc-300">{item.label}</span>
-                    <span className="text-zinc-500">{item.count}</span>
+                  <li key={item.label} className="flex min-w-0 items-baseline justify-between gap-3">
+                    <span className="min-w-0 flex-1 truncate text-zinc-300" title={item.label}>
+                      {item.label}
+                    </span>
+                    <span className="shrink-0 tabular-nums text-zinc-500">{item.count}</span>
                   </li>
                 ))
               )}
@@ -535,9 +541,11 @@ export default async function AnalyticsPage() {
               <li className="text-zinc-500">No field or website leads yet.</li>
             ) : (
               pipeline.bySource.map((row) => (
-                <li key={row.id} className="flex justify-between gap-3">
-                  <span className="truncate text-zinc-300">{row.label}</span>
-                  <span className="text-zinc-500">
+                <li key={row.id} className="flex min-w-0 items-baseline justify-between gap-3">
+                  <span className="min-w-0 flex-1 truncate text-zinc-300" title={row.label}>
+                    {row.label}
+                  </span>
+                  <span className="shrink-0 tabular-nums text-zinc-500">
                     {row.count} · {row.won} won
                   </span>
                 </li>

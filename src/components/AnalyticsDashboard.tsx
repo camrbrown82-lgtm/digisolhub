@@ -190,17 +190,19 @@ function RankList({
 }) {
   const max = Math.max(1, ...items.map((item) => item.value));
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+    <div className="min-w-0 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 sm:p-5">
       <h3 className="text-sm font-semibold text-white">{title}</h3>
       {items.length === 0 ? (
         <p className="mt-3 text-sm text-zinc-500">{empty}</p>
       ) : (
         <ul className="mt-4 space-y-3">
           {items.map((item) => (
-            <li key={item.label}>
-              <div className="mb-1 flex justify-between gap-3 text-sm">
-                <span className="truncate text-zinc-300">{item.label}</span>
-                <span className="shrink-0 text-zinc-500">{item.value}</span>
+            <li key={item.label} className="min-w-0">
+              <div className="mb-1 flex min-w-0 items-baseline justify-between gap-3 text-sm">
+                <span className="min-w-0 flex-1 truncate text-zinc-300" title={item.label}>
+                  {item.label}
+                </span>
+                <span className="shrink-0 tabular-nums text-zinc-500">{item.value}</span>
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-zinc-800">
                 <div
@@ -358,7 +360,7 @@ export function AnalyticsDashboard({
           accent="bg-violet-500"
           empty="No source data yet."
         />
-        <div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-5">
+        <div className="min-w-0 rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4 sm:p-5">
           <div className="flex items-center justify-between gap-2">
             <h3 className="text-sm font-semibold text-white">Weak-point highlights</h3>
             <span className="rounded-full bg-rose-500/20 px-2.5 py-0.5 text-[11px] font-medium text-rose-100">
@@ -376,8 +378,10 @@ export function AnalyticsDashboard({
                   key={item.label}
                   className="rounded-xl border border-rose-500/20 bg-zinc-950/40 px-3 py-2"
                 >
-                  <div className="flex justify-between gap-3 text-sm">
-                    <span className="truncate text-rose-50">{item.label}</span>
+                  <div className="flex min-w-0 justify-between gap-3 text-sm">
+                    <span className="min-w-0 flex-1 truncate text-rose-50" title={item.label}>
+                      {item.label}
+                    </span>
                     <span className="shrink-0 text-rose-200/80">{item.value}</span>
                   </div>
                   <p className="mt-1 text-xs text-rose-100/60">
