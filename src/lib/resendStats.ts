@@ -222,7 +222,8 @@ export async function syncResendEngagementFromApi(
 
       await db.from("sends").update(patch).eq("id", row.id);
 
-      if (promoteEvent) {
+      // Opens alone don't promote a cold prospect; scanners fire them automatically.
+      if (promoteEvent === "clicked") {
         await promoteProspectOnEngagement({
           db,
           resendId,

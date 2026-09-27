@@ -9,6 +9,13 @@ import {
   contactsForPreset,
 } from "@/lib/contactAudiences";
 import { MicDictateButton, appendDictation } from "@/components/hub/MicDictateButton";
+import {
+  LEAD_AUDIENCES,
+  LEAD_AUDIENCE_LABELS,
+  type LeadAudience,
+  asLeadAudience,
+  leadAudienceOf,
+} from "@/lib/workflowGraph";
 
 const WorkflowCanvas = dynamic(
   () => import("@/components/hub/WorkflowCanvas").then((mod) => mod.WorkflowCanvas),
@@ -76,6 +83,9 @@ export function WorkflowEditor({
   const router = useRouter();
   const [name, setName] = useState(workflow.name);
   const [trigger, setTrigger] = useState(workflow.trigger);
+  const [audience, setAudience] = useState<LeadAudience>(() =>
+    leadAudienceOf(workflow.graph as Parameters<typeof leadAudienceOf>[0]),
+  );
   const [enabled, setEnabled] = useState(workflow.enabled);
   const [graph, setGraph] = useState({
     nodes: workflow.graph?.nodes ?? [],
@@ -598,12 +608,32 @@ export function WorkflowEditor({
   }
 
   async function save() {
+    const graphToSave = {
+      ...graph,
+      nodes: graph.nodes.map((node) => {
+        if (node.type !== "trigger" && !node.data?.trigger) return node;
+        const { audience: _previous, ...data } = (node.data || {}) as Record<string, unknown>;
+        return {
+          ...node,
+          data:
+            trigger === "new_lead" && audience !== "all" ? { ...data, audience } : data,
+        };
+      }),
+    };
     const response = await fetch(`/api/hub/workflows/${workflow.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, trigger, enabled, graph }),
+      body: JSON.stringify({ name, trigger, enabled, graph: graphToSave }),
     });
-    setStatus(response.ok ? "Saved" : "Save failed");
+    if (!response.ok) {
+      setStatus("Save failed");
+    } else if (enabled && sendStepsMissingTemplate.length > 0) {
+      setStatus(
+        `Saved — but ${sendStepsMissingTemplate.length} send step(s) have no email picked and will be skipped.`,
+      );
+    } else {
+      setStatus("Saved");
+    }
     router.refresh();
   }
 
@@ -670,7 +700,7 @@ export function WorkflowEditor({
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <label className="text-sm">
           <span className="flex items-center justify-between gap-2">
             Name
@@ -696,6 +726,22 @@ export function WorkflowEditor({
             <option value="email_opened">Email opened</option>
           </select>
         </label>
+        {trigger === "new_lead" ? (
+          <label className="text-sm">
+            Who enters
+            <select
+              value={audience}
+              onChange={(event) => setAudience(asLeadAudience(event.target.value))}
+              className="hub-field"
+            >
+              {LEAD_AUDIENCES.map((id) => (
+                <option key={id} value={id}>
+                  {LEAD_AUDIENCE_LABELS[id]}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         <label className="flex items-center gap-2 text-sm text-zinc-300">
           <input
             type="checkbox"
@@ -777,6 +823,15 @@ export function WorkflowEditor({
                 Fires on: {String(selectedData.label || trigger)}. Change the workflow
                 trigger above if needed.
               </p>
+              {trigger === "new_lead" ? (
+                <p className="text-zinc-500">
+                  While Enabled is on, this runs by itself for every new lead that matches
+                  Who enters ({LEAD_AUDIENCE_LABELS[audience]}). Each person goes through it
+                  once, and only this company&apos;s leads enter. Emails wait until 24 hours
+                  after any other email to that person, and the run stops when you move their
+                  lead to Qualified or later in the pipeline, or they unsubscribe.
+                </p>
+              ) : null}
             </div>
           ) : selectedAction === "add_tag" ? (
             <div className="mt-3 space-y-3">

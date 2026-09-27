@@ -4,7 +4,7 @@ import { logAgentActivity } from "@/lib/agent/digisol/activityLog";
 import { DIGISOL_OPERATOR } from "@/lib/agent/digisol/scope";
 
 /**
- * On open/click of a prospect-audit send, promote cold prospect → active DigiSol lead
+ * On a click in a prospect-audit send, promote cold prospect → active DigiSol lead
  * and queue follow-up via existing Hub/Inngest workflows.
  */
 export async function promoteProspectOnEngagement(input: {

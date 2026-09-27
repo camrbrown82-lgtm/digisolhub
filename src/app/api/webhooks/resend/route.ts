@@ -114,7 +114,7 @@ export async function POST(request: Request) {
   if (!existing?.id) {
     console.warn("[resend-webhook] no send for", resendId, type);
     // Still try prospect promote by resend_id alone.
-    if (event === "opened" || event === "clicked") {
+    if (event === "clicked") {
       await promoteProspectOnEngagement({
         db: admin,
         resendId,
@@ -168,7 +168,8 @@ export async function POST(request: Request) {
     });
   }
 
-  if (event === "opened" || event === "clicked") {
+  // Only clicks promote a cold prospect: mail scanners and Apple Mail fire opens on their own.
+  if (event === "clicked") {
     await promoteProspectOnEngagement({
       db: admin,
       resendId,

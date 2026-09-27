@@ -2,6 +2,7 @@ import { type GetStepTools } from "inngest";
 import { inngest } from "@/inngest/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmailToContact } from "@/lib/email";
+import { contactMatchesAudience, leadAudienceOf } from "@/lib/workflowGraph";
 
 type FlowNode = {
   id: string;
@@ -35,13 +36,53 @@ const triggerMap: Record<string, string> = {
   "hub/email.opened": "email_opened",
 };
 
+/** Pipeline stages where you're handling the lead yourself, so automatic emails stop. */
+const HANDS_ON_STAGES = ["qualified", "meeting", "proposal", "won", "lost"];
+
+/** Automatic workflow emails never land within this long of any other email to the same person. */
+const MIN_EMAIL_GAP_MS = 24 * 60 * 60 * 1000;
+
+type SendBlock = "missing" | "unsubscribed" | "hands_on";
+
+async function sendBlockFor(
+  admin: ReturnType<typeof createAdminClient>,
+  contactId: string,
+  automatic: boolean,
+): Promise<SendBlock | null> {
+  const { data: contact } = await admin
+    .from("contacts")
+    .select("id, unsubscribed_at")
+    .eq("id", contactId)
+    .maybeSingle();
+  if (!contact) return "missing";
+  if (contact.unsubscribed_at) return "unsubscribed";
+  if (automatic) {
+    const { count } = await admin
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .eq("contact_id", contactId)
+      .in("stage", HANDS_ON_STAGES);
+    if ((count ?? 0) > 0) return "hands_on";
+  }
+  return null;
+}
+
+const SEND_BLOCK_LOG: Record<SendBlock, string> = {
+  missing: "stopped: contact was removed",
+  unsubscribed: "stopped: contact unsubscribed — no more emails",
+  hands_on: "stopped: lead moved past Contacted in the pipeline — you're handling it",
+};
+
 async function runGraph(opts: {
   workflowId: string;
   contactId: string;
   graph: Graph;
   step: StepTools;
   templateOverrides?: Record<string, string>;
+  /** Started by a trigger (not the Run button): applies email spacing and pipeline stops. */
+  automatic?: boolean;
 }) {
+  const automatic = opts.automatic === true;
   const admin = createAdminClient();
   const nodes = opts.graph.nodes ?? [];
   const edges = opts.graph.edges ?? [];
@@ -94,14 +135,44 @@ async function runGraph(opts: {
         if (!templateId) {
           log.push(`skipped send ${current.id}: no template selected`);
         } else {
+          if (automatic) {
+            const gate = await opts.step.run(`gate-${current.id}`, async () => {
+              const block = await sendBlockFor(admin, opts.contactId, true);
+              if (block) return { block, holdUntil: null };
+              const { data: last } = await admin
+                .from("sends")
+                .select("created_at")
+                .eq("contact_id", opts.contactId)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              const earliest = last?.created_at
+                ? new Date(last.created_at as string).getTime() + MIN_EMAIL_GAP_MS
+                : 0;
+              return {
+                block: null,
+                holdUntil: earliest > Date.now() ? new Date(earliest).toISOString() : null,
+              };
+            });
+            if (gate.block) {
+              log.push(SEND_BLOCK_LOG[gate.block]);
+              stopped = true;
+              break;
+            }
+            if (gate.holdUntil) {
+              if (runId) {
+                const snapshot = [...log, `holding until ${gate.holdUntil} (24h email gap)`];
+                await opts.step.run(`hold-progress-${current.id}`, async () => {
+                  await admin.from("workflow_runs").update({ log: snapshot }).eq("id", runId);
+                });
+              }
+              await opts.step.sleepUntil(`hold-${current.id}`, gate.holdUntil);
+              log.push(`held until ${gate.holdUntil} (24h email gap)`);
+            }
+          }
           const outcome = await opts.step.run(`send-${current.id}`, async () => {
-            const { data: contact } = await admin
-              .from("contacts")
-              .select("id, unsubscribed_at")
-              .eq("id", opts.contactId)
-              .maybeSingle();
-            if (!contact) return "missing" as const;
-            if (contact.unsubscribed_at) return "unsubscribed" as const;
+            const block = await sendBlockFor(admin, opts.contactId, automatic);
+            if (block) return block;
             await sendEmailToContact({
               contactId: opts.contactId,
               templateId,
@@ -109,11 +180,7 @@ async function runGraph(opts: {
             return "sent" as const;
           });
           if (outcome !== "sent") {
-            log.push(
-              outcome === "unsubscribed"
-                ? "stopped: contact unsubscribed — no more emails"
-                : "stopped: contact was removed",
-            );
+            log.push(SEND_BLOCK_LOG[outcome]);
             stopped = true;
             break;
           }
@@ -168,7 +235,12 @@ async function runGraph(opts: {
 }
 
 export const runWorkflowsOnLead = inngest.createFunction(
-  { id: "run-workflows-on-lead", triggers: [{ event: "hub/lead.created" }] },
+  {
+    id: "run-workflows-on-lead",
+    // Several capture paths can report the same new lead within seconds; start it once.
+    idempotency: "event.data.contactId",
+    triggers: [{ event: "hub/lead.created" }],
+  },
   async ({ event, step }) => {
     await executeMatchingWorkflows(
       "hub/lead.created",
@@ -230,19 +302,59 @@ async function executeMatchingWorkflows(
 ) {
   if (!contactId) return;
   const trigger = triggerMap[eventName];
-  const admin = createAdminClient();
-  const { data: workflows } = await admin
-    .from("workflows")
-    .select("id, graph, trigger")
-    .eq("enabled", true)
-    .eq("trigger", trigger);
 
-  for (const workflow of workflows ?? []) {
+  // Resolved once in a step so replays keep the same list even if workflows are edited mid-run.
+  const workflows = (await step.run(`find-workflows-${trigger}`, async () => {
+    const admin = createAdminClient();
+    const { data: contact } = await admin
+      .from("contacts")
+      .select("id, client_id, source, tags, unsubscribed_at")
+      .eq("id", contactId)
+      .maybeSingle();
+    if (!contact || contact.unsubscribed_at) return [];
+
+    // A company's workflows only ever run for that company's contacts.
+    let query = admin
+      .from("workflows")
+      .select("id, graph")
+      .eq("enabled", true)
+      .eq("trigger", trigger);
+    query = contact.client_id
+      ? query.eq("client_id", contact.client_id)
+      : query.is("client_id", null);
+    const { data } = await query;
+
+    let matches = (data ?? []).filter(
+      (workflow) =>
+        trigger !== "new_lead" ||
+        contactMatchesAudience(contact, leadAudienceOf(workflow.graph as Graph)),
+    );
+    if (matches.length === 0) return [];
+
+    const { data: prior } = await admin
+      .from("workflow_runs")
+      .select("workflow_id")
+      .eq("contact_id", contactId)
+      .in(
+        "workflow_id",
+        matches.map((workflow) => workflow.id),
+      );
+    const alreadyRan = new Set((prior ?? []).map((row) => row.workflow_id as string));
+    matches = matches.filter((workflow) => !alreadyRan.has(workflow.id));
+
+    return matches.map((workflow) => ({
+      id: workflow.id as string,
+      graph: (workflow.graph ?? {}) as Graph,
+    }));
+  })) as Array<{ id: string; graph: Graph }>;
+
+  for (const workflow of workflows) {
     await runGraph({
       workflowId: workflow.id,
       contactId,
-      graph: (workflow.graph ?? {}) as Graph,
+      graph: workflow.graph,
       step,
+      automatic: true,
     });
   }
 }

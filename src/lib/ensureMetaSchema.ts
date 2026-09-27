@@ -14,7 +14,8 @@ alter table public.contacts
   add column if not exists meta_event_id text,
   add column if not exists gclid text,
   add column if not exists gbraid text,
-  add column if not exists wbraid text;
+  add column if not exists wbraid text,
+  add column if not exists instant_email_at timestamptz;
 
 create index if not exists contacts_utm_campaign_idx
   on public.contacts (utm_campaign)

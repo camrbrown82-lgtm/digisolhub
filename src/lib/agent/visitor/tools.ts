@@ -167,7 +167,7 @@ export function createVisitorAgentTools(opts: { attribution?: AttributionPayload
 
         const { data: existing } = await admin
           .from("contacts")
-          .select("id, tags, notes_preview")
+          .select("id, tags, notes_preview, created_at")
           .eq("client_id", clientId)
           .ilike("email", email)
           .maybeSingle();
@@ -252,7 +252,7 @@ export function createVisitorAgentTools(opts: { attribution?: AttributionPayload
           });
         }
 
-        if (contactId && created) {
+        if (contactId && (created || isFreshContact(existing?.created_at))) {
           await emitHubEvent("hub/lead.created", { contactId }).catch(() => null);
         }
 
@@ -347,7 +347,7 @@ export function createVisitorAgentTools(opts: { attribution?: AttributionPayload
 
     emailVisitorConsultationInvite: tool({
       description:
-        "Email a free consultation invite with Cameron after the visitor shared their email (no website / cost / unsure path). Also ensures Hub contact + lead exist. Call as soon as you have an email on Path B.",
+        "Fallback only: email a free consultation invite with Cameron when captureVisitorLead failed. captureVisitorLead already sends this invite — never call both for the same visitor.",
       inputSchema: z.object({
         email: z.string().email(),
         name: z.string().optional(),
@@ -411,6 +411,7 @@ export function createVisitorAgentTools(opts: { attribution?: AttributionPayload
             contact_id: result.contactId,
             body: `[Visitor chat · Free consultation]\n${requirements}`,
           });
+          await startWorkflowsIfNewContact(admin, result.contactId);
         }
 
         await logAgentActivity({
@@ -460,7 +461,7 @@ export function createVisitorAgentTools(opts: { attribution?: AttributionPayload
 
     emailVisitorAuditBreakdown: tool({
       description:
-        "Email the visitor a full audit breakdown (findings + soft DigiSol product ideas, no pricing) and offer a consultation with Cameron. Only call when the visitor shared their email and wants the write-up.",
+        "Re-send the audit breakdown (findings + soft DigiSol product ideas, no pricing). captureVisitorLead with leadType=audit already emails it — only use this when capture ran earlier in the chat and the visitor asks for the write-up again.",
       inputSchema: z.object({
         email: z.string().email(),
         name: z.string().optional(),
@@ -492,6 +493,9 @@ export function createVisitorAgentTools(opts: { attribution?: AttributionPayload
           websiteUrl: input.websiteUrl,
           auditId: input.auditId,
         });
+        if (result.contactId) {
+          await startWorkflowsIfNewContact(admin, result.contactId);
+        }
 
         await logAgentActivity({
           supabase: admin,
@@ -697,6 +701,31 @@ async function upsertVisitorPipelineLead(input: {
     );
   }
   return null;
+}
+
+/** A contact made in this chat (possibly by a sibling tool call a moment ago). */
+const FRESH_CONTACT_MS = 30 * 60 * 1000;
+
+function isFreshContact(createdAt: unknown) {
+  if (typeof createdAt !== "string") return false;
+  return Date.now() - new Date(createdAt).getTime() < FRESH_CONTACT_MS;
+}
+
+/**
+ * Kaylev may create the contact from any of its tools, in any order. Report the new
+ * lead from each; Inngest starts workflows once per contact.
+ */
+async function startWorkflowsIfNewContact(
+  admin: ReturnType<typeof createAdminClient>,
+  contactId: string,
+) {
+  const { data } = await admin
+    .from("contacts")
+    .select("created_at")
+    .eq("id", contactId)
+    .maybeSingle();
+  if (!isFreshContact(data?.created_at)) return;
+  await emitHubEvent("hub/lead.created", { contactId }).catch(() => null);
 }
 
 async function sendVisitorAuditEmail(input: {

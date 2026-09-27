@@ -27,6 +27,50 @@ export const TRIGGER_LABELS: Record<WorkflowTrigger, string> = {
   email_opened: "Email opened",
 };
 
+/** Which new leads a "New lead" workflow accepts. Stored on the trigger node as `audience`. */
+export const LEAD_AUDIENCES = ["all", "inbound", "audited", "google_ads"] as const;
+
+export type LeadAudience = (typeof LEAD_AUDIENCES)[number];
+
+export const LEAD_AUDIENCE_LABELS: Record<LeadAudience, string> = {
+  all: "Every new lead",
+  inbound: "Inbound leads: forms, Kaylev chat, Google Ads, contacts you add",
+  audited: "Audited prospects who click a link in their audit email",
+  google_ads: "Google Ads leads only",
+};
+
+export function asLeadAudience(value: unknown): LeadAudience {
+  return LEAD_AUDIENCES.includes(value as LeadAudience)
+    ? (value as LeadAudience)
+    : "all";
+}
+
+export function leadAudienceOf(graph: {
+  nodes?: Array<{ type?: string; data?: Record<string, unknown> }>;
+} | null | undefined): LeadAudience {
+  const trigger = (graph?.nodes ?? []).find(
+    (node) => node.type === "trigger" || node.data?.trigger,
+  );
+  return asLeadAudience(trigger?.data?.audience);
+}
+
+export function contactMatchesAudience(
+  contact: { source?: string | null; tags?: string[] | null },
+  audience: LeadAudience,
+) {
+  if (audience === "all") return true;
+  const tags = contact.tags ?? [];
+  const source = String(contact.source || "").toLowerCase();
+  const audited =
+    tags.includes("prospect_audit_engaged") || source.startsWith("prospect_audit");
+  if (audience === "audited") return audited;
+  if (audited) return false;
+  if (audience === "google_ads") {
+    return tags.includes("google_ads") || source.startsWith("google_ads");
+  }
+  return true;
+}
+
 export function emptyWorkflowGraph(
   trigger: WorkflowTrigger = "new_lead",
 ): WorkflowGraph {
@@ -78,13 +122,20 @@ export function sanitizeWorkflowGraph(
   const trigger = asTrigger(source.trigger ?? fallbackTrigger);
   const nodesIn = Array.isArray(source.nodes) ? source.nodes : [];
   const edgesIn = Array.isArray(source.edges) ? source.edges : [];
+  const audience = leadAudienceOf(
+    source as { nodes?: Array<{ type?: string; data?: Record<string, unknown> }> },
+  );
 
   const nodes: Node[] = [
     {
       id: "trigger",
       type: "trigger",
       position: { x: 160, y: 40 },
-      data: { label: TRIGGER_LABELS[trigger], trigger },
+      data: {
+        label: TRIGGER_LABELS[trigger],
+        trigger,
+        ...(trigger === "new_lead" && audience !== "all" ? { audience } : {}),
+      },
     },
   ];
 

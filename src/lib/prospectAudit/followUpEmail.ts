@@ -5,6 +5,7 @@ import {
   getResendApiKey,
   sendEmailToContact,
 } from "@/lib/email";
+import { ensureMetaSchema } from "@/lib/ensureMetaSchema";
 import { WEBSITE_AUDIT_PAGE_URL } from "@/lib/media";
 import {
   DIGISOL_EMAIL,
@@ -45,6 +46,42 @@ export type ConsultationFollowUpInput = {
   leadType?: string | null;
   dryRun?: boolean;
 };
+
+const INSTANT_EMAIL_GAP_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Kaylev can fire its capture and email tools in parallel for the same visitor.
+ * The conditional update is atomic, so only one of them wins the right to email.
+ */
+async function claimInstantEmail(db: SupabaseClient, contactId: string) {
+  await ensureMetaSchema().catch(() => null);
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - INSTANT_EMAIL_GAP_MS).toISOString();
+  const { data, error } = await db
+    .from("contacts")
+    .update({ instant_email_at: now.toISOString() })
+    .eq("id", contactId)
+    .or(`instant_email_at.is.null,instant_email_at.lt."${cutoff}"`)
+    .select("id");
+  if (error) return true;
+  return (data ?? []).length > 0;
+}
+
+async function releaseInstantEmail(db: SupabaseClient, contactId: string) {
+  await db
+    .from("contacts")
+    .update({ instant_email_at: null })
+    .eq("id", contactId)
+    .then(
+      () => null,
+      () => null,
+    );
+}
+
+const ALREADY_EMAILED = {
+  emailed: false,
+  reason: "already_emailed_recently: this visitor got a DigiSol email in the last 24 hours, so no second copy was sent",
+} as const;
 
 type ScoreTier = "strong" | "solid" | "needs_work";
 
@@ -153,22 +190,38 @@ export async function sendAuditFollowUpEmail(input: AuditFollowUpInput) {
     };
   }
 
-  const sent = await sendEmailToContact({
-    contactId: contact.id,
-    contact: {
-      id: contact.id,
-      email: contact.email,
-      name: existing?.name || input.name || contact.name,
-      company: existing?.company || input.company || contact.company,
-      unsubscribed_at: contact.unsubscribed_at,
-    },
-    db: input.db,
-    clientId: input.clientId,
-    companyName: DIGISOL_HOUSE_NAME,
-    brand: DIGISOL_BRAND,
-    subject,
-    html,
-  });
+  const fromChat = input.source === "visitor_chat";
+  if (fromChat && !(await claimInstantEmail(input.db, contact.id))) {
+    return {
+      contactId: contact.id,
+      sendId: undefined as string | undefined,
+      resendId: undefined as string | undefined,
+      ...ALREADY_EMAILED,
+    };
+  }
+
+  let sent: Awaited<ReturnType<typeof sendEmailToContact>>;
+  try {
+    sent = await sendEmailToContact({
+      contactId: contact.id,
+      contact: {
+        id: contact.id,
+        email: contact.email,
+        name: existing?.name || input.name || contact.name,
+        company: existing?.company || input.company || contact.company,
+        unsubscribed_at: contact.unsubscribed_at,
+      },
+      db: input.db,
+      clientId: input.clientId,
+      companyName: DIGISOL_HOUSE_NAME,
+      brand: DIGISOL_BRAND,
+      subject,
+      html,
+    });
+  } catch (error) {
+    if (fromChat) await releaseInstantEmail(input.db, contact.id);
+    throw error;
+  }
 
   return {
     contactId: contact.id,
@@ -458,22 +511,37 @@ export async function sendConsultationFollowUpEmail(
     };
   }
 
-  const sent = await sendEmailToContact({
-    contactId: contact.id,
-    contact: {
-      id: contact.id,
-      email: contact.email,
-      name: existing?.name || input.name || contact.name,
-      company: existing?.company || input.company || contact.company,
-      unsubscribed_at: contact.unsubscribed_at,
-    },
-    db: input.db,
-    clientId: input.clientId,
-    companyName: DIGISOL_HOUSE_NAME,
-    brand: DIGISOL_BRAND,
-    subject,
-    html,
-  });
+  if (!(await claimInstantEmail(input.db, contact.id))) {
+    return {
+      contactId: contact.id,
+      sendId: undefined as string | undefined,
+      resendId: undefined as string | undefined,
+      ...ALREADY_EMAILED,
+    };
+  }
+
+  let sent: Awaited<ReturnType<typeof sendEmailToContact>>;
+  try {
+    sent = await sendEmailToContact({
+      contactId: contact.id,
+      contact: {
+        id: contact.id,
+        email: contact.email,
+        name: existing?.name || input.name || contact.name,
+        company: existing?.company || input.company || contact.company,
+        unsubscribed_at: contact.unsubscribed_at,
+      },
+      db: input.db,
+      clientId: input.clientId,
+      companyName: DIGISOL_HOUSE_NAME,
+      brand: DIGISOL_BRAND,
+      subject,
+      html,
+    });
+  } catch (error) {
+    await releaseInstantEmail(input.db, contact.id);
+    throw error;
+  }
 
   return {
     contactId: contact.id,
