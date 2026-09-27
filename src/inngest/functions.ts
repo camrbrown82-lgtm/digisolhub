@@ -50,16 +50,21 @@ async function runGraph(opts: {
     nodes[0];
   if (!start) return;
 
-  const { data: run } = await admin
-    .from("workflow_runs")
-    .insert({
-      workflow_id: opts.workflowId,
-      contact_id: opts.contactId,
-      status: "running",
-      log: [],
-    })
-    .select("id")
-    .single();
+  // Inngest replays this function from the top after every step, so the run
+  // row must be created inside a step or each replay inserts a duplicate.
+  const runId = await opts.step.run(`run-record-${opts.workflowId}`, async () => {
+    const { data } = await admin
+      .from("workflow_runs")
+      .insert({
+        workflow_id: opts.workflowId,
+        contact_id: opts.contactId,
+        status: "running",
+        log: [],
+      })
+      .select("id")
+      .single();
+    return (data?.id as string | undefined) ?? null;
+  });
 
   const log: string[] = [];
   const visited = new Set<string>();
@@ -73,6 +78,12 @@ async function runGraph(opts: {
       const duration = current.data?.duration || "1h";
 
       if (action === "wait") {
+        if (runId) {
+          const snapshot = [...log, `waiting ${duration}`];
+          await opts.step.run(`progress-${current.id}`, async () => {
+            await admin.from("workflow_runs").update({ log: snapshot }).eq("id", runId);
+          });
+        }
         await opts.step.sleep(`wait-${current.id}`, duration);
         log.push(`waited ${duration}`);
       } else if (action === "send_template") {
@@ -120,15 +131,17 @@ async function runGraph(opts: {
     );
   }
 
-  if (run?.id) {
-    await admin
-      .from("workflow_runs")
-      .update({
-        status: failed ? "failed" : "completed",
-        log,
-        finished_at: new Date().toISOString(),
-      })
-      .eq("id", run.id);
+  if (runId) {
+    await opts.step.run(`run-finish-${opts.workflowId}`, async () => {
+      await admin
+        .from("workflow_runs")
+        .update({
+          status: failed ? "failed" : "completed",
+          log,
+          finished_at: new Date().toISOString(),
+        })
+        .eq("id", runId);
+    });
   }
 
   if (failed) {
