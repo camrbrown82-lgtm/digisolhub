@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MapPin } from "lucide-react";
+import { useLocalizedHref, useMessages } from "@/lib/i18n/client";
 import { LOCATION_PAGES, locationPath } from "@/lib/locations";
 
 function readCookie(name: string) {
@@ -16,6 +17,8 @@ function readCookie(name: string) {
 /** Soft prompt when someone is on the apex home after geo landing expired. */
 export function GeoHomeBanner() {
   const [slug, setSlug] = useState("");
+  const t = useMessages().geoBanner;
+  const localize = useLocalizedHref();
 
   useEffect(() => {
     const value = readCookie("ds_geo_slug");
@@ -31,16 +34,16 @@ export function GeoHomeBanner() {
   return (
     <div className="border-b border-indigo-500/30 bg-indigo-500/10 px-4 py-2.5 text-center text-sm text-indigo-100">
       <MapPin className="mr-1.5 inline h-3.5 w-3.5" aria-hidden="true" />
-      Looking for DigiSol in {page.name}?{" "}
+      {t.looking(page.name)}{" "}
       <Link
-        href={locationPath(slug)}
+        href={localize(locationPath(slug))}
         className="font-semibold text-white underline-offset-2 hover:underline"
       >
-        Open your {page.name} page
+        {t.open(page.name)}
       </Link>
       {" · "}
-      <Link href="/?home=1" className="text-indigo-200/90 hover:text-white">
-        Stay on Alberta home
+      <Link href={localize("/?home=1")} className="text-indigo-200/90 hover:text-white">
+        {t.stay}
       </Link>
     </div>
   );

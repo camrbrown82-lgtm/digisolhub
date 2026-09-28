@@ -3,6 +3,7 @@
 import { Facebook, Instagram, Linkedin, Star, Youtube } from "lucide-react";
 import { TikTokIcon } from "@/components/TikTokIcon";
 import { TrackedLink } from "@/components/TrackedLink";
+import { useMessages } from "@/lib/i18n/client";
 import {
   DIGISOL_FACEBOOK_URL,
   DIGISOL_GOOGLE_LISTING_URL,
@@ -130,6 +131,7 @@ export function ListingLinks({ location }: { location: ListingLocation }) {
 
 export function GoogleRating({ location }: { location: ListingLocation }) {
   const isFooter = location === "footer";
+  const t = useMessages().listings;
 
   return (
     <TrackedLink
@@ -138,7 +140,7 @@ export function GoogleRating({ location }: { location: ListingLocation }) {
       eventParams={{ location }}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label="Leave a Google review for DigiSol"
+      aria-label={t.reviewAria}
       className={
         isFooter
           ? "inline-flex items-center gap-2.5 rounded-lg border border-indigo-400/30 bg-indigo-500/10 px-2.5 py-1.5 text-left transition hover:border-sky-400/40 hover:bg-indigo-500/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
@@ -161,7 +163,7 @@ export function GoogleRating({ location }: { location: ListingLocation }) {
               : "block text-sm font-semibold text-white"
           }
         >
-          Google rating
+          {t.googleRating}
         </span>
         <span
           className={
@@ -170,7 +172,7 @@ export function GoogleRating({ location }: { location: ListingLocation }) {
               : "block text-xs text-zinc-400"
           }
         >
-          Leave a Google review
+          {t.leaveReview}
         </span>
       </span>
     </TrackedLink>

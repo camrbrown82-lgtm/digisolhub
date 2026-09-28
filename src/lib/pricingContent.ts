@@ -11,9 +11,12 @@ import { DIGISOL_GUARANTEES, GUARANTEE_FINE_PRINT } from "@/lib/guarantee";
 const price = (id: string) => formatCad(getPricingItem(id)?.amount ?? 0);
 const timeline = (id: string) => getPricingItem(id)?.timeline ?? "";
 
-export const PRICING_FROM = formatCad(
-  Math.min(...PRICING_PACKAGES.map((item) => item.amount)),
-);
+/** Lowest website package price, e.g. "$4,500" (en-CA) or "4 500 $" (fr-CA). */
+export function pricingFrom(intlLocale = "en-CA") {
+  return formatCad(Math.min(...PRICING_PACKAGES.map((item) => item.amount)), 0, intlLocale);
+}
+
+export const PRICING_FROM = pricingFrom();
 
 export const PRICING_VALUE_POINTS = [
   {

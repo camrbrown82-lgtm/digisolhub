@@ -6,6 +6,9 @@ import {
   sendEmailToContact,
 } from "@/lib/email";
 import { ensureMetaSchema } from "@/lib/ensureMetaSchema";
+import { DEFAULT_LOCALE, localizePath, type Locale } from "@/lib/i18n/config";
+import { getMessages } from "@/lib/i18n/messages";
+import { translateLines } from "@/lib/i18n/translate";
 import { WEBSITE_AUDIT_PAGE_URL } from "@/lib/media";
 import {
   DIGISOL_EMAIL,
@@ -31,6 +34,8 @@ export type AuditFollowUpInput = {
   opener?: string;
   subject?: string;
   source: AuditFollowUpSource;
+  /** Email language; audit findings are machine-translated when not English. */
+  language?: Locale;
   /** When true, skip Resend and only upsert contact/lead. */
   dryRun?: boolean;
 };
@@ -44,8 +49,11 @@ export type ConsultationFollowUpInput = {
   phone?: string | null;
   requirements?: string | null;
   leadType?: string | null;
+  language?: Locale;
   dryRun?: boolean;
 };
+
+const siteUrl = (path: string, language: Locale) => `${DIGISOL_SITE_URL}${localizePath(path, language)}`;
 
 const INSTANT_EMAIL_GAP_MS = 24 * 60 * 60 * 1000;
 
@@ -110,6 +118,7 @@ export async function sendAuditFollowUpEmail(input: AuditFollowUpInput) {
 
   const sourceTag =
     input.source === "visitor_chat" ? "visitor_chat" : "prospect_audit";
+  const language = input.language ?? DEFAULT_LOCALE;
   const tier = scoreTier(input.score);
   const tags = Array.from(
     new Set([
@@ -120,6 +129,7 @@ export async function sendAuditFollowUpEmail(input: AuditFollowUpInput) {
       ...(input.source === "prospect_audit" ? ["cold_prospect"] : []),
       ...(tier === "strong" ? ["audit_strong"] : []),
       ...(tier === "needs_work" ? ["audit_needs_work"] : []),
+      ...(language !== DEFAULT_LOCALE ? [`lang:${language}`] : []),
     ]),
   );
 
@@ -161,23 +171,40 @@ export async function sendAuditFollowUpEmail(input: AuditFollowUpInput) {
     advanceTo: "contacted",
   });
 
+  const t = getMessages(language).emails;
   const subject =
-    input.subject?.trim() || defaultAuditSubject(input.score, input.source);
+    input.subject?.trim() || t.auditSubject(input.score, input.source, tier);
+
+  const strengths = (input.strengths || []).filter(Boolean).slice(0, 4);
+  const weaknesses = input.weaknesses.slice(0, 5);
+  let summary = input.summary;
+  let opener = input.opener;
+  if (language !== DEFAULT_LOCALE && !input.dryRun) {
+    const lines = [summary, ...weaknesses, ...strengths, ...(opener ? [opener] : [])];
+    const translated = await translateLines(lines, language);
+    summary = translated[0];
+    weaknesses.splice(0, weaknesses.length, ...translated.slice(1, 1 + weaknesses.length));
+    const strengthStart = 1 + weaknesses.length;
+    strengths.splice(0, strengths.length, ...translated.slice(strengthStart, strengthStart + strengths.length));
+    if (opener) opener = translated[translated.length - 1];
+  }
 
   const html = buildAuditFollowUpHtml({
     opener:
-      input.opener ||
+      opener ||
       defaultAuditOpener({
         score: input.score,
         name: input.name,
         source: input.source,
+        language,
       }),
-    summary: input.summary,
+    summary,
     url: input.url,
     score: input.score,
-    weaknesses: input.weaknesses,
-    strengths: input.strengths,
+    weaknesses,
+    strengths,
     source: input.source,
+    language,
   });
 
   if (input.dryRun || !getResendApiKey()) {
@@ -239,19 +266,16 @@ export function buildAuditFollowUpHtml(input: {
   weaknesses: string[];
   strengths?: string[];
   source: AuditFollowUpSource;
+  language?: Locale;
 }) {
+  const language = input.language ?? DEFAULT_LOCALE;
+  const t = getMessages(language).emails;
   const tier = scoreTier(input.score);
   const weaknessHtml = (input.weaknesses.length
     ? input.weaknesses
     : tier === "strong"
-      ? [
-          "Keep measuring what converts (forms, calls, booked consults)",
-          "Protect speed and mobile clarity as you add content",
-        ]
-      : [
-          "Clarify the primary call-to-action",
-          "Tighten page speed and SEO basics",
-        ]
+      ? t.fallbackWeaknessesStrong
+      : t.fallbackWeaknesses
   )
     .slice(0, 5)
     .map((item) => `<li>${escapeHtml(item)}</li>`)
@@ -260,12 +284,12 @@ export function buildAuditFollowUpHtml(input: {
   const strengthItems = (input.strengths || []).filter(Boolean).slice(0, 4);
   const strengthHtml =
     strengthItems.length > 0
-      ? `<p><strong>What's working:</strong></p><ul>${strengthItems
+      ? `<p><strong>${escapeHtml(t.strengthsHeading)}</strong></p><ul>${strengthItems
           .map((item) => `<li>${escapeHtml(item)}</li>`)
           .join("")}</ul>`
       : "";
 
-  const products = suggestProducts(input.score, input.weaknesses);
+  const products = suggestProducts(input.score, input.weaknesses, language);
   const productHtml = products
     .map(
       (p) =>
@@ -273,154 +297,73 @@ export function buildAuditFollowUpHtml(input: {
     )
     .join("");
 
-  const consultUrl = `${DIGISOL_SITE_URL}/#contact`;
+  const consultUrl = siteUrl("/#contact", language);
   const pricingUrl =
     tier === "strong"
-      ? `${DIGISOL_SITE_URL}/pricing?view=strong#growth`
-      : `${DIGISOL_SITE_URL}/pricing`;
+      ? siteUrl("/pricing?view=strong#growth", language)
+      : siteUrl("/pricing", language);
   const videoPageUrl = WEBSITE_AUDIT_PAGE_URL;
-
-  const scoreFrame =
-    tier === "strong"
-      ? `<p><strong>Score:</strong> ${input.score}/100 for ${escapeHtml(input.url)} — this is a strong result. An audit that lands here should still create value: DigiSol Hub keeps leads, nurture, and follow-ups working so the site's strength turns into booked conversations.</p>`
-      : tier === "solid"
-        ? `<p><strong>Quick score:</strong> ${input.score}/100 for ${escapeHtml(input.url)} — solid baseline, with a short list of upgrades that usually pay off first.</p>`
-        : `<p><strong>Quick score:</strong> ${input.score}/100 for ${escapeHtml(input.url)} — the list below is what we'd tackle first.</p>`;
-
-  const fixHeading =
-    tier === "strong"
-      ? "Keep these sharp (even strong sites slip here):"
-      : "Breakdown — worth fixing first:";
-
-  const hubPitch =
-    tier === "strong"
-      ? `<p><strong>Your site is in good shape — here is what to do with that traffic:</strong></p>
-<ul>
-<li><strong>DigiSol Hub</strong> — CRM, nurture workflows, and campaign results on the site you already have.</li>
-<li><strong>Local growth, paid media, or full growth retainer</strong> — ongoing SEO, ads, and follow-up.</li>
-<li><strong>Extra pages and city landings</strong> — grow coverage without a full rebuild.</li>
-</ul>
-<p><a href="${pricingUrl}">See Hub, retainers, and growth options</a> (website rebuilds stay optional on that page).</p>`
-      : tier === "needs_work"
-        ? `<p>Start with the audit walkthrough above, then <a href="${pricingUrl}">see website packages and pricing</a> when you are ready to fix the gaps.</p>`
-        : `<p><a href="${pricingUrl}">See DigiSol pricing</a> — website packages, Hub, and monthly growth.</p>`;
-
-  const casl =
-    input.source === "visitor_chat"
-      ? `You are receiving this because you requested a DigiSol website audit.`
-      : `You are receiving this because your business contact address is published on your website and this note relates to your online presence.`;
 
   return `
 <p>${escapeHtml(input.opener)}</p>
 <p>${escapeHtml(input.summary)}</p>
-${scoreFrame}
+${t.scoreFrame(tier, input.score, escapeHtml(input.url))}
 ${strengthHtml}
-<p><strong>${fixHeading}</strong></p>
+<p><strong>${escapeHtml(t.fixHeading(tier))}</strong></p>
 <ul>${weaknessHtml}</ul>
-<p><strong>Watch the DigiSol website audit presentation</strong> (what we look for in design, speed, local SEO, and conversion):<br/>
+<p><strong>${escapeHtml(t.videoIntro)}</strong> ${escapeHtml(t.videoDetail)}<br/>
 <a href="${videoPageUrl}">${escapeHtml(videoPageUrl)}</a></p>
-<p><strong>Ways DigiSol can help (no obligation):</strong></p>
+<p><strong>${escapeHtml(t.helpHeading)}</strong></p>
 <ul>${productHtml}</ul>
-${hubPitch}
-<p>If you want a direct walkthrough, ${escapeHtml(DIGISOL_FOUNDER)} (${escapeHtml(DIGISOL_FOUNDER_TITLE)}) is happy to hop on a short consultation — no hard sell, just clarity on what would move the needle${tier === "strong" ? " (including whether Hub alone is the right next step)" : " for your site"}.</p>
-<p><a href="${consultUrl}">Book a consultation</a> · <a href="${pricingUrl}">Pricing</a> · ${escapeHtml(DIGISOL_PHONE)} · <a href="mailto:${DIGISOL_EMAIL}">${escapeHtml(DIGISOL_EMAIL)}</a></p>
-<p style="color:#71717a;font-size:12px;">${casl} DigiSol · Alberta, Canada. Reply to unsubscribe anytime.</p>
+${t.hubPitch(tier, pricingUrl)}
+<p>${t.consultLine(escapeHtml(DIGISOL_FOUNDER), escapeHtml(DIGISOL_FOUNDER_TITLE), tier === "strong")}</p>
+<p><a href="${consultUrl}">${escapeHtml(t.bookConsult)}</a> · <a href="${pricingUrl}">${escapeHtml(t.pricing)}</a> · ${escapeHtml(DIGISOL_PHONE)} · <a href="mailto:${DIGISOL_EMAIL}">${escapeHtml(DIGISOL_EMAIL)}</a></p>
+<p style="color:#71717a;font-size:12px;">${escapeHtml(t.casl(input.source))} ${escapeHtml(t.footer)}</p>
 `.trim();
-}
-
-function defaultAuditSubject(score: number, source: AuditFollowUpSource) {
-  const tier = scoreTier(score);
-  if (source === "visitor_chat") {
-    if (tier === "strong") {
-      return `Your DigiSol audit — ${score}/100 (solid site) + DigiSol Hub`;
-    }
-    return `Your DigiSol website audit — ${score}/100`;
-  }
-  if (tier === "strong") {
-    return `Your site scored ${score}/100 — keep the wins with DigiSol Hub`;
-  }
-  if (tier === "solid") {
-    return `A quick look at your website (${score}/100)`;
-  }
-  return `A few fixes that would help your website`;
 }
 
 function defaultAuditOpener(opts: {
   score: number;
   name?: string | null;
   source: AuditFollowUpSource;
+  language: Locale;
 }) {
   const first = opts.name?.trim().split(/\s+/)[0] || "";
-  const hi =
-    opts.source === "visitor_chat"
-      ? `Hi${first ? ` ${first}` : ""} — thanks for requesting a DigiSol website audit.`
-      : `Hey${first ? ` ${first}` : ""} — I took a quick look at your site.`;
-  const tier = scoreTier(opts.score);
-  if (tier === "strong") {
-    return `${hi} Good news: it already scores well (${opts.score}/100). The opportunity now is turning that traffic into booked work and keeping follow-ups organized.`;
-  }
-  if (tier === "solid") {
-    return `${hi} You're in decent shape (${opts.score}/100) with a few clear upgrades that would help more visitors take action.`;
-  }
-  return `${hi} There's real room to improve how the site loads, ranks locally, and converts visitors into calls.`;
+  return getMessages(opts.language).emails.auditOpener({
+    score: opts.score,
+    first,
+    source: opts.source,
+    tier: scoreTier(opts.score),
+  });
 }
 
-function suggestProducts(score: number, weaknesses: string[]) {
+function suggestProducts(score: number, weaknesses: string[], language: Locale) {
+  const products = getMessages(language).emails.products;
   const joined = weaknesses.join(" ").toLowerCase();
   const tier = scoreTier(score);
   const picks: Array<{ name: string; blurb: string }> = [];
 
   if (tier === "strong") {
-    picks.push({
-      name: "DigiSol Hub workspace",
-      blurb:
-        "Your site is in good shape — Hub turns visitors into tracked leads, nurture sequences, and booked consults without another spreadsheet.",
-    });
-    picks.push({
-      name: "Conversion polish",
-      blurb:
-        "Light CRO on CTAs and forms so a strong site books more work from the traffic you already earn.",
-    });
-    picks.push({
-      name: "Ongoing growth coaching",
-      blurb:
-        "Listings, reviews, and Hub workflows kept current so the score stays high and leads keep moving.",
-    });
+    picks.push(products.hubWorkspace, products.conversionPolish, products.growthCoaching);
     return picks.slice(0, 3);
   }
 
   if (
     score < 70 ||
-    /speed|ttfb|https|mobile|performance|core web/i.test(joined)
+    /speed|ttfb|https|mobile|performance|core web|vitesse|mobile/i.test(joined)
   ) {
-    picks.push({
-      name: "Foundation website build",
-      blurb:
-        "A clean, fast Next.js site that loads well on mobile and captures leads into DigiSol Hub.",
-    });
+    picks.push(products.foundation);
   }
 
-  if (/seo|title|meta|schema|local|google|nap|listing/i.test(joined) || score < 75) {
-    picks.push({
-      name: "Local SEO & discovery",
-      blurb:
-        "Help nearby customers find you — listings, on-page SEO, and clearer service pages for Alberta search.",
-    });
+  if (/seo|title|titre|meta|schema|local|google|nap|listing|fiche/i.test(joined) || score < 75) {
+    picks.push(products.localSeo);
   }
 
-  if (/cta|convert|form|contact|call-to-action|conversion/i.test(joined)) {
-    picks.push({
-      name: "Conversion paths",
-      blurb:
-        "Clearer CTAs, forms, and follow-up so visitors become booked conversations.",
-    });
+  if (/cta|convert|form|contact|call-to-action|conversion|appel à l/i.test(joined)) {
+    picks.push(products.conversionPaths);
   }
 
-  picks.push({
-    name: "DigiSol Hub",
-    blurb:
-      "Keep contacts, nurture emails, and audit follow-ups in one place so nothing falls through — even while the site is being improved.",
-  });
+  picks.push(products.hub);
 
   return picks.slice(0, 3);
 }
@@ -444,6 +387,7 @@ export async function sendConsultationFollowUpEmail(
     .eq("id", contact.id)
     .maybeSingle();
 
+  const language = input.language ?? DEFAULT_LOCALE;
   const tags = Array.from(
     new Set([
       ...((existing?.tags as string[] | null) ?? []),
@@ -451,6 +395,7 @@ export async function sendConsultationFollowUpEmail(
       "visitor_chat",
       "consultation",
       "consultation_followup",
+      ...(language !== DEFAULT_LOCALE ? [`lang:${language}`] : []),
     ]),
   );
 
@@ -491,14 +436,15 @@ export async function sendConsultationFollowUpEmail(
   });
 
   const first = (input.name || "").trim().split(/\s+/)[0] || "";
-  const consultUrl = `${DIGISOL_SITE_URL}/#contact`;
-  const subject = "Your free DigiSol consultation";
+  const consultUrl = siteUrl("/#contact", language);
+  const t = getMessages(language).emails;
+  const subject = t.consultSubject;
   const html = `
-<p>Hi${first ? ` ${escapeHtml(first)}` : ""} — thanks for chatting with Kaylev on DigiSol.</p>
-<p>You asked about next steps${requirements ? ` (${escapeHtml(requirements.slice(0, 180))})` : ""} — and you do not need to figure out every detail alone. ${escapeHtml(DIGISOL_FOUNDER)} (${escapeHtml(DIGISOL_FOUNDER_TITLE)}) offers a <strong>free consultation</strong>: a short, no-pressure call to clarify what would help your business grow online.</p>
-<p><a href="${consultUrl}">Book your free consultation</a></p>
-<p>Or reach Cameron directly: ${escapeHtml(DIGISOL_PHONE)} · <a href="mailto:${DIGISOL_EMAIL}">${escapeHtml(DIGISOL_EMAIL)}</a></p>
-<p style="color:#71717a;font-size:12px;">You are receiving this because you requested a DigiSol consultation via Kaylev. DigiSol · Alberta, Canada. Reply to unsubscribe anytime.</p>
+<p>${escapeHtml(t.consultHi(first))}</p>
+<p>${t.consultBody(escapeHtml(requirements.slice(0, 180)), escapeHtml(DIGISOL_FOUNDER), escapeHtml(DIGISOL_FOUNDER_TITLE))}</p>
+<p><a href="${consultUrl}">${escapeHtml(t.consultCta)}</a></p>
+<p>${escapeHtml(t.consultDirect)} ${escapeHtml(DIGISOL_PHONE)} · <a href="mailto:${DIGISOL_EMAIL}">${escapeHtml(DIGISOL_EMAIL)}</a></p>
+<p style="color:#71717a;font-size:12px;">${escapeHtml(t.consultCasl)}</p>
 `.trim();
 
   if (input.dryRun || !getResendApiKey()) {

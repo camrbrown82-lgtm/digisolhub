@@ -10,29 +10,32 @@ import {
   FOUNDER_BIO,
   FOUNDER_PHOTO,
 } from "@/lib/credentials";
+import { localizePath } from "@/lib/i18n/config";
+import { getLocale, localizedMetadata } from "@/lib/i18n/server";
+import { getMessages } from "@/lib/i18n/messages";
 import { DIGISOL_FOUNDER, DIGISOL_FOUNDER_TITLE, DIGISOL_SITE_URL } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "About Cameron Brown | Credentials & Certifications | DigiSol",
-  description:
-    "Meet DigiSol founder Cameron Brown — career change from commercial sheet metal into website design, full-stack development, and digital marketing. Sundance College honors graduate, Mimo full-stack training, and HubSpot Academy certifications.",
-  alternates: { canonical: CREDENTIALS_PAGE_PATH },
-  openGraph: {
-    title: "About Cameron Brown | DigiSol",
-    description:
-      "Passion for design, engineering, and growth — with HubSpot certifications, a Sundance College diploma (honors), and full-stack training from Mimo.",
-    url: CREDENTIALS_PAGE_URL,
-    siteName: "DigiSol",
-    locale: "en_CA",
-    type: "profile",
-    images: [
-      {
-        url: FOUNDER_PHOTO,
-        alt: `${DIGISOL_FOUNDER}, founder of DigiSol`,
-      },
-    ],
-  },
-};
+export function generateMetadata(): Metadata {
+  const locale = getLocale();
+  const t = getMessages(locale).about;
+  return localizedMetadata(locale, CREDENTIALS_PAGE_PATH, {
+    title: t.metaTitle,
+    description: t.metaDescription,
+    openGraph: {
+      title: t.ogTitle,
+      description: t.ogDescription,
+      url: `${DIGISOL_SITE_URL}${localizePath(CREDENTIALS_PAGE_PATH, locale)}`,
+      siteName: "DigiSol",
+      type: "profile",
+      images: [
+        {
+          url: FOUNDER_PHOTO,
+          alt: t.photoAlt(DIGISOL_FOUNDER),
+        },
+      ],
+    },
+  });
+}
 
 const personJsonLd = {
   "@context": "https://schema.org",
@@ -53,6 +56,9 @@ const personJsonLd = {
 };
 
 export default function AboutPage() {
+  const locale = getLocale();
+  const t = getMessages(locale).about;
+  const bio = t.bio ?? FOUNDER_BIO;
   return (
     <>
       <Navbar />
@@ -63,14 +69,14 @@ export default function AboutPage() {
         />
         <section className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
           <p className="text-sm font-medium tracking-wide text-indigo-300">
-            About · Credentials
+            {t.eyebrow}
           </p>
           <div className="mt-6 grid items-start gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.15fr)] lg:gap-14">
             <div className="space-y-6">
               <div className="relative aspect-[4/5] max-w-sm overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900 shadow-[0_24px_60px_-28px_rgba(79,70,229,0.55)]">
                 <Image
                   src={FOUNDER_PHOTO}
-                  alt={`${FOUNDER_BIO.name}, founder of DigiSol`}
+                  alt={t.photoAlt(FOUNDER_BIO.name)}
                   fill
                   priority
                   className="object-cover object-[center_18%]"
@@ -82,16 +88,16 @@ export default function AboutPage() {
                   {FOUNDER_BIO.name}
                 </h1>
                 <p className="mt-2 text-lg text-indigo-200">
-                  {DIGISOL_FOUNDER_TITLE}, DigiSol
+                  {t.role(DIGISOL_FOUNDER_TITLE)}
                 </p>
               </div>
             </div>
 
             <div className="space-y-5">
               <h2 className="text-balance text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                {FOUNDER_BIO.headline}
+                {bio.headline}
               </h2>
-              {FOUNDER_BIO.body.map((paragraph) => (
+              {bio.body.map((paragraph) => (
                 <p
                   key={paragraph.slice(0, 32)}
                   className="text-pretty text-base leading-relaxed text-zinc-300 sm:text-lg"
@@ -100,7 +106,7 @@ export default function AboutPage() {
                 </p>
               ))}
               <ul className="space-y-3 border-t border-zinc-800 pt-5">
-                {FOUNDER_BIO.education.map((item) => (
+                {bio.education.map((item) => (
                   <li key={item.title}>
                     <p className="font-medium text-white">{item.title}</p>
                     <p className="text-sm text-zinc-400">
@@ -111,7 +117,7 @@ export default function AboutPage() {
                 ))}
               </ul>
               <TrackedLink
-                href="/#contact"
+                href={localizePath("/#contact", locale)}
                 eventName="cta_click"
                 eventParams={{
                   cta_name: "book_consultation",
@@ -119,7 +125,7 @@ export default function AboutPage() {
                 }}
                 className="inline-flex rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500"
               >
-                Book a free consultation
+                {t.cta}
               </TrackedLink>
             </div>
           </div>
@@ -131,12 +137,9 @@ export default function AboutPage() {
         >
           <div className="mx-auto max-w-6xl">
             <h2 className="text-3xl font-semibold tracking-tight text-white">
-              Certificates &amp; badges
+              {t.certTitle}
             </h2>
-            <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-              HubSpot Academy certifications, SIMnet Microsoft Word belts, and
-              supporting documents — proof behind the DigiSol craft.
-            </p>
+            <p className="mt-2 max-w-2xl text-sm text-zinc-400">{t.certBody}</p>
             <div className="mt-8">
               <CredentialsGallery />
             </div>

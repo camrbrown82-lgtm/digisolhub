@@ -1,32 +1,24 @@
 import { Building2, Rocket } from "lucide-react";
 import { BrandCard, brandAccent, type BrandAccent } from "@/components/BrandCard";
+import { getServerMessages } from "@/lib/i18n/server";
 import type { HomeCopy } from "@/lib/visitorRegion";
 
 export function Audience({ copy }: { copy: HomeCopy }) {
+  const t = getServerMessages().audience;
   const audiences = [
     {
       icon: Rocket,
-      title: "For Startups",
+      title: t.startupTitle,
       accent: "blue" as BrandAccent,
       body: copy.audienceStartupBody,
-      points: [
-        "Brand-true website design without a template look",
-        "Rapid deployment and lean launch timelines",
-        "Cost-effective full-stack MVP builds",
-        copy.audienceStartupPoint,
-      ],
+      points: [...t.startupPoints, copy.audienceStartupPoint],
     },
     {
       icon: Building2,
-      title: "For Established Companies",
+      title: t.establishedTitle,
       accent: "indigo" as BrandAccent,
       body: copy.audienceEstablishedBody,
-      points: [
-        "Website redesign that matches how you sell today",
-        "Site performance overhauls that restore speed and local SEO",
-        "Advanced marketing integration across campaigns and product",
-        "CRO and modernization of legacy web platforms",
-      ],
+      points: [...t.establishedPoints],
     },
   ];
 
@@ -39,13 +31,13 @@ export function Audience({ copy }: { copy: HomeCopy }) {
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
           <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
-            Target audience
+            {t.eyebrow}
           </p>
           <h2
             id="audience-heading"
             className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl"
           >
-            Who We Help
+            {t.title}
           </h2>
           <p className="mt-4 text-zinc-400">{copy.audienceIntro}</p>
         </div>

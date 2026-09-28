@@ -3,13 +3,19 @@ import Link from "next/link";
 import { AdsPurchaseConversion } from "@/components/AdsLeadConversion";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
+import { localizePath } from "@/lib/i18n/config";
+import { getLocale } from "@/lib/i18n/server";
+import { getMessages } from "@/lib/i18n/messages";
 import { createStripeClient, stripeConfigured } from "@/lib/stripe";
 
-export const metadata: Metadata = {
-  title: "Payment received | DigiSol",
-  description: "Thanks for starting with DigiSol. We will confirm scope shortly.",
-  robots: { index: false, follow: false },
-};
+export function generateMetadata(): Metadata {
+  const t = getMessages(getLocale()).pricingSuccess;
+  return {
+    title: t.metaTitle,
+    description: t.metaDescription,
+    robots: { index: false, follow: false },
+  };
+}
 
 async function paidCheckout(sessionId: string | undefined) {
   if (!sessionId || !/^cs_[\w]+$/.test(sessionId) || !stripeConfigured()) return null;
@@ -32,6 +38,8 @@ export default async function PricingSuccessPage({
   searchParams: { session_id?: string };
 }) {
   const purchase = await paidCheckout(searchParams.session_id);
+  const locale = getLocale();
+  const t = getMessages(locale).pricingSuccess;
   return (
     <>
       {purchase ? <AdsPurchaseConversion {...purchase} /> : null}
@@ -39,32 +47,27 @@ export default async function PricingSuccessPage({
       <main id="main" className="px-4 py-20 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-xl text-center">
           <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
-            Stripe checkout complete
+            {t.eyebrow}
           </p>
-          <h1 className="mt-3 text-3xl font-semibold text-white sm:text-4xl">
-            You&apos;re booked in
-          </h1>
-          <p className="mt-4 text-zinc-400">
-            Payment went through. Cameron will email you to confirm scope,
-            timeline, and kickoff for your DigiSol engagement.
-          </p>
+          <h1 className="mt-3 text-3xl font-semibold text-white sm:text-4xl">{t.title}</h1>
+          <p className="mt-4 text-zinc-400">{t.body}</p>
           {searchParams.session_id ? (
             <p className="mt-3 break-all text-xs text-zinc-600">
-              Ref: {searchParams.session_id}
+              {t.ref} {searchParams.session_id}
             </p>
           ) : null}
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
-              href="/"
+              href={localizePath("/", locale)}
               className="rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500"
             >
-              Back to DigiSol
+              {t.back}
             </Link>
             <Link
-              href="/#contact"
+              href={localizePath("/#contact", locale)}
               className="rounded-full border border-white/15 px-5 py-2.5 text-sm font-medium text-zinc-200 hover:bg-white/5"
             >
-              Contact
+              {t.contact}
             </Link>
           </div>
         </div>

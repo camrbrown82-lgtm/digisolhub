@@ -10,6 +10,7 @@ import { createVisitorAgentTools } from "@/lib/agent/visitor/tools";
 import { DIGISOL_HOUSE_NAME, DIGISOL_BRAND } from "@/lib/branding";
 import { DIGISOL_GUARANTEES, GUARANTEE_FINE_PRINT } from "@/lib/guarantee";
 import { GOOGLE_AUTOPILOT_SHORT } from "@/lib/googleAutopilot";
+import { DEFAULT_LOCALE, isLocale, type Locale } from "@/lib/i18n/config";
 import { parseAttributionFromBody } from "@/lib/meta/attribution";
 import { getOpenAIApiKey } from "@/lib/openai";
 import { clientIp, rateLimit } from "@/lib/security";
@@ -89,6 +90,7 @@ export async function POST(request: Request) {
     messages?: UIMessage[];
     audience?: string;
     country?: string;
+    lang?: string;
     attribution?: Record<string, unknown>;
   };
   try {
@@ -111,6 +113,7 @@ export async function POST(request: Request) {
   }
 
   const locale = resolveVisitorLocale(request, body);
+  const siteLanguage: Locale = isLocale(body.lang) ? body.lang : DEFAULT_LOCALE;
 
   try {
     const openai = createOpenAI({ apiKey: getOpenAIApiKey() });
@@ -119,11 +122,12 @@ export async function POST(request: Request) {
         body.attribution && typeof body.attribution === "object"
           ? parseAttributionFromBody({ attribution: body.attribution })
           : null,
+      language: siteLanguage,
     });
 
     const result = streamText({
       model: openai(process.env.OPENAI_AGENT_LIGHT_MODEL?.trim() || "gpt-4o-mini"),
-      system: buildVisitorSystemPrompt(locale),
+      system: buildVisitorSystemPrompt(locale, siteLanguage),
       messages: await convertToModelMessages(messages),
       tools,
       stopWhen: isStepCount(MAX_STEPS),
@@ -175,11 +179,24 @@ function resolveVisitorLocale(
   };
 }
 
-function buildVisitorSystemPrompt(locale: {
-  audience: VisitorAudience;
-  country: string;
-  countryLabel: string;
-}) {
+function buildVisitorSystemPrompt(
+  locale: {
+    audience: VisitorAudience;
+    country: string;
+    countryLabel: string;
+  },
+  siteLanguage: Locale,
+) {
+  const languageBlock = `## Language
+The visitor is on the ${siteLanguage === "fr" ? "French" : "English"} version of the site.
+- ${
+    siteLanguage === "fr"
+      ? "Reply in Canadian French (use \"vous\"). If they write to you in English, switch to English."
+      : "Reply in English. If they write to you in French, reply in Canadian French (use \"vous\")."
+  }
+- Canada is bilingual: treat French and English visitors the same. Quoted guarantee text may be translated faithfully, never embellished.
+- When you call captureVisitorLead, emailVisitorConsultationInvite or emailVisitorAuditBreakdown, set language to "fr" if you are chatting in French and "en" if in English, so the email matches. Write the requirements note in that same language.`;
+
   const international = locale.audience === "international";
   const where =
     locale.country === "US"
@@ -243,6 +260,8 @@ ${DIGISOL_GUARANTEES.map((g) => `- ${g.title}: ${g.body}`).join("\n")}
 If a visitor asks how to reach DigiSol, share the email/phone above. DigiSol's Facebook presence is a **Page** (not a personal profile).
 
 ${marketBlock}
+
+${languageBlock}
 
 ## What DigiSol does (answer from this — do not invent packages or prices)
 ${offerings}

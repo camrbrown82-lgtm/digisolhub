@@ -12,6 +12,16 @@ import {
   clearHubPass,
   isPageNavigation,
 } from "@/lib/hubPass";
+import {
+  DEFAULT_LOCALE,
+  LOCALE_COOKIE,
+  LOCALE_HEADER,
+  isLocale,
+  isTranslatedPath,
+  localizePath,
+  splitLocale,
+  type Locale,
+} from "@/lib/i18n/config";
 import { updateSession } from "@/lib/supabase/middleware";
 import {
   GEO_AUDIENCE_COOKIE,
@@ -112,8 +122,12 @@ function withGeoRequestHeaders(request: NextRequest, geo: VisitorGeo) {
  * Send Alberta visitors on `/` to their city lander so GA4 records
  * /locations/{city}. Skip bots so Google keeps indexing the apex homepage.
  */
-function albertaHomeGeoRedirect(request: NextRequest, geo: VisitorGeo) {
-  const path = request.nextUrl.pathname;
+function albertaHomeGeoRedirect(
+  request: NextRequest,
+  geo: VisitorGeo,
+  path: string,
+  locale: Locale,
+) {
   if (path !== "/") return null;
   if (request.method !== "GET" && request.method !== "HEAD") return null;
   if (request.nextUrl.searchParams.has("home")) return null;
@@ -127,7 +141,7 @@ function albertaHomeGeoRedirect(request: NextRequest, geo: VisitorGeo) {
   if (!slug) return null;
 
   const dest = request.nextUrl.clone();
-  dest.pathname = `/locations/${slug}`;
+  dest.pathname = localizePath(`/locations/${slug}`, locale);
   dest.search = "";
   const response = NextResponse.redirect(dest, 307);
   applyGeoCookies(response, geo);
@@ -139,11 +153,31 @@ function albertaHomeGeoRedirect(request: NextRequest, geo: VisitorGeo) {
   return response;
 }
 
-function nextWithGeo(request: NextRequest, geo: VisitorGeo) {
+/** A visitor who picked French earlier gets the French version of translated pages. */
+function savedLocaleRedirect(request: NextRequest, path: string, locale: Locale) {
+  if (locale !== DEFAULT_LOCALE || !isTranslatedPath(path)) return null;
+  if (request.method !== "GET" && request.method !== "HEAD") return null;
+  const saved = request.cookies.get(LOCALE_COOKIE)?.value;
+  if (!isLocale(saved) || saved === DEFAULT_LOCALE) return null;
+  if (isLikelyBot(request.headers.get("user-agent"))) return null;
+  const dest = request.nextUrl.clone();
+  dest.pathname = localizePath(path, saved);
+  return NextResponse.redirect(dest, 307);
+}
+
+/** `/fr/pricing` is served by the `/pricing` route with the locale header set. */
+function nextWithGeo(request: NextRequest, geo: VisitorGeo, path: string, locale: Locale) {
   const { requestHeaders, visitor } = withGeoRequestHeaders(request, geo);
-  const response = NextResponse.next({
-    request: { headers: requestHeaders },
-  });
+  requestHeaders.set(LOCALE_HEADER, locale);
+  const init = { request: { headers: requestHeaders } };
+  let response: NextResponse;
+  if (locale === DEFAULT_LOCALE) {
+    response = NextResponse.next(init);
+  } else {
+    const url = request.nextUrl.clone();
+    url.pathname = path;
+    response = NextResponse.rewrite(url, init);
+  }
   applyGeoCookies(response, geo);
 
   const slug = locationSlugFromGeo(geo);
@@ -180,9 +214,18 @@ export async function middleware(request: NextRequest) {
     return sessionResponse;
   }
 
+  const { locale, path: barePath } = splitLocale(path);
+  if (locale !== DEFAULT_LOCALE && !isTranslatedPath(barePath)) {
+    const english = request.nextUrl.clone();
+    english.pathname = barePath;
+    return NextResponse.redirect(english, 307);
+  }
+
   const geo = readRequestGeo(request);
-  const geoRedirect = albertaHomeGeoRedirect(request, geo);
-  const response = geoRedirect ?? nextWithGeo(request, geo);
+  const response =
+    savedLocaleRedirect(request, barePath, locale) ??
+    albertaHomeGeoRedirect(request, geo, barePath, locale) ??
+    nextWithGeo(request, geo, barePath, locale);
 
   // Leaving the Hub for the public site means the password is asked again.
   if (

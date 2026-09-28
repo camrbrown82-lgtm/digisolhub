@@ -6,24 +6,19 @@ import {
   DIGISOL_LOGO_BADGE,
   DIGISOL_LOGO_WORDMARK,
 } from "@/components/Logo";
+import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { QUOTE_HREF, jumpToQuote } from "@/components/QuickQuote";
 import { TrackedLink } from "@/components/TrackedLink";
-
-const links = [
-  { href: "/#services", label: "Services" },
-  { href: "/pricing", label: "Pricing" },
-  { href: "/#why-us", label: "Why Us" },
-  { href: "/blog", label: "Guides" },
-  { href: "/#dispatch", label: "Dispatch" },
-  { href: "/media/website-audit", label: "Media" },
-  { href: "/locations/airdrie", label: "Airdrie" },
-  { href: "/about", label: "About" },
-];
+import { useLocalizedHref, useMessages } from "@/lib/i18n/client";
 
 /**
  * Header: wordmark left · centered page links + Contact · badge right.
  */
 export function Navbar() {
+  const t = useMessages().nav;
+  const localize = useLocalizedHref();
+  const links = t.links.map((link) => ({ ...link, href: localize(link.href) }));
+  const quoteHref = localize(QUOTE_HREF);
   const [open, setOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
 
@@ -84,20 +79,20 @@ export function Navbar() {
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-indigo-600 focus:px-3 focus:py-2 focus:text-sm focus:text-white"
         >
-          Skip to content
+          {t.skip}
         </a>
 
         <div className="relative mx-auto flex h-20 w-full max-w-7xl items-center px-4 sm:h-24 sm:px-6 lg:h-[6.5rem] lg:px-8">
           {/* Left — primary wordmark */}
           <a
-            href="/"
+            href={localize("/")}
             className="relative z-10 inline-flex shrink-0 items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
-            aria-label="DigiSol home"
+            aria-label={t.homeAria}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={DIGISOL_LOGO_WORDMARK}
-              alt="DigiSol — Engineering & Growth"
+              alt={t.logoAlt}
               width={480}
               height={156}
               className="h-12 w-auto max-w-[min(100%,16rem)] object-contain object-left sm:h-14 lg:h-16"
@@ -107,7 +102,7 @@ export function Navbar() {
           {/* Center — page links + Contact */}
           <nav
             className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-4 lg:flex xl:gap-5"
-            aria-label="Primary"
+            aria-label={t.primaryAria}
           >
             {links.map((link) => (
               <a
@@ -119,20 +114,22 @@ export function Navbar() {
               </a>
             ))}
             <TrackedLink
-              href={QUOTE_HREF}
+              href={quoteHref}
               eventName="cta_click"
               eventParams={{ cta_name: "get_quote", location: "nav" }}
               onClick={jumpToQuote}
               className="inline-flex items-center whitespace-nowrap rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-sky-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
             >
-              Get a free quote
+              {t.getQuote}
             </TrackedLink>
           </nav>
+
+          <LanguageSwitch className="relative z-10 ml-auto mr-3 lg:mr-4" />
 
           {/* Right — badge opens Hub login (hidden entry; public sees a logo) */}
           <a
             href="/hub/login"
-            className="relative z-10 ml-auto hidden shrink-0 items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 lg:inline-flex"
+            className="relative z-10 hidden shrink-0 items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 lg:inline-flex"
             aria-label="DigiSol Hub"
             title="Hub"
           >
@@ -149,12 +146,12 @@ export function Navbar() {
 
           <button
             type="button"
-            className="relative z-10 ml-auto inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-indigo-400/30 text-indigo-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 lg:hidden"
+            className="relative z-10 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-indigo-400/30 text-indigo-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 lg:hidden"
             aria-expanded={open}
             aria-controls="mobile-nav"
             onClick={() => setOpen((v) => !v)}
           >
-            <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
+            <span className="sr-only">{open ? t.closeMenu : t.openMenu}</span>
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
@@ -165,7 +162,7 @@ export function Navbar() {
         <nav
           id="mobile-nav"
           className="fixed inset-x-0 bottom-0 top-[var(--header-h,5rem)] z-50 overflow-y-auto overscroll-contain border-t border-indigo-500/20 bg-zinc-950 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4 lg:hidden"
-          aria-label="Mobile"
+          aria-label={t.mobileAria}
         >
           <ul className="mx-auto flex max-w-7xl flex-col gap-2">
             {links.map((link) => (
@@ -181,16 +178,16 @@ export function Navbar() {
             ))}
             <li>
               <a
-                href="/#contact"
+                href={localize("/#contact")}
                 className="block rounded-lg px-3 py-2 text-indigo-100 hover:bg-indigo-500/10 hover:text-sky-300"
                 onClick={() => setOpen(false)}
               >
-                Contact
+                {t.contact}
               </a>
             </li>
             <li>
               <TrackedLink
-                href={QUOTE_HREF}
+                href={quoteHref}
                 eventName="cta_click"
                 eventParams={{ cta_name: "get_quote", location: "nav_mobile" }}
                 className="block rounded-full bg-indigo-600 px-4 py-2.5 text-center text-sm font-semibold text-white"
@@ -200,7 +197,7 @@ export function Navbar() {
                   jumpToQuote(event, 80);
                 }}
               >
-                Get a free quote
+                {t.getQuote}
               </TrackedLink>
             </li>
             <li className="mt-4 border-t border-indigo-500/20 pt-4">
@@ -218,7 +215,7 @@ export function Navbar() {
                   className="h-9 w-9 rounded-full object-cover ring-1 ring-indigo-400/30"
                   aria-hidden="true"
                 />
-                <span className="text-sm font-medium">Hub login</span>
+                <span className="text-sm font-medium">{t.hubLogin}</span>
               </a>
             </li>
           </ul>

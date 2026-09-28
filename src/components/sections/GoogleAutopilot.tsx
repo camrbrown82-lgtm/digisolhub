@@ -1,9 +1,11 @@
 import { BarChart3, CalendarCheck, Search, ShieldCheck, Target, type LucideIcon } from "lucide-react";
 import { BrandCard, brandAccent, type BrandAccent } from "@/components/BrandCard";
 import { TrackedLink } from "@/components/TrackedLink";
-import { GOOGLE_AUTOPILOT_PILLARS } from "@/lib/googleAutopilot";
+import { localizePath } from "@/lib/i18n/config";
+import { getLocale } from "@/lib/i18n/server";
+import { getMessages } from "@/lib/i18n/messages";
 
-const LOOK: Record<(typeof GOOGLE_AUTOPILOT_PILLARS)[number]["id"], { icon: LucideIcon; accent: BrandAccent }> = {
+const LOOK: Record<string, { icon: LucideIcon; accent: BrandAccent }> = {
   analytics: { icon: BarChart3, accent: "sky" },
   search: { icon: Search, accent: "blue" },
   ads: { icon: Target, accent: "indigo" },
@@ -11,6 +13,8 @@ const LOOK: Record<(typeof GOOGLE_AUTOPILOT_PILLARS)[number]["id"], { icon: Luci
 };
 
 export function GoogleAutopilot() {
+  const locale = getLocale();
+  const t = getMessages(locale).googleAutopilot;
   return (
     <section
       id="google-autopilot"
@@ -21,24 +25,20 @@ export function GoogleAutopilot() {
         <div className="mx-auto max-w-2xl text-center">
           <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-indigo-400">
             <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-            Google, checked every week
+            {t.eyebrow}
           </p>
           <h2
             id="google-autopilot-heading"
             className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl"
           >
-            Your Analytics, Search Console and Ads, Tuned Every Monday
+            {t.title}
           </h2>
-          <p className="mt-4 text-zinc-400">
-            Most businesses set up Google once and never look again. Settings drift, tracking
-            breaks and ad money leaks. We check your Google accounts every week and fix what&apos;s
-            wrong, usually in one click.
-          </p>
+          <p className="mt-4 text-zinc-400">{t.intro}</p>
         </div>
 
         <ul className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2">
-          {GOOGLE_AUTOPILOT_PILLARS.map(({ id, title, body }) => {
-            const { icon: Icon, accent } = LOOK[id];
+          {t.pillars.map(({ id, title, body }) => {
+            const { icon: Icon, accent } = LOOK[id] ?? LOOK.report;
             return (
               <li key={id} className="h-full">
                 <BrandCard accent={accent} className="h-full">
@@ -57,17 +57,14 @@ export function GoogleAutopilot() {
 
         <div className="mt-10 flex flex-col items-center gap-3 text-center">
           <TrackedLink
-            href="/#contact"
+            href={localizePath("/#contact", locale)}
             eventName="cta_click"
             eventParams={{ cta_name: "google_autopilot_check", location: "google_autopilot" }}
             className="inline-flex items-center justify-center rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
           >
-            Ask for a Google setup check
+            {t.cta}
           </TrackedLink>
-          <p className="max-w-xl text-xs text-zinc-500">
-            You stay the owner of every Google account. You just add DigiSol as a user, and you
-            can remove us anytime.
-          </p>
+          <p className="max-w-xl text-xs text-zinc-500">{t.ownership}</p>
         </div>
       </div>
     </section>

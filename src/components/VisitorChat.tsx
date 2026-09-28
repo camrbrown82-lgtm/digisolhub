@@ -9,6 +9,8 @@ import { MicDictateButton, appendDictation } from "@/components/hub/MicDictateBu
 import { fireAdsConversion } from "@/lib/ads";
 import { trackEvent } from "@/lib/analytics";
 import { readStoredAttribution } from "@/lib/attributionClient";
+import { useLocale, useMessages } from "@/lib/i18n/client";
+import type { Messages } from "@/lib/i18n/messages";
 import {
   GEO_AUDIENCE_COOKIE,
   GEO_COUNTRY_COOKIE,
@@ -26,23 +28,12 @@ function readCookie(name: string) {
   return match ? decodeURIComponent(match.split("=").slice(1).join("=")) : "";
 }
 
-function greetingFor(audience: VisitorAudience) {
-  if (audience === "alberta") {
-    return `Hey there! I'm ${KAYLEV_NAME}, DigiSol's digital assistant. Happy to help Alberta teams and anyone scaling from farther afield fix conversion leaks and grow online.
-
-Got a website? Share the URL and I'll run a free audit. No site yet, or curious about cost / what you'd need? I can set you up with a free consultation with Cameron — just tell me your email.`;
-  }
-
-  return `Hey there! I'm ${KAYLEV_NAME}, DigiSol's digital assistant. Whether you're local or scaling from afar, we help businesses fix conversion leaks and grow online.
-
-Got a website? Share the URL and I'll run a free audit. No site yet, or curious about cost / what you'd need? I can set you up with a free consultation with Cameron — just tell me your email.`;
-}
-
-function createGreetingMessage(audience: VisitorAudience): UIMessage {
+function createGreetingMessage(audience: VisitorAudience, t: Messages["chat"]): UIMessage {
+  const text = audience === "alberta" ? t.greetingAlberta(KAYLEV_NAME) : t.greetingGeneral(KAYLEV_NAME);
   return {
     id: "kaylev-visitor-greeting",
     role: "assistant",
-    parts: [{ type: "text", text: greetingFor(audience) }],
+    parts: [{ type: "text", text }],
   };
 }
 
@@ -58,6 +49,8 @@ function messageText(message: UIMessage) {
 }
 
 export function VisitorChat() {
+  const locale = useLocale();
+  const t = useMessages().chat;
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [audience, setAudience] = useState<VisitorAudience>("international");
@@ -93,16 +86,17 @@ export function VisitorChat() {
         body: () => ({
           audience,
           country: country || undefined,
+          lang: locale,
           attribution: readStoredAttribution() ?? undefined,
         }),
       }),
-    [audience, country],
+    [audience, country, locale],
   );
 
   const { messages, sendMessage, status, error, clearError } = useChat({
-    id: `kaylev-${audience}-${country || "xx"}`,
+    id: `kaylev-${locale}-${audience}-${country || "xx"}`,
     transport,
-    messages: [createGreetingMessage(audience)],
+    messages: [createGreetingMessage(audience, t)],
   });
 
   const busy = status === "submitted" || status === "streaming";
@@ -147,7 +141,7 @@ export function VisitorChat() {
       {open ? (
         <section
           className="pointer-events-auto flex h-[min(17.5rem,42vh)] w-[min(17.5rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-xl border border-indigo-400/25 bg-zinc-950/95 shadow-xl shadow-indigo-950/30 backdrop-blur"
-          aria-label={`${KAYLEV_NAME} DigiSol chat`}
+          aria-label={t.panelAria(KAYLEV_NAME)}
         >
           <header className="flex items-center justify-between gap-2 border-b border-zinc-800 bg-gradient-to-r from-indigo-600/20 to-zinc-950 px-3 py-2">
             <div className="min-w-0">
@@ -155,7 +149,7 @@ export function VisitorChat() {
                 {KAYLEV_NAME}
               </p>
               <p className="truncate text-[10px] text-zinc-400">
-                Free website audit
+                {t.subtitle}
                 {country ? ` · ${country}` : ""}
               </p>
             </div>
@@ -163,7 +157,7 @@ export function VisitorChat() {
               type="button"
               onClick={() => setOpen(false)}
               className="shrink-0 rounded-md p-1 text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
-              aria-label="Close chat"
+              aria-label={t.close}
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -187,7 +181,7 @@ export function VisitorChat() {
                     key={message.id}
                     className="rounded-lg border border-zinc-800 bg-zinc-900/70 px-2 py-1.5 text-[10px] text-zinc-400"
                   >
-                    Working: {toolBits.join(", ")}…
+                    {t.working}: {toolBits.join(", ")}…
                   </div>
                 );
               }
@@ -207,11 +201,11 @@ export function VisitorChat() {
               );
             })}
             {busy ? (
-              <p className="text-[10px] text-zinc-500">{KAYLEV_NAME} is typing…</p>
+              <p className="text-[10px] text-zinc-500">{t.typing(KAYLEV_NAME)}</p>
             ) : null}
             {error ? (
               <p className="rounded-md border border-rose-500/30 bg-rose-500/10 px-2 py-1.5 text-[10px] text-rose-200">
-                {error.message || "Something went wrong. Try again."}
+                {error.message || t.error}
               </p>
             ) : null}
           </div>
@@ -221,7 +215,7 @@ export function VisitorChat() {
             className="flex items-end gap-1.5 border-t border-zinc-800 bg-zinc-950/80 p-2"
           >
             <label className="sr-only" htmlFor="visitor-chat-input">
-              Message {KAYLEV_NAME}
+              {t.inputLabel(KAYLEV_NAME)}
             </label>
             <textarea
               id="visitor-chat-input"
@@ -234,20 +228,20 @@ export function VisitorChat() {
                   void onSubmit(event);
                 }
               }}
-              placeholder="Type or use the mic…"
+              placeholder={t.placeholder}
               className="min-h-[2rem] max-h-16 flex-1 resize-none rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
               disabled={busy}
             />
             <MicDictateButton
               disabled={busy}
-              label="Mic"
+              label={t.mic}
               onText={(chunk) => setInput((current) => appendDictation(current, chunk))}
             />
             <button
               type="submit"
               disabled={busy || !input.trim()}
               className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500 text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-40"
-              aria-label="Send message"
+              aria-label={t.send}
             >
               <Send className="h-3.5 w-3.5" />
             </button>
@@ -260,10 +254,10 @@ export function VisitorChat() {
         onClick={() => setOpen((value) => !value)}
         className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-indigo-400/40 bg-indigo-500 px-3 py-2 text-xs font-semibold text-white shadow-md shadow-indigo-950/40 transition hover:bg-indigo-400"
         aria-expanded={open}
-        aria-label={open ? `Hide ${KAYLEV_NAME}` : `Chat with ${KAYLEV_NAME}`}
+        aria-label={open ? t.hideAria(KAYLEV_NAME) : t.openAria(KAYLEV_NAME)}
       >
         <MessageCircle className="h-3.5 w-3.5" />
-        {open ? "Hide" : KAYLEV_NAME}
+        {open ? t.hide : KAYLEV_NAME}
       </button>
     </div>
   );

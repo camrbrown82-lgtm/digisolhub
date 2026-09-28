@@ -7,6 +7,8 @@ import { logAnalyticsEvent } from "@/lib/analyticsEvents";
 import { emitHubEvent } from "@/lib/events";
 import { ensureMetaSchema } from "@/lib/ensureMetaSchema";
 import { ensureWebsiteAuditSchema } from "@/lib/ensureWebsiteAuditSchema";
+import { DEFAULT_LOCALE, LOCALES, type Locale } from "@/lib/i18n/config";
+import { getMessages } from "@/lib/i18n/messages";
 import {
   attributionTags,
   isGoogleAdsTouch,
@@ -32,9 +34,18 @@ export type VisitorLeadType = (typeof LEAD_TYPES)[number];
  * Restricted public tools for the homepage visitor chatbot.
  * Always writes into DigiSol's house client — never creates external tenants.
  */
-export function createVisitorAgentTools(opts: { attribution?: AttributionPayload | null } = {}) {
+export function createVisitorAgentTools(
+  opts: { attribution?: AttributionPayload | null; language?: Locale } = {},
+) {
   const attr = opts.attribution ?? null;
   const fromGoogleAds = attr ? isGoogleAdsTouch(attr) : false;
+  const emailLanguage = (requested?: Locale) => requested ?? opts.language ?? DEFAULT_LOCALE;
+  const languageTags = (language: Locale) =>
+    language === DEFAULT_LOCALE ? [] : [`lang:${language}`];
+  const languageInput = z
+    .enum(LOCALES)
+    .optional()
+    .describe("Language the visitor is chatting in; emails go out in this language.");
   return {
     runVisitorWebsiteAudit: tool({
       description:
@@ -151,6 +162,7 @@ export function createVisitorAgentTools(opts: { attribution?: AttributionPayload
           .string()
           .optional()
           .describe("Their site URL if discussed."),
+        language: languageInput,
       }),
       execute: async (input) => {
         if (!hasAdminClient()) {
@@ -160,6 +172,7 @@ export function createVisitorAgentTools(opts: { attribution?: AttributionPayload
         const clientId = await ensureDigisolClient(admin);
         if (!clientId) throw new Error("DigiSol profile missing");
 
+        const language = emailLanguage(input.language);
         const email = input.email.trim().toLowerCase();
         const leadType = input.leadType;
         const requirements = input.requirements.trim();
@@ -180,6 +193,7 @@ export function createVisitorAgentTools(opts: { attribution?: AttributionPayload
             `lead_type:${leadType}`,
             ...(leadType === "consultation" ? ["consultation"] : []),
             ...(attr ? attributionTags(attr) : []),
+            ...languageTags(language),
           ]),
         );
 
@@ -308,6 +322,7 @@ export function createVisitorAgentTools(opts: { attribution?: AttributionPayload
             name: input.name,
             company: input.company,
             websiteUrl: input.websiteUrl,
+            language,
           });
         } else if (contactId) {
           const consult = await sendConsultationFollowUpEmail({
@@ -319,6 +334,7 @@ export function createVisitorAgentTools(opts: { attribution?: AttributionPayload
             phone: input.phone,
             requirements,
             leadType,
+            language,
           });
           followUp = {
             emailed: consult.emailed,
@@ -357,6 +373,7 @@ export function createVisitorAgentTools(opts: { attribution?: AttributionPayload
           .string()
           .optional()
           .describe("Short note on what they asked (cost, new website, etc.)."),
+        language: languageInput,
       }),
       execute: async (input) => {
         if (!hasAdminClient()) {
@@ -366,6 +383,7 @@ export function createVisitorAgentTools(opts: { attribution?: AttributionPayload
         const clientId = await ensureDigisolClient(admin);
         if (!clientId) throw new Error("DigiSol profile missing");
 
+        const language = emailLanguage(input.language);
         const email = input.email.trim().toLowerCase();
         const requirements =
           input.requirements?.trim() ||
@@ -380,6 +398,7 @@ export function createVisitorAgentTools(opts: { attribution?: AttributionPayload
           phone: input.phone,
           requirements,
           leadType: "consultation",
+          language,
         });
 
         // Mirror capture tags/notes for Hub visibility.
@@ -396,6 +415,7 @@ export function createVisitorAgentTools(opts: { attribution?: AttributionPayload
               "visitor_chat",
               "consultation",
               "lead_type:consultation",
+              ...languageTags(language),
             ]),
           );
           await admin
@@ -475,6 +495,7 @@ export function createVisitorAgentTools(opts: { attribution?: AttributionPayload
           .uuid()
           .optional()
           .describe("Optional website_audits id from runVisitorWebsiteAudit."),
+        language: languageInput,
       }),
       execute: async (input) => {
         if (!hasAdminClient()) {
@@ -492,6 +513,7 @@ export function createVisitorAgentTools(opts: { attribution?: AttributionPayload
           company: input.company,
           websiteUrl: input.websiteUrl,
           auditId: input.auditId,
+          language: emailLanguage(input.language),
         });
         if (result.contactId) {
           await startWorkflowsIfNewContact(admin, result.contactId);
@@ -736,6 +758,7 @@ async function sendVisitorAuditEmail(input: {
   company?: string | null;
   websiteUrl?: string | null;
   auditId?: string | null;
+  language: Locale;
 }) {
   let auditQuery = input.admin
     .from("website_audits")
@@ -811,10 +834,11 @@ async function sendVisitorAuditEmail(input: {
     score: audit.score ?? 0,
     summary:
       report.summary ||
-      `DigiSol reviewed ${audit.url || input.websiteUrl || "your site"} and prepared a short follow-up.`,
+      getMessages(input.language).emails.defaultSummary(audit.url || input.websiteUrl || ""),
     weaknesses,
     strengths,
     source: "visitor_chat",
+    language: input.language,
   });
 
   return {

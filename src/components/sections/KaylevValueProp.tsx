@@ -8,40 +8,16 @@ import {
 } from "lucide-react";
 import { BrandCard, brandAccent, type BrandAccent } from "@/components/BrandCard";
 import { TrackedLink } from "@/components/TrackedLink";
+import { localizePath } from "@/lib/i18n/config";
+import { getLocale } from "@/lib/i18n/server";
+import { getMessages } from "@/lib/i18n/messages";
 
-type Pillar = {
-  icon: LucideIcon;
-  title: string;
-  body: string;
-  accent: BrandAccent;
-};
-
-/** Balanced 2×2 pillars — no featured full-width gap. */
-const PILLARS: Pillar[] = [
-  {
-    icon: MessageCircle,
-    title: "24/7 Midnight Lead Capture",
-    body: "Never miss a high-intent prospect. Kaylev catches social and website leads around the clock and engages them instantly—before interest cools down.",
-    accent: "sky",
-  },
-  {
-    icon: Radar,
-    title: "Autonomous Site Audits & Local SEO",
-    body: "Kaylev scans your web presence, flags performance leaks, and strengthens local ranking so customers in your area find you first.",
-    accent: "blue",
-  },
-  {
-    icon: Share2,
-    title: "Multi-Channel Campaign Orchestration",
-    body: "From automated email follow-ups to coordinated social touchpoints, Kaylev runs outreach pipelines without a manual click for every step.",
-    accent: "indigo",
-  },
-  {
-    icon: Clock3,
-    title: "15+ Hours/Week Recovered",
-    body: "Cut repetitive data entry, manual posting, and basic follow-ups so you can focus on closing deals and running the business.",
-    accent: "blue",
-  },
+/** Balanced 2×2 pillars — no featured full-width gap. Order matches `kaylev.pillars`. */
+const PILLAR_STYLE: { icon: LucideIcon; accent: BrandAccent }[] = [
+  { icon: MessageCircle, accent: "sky" },
+  { icon: Radar, accent: "blue" },
+  { icon: Share2, accent: "indigo" },
+  { icon: Clock3, accent: "blue" },
 ];
 
 type KaylevValuePropProps = {
@@ -53,9 +29,10 @@ export function KaylevValueProp({
   locationName,
   analyticsLocation = "homepage_kaylev",
 }: KaylevValuePropProps) {
-  const advantageLine = locationName
-    ? `You get a world-class, custom-built website plus a dedicated AI employee on day one—built to grow ${locationName} businesses. No bloated monthly SaaS fees—just pure, automated growth.`
-    : "You get a world-class, custom-built website plus a dedicated AI employee on day one. No bloated monthly SaaS fees—just pure, automated growth.";
+  const locale = getLocale();
+  const t = getMessages(locale).kaylev;
+  const contactHref = localizePath("/#contact", locale);
+  const advantageLine = locationName ? t.advantageCity(locationName) : t.advantage;
 
   return (
     <section
@@ -66,22 +43,20 @@ export function KaylevValueProp({
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
           <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
-            DigiSol AI · Kaylev
+            {t.eyebrow}
           </p>
           <h2
             id="kaylev-heading"
             className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl"
           >
-            Meet Kaylev: Your 24/7 Autonomous Growth Engine
+            {t.title}
           </h2>
-          <p className="mt-4 text-zinc-400">
-            Most websites just sit there. Yours should actively close deals.
-            Lead capture, audits, campaigns, and hours back every week.
-          </p>
+          <p className="mt-4 text-zinc-400">{t.intro}</p>
         </div>
 
         <ul className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2">
-          {PILLARS.map(({ icon: Icon, title, body, accent }) => {
+          {t.pillars.map(({ title, body }, index) => {
+            const { icon: Icon, accent } = PILLAR_STYLE[index % PILLAR_STYLE.length];
             const styles = brandAccent[accent];
             return (
               <li key={title} className="h-full">
@@ -111,14 +86,14 @@ export function KaylevValueProp({
                   <Sparkles className="h-6 w-6" aria-hidden="true" />
                 </span>
                 <h3 className="mt-5 text-xl font-semibold text-white">
-                  The DigiSol Advantage
+                  {t.advantageTitle}
                 </h3>
                 <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-zinc-200">
                   {advantageLine}
                 </p>
                 <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
                   <TrackedLink
-                    href="/#contact"
+                    href={contactHref}
                     eventName="cta_click"
                     eventParams={{
                       cta_name: "kaylev_free_audit",
@@ -126,10 +101,10 @@ export function KaylevValueProp({
                     }}
                     className="inline-flex items-center justify-center rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
                   >
-                    Get a free website audit
+                    {t.freeAudit}
                   </TrackedLink>
                   <TrackedLink
-                    href="/#contact"
+                    href={contactHref}
                     eventName="cta_click"
                     eventParams={{
                       cta_name: "kaylev_book_consult",
@@ -137,13 +112,10 @@ export function KaylevValueProp({
                     }}
                     className="inline-flex items-center justify-center rounded-full border border-blue-400/40 bg-blue-500/10 px-6 py-3 text-sm font-semibold text-blue-200 transition hover:border-blue-300 hover:bg-blue-500/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
                   >
-                    Book a consultation
+                    {t.bookConsult}
                   </TrackedLink>
                 </div>
-                <p className="mt-4 text-xs text-zinc-500">
-                  Prefer chat? Open Kaylev on this page and drop your URL for an
-                  instant audit walkthrough.
-                </p>
+                <p className="mt-4 text-xs text-zinc-500">{t.chatHint}</p>
               </div>
             </BrandCard>
           </li>

@@ -3,7 +3,9 @@
 import { FormEvent, useMemo, useState } from "react";
 import { Check, Loader2, Sparkles, Tag } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
-import { GUARANTEE_SHORT } from "@/lib/guarantee";
+import { LOCALE_META } from "@/lib/i18n/config";
+import { useLocale, useLocalizedHref, useMessages } from "@/lib/i18n/client";
+import { localizePricingItem } from "@/lib/i18n/pricing";
 import {
   ALBERTA_GST_PERCENT,
   LAUNCH_PROMO,
@@ -14,12 +16,25 @@ import {
   formatCad,
   launchPromoStatus,
   normalizePromoCode,
-  promoCodeError,
   promoDiscountCents,
   promoPercentFor,
   summarizeSelection,
   type PricingItem,
 } from "@/lib/pricing";
+
+/** Builder strings, CAD formatting and item wording for the current page language. */
+function usePricingText() {
+  const locale = useLocale();
+  const messages = useMessages();
+  const intl = LOCALE_META[locale].intl;
+  return {
+    locale,
+    t: messages.pricingBuilder,
+    guaranteeShort: messages.guarantee.short,
+    cad: (cents: number, digits = 0) => formatCad(cents, digits, intl),
+    item: (item: PricingItem) => localizePricingItem(item, locale),
+  };
+}
 
 function LaunchBanner({
   applied,
@@ -28,6 +43,7 @@ function LaunchBanner({
   applied: boolean;
   onApply: () => void;
 }) {
+  const { t } = usePricingText();
   const status = launchPromoStatus();
   if (status === "ended") return null;
   return (
@@ -35,25 +51,21 @@ function LaunchBanner({
       <div>
         <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-emerald-300">
           <Tag className="h-4 w-4" aria-hidden="true" />
-          Launch offer · code {LAUNCH_PROMO.code}
+          {t.launchOffer(LAUNCH_PROMO.code)}
         </p>
         <p className="mt-1.5 text-sm text-zinc-200">
-          {LAUNCH_PROMO.buildPercent}% off website build and design (Foundation,
-          Growth Engine, Full Funnel) and {LAUNCH_PROMO.otherPercent}% off
-          everything else: the Hub, add-ons, and the first month of any retainer.{" "}
-          <span className="text-zinc-400">
-            {LAUNCH_PROMO.startLabel} to {LAUNCH_PROMO.endLabel}.
-          </span>
+          {t.launchBody(LAUNCH_PROMO.buildPercent, LAUNCH_PROMO.otherPercent)}{" "}
+          <span className="text-zinc-400">{t.launchWindow}</span>
         </p>
       </div>
       {status === "upcoming" ? (
         <span className="rounded-full border border-emerald-400/40 px-4 py-2 text-sm font-semibold text-emerald-200">
-          Starts {LAUNCH_PROMO.startLabel}
+          {t.launchStarts}
         </span>
       ) : applied ? (
         <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-200">
           <Check className="h-4 w-4" aria-hidden="true" />
-          {LAUNCH_PROMO.code} applied
+          {t.promoApplied(LAUNCH_PROMO.code)}
         </span>
       ) : (
         <button
@@ -61,7 +73,7 @@ function LaunchBanner({
           onClick={onApply}
           className="rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-400"
         >
-          Apply {LAUNCH_PROMO.code}
+          {t.applyCode(LAUNCH_PROMO.code)}
         </button>
       )}
     </div>
@@ -69,7 +81,7 @@ function LaunchBanner({
 }
 
 function ItemCard({
-  item,
+  item: baseItem,
   selected,
   onToggle,
   mode,
@@ -81,7 +93,10 @@ function ItemCard({
   mode: "radio" | "check";
   promo?: ReturnType<typeof normalizePromoCode>;
 }) {
+  const { t, cad, item: localize } = usePricingText();
+  const item = localize(baseItem);
   const off = promoDiscountCents(item, promo);
+  const recurring = item.kind === "recurring";
   return (
     <button
       type="button"
@@ -117,29 +132,24 @@ function ItemCard({
         {off ? (
           <>
             <span className="mr-2 text-base font-normal text-zinc-500 line-through">
-              {formatCad(item.amount)}
+              {cad(item.amount)}
             </span>
-            <span className="text-emerald-300">{formatCad(item.amount - off)}</span>
+            <span className="text-emerald-300">{cad(item.amount - off)}</span>
           </>
         ) : (
-          formatCad(item.amount)
+          cad(item.amount)
         )}
-        {item.kind === "recurring" ? (
-          <span className="text-sm font-normal text-zinc-400"> / month</span>
-        ) : (
-          <span className="text-sm font-normal text-zinc-400"> one-time</span>
-        )}
+        <span className="text-sm font-normal text-zinc-400">
+          {recurring ? t.perMonth : t.oneTime}
+        </span>
       </p>
-      {off ? (
+      {off && promo ? (
         <p className="mt-1 text-xs font-medium text-emerald-300/90">
-          {promoPercentFor(item, promo)}% off with {promo}
-          {item.kind === "recurring" ? " (first month)" : ""}
+          {t.pctOff(promoPercentFor(item, promo), promo, recurring)}
         </p>
       ) : null}
       {item.timeline ? (
-        <p className="mt-1 text-xs font-medium text-sky-300">
-          Typical launch: {item.timeline}
-        </p>
+        <p className="mt-1 text-xs font-medium text-sky-300">{t.typicalLaunch(item.timeline)}</p>
       ) : null}
       <p className="mt-2 text-sm leading-relaxed text-zinc-400">{item.blurb}</p>
       <ul className="mt-4 space-y-1.5">
@@ -170,13 +180,26 @@ export function PricingBuilder({
   view?: "default" | "strong";
   initialPromo?: string;
 }) {
+  const { locale, t, guaranteeShort, cad, item: localizeItem } = usePricingText();
+  const localize = useLocalizedHref();
   const strong = view === "strong";
+
+  function promoError(raw: string): string {
+    const value = raw.trim();
+    if (!value) return "";
+    if (value.toUpperCase() !== LAUNCH_PROMO.code) return t.promoInvalid(value.slice(0, 40));
+    const status = launchPromoStatus();
+    if (status === "upcoming") return t.promoUpcoming(LAUNCH_PROMO.code);
+    if (status === "ended") return t.promoEnded(LAUNCH_PROMO.code);
+    return "";
+  }
+
   const [promoInput, setPromoInput] = useState(
     initialPromo?.trim().toUpperCase() === LAUNCH_PROMO.code ? LAUNCH_PROMO.code : "",
   );
   const [appliedPromo, setAppliedPromo] = useState(normalizePromoCode(initialPromo));
-  const [promoError, setPromoError] = useState(
-    initialPromo ? (promoCodeError(initialPromo) ?? "") : "",
+  const [promoErrorText, setPromoErrorText] = useState(
+    initialPromo ? promoError(initialPromo) : "",
   );
   const [packageId, setPackageId] = useState(strong ? "" : "growth");
   const [retainerId, setRetainerId] = useState<string>("");
@@ -186,9 +209,7 @@ export function PricingBuilder({
   );
   const [email, setEmail] = useState("");
   const [company, setCompany] = useState("");
-  const [industry, setIndustry] = useState(
-    cityHint ? `${cityHint} businesses` : "",
-  );
+  const [industry, setIndustry] = useState(cityHint ? t.cityIndustry(cityHint) : "");
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -221,17 +242,17 @@ export function PricingBuilder({
     const code = normalizePromoCode(raw);
     if (!raw.trim()) {
       setAppliedPromo(null);
-      setPromoError("");
+      setPromoErrorText("");
       return;
     }
     if (!code) {
       setAppliedPromo(null);
-      setPromoError(promoCodeError(raw) ?? "That promo code isn't valid.");
+      setPromoErrorText(promoError(raw) || t.promoInvalid(raw.trim().slice(0, 40)));
       return;
     }
     setPromoInput(code);
     setAppliedPromo(code);
-    setPromoError("");
+    setPromoErrorText("");
     trackEvent("pricing_promo_applied", { code, view });
   }
 
@@ -253,7 +274,7 @@ export function PricingBuilder({
   async function onCheckout(event: FormEvent) {
     event.preventDefault();
     if (selectedIds.length === 0) {
-      setError("Select at least one option to continue.");
+      setError(t.selectOne);
       return;
     }
     setBusy(true);
@@ -275,15 +296,16 @@ export function PricingBuilder({
           industry,
           notes,
           promoCode: appliedPromo ?? "",
+          locale,
         }),
       });
       const result = (await response.json()) as { url?: string; error?: string };
       if (!response.ok || !result.url) {
-        throw new Error(result.error || "Checkout unavailable");
+        throw new Error(result.error || t.checkoutUnavailable);
       }
       window.location.href = result.url;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Checkout failed");
+      setError(err instanceof Error ? err.message : t.checkoutFailed);
       setBusy(false);
     }
   }
@@ -297,36 +319,34 @@ export function PricingBuilder({
         <div>
           <p className="flex items-center gap-2 text-sm font-semibold text-white">
             <Sparkles className="h-4 w-4 text-indigo-300" aria-hidden="true" />
-            Your stack
+            {t.yourStack}
           </p>
           {totals.items.length === 0 ? (
-            <p className="mt-3 text-sm text-amber-200/90">
-              Select Hub, a retainer, or an add-on.
-            </p>
+            <p className="mt-3 text-sm text-amber-200/90">{t.selectSome}</p>
           ) : (
             <ul className="mt-3 space-y-1 text-sm text-zinc-300">
               {totals.items.map((item) => {
                 const off = promoDiscountCents(item, totals.promo);
+                const recurring = item.kind === "recurring";
                 return (
                   <li key={item.id}>
-                    {item.name} ·{" "}
+                    {localizeItem(item).name} ·{" "}
                     {off ? (
                       <>
                         <span className="text-zinc-500 line-through">
-                          {formatCad(item.amount)}
+                          {cad(item.amount)}
                         </span>{" "}
                         <span className="text-emerald-300">
-                          {formatCad(item.amount - off)}
+                          {cad(item.amount - off)}
                         </span>
                       </>
                     ) : (
-                      formatCad(item.amount)
+                      cad(item.amount)
                     )}
-                    {item.kind === "recurring" ? "/mo" : ""}
+                    {recurring ? t.mo : ""}
                     {off ? (
                       <span className="ml-1.5 text-xs text-emerald-300/80">
-                        {promoPercentFor(item, totals.promo)}% off
-                        {item.kind === "recurring" ? " first month" : ""}
+                        {t.pctOffShort(promoPercentFor(item, totals.promo), recurring)}
                       </span>
                     ) : null}
                   </li>
@@ -336,7 +356,7 @@ export function PricingBuilder({
           )}
           <div className="mt-4">
             <label htmlFor="pricing-promo" className="text-xs text-zinc-400">
-              Promo code
+              {t.promoLabel}
             </label>
             <div className="mt-1 flex gap-2">
               <input
@@ -358,58 +378,55 @@ export function PricingBuilder({
                 onClick={() => applyPromo(promoInput)}
                 className="rounded-full border border-white/15 px-4 text-sm font-medium text-zinc-200 transition hover:bg-white/5"
               >
-                Apply
+                {t.apply}
               </button>
             </div>
-            {promoError ? (
-              <p className="mt-1.5 text-xs text-rose-300">{promoError}</p>
+            {promoErrorText ? (
+              <p className="mt-1.5 text-xs text-rose-300">{promoErrorText}</p>
             ) : totals.promo ? (
               <p className="mt-1.5 text-xs text-emerald-300">
-                {totals.promo} saves{" "}
-                {formatCad(totals.oneTimeDiscount + totals.firstMonthDiscount)}
+                {t.promoSaves(totals.promo, cad(totals.oneTimeDiscount + totals.firstMonthDiscount))}
               </p>
             ) : null}
           </div>
         </div>
         <div className="min-w-[12rem] space-y-3 text-right text-sm">
           <div>
-            <p className="text-zinc-400">One-time subtotal</p>
+            <p className="text-zinc-400">{t.oneTimeSubtotal}</p>
             {totals.oneTimeDiscount ? (
-              <p className="text-zinc-500 line-through">{formatCad(totals.oneTimeBase)}</p>
+              <p className="text-zinc-500 line-through">{cad(totals.oneTimeBase)}</p>
             ) : null}
             <p className="text-lg font-semibold text-white">
-              {formatCad(totals.oneTime)}
+              {cad(totals.oneTime)}
             </p>
             <p className="text-zinc-500">
-              GST ({ALBERTA_GST_PERCENT}%) {formatCad(totals.oneTimeGst, 2)}
+              {t.gst(ALBERTA_GST_PERCENT)} {cad(totals.oneTimeGst, 2)}
             </p>
             <p className="mt-1 text-xl font-semibold text-white">
-              {formatCad(totals.oneTimeTotal, 2)}
+              {cad(totals.oneTimeTotal, 2)}
             </p>
           </div>
           <div>
             <p className="text-zinc-400">
-              {totals.firstMonthDiscount ? "First month" : "Monthly subtotal"}
+              {totals.firstMonthDiscount ? t.firstMonth : t.monthlySubtotal}
             </p>
             {totals.firstMonthDiscount ? (
-              <p className="text-zinc-500 line-through">{formatCad(totals.monthly)}</p>
+              <p className="text-zinc-500 line-through">{cad(totals.monthly)}</p>
             ) : null}
             <p className="text-lg font-semibold text-white">
-              {formatCad(totals.firstMonth)}
-              <span className="text-sm font-normal text-zinc-400"> /mo</span>
+              {cad(totals.firstMonth)}
+              <span className="text-sm font-normal text-zinc-400"> {t.mo}</span>
             </p>
             <p className="text-zinc-500">
-              GST ({ALBERTA_GST_PERCENT}%) {formatCad(totals.firstMonthGst, 2)}
-              /mo
+              {t.gst(ALBERTA_GST_PERCENT)} {cad(totals.firstMonthGst, 2)}
+              {t.mo}
             </p>
             <p className="mt-1 text-xl font-semibold text-white">
-              {formatCad(totals.firstMonthTotal, 2)}
-              <span className="text-sm font-normal text-zinc-400"> /mo</span>
+              {cad(totals.firstMonthTotal, 2)}
+              <span className="text-sm font-normal text-zinc-400"> {t.mo}</span>
             </p>
             {totals.firstMonthDiscount ? (
-              <p className="text-xs text-zinc-500">
-                Then {formatCad(totals.monthlyTotal, 2)}/mo incl. GST
-              </p>
+              <p className="text-xs text-zinc-500">{t.thenMonthly(cad(totals.monthlyTotal, 2))}</p>
             ) : null}
           </div>
         </div>
@@ -417,41 +434,41 @@ export function PricingBuilder({
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <label className="text-sm text-zinc-300">
-          Work email
+          {t.workEmail}
           <input
             type="email"
             required
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             className="hub-field mt-1.5 border-indigo-400/20 bg-zinc-950/70"
-            placeholder="you@company.ca"
+            placeholder={t.emailPlaceholder}
           />
         </label>
         <label className="text-sm text-zinc-300">
-          Company
+          {t.company}
           <input
             value={company}
             onChange={(event) => setCompany(event.target.value)}
             className="hub-field mt-1.5 border-indigo-400/20 bg-zinc-950/70"
-            placeholder="Your company"
+            placeholder={t.companyPlaceholder}
           />
         </label>
         <label className="text-sm text-zinc-300">
-          Industry
+          {t.industry}
           <input
             value={industry}
             onChange={(event) => setIndustry(event.target.value)}
             className="hub-field mt-1.5 border-indigo-400/20 bg-zinc-950/70"
-            placeholder="Trades, retail, clinic, hospitality…"
+            placeholder={t.industryPlaceholder}
           />
         </label>
         <label className="text-sm text-zinc-300">
-          Notes
+          {t.notes}
           <input
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
             className="hub-field mt-1.5 border-indigo-400/20 bg-zinc-950/70"
-            placeholder="Cities served, must-haves…"
+            placeholder={t.notesPlaceholder}
           />
         </label>
       </div>
@@ -465,38 +482,30 @@ export function PricingBuilder({
           {busy ? (
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
           ) : null}
-          {busy ? "Redirecting to Stripe…" : "Pay securely with Stripe"}
+          {busy ? t.redirecting : t.pay}
         </button>
         <a
-          href="/#contact"
+          href={localize("/#contact")}
           className="inline-flex items-center rounded-full border border-white/15 px-5 py-3 text-sm font-medium text-zinc-200 transition hover:bg-white/5"
         >
-          Prefer a consult first
+          {t.consultFirst}
         </a>
       </div>
       {!stripeReady ? (
-        <p className="mt-3 text-xs text-amber-200/90">
-          Stripe checkout activates once DigiSol&apos;s Stripe keys are on
-          Vercel. You can still build your stack now — if payment is offline,
-          use Book a consult and we&apos;ll invoice the same package.
-        </p>
+        <p className="mt-3 text-xs text-amber-200/90">{t.stripeNotReady}</p>
       ) : (
-        <p className="mt-3 text-xs text-zinc-500">
-          Secure Stripe Checkout · CAD · {ALBERTA_GST_PERCENT}% GST (Alberta)
-          added at payment · scope confirmed after payment.
-        </p>
+        <p className="mt-3 text-xs text-zinc-500">{t.stripeReady(ALBERTA_GST_PERCENT)}</p>
       )}
       <p className="mt-1.5 text-xs text-zinc-400">
-        Website packages can also be paid 50% up front and 50% at launch by
-        invoice.{" "}
+        {t.invoice}{" "}
         <a href="#quote" className="font-medium text-indigo-300 hover:text-indigo-200">
-          Request an invoice
+          {t.requestInvoice}
         </a>
       </p>
       <p className="mt-1.5 text-xs text-zinc-400">
-        {GUARANTEE_SHORT}{" "}
+        {guaranteeShort}{" "}
         <a href="#guarantee" className="font-medium text-indigo-300 hover:text-indigo-200">
-          See the guarantee
+          {t.seeGuarantee}
         </a>
       </p>
       {error ? <p className="mt-3 text-sm text-rose-300">{error}</p> : null}
@@ -509,24 +518,20 @@ export function PricingBuilder({
         {launchBanner}
         <div>
           <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
-            Your site scored well
+            {t.strongEyebrow}
           </p>
           <h2
             id="pricing-heading"
             className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl"
           >
-            Use the traffic you already have
+            {t.strongTitle}
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-zinc-400">
-            A strong audit does not need a rebuild first. These are the Hub,
-            retainer, and growth options that turn a good site into booked
-            work. A full website package stays optional at the bottom.
-          </p>
+          <p className="mx-auto mt-4 max-w-2xl text-zinc-400">{t.strongBody}</p>
         </div>
 
         <div id="hub">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
-            DigiSol Hub
+            {t.hubHeading}
           </h3>
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             {PRICING_HUB.map((item) => (
@@ -544,12 +549,9 @@ export function PricingBuilder({
 
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
-            Monthly retainers
+            {t.retainersHeading}
           </h3>
-          <p className="mt-2 text-sm text-zinc-500">
-            Local growth, paid media, or the full growth retainer. Pick one, or
-            skip.
-          </p>
+          <p className="mt-2 text-sm text-zinc-500">{t.retainersBody}</p>
           <div className="mt-4 grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
             <button
               type="button"
@@ -561,10 +563,8 @@ export function PricingBuilder({
                   : "border-white/10 bg-zinc-900/40 hover:border-indigo-400/30"
               }`}
             >
-              <h3 className="text-lg font-semibold text-white">No retainer</h3>
-              <p className="mt-2 text-sm text-zinc-400">
-                Hub and one-time add-ons only.
-              </p>
+              <h3 className="text-lg font-semibold text-white">{t.noRetainer}</h3>
+              <p className="mt-2 text-sm text-zinc-400">{t.noRetainerBody}</p>
             </button>
             {PRICING_RETAINERS.map((item) => (
               <ItemCard
@@ -581,12 +581,9 @@ export function PricingBuilder({
 
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
-            Growth add-ons
+            {t.addonsHeading}
           </h3>
-          <p className="mt-2 text-sm text-zinc-500">
-            Extra pages, city landings, and brand — layered on the site you
-            already have.
-          </p>
+          <p className="mt-2 text-sm text-zinc-500">{t.addonsBody}</p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {growthAddons.map((item) => (
               <ItemCard
@@ -603,8 +600,7 @@ export function PricingBuilder({
 
         <details className="rounded-2xl border border-white/10 bg-zinc-900/30 p-5">
           <summary className="cursor-pointer text-sm font-semibold text-zinc-300">
-            Need a full website rebuild instead? Open Foundation, Growth Engine,
-            and Full Funnel
+            {t.rebuildSummary}
           </summary>
           <div className="mt-4 grid gap-4 lg:grid-cols-3">
             <button
@@ -617,12 +613,8 @@ export function PricingBuilder({
                   : "border-white/10 bg-zinc-900/40"
               }`}
             >
-              <h3 className="text-lg font-semibold text-white">
-                No website package
-              </h3>
-              <p className="mt-2 text-sm text-zinc-400">
-                Stay on Hub, retainers, and add-ons only.
-              </p>
+              <h3 className="text-lg font-semibold text-white">{t.noPackage}</h3>
+              <p className="mt-2 text-sm text-zinc-400">{t.noPackageBody}</p>
             </button>
             {PRICING_PACKAGES.map((item) => (
               <ItemCard
@@ -647,26 +639,20 @@ export function PricingBuilder({
       {launchBanner}
       <div>
         <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
-          Scalable pricing
+          {t.defaultEyebrow}
         </p>
         <h2
           id="pricing-heading"
           className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl"
         >
-          Build the engagement your industry needs
+          {t.defaultTitle}
         </h2>
-        <p className="mx-auto mt-4 max-w-2xl text-zinc-400">
-          Pick a core package, add a monthly growth engine if you want ongoing
-          SEO or ads, then stack modules for cities, e-commerce, or custom apps.
-          Same DigiSol dual threat — design, engineering, and marketing — for
-          every Alberta industry. Listed prices exclude {ALBERTA_GST_PERCENT}%
-          GST; tax is added at Stripe Checkout.
-        </p>
+        <p className="mx-auto mt-4 max-w-2xl text-zinc-400">{t.defaultBody(ALBERTA_GST_PERCENT)}</p>
       </div>
 
       <div>
         <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
-          1 · Core package
+          {t.coreHeading}
         </h3>
         <div className="mt-4 grid gap-4 lg:grid-cols-3">
           {PRICING_PACKAGES.map((item) => (
@@ -684,7 +670,7 @@ export function PricingBuilder({
 
       <div>
         <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
-          2 · Monthly growth (optional)
+          {t.monthlyHeading}
         </h3>
         <div className="mt-4 grid gap-4 lg:grid-cols-3">
           <button
@@ -697,10 +683,8 @@ export function PricingBuilder({
                 : "border-white/10 bg-zinc-900/40 hover:border-indigo-400/30"
             }`}
           >
-            <h3 className="text-lg font-semibold text-white">Launch only</h3>
-            <p className="mt-2 text-sm text-zinc-400">
-              No monthly retainer — pay for the build and run campaigns later.
-            </p>
+            <h3 className="text-lg font-semibold text-white">{t.launchOnly}</h3>
+            <p className="mt-2 text-sm text-zinc-400">{t.launchOnlyBody}</p>
           </button>
           {PRICING_RETAINERS.map((item) => (
             <ItemCard
@@ -717,7 +701,7 @@ export function PricingBuilder({
 
       <div>
         <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
-          3 · Scale modules
+          {t.modulesHeading}
         </h3>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[...PRICING_ADDONS, ...PRICING_HUB].map((item) => (

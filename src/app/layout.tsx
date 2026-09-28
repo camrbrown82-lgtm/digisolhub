@@ -9,6 +9,10 @@ import { MobileContactBar } from "@/components/MobileContactBar";
 import { PublicKaylevChat } from "@/components/PublicKaylevChat";
 import { PublicSiteAnalytics } from "@/components/PublicSiteAnalytics";
 import { AttributionCaptureBoundary } from "@/components/AttributionCaptureBoundary";
+import { LanguageSuggestion } from "@/components/LanguageSuggestion";
+import { LOCALE_META } from "@/lib/i18n/config";
+import { LocaleProvider } from "@/lib/i18n/client";
+import { getLocale } from "@/lib/i18n/server";
 import { shareCardImages } from "@/lib/shareCard";
 import {
   WEBSITE_AUDIT_DESCRIPTION,
@@ -166,8 +170,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = getLocale();
   return (
-    <html lang="en-CA" className={inter.variable}>
+    <html lang={LOCALE_META[locale].intl} className={inter.variable}>
       <body className="font-sans min-h-screen bg-zinc-950 text-zinc-100">
         <Script
           src="https://cdn.cookiehub.eu/c2/d9c0b74d.js"
@@ -194,9 +199,12 @@ export default function RootLayout({
             __html: JSON.stringify(organizationJsonLd),
           }}
         />
-        {children}
-        <MobileContactBar />
-        <PublicKaylevChat />
+        <LocaleProvider locale={locale}>
+          <LanguageSuggestion />
+          {children}
+          <MobileContactBar />
+          <PublicKaylevChat />
+        </LocaleProvider>
         <PublicSiteAnalytics>
           <DigiSolSiteBeacon />
         </PublicSiteAnalytics>

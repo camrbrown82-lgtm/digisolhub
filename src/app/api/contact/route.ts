@@ -139,6 +139,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, spam: true });
   }
 
+  const french = str(body.language) === "fr";
   const deliveryErrors: string[] = [];
   let delivered = false;
   let leadSaved = false;
@@ -159,6 +160,7 @@ export async function POST(request: Request) {
           event_id: eventId,
           attribution,
           pin_house_client: true,
+          ...(french ? { tags: ["lead", "lang:fr"] } : {}),
         }),
       );
       leadSaved = Boolean(saved.id);
@@ -171,9 +173,10 @@ export async function POST(request: Request) {
 
   // Every submission alerts Cameron, even from someone already in Contacts.
   const alert = await sendLeadAlert({
-    sourceLabel: "Website contact form",
+    sourceLabel: french ? "Website contact form (French site)" : "Website contact form",
     ...fields,
     contactId: contactId ?? null,
+    note: french ? "They used the French site, so reply in French." : null,
   });
   if (alert.ok) {
     delivered = true;

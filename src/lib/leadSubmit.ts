@@ -11,6 +11,8 @@ export type LeadFields = {
   company?: string;
   service?: string;
   message?: string;
+  /** Site language the visitor used (`en`, `fr`). */
+  language?: string;
   /** Honeypot value; must stay empty. */
   website_url?: string;
 };

@@ -3,6 +3,8 @@
 import { CalendarDays, Mail, MessageCircle, MessageSquareText, Phone } from "lucide-react";
 import type { ComponentType } from "react";
 import { trackEvent } from "@/lib/analytics";
+import { useMessages } from "@/lib/i18n/client";
+import type { Messages } from "@/lib/i18n/messages";
 import {
   DIGISOL_BOOKING_URL,
   DIGISOL_EMAIL,
@@ -28,17 +30,17 @@ type Option = {
   onClick?: () => void;
 };
 
-function options(): Option[] {
+function options(t: Messages["contactOptions"]): Option[] {
   return [
-    { id: "call", label: "Call", detail: DIGISOL_PHONE_DISPLAY, icon: Phone, href: DIGISOL_TEL_HREF },
-    { id: "text", label: "Text", detail: DIGISOL_PHONE_DISPLAY, icon: MessageSquareText, href: DIGISOL_SMS_HREF },
-    { id: "email", label: "Email", detail: DIGISOL_EMAIL, icon: Mail, href: `mailto:${DIGISOL_EMAIL}` },
+    { id: "call", label: t.call, detail: DIGISOL_PHONE_DISPLAY, icon: Phone, href: DIGISOL_TEL_HREF },
+    { id: "text", label: t.text, detail: DIGISOL_PHONE_DISPLAY, icon: MessageSquareText, href: DIGISOL_SMS_HREF },
+    { id: "email", label: t.email, detail: DIGISOL_EMAIL, icon: Mail, href: `mailto:${DIGISOL_EMAIL}` },
     ...(DIGISOL_BOOKING_URL
       ? [
           {
             id: "book",
-            label: "Book a call",
-            detail: "Pick a time that suits you",
+            label: t.book,
+            detail: t.bookDetail,
             icon: CalendarDays,
             href: DIGISOL_BOOKING_URL,
             external: true,
@@ -47,8 +49,8 @@ function options(): Option[] {
       : []),
     {
       id: "chat",
-      label: "Chat with Kaylev",
-      detail: "Instant answers, day or night",
+      label: t.chat,
+      detail: t.chatDetail,
       icon: MessageCircle,
       onClick: openKaylevChat,
     },
@@ -64,13 +66,14 @@ export function ContactOptions({
   layout?: "pills" | "stack";
   className?: string;
 }) {
+  const t = useMessages().contactOptions;
   const track = (id: string) =>
     trackEvent("contact_option_click", { option: id, location });
 
   if (layout === "stack") {
     return (
       <ul className={`space-y-2 ${className}`}>
-        {options().map((o) => {
+        {options(t).map((o) => {
           const Icon = o.icon;
           const body = (
             <>
@@ -119,7 +122,7 @@ export function ContactOptions({
     "inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-200 transition hover:border-indigo-400/40 hover:text-white sm:text-sm";
   return (
     <div className={`flex flex-wrap items-center justify-center gap-2 ${className}`}>
-      {options().map((o) => {
+      {options(t).map((o) => {
         const Icon = o.icon;
         return o.href ? (
           <a
@@ -130,7 +133,7 @@ export function ContactOptions({
             {...(o.external ? { target: "_blank", rel: "noreferrer" } : {})}
           >
             <Icon className="h-3.5 w-3.5" />
-            {o.id === "call" ? `Call ${o.detail}` : o.label}
+            {o.id === "call" ? t.callNumber(o.detail) : o.label}
           </a>
         ) : (
           <button

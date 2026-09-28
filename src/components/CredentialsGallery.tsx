@@ -4,14 +4,11 @@ import { useState } from "react";
 import Image from "next/image";
 import { ExternalLink, FileText } from "lucide-react";
 import { CREDENTIALS, type CredentialItem } from "@/lib/credentials";
+import { useMessages } from "@/lib/i18n/client";
 
-const TABS = [
-  { id: "all", label: "All" },
-  { id: "hubspot", label: "HubSpot" },
-  { id: "education", label: "Education & tools" },
-] as const;
+const TAB_IDS = ["all", "hubspot", "education"] as const;
 
-type TabId = (typeof TABS)[number]["id"];
+type TabId = (typeof TAB_IDS)[number];
 
 function matchesTab(item: CredentialItem, tab: TabId) {
   if (tab === "all") return true;
@@ -20,30 +17,34 @@ function matchesTab(item: CredentialItem, tab: TabId) {
 }
 
 export function CredentialsGallery() {
+  const t = useMessages().credentials;
   const [tab, setTab] = useState<TabId>("all");
-  const items = CREDENTIALS.filter((item) => matchesTab(item, tab));
+  const items = CREDENTIALS.filter((item) => matchesTab(item, tab)).map((item) => ({
+    ...item,
+    blurb: t.blurbs[item.id] ?? item.blurb,
+  }));
 
   return (
     <div className="space-y-6">
       <div
         className="flex flex-wrap gap-2"
         role="tablist"
-        aria-label="Credential filters"
+        aria-label={t.filtersAria}
       >
-        {TABS.map((option) => (
+        {TAB_IDS.map((id) => (
           <button
-            key={option.id}
+            key={id}
             type="button"
             role="tab"
-            aria-selected={tab === option.id}
-            onClick={() => setTab(option.id)}
+            aria-selected={tab === id}
+            onClick={() => setTab(id)}
             className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-              tab === option.id
+              tab === id
                 ? "bg-indigo-600 text-white"
                 : "border border-zinc-700 text-zinc-300 hover:border-indigo-500 hover:text-white"
             }`}
           >
-            {option.label}
+            {t.tabs[id]}
           </button>
         ))}
       </div>
@@ -96,7 +97,7 @@ export function CredentialsGallery() {
                   </div>
                 </div>
                 <span className="inline-flex items-center gap-1 text-sm text-indigo-300">
-                  Open PDF
+                  {t.openPdf}
                   <ExternalLink className="h-3.5 w-3.5" />
                 </span>
               </a>

@@ -1,9 +1,14 @@
 import { ArrowRight, Code2, Megaphone, Palette, TrendingUp, ShoppingBag, type LucideIcon } from "lucide-react";
 import { BrandCard, brandAccent, type BrandAccent } from "@/components/BrandCard";
-import { PRICING_FROM } from "@/lib/pricingContent";
+import { LOCALE_META, localizePath } from "@/lib/i18n/config";
+import { getLocale } from "@/lib/i18n/server";
+import { getMessages } from "@/lib/i18n/messages";
+import { pricingFrom } from "@/lib/pricingContent";
 import type { HomeCopy } from "@/lib/visitorRegion";
 
 export function Services({ copy }: { copy: HomeCopy }) {
+  const locale = getLocale();
+  const t = getMessages(locale).services;
   const services: {
     icon: LucideIcon;
     title: string;
@@ -13,32 +18,32 @@ export function Services({ copy }: { copy: HomeCopy }) {
   }[] = [
     {
       icon: Palette,
-      title: "Website Design",
-      body: "Every engagement starts here. We design the look, the layout, and the path to inquire — then we build and market that same design. You are not buying a template with a logo slapped on.",
+      title: t.design.title,
+      body: t.design.body,
       accent: "sky",
       featured: true,
     },
     {
       icon: Code2,
-      title: "Custom Web & App Development",
-      body: "React, Next.js, and custom platforms that ship the design as a fast, durable site — high performance, no template bloat, no brittle page builders.",
+      title: t.dev.title,
+      body: t.dev.body,
       accent: "blue",
     },
     {
       icon: Megaphone,
-      title: "Search & Paid Media Campaigns",
+      title: t.paidTitle,
       body: copy.servicesPaid,
       accent: "indigo",
     },
     {
       icon: TrendingUp,
-      title: "Full-Funnel Integration & CRO",
-      body: "Turn visitors into leads with analytics, conversion paths, and email/lead workflows wired into the product.",
+      title: t.cro.title,
+      body: t.cro.body,
       accent: "blue",
     },
     {
       icon: ShoppingBag,
-      title: "E-Commerce & Platform Solutions",
+      title: t.commerceTitle,
       body: copy.servicesCommerce,
       accent: "indigo",
     },
@@ -53,18 +58,15 @@ export function Services({ copy }: { copy: HomeCopy }) {
       <div className="mx-auto max-w-6xl">
         <div className="text-center">
           <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
-            Design, engineering &amp; marketing
+            {t.eyebrow}
           </p>
           <h2
             id="services-heading"
             className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl"
           >
-            One Roof, From Look to Lead
+            {t.title}
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-zinc-400">
-            We design the website, build the platform, and fill the funnel.
-            Same partner from first mockup to booked work.
-          </p>
+          <p className="mx-auto mt-4 max-w-2xl text-zinc-400">{t.intro}</p>
         </div>
         <ul className="mt-12 grid gap-6 sm:grid-cols-2">
           {services.map(({ icon: Icon, title, body, accent, featured }) => {
@@ -104,12 +106,12 @@ export function Services({ copy }: { copy: HomeCopy }) {
           })}
         </ul>
         <p className="mt-10 text-center text-sm text-zinc-400">
-          Transparent pricing: custom websites from {PRICING_FROM} plus GST.{" "}
+          {t.pricingLine(pricingFrom(LOCALE_META[locale].intl))}{" "}
           <a
-            href="/pricing"
+            href={localizePath("/pricing", locale)}
             className="inline-flex items-center gap-1 font-semibold text-indigo-300 hover:text-sky-300"
           >
-            See packages
+            {t.seePackages}
             <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
           </a>
         </p>

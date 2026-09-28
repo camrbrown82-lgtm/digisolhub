@@ -3,14 +3,12 @@ import { notFound } from "next/navigation";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { MarketingHomeStack } from "@/components/sections/MarketingHomeStack";
+import { homeCopyForLocation, localizedLocationPage } from "@/lib/homeCopy";
+import { LOCALE_META, localizePath, type Locale } from "@/lib/i18n/config";
+import { getLocale, localizedMetadata } from "@/lib/i18n/server";
+import { getMessages } from "@/lib/i18n/messages";
 import { shareCardImages, shareCardPath } from "@/lib/shareCard";
-import {
-  LOCATION_PAGES,
-  getLocationPage,
-  homeCopyForLocation,
-  locationPath,
-  locationUrl,
-} from "@/lib/locations";
+import { LOCATION_PAGES, locationPath, type LocationPage } from "@/lib/locations";
 import {
   DIGISOL_CITY,
   DIGISOL_GEO,
@@ -30,25 +28,26 @@ export function generateStaticParams() {
   return LOCATION_PAGES.map((page) => ({ city: page.slug }));
 }
 
+const localizedUrl = (page: LocationPage, locale: Locale) =>
+  `${DIGISOL_SITE_URL}${localizePath(locationPath(page.slug), locale)}`;
+
 export function generateMetadata({ params }: PageProps): Metadata {
-  const page = getLocationPage(params.city);
+  const locale = getLocale();
+  const page = localizedLocationPage(params.city, locale);
   if (!page) return {};
   const title = `${page.headline} | DigiSol`;
   const description = page.subhead;
-  const url = locationUrl(page.slug);
-  return {
+  return localizedMetadata(locale, locationPath(page.slug), {
     title,
     description,
     keywords: page.keywords,
-    alternates: { canonical: locationPath(page.slug) },
     openGraph: {
       title,
       description,
-      url,
+      url: localizedUrl(page, locale),
       type: "website",
-      locale: "en_CA",
       siteName: "DigiSol",
-      images: shareCardImages(`DigiSol web design and marketing for ${page.name} businesses`, page.slug),
+      images: shareCardImages(getMessages(locale).meta.cityShareAlt(page.name), page.slug),
     },
     twitter: {
       card: "summary_large_image",
@@ -56,17 +55,19 @@ export function generateMetadata({ params }: PageProps): Metadata {
       description,
       images: [shareCardPath(page.slug)],
     },
-  };
+  });
 }
 
-function buildLocalBusinessJsonLd(page: NonNullable<ReturnType<typeof getLocationPage>>) {
+function buildLocalBusinessJsonLd(page: LocationPage, locale: Locale) {
   const isAirdrie = page.slug === "airdrie";
+  const t = getMessages(locale).cityJsonLd;
+  const url = localizedUrl(page, locale);
   return {
     "@context": "https://schema.org",
     "@type": ["LocalBusiness", "ProfessionalService"],
-    "@id": `${locationUrl(page.slug)}#business`,
+    "@id": `${url}#business`,
     name: "DigiSol",
-    url: locationUrl(page.slug),
+    url,
     image: `${DIGISOL_SITE_URL}/logo.jpg`,
     telephone: DIGISOL_PHONE,
     priceRange: "$$",
@@ -100,9 +101,7 @@ function buildLocalBusinessJsonLd(page: NonNullable<ReturnType<typeof getLocatio
         "@type": "Offer",
         itemOffered: {
           "@type": "Service",
-          name: isAirdrie
-            ? "Airdrie web design and development"
-            : `Website design and development in ${page.name}`,
+          name: isAirdrie ? t.offerDesignHome : t.offerDesign(page.name),
           serviceType: ["Website Design", "Web Development"],
           areaServed: page.name,
         },
@@ -111,9 +110,7 @@ function buildLocalBusinessJsonLd(page: NonNullable<ReturnType<typeof getLocatio
         "@type": "Offer",
         itemOffered: {
           "@type": "Service",
-          name: isAirdrie
-            ? "Airdrie marketing and local SEO"
-            : `Digital marketing and local SEO in ${page.name}`,
+          name: isAirdrie ? t.offerMarketingHome : t.offerMarketing(page.name),
           serviceType: ["Digital Marketing", "Local SEO", "Google Ads", "Meta Ads"],
           areaServed: page.name,
         },
@@ -122,55 +119,37 @@ function buildLocalBusinessJsonLd(page: NonNullable<ReturnType<typeof getLocatio
   };
 }
 
-function buildFaqJsonLd(page: NonNullable<ReturnType<typeof getLocationPage>>) {
+function buildFaqJsonLd(page: LocationPage, locale: Locale) {
   const city = page.name;
   const isAirdrie = page.slug === "airdrie";
+  const t = getMessages(locale).cityJsonLd;
+  const address = `${DIGISOL_STREET_ADDRESS}, ${DIGISOL_CITY}, AB ${DIGISOL_POSTAL_CODE}`;
+  const qa = (name: string, text: string) => ({
+    "@type": "Question",
+    name,
+    acceptedAnswer: { "@type": "Answer", text },
+  });
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
+    inLanguage: LOCALE_META[locale].intl,
     mainEntity: [
-      {
-        "@type": "Question",
-        name: isAirdrie
-          ? "Who offers web design and development in Airdrie?"
-          : `Who offers website design and development in ${city}?`,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: isAirdrie
-            ? "DigiSol is an Airdrie-based studio that designs and builds custom websites (Next.js) for local businesses, then markets them with local SEO and paid campaigns."
-            : `DigiSol designs and builds custom websites for ${city} businesses from our Airdrie headquarters, with local SEO and campaigns aimed at ${city} and nearby markets.`,
-        },
-      },
-      {
-        "@type": "Question",
-        name: isAirdrie
-          ? "Does DigiSol offer Airdrie marketing and SEO?"
-          : `Does DigiSol offer marketing and SEO in ${city}?`,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: `Yes. DigiSol runs local SEO, Google Ads, and Meta campaigns for ${city}, plus conversion work so traffic turns into booked consultations.`,
-        },
-      },
-      {
-        "@type": "Question",
-        name: "Where is DigiSol located?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: `DigiSol is headquartered at ${DIGISOL_STREET_ADDRESS}, ${DIGISOL_CITY}, AB ${DIGISOL_POSTAL_CODE}. Phone ${DIGISOL_PHONE}.`,
-        },
-      },
+      qa(isAirdrie ? t.q1Home : t.q1(city), isAirdrie ? t.a1Home : t.a1(city)),
+      qa(isAirdrie ? t.q2Home : t.q2(city), t.a2(city)),
+      qa(t.q3, t.a3(address, DIGISOL_PHONE)),
     ],
   };
 }
 
 /** City lander = homepage stack + unique local-intent SEO section. */
 export default function LocationCityPage({ params }: PageProps) {
-  const page = getLocationPage(params.city);
+  const locale = getLocale();
+  const page = localizedLocationPage(params.city, locale);
   if (!page) notFound();
 
-  const copy = homeCopyForLocation(page);
-  const businessJsonLd = buildLocalBusinessJsonLd(page);
-  const faqJsonLd = buildFaqJsonLd(page);
+  const copy = homeCopyForLocation(page, locale);
+  const businessJsonLd = buildLocalBusinessJsonLd(page, locale);
+  const faqJsonLd = buildFaqJsonLd(page, locale);
 
   return (
     <>

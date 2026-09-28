@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { DEFAULT_LOCALE, isLocale, localizePath } from "@/lib/i18n/config";
+import { localizePricingItem } from "@/lib/i18n/pricing";
 import {
   LAUNCH_PROMO,
   getPricingItem,
@@ -36,7 +38,11 @@ export async function POST(request: Request) {
     industry?: string;
     notes?: string;
     promoCode?: string;
+    locale?: string;
   } | null;
+  const requestedLocale = body?.locale;
+  const locale = isLocale(requestedLocale) ? requestedLocale : DEFAULT_LOCALE;
+  const french = locale === "fr";
 
   const rawPromo = body?.promoCode?.trim() || "";
   const promoError = promoCodeError(rawPromo);
@@ -78,6 +84,8 @@ export async function POST(request: Request) {
   const gstTaxRateId = await getAlbertaGstTaxRateId(stripe);
   const line_items = items.map((item) => {
     const oneTimePromo = item.kind === "one_time" ? promoPercentFor(item, promo) : 0;
+    const copy = localizePricingItem(item, locale);
+    const promoLabel = french ? `${promo} ${oneTimePromo} % de rabais` : `${promo} ${oneTimePromo}% off`;
     return {
       quantity: 1,
       tax_rates: [gstTaxRateId],
@@ -85,8 +93,8 @@ export async function POST(request: Request) {
         currency: "cad",
         tax_behavior: "exclusive" as const,
         product_data: {
-          name: oneTimePromo ? `${item.name} (${promo} ${oneTimePromo}% off)` : item.name,
-          description: item.blurb.slice(0, 450),
+          name: oneTimePromo ? `${copy.name} (${promoLabel})` : copy.name,
+          description: copy.blurb.slice(0, 450),
           metadata: { digisol_id: item.id },
         },
         unit_amount:
@@ -103,7 +111,9 @@ export async function POST(request: Request) {
   const firstMonthCoupon =
     promo && firstMonthDiscount > 0
       ? await stripe.coupons.create({
-          name: `${promo}: ${LAUNCH_PROMO.otherPercent}% off first month`,
+          name: french
+            ? `${promo} : ${LAUNCH_PROMO.otherPercent} % sur le premier mois`
+            : `${promo}: ${LAUNCH_PROMO.otherPercent}% off first month`,
           amount_off: firstMonthDiscount,
           currency: "cad",
           duration: "once",
@@ -116,9 +126,10 @@ export async function POST(request: Request) {
   const session = await stripe.checkout.sessions.create({
     mode: items.some((item) => item.kind === "recurring") ? "subscription" : "payment",
     line_items,
-    success_url: `${origin}/pricing/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/pricing?cancelled=1${promo ? `&promo=${promo}` : ""}`,
+    success_url: `${origin}${localizePath("/pricing/success", locale)}?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${origin}${localizePath("/pricing", locale)}?cancelled=1${promo ? `&promo=${promo}` : ""}`,
     customer_email: body?.email?.trim() || undefined,
+    locale: french ? "fr-CA" : "en",
     ...(firstMonthCoupon
       ? { discounts: [{ coupon: firstMonthCoupon.id }] }
       : promo
@@ -134,11 +145,13 @@ export async function POST(request: Request) {
       source: "wwwdigisol.com",
       tax: "alberta_gst_5",
       promo_code: promo || "",
+      language: locale,
     },
     custom_text: {
       submit: {
-        message:
-          "Prices exclude 5% GST (Alberta). DigiSol confirms scope after checkout.",
+        message: french
+          ? "Les prix excluent la TPS de 5 % (Alberta). DigiSol confirme la portée du projet après le paiement."
+          : "Prices exclude 5% GST (Alberta). DigiSol confirms scope after checkout.",
       },
     },
   });

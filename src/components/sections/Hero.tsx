@@ -3,9 +3,11 @@ import { ContactOptions } from "@/components/ContactOptions";
 import { GoogleRating, ListingLinks } from "@/components/LocalListings";
 import { QuickQuote } from "@/components/QuickQuote";
 import { TrackedLink } from "@/components/TrackedLink";
+import { getServerMessages } from "@/lib/i18n/server";
 import type { HomeCopy } from "@/lib/visitorRegion";
 
 export function Hero({ copy }: { copy: HomeCopy }) {
+  const t = getServerMessages().hero;
   return (
     <section
       id="top"
@@ -62,7 +64,7 @@ export function Hero({ copy }: { copy: HomeCopy }) {
             eventParams={{ cta_name: "book_consultation", location: "hero" }}
             className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 sm:w-auto"
           >
-            Book a Free Consultation
+            {t.bookConsultation}
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </TrackedLink>
           <TrackedLink
@@ -71,7 +73,7 @@ export function Hero({ copy }: { copy: HomeCopy }) {
             eventParams={{ cta_name: "explore_services", location: "hero" }}
             className="inline-flex w-full items-center justify-center rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 sm:w-auto"
           >
-            Explore Services
+            {t.exploreServices}
           </TrackedLink>
         </div>
         <div className="mx-auto mt-10 max-w-4xl">

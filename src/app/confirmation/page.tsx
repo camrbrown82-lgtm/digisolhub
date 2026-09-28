@@ -5,22 +5,30 @@ import { MetaLeadConversion } from "@/components/MetaLeadConversion";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { TrackedLink } from "@/components/TrackedLink";
+import { localizePath } from "@/lib/i18n/config";
+import { getLocale } from "@/lib/i18n/server";
+import { getMessages } from "@/lib/i18n/messages";
 import { DIGISOL_EMAIL, DIGISOL_LINKEDIN_URL, LINKEDIN_ENABLED } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "Confirmation | DigiSol",
-  description:
-    "Your DigiSol consultation request has been received. We will follow up shortly.",
-  robots: {
-    index: false,
-    follow: false,
-  },
-  alternates: {
-    canonical: "/confirmation",
-  },
-};
+export function generateMetadata(): Metadata {
+  const locale = getLocale();
+  const t = getMessages(locale).confirmation;
+  return {
+    title: t.metaTitle,
+    description: t.metaDescription,
+    robots: {
+      index: false,
+      follow: false,
+    },
+    alternates: {
+      canonical: localizePath("/confirmation", locale),
+    },
+  };
+}
 
 export default function ConfirmationPage() {
+  const locale = getLocale();
+  const t = getMessages(locale).confirmation;
   return (
     <>
       <Navbar />
@@ -33,15 +41,10 @@ export default function ConfirmationPage() {
             aria-hidden="true"
           />
           <h1 className="mt-6 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-            Confirmation
+            {t.title}
           </h1>
-          <p className="mt-4 text-lg text-zinc-200">
-            Your consultation request is booked.
-          </p>
-          <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-            Thanks for reaching out. Cameron will follow up at the email you
-            provided, typically within one business day.
-          </p>
+          <p className="mt-4 text-lg text-zinc-200">{t.lead}</p>
+          <p className="mt-3 text-sm leading-relaxed text-zinc-400">{t.body}</p>
           <div className="mt-8 flex flex-col items-center gap-3 text-sm text-zinc-300">
             <TrackedLink
               href="tel:+15875770782"
@@ -76,12 +79,12 @@ export default function ConfirmationPage() {
             ) : null}
           </div>
           <TrackedLink
-            href="/"
+            href={localizePath("/", locale)}
             eventName="cta_click"
             eventParams={{ cta_name: "back_home", location: "confirmation" }}
             className="mt-10 inline-flex items-center justify-center rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
           >
-            Back to DigiSol
+            {t.back}
           </TrackedLink>
         </div>
       </main>

@@ -214,8 +214,8 @@ export function gstCents(amountCents: number) {
   return Math.round(amountCents * ALBERTA_GST_RATE);
 }
 
-export function formatCad(cents: number, fractionDigits = 0) {
-  return new Intl.NumberFormat("en-CA", {
+export function formatCad(cents: number, fractionDigits = 0, intlLocale = "en-CA") {
+  return new Intl.NumberFormat(intlLocale, {
     style: "currency",
     currency: "CAD",
     minimumFractionDigits: fractionDigits,

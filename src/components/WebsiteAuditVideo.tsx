@@ -1,3 +1,4 @@
+import { getServerMessages } from "@/lib/i18n/server";
 import {
   WEBSITE_AUDIT_THUMBNAIL_PATH,
   WEBSITE_AUDIT_TITLE,
@@ -23,7 +24,7 @@ export function WebsiteAuditVideo({
       aria-label={WEBSITE_AUDIT_TITLE}
     >
       <source src={WEBSITE_AUDIT_VIDEO_PATH} type="video/mp4" />
-      <a href={WEBSITE_AUDIT_VIDEO_PATH}>Download the DigiSol website audit video</a>
+      <a href={WEBSITE_AUDIT_VIDEO_PATH}>{getServerMessages().websiteAudit.videoFallback}</a>
     </video>
   );
 }

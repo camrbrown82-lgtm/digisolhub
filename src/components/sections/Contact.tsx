@@ -7,6 +7,7 @@ import { BrandCard } from "@/components/BrandCard";
 import { ContactOptions } from "@/components/ContactOptions";
 import { GoogleRating } from "@/components/LocalListings";
 import { trackEvent } from "@/lib/analytics";
+import { useLocale, useLocalizedHref, useMessages } from "@/lib/i18n/client";
 import { submitLead } from "@/lib/leadSubmit";
 import { DIGISOL_EMAIL, DIGISOL_PHONE } from "@/lib/site";
 
@@ -14,15 +15,18 @@ const fieldClass =
   "mt-1.5 w-full rounded-lg border border-indigo-400/25 bg-zinc-950/80 px-3 py-2.5 text-sm text-white placeholder:text-zinc-500 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30";
 
 const phoneDisplay = DIGISOL_PHONE.replace("+1-", "1-");
-const formErrorFallback = `Something went wrong sending the form. Email ${DIGISOL_EMAIL} or call ${phoneDisplay}.`;
 
 export function Contact({
-  title = "Ready to Grow Your Business Online?",
-  body = "Get a project quote or free strategy consult for website design, custom development, SEO, and campaigns — built for companies that sell locally or across borders.",
+  title,
+  body,
 }: {
   title?: string;
   body?: string;
 }) {
+  const locale = useLocale();
+  const localize = useLocalizedHref();
+  const messages = useMessages();
+  const t = messages.contact;
   const router = useRouter();
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
@@ -47,6 +51,7 @@ export function Contact({
           company: value("business"),
           service: value("service"),
           message: value("details"),
+          language: locale,
           website_url: value("website_url"),
         },
         "contact_form",
@@ -54,16 +59,16 @@ export function Contact({
       // Flagged pitches skip /confirmation so they never count as an ad conversion.
       if (outcome === "spam") {
         form.reset();
-        setNotice("Thanks, your message was received.");
+        setNotice(t.received);
         return;
       }
-      router.push("/confirmation");
+      router.push(localize("/confirmation"));
     } catch (err) {
       const detail = err instanceof Error ? err.message : "";
       setError(
         detail && !/failed to fetch|network/i.test(detail)
           ? detail
-          : formErrorFallback,
+          : t.error(DIGISOL_EMAIL, phoneDisplay),
       );
     } finally {
       setSending(false);
@@ -79,19 +84,19 @@ export function Contact({
       <div className="mx-auto max-w-5xl">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
-            Contact
+            {t.eyebrow}
           </p>
           <h2
             id="contact-heading"
             className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl"
           >
-            {title}
+            {title ?? messages.home.general.contactTitle}
           </h2>
-          <p className="mt-4 text-zinc-400">{body}</p>
+          <p className="mt-4 text-zinc-400">{body ?? messages.home.general.contactBody}</p>
           <p className="mt-3 text-sm text-zinc-500">
-            Prefer to browse packages first?{" "}
+            {t.browseFirst}{" "}
             <a
-              href="/pricing"
+              href={localize("/pricing")}
               className="font-medium text-indigo-300 underline-offset-2 transition hover:text-indigo-200 hover:underline"
               onClick={() =>
                 trackEvent("cta_click", {
@@ -100,29 +105,25 @@ export function Contact({
                 })
               }
             >
-              See DigiSol pricing
+              {t.seePricing}
             </a>
             .
           </p>
         </div>
         <div className="mt-10 grid gap-8 lg:grid-cols-5">
-        <aside className="space-y-6 lg:col-span-2" aria-label="Other ways to reach DigiSol">
+        <aside className="space-y-6 lg:col-span-2" aria-label={t.otherWaysAria}>
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
-              Rather talk now?
+              {t.talkNow}
             </h3>
             <ContactOptions location="contact" layout="stack" className="mt-3" />
           </div>
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
-              What happens next
+              {t.nextTitle}
             </h3>
             <ol className="mt-3 space-y-3 text-sm text-zinc-300">
-              {[
-                "Send the form, call, or text. You reach Cameron, the founder, not a call centre.",
-                "Free consultation to understand your goals, customers, and budget.",
-                "A clear written quote with fixed package pricing. No obligation.",
-              ].map((step, index) => (
+              {t.steps.map((step, index) => (
                 <li key={step} className="flex gap-3">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500/20 text-xs font-semibold text-indigo-200">
                     {index + 1}
@@ -159,7 +160,7 @@ export function Contact({
                   htmlFor="fullName"
                   className="block text-sm font-medium text-zinc-200"
                 >
-                  Full Name
+                  {t.fullName}
                 </label>
                 <input
                   id="fullName"
@@ -168,7 +169,7 @@ export function Contact({
                   autoComplete="name"
                   required
                   className={fieldClass}
-                  placeholder="Alex Rivera"
+                  placeholder={t.namePlaceholder}
                 />
               </div>
               <div>
@@ -176,7 +177,7 @@ export function Contact({
                   htmlFor="business"
                   className="block text-sm font-medium text-zinc-200"
                 >
-                  Business Name &amp; Domain
+                  {t.business}
                 </label>
                 <input
                   id="business"
@@ -185,7 +186,7 @@ export function Contact({
                   autoComplete="organization"
                   required
                   className={fieldClass}
-                  placeholder="Acme Co — acme.com"
+                  placeholder={t.businessPlaceholder}
                 />
               </div>
               <div>
@@ -193,7 +194,7 @@ export function Contact({
                   htmlFor="email"
                   className="block text-sm font-medium text-zinc-200"
                 >
-                  Email Address
+                  {t.email}
                 </label>
                 <input
                   id="email"
@@ -210,7 +211,7 @@ export function Contact({
                   htmlFor="phone"
                   className="block text-sm font-medium text-zinc-200"
                 >
-                  Phone <span className="font-normal text-zinc-500">(optional, for a quick call back)</span>
+                  {t.phone} <span className="font-normal text-zinc-500">{t.phoneHint}</span>
                 </label>
                 <input
                   id="phone"
@@ -226,7 +227,7 @@ export function Contact({
                   htmlFor="service"
                   className="block text-sm font-medium text-zinc-200"
                 >
-                  Service Needed
+                  {t.service}
                 </label>
                 <select
                   id="service"
@@ -240,14 +241,12 @@ export function Contact({
                   }}
                 >
                   <option value="" disabled>
-                    Select a service
+                    {t.selectService}
                   </option>
-                  <option value="website-design">Website Design</option>
-                  <option value="custom-web-dev">Custom Web Dev</option>
-                  <option value="digital-marketing">Digital Marketing</option>
-                  <option value="combined-full-package">
-                    Design + Build + Marketing
-                  </option>
+                  <option value="website-design">{t.services.design}</option>
+                  <option value="custom-web-dev">{t.services.dev}</option>
+                  <option value="digital-marketing">{t.services.marketing}</option>
+                  <option value="combined-full-package">{t.services.combined}</option>
                 </select>
               </div>
               <div>
@@ -255,7 +254,7 @@ export function Contact({
                   htmlFor="details"
                   className="block text-sm font-medium text-zinc-200"
                 >
-                  Project Details
+                  {t.details}
                 </label>
                 <textarea
                   id="details"
@@ -263,7 +262,7 @@ export function Contact({
                   required
                   rows={5}
                   className={`${fieldClass} resize-y`}
-                  placeholder="Goals, timeline, current stack, and what success looks like…"
+                  placeholder={t.detailsPlaceholder}
                 />
               </div>
               {error ? (
@@ -281,7 +280,7 @@ export function Contact({
                 disabled={sending}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {sending ? "Sending…" : "Request Free Consultation"}
+                {sending ? t.sending : t.submit}
                 <Send className="h-4 w-4" aria-hidden="true" />
               </button>
             </form>

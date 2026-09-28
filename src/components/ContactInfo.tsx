@@ -1,5 +1,7 @@
 import { Linkedin, Mail, Phone } from "lucide-react";
 import { TrackedLink } from "@/components/TrackedLink";
+import { getLocale } from "@/lib/i18n/server";
+import { getMessages } from "@/lib/i18n/messages";
 import { DIGISOL_EMAIL, DIGISOL_LINKEDIN_URL, LINKEDIN_ENABLED } from "@/lib/site";
 
 const allContacts = [
@@ -37,11 +39,12 @@ type ContactInfoProps = {
 
 function Identity({ location }: ContactInfoProps) {
   const isHero = location === "hero";
+  const t = getMessages(getLocale()).contactInfo;
 
   return (
     <span>
       <span className="block">
-        Founder &amp; CEO{" "}
+        {t.founder}{" "}
         <span className="font-medium text-sky-300">Cameron Brown</span>
       </span>
       <span
@@ -51,8 +54,7 @@ function Identity({ location }: ContactInfoProps) {
             : "mt-0.5 block text-indigo-300/70"
         }
       >
-        Certified Full Stack Developer and Digital Marketing and Social Media
-        Specialist
+        {t.credentials}
       </span>
     </span>
   );
@@ -60,6 +62,7 @@ function Identity({ location }: ContactInfoProps) {
 
 export function ContactInfo({ location }: ContactInfoProps) {
   const isHero = location === "hero";
+  const t = getMessages(getLocale()).contactInfo;
 
   const links = contacts.map(({ href, method, label, icon: Icon }) => (
     <TrackedLink
@@ -82,7 +85,7 @@ export function ContactInfo({ location }: ContactInfoProps) {
     return (
       <div className="flex max-w-full items-center justify-center gap-x-3 overflow-hidden whitespace-nowrap text-sm leading-none text-indigo-100">
         <p className="shrink-0">
-          Founder &amp; CEO{" "}
+          {t.founder}{" "}
           <span className="font-medium text-sky-300">Cameron Brown</span>
         </p>
         <span className="h-3.5 w-px shrink-0 bg-indigo-500/35" aria-hidden="true" />

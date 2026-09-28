@@ -15,6 +15,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { BrandCard, brandAccent, type BrandAccent } from "@/components/BrandCard";
+import { getServerMessages } from "@/lib/i18n/server";
+import type { Messages } from "@/lib/i18n/messages";
 import type { HomeCopy } from "@/lib/visitorRegion";
 
 type Advantage = {
@@ -24,20 +26,20 @@ type Advantage = {
   accent: BrandAccent;
 };
 
-function columnsFor(copy: HomeCopy): Advantage[] {
+function columnsFor(copy: HomeCopy, t: Messages["dualThreat"]): Advantage[] {
   return [
     {
       icon: Palette,
-      title: "The Design Craft",
+      title: t.design.title,
       accent: "sky",
       items: [
         {
           icon: Palette,
-          text: "Custom website design from your brand — not a template with a logo dropped on",
+          text: t.design.custom,
         },
         {
           icon: Type,
-          text: "Layout, type, and color so the next step is obvious",
+          text: t.design.layout,
         },
         {
           icon: MousePointerClick,
@@ -45,18 +47,18 @@ function columnsFor(copy: HomeCopy): Advantage[] {
         },
         {
           icon: Layers,
-          text: "A visual system ads and email can reuse, not a one-off mockup",
+          text: t.design.system,
         },
       ],
     },
     {
       icon: Code2,
-      title: "The Developer Advantage",
+      title: t.developer.title,
       accent: "blue",
       items: [
         {
           icon: Code2,
-          text: "Modern Next.js / React engineering built for scale",
+          text: t.developer.stack,
         },
         {
           icon: Zap,
@@ -64,22 +66,22 @@ function columnsFor(copy: HomeCopy): Advantage[] {
         },
         {
           icon: LayoutTemplate,
-          text: "Zero template bloat — custom platforms, not page builders",
+          text: t.developer.noBloat,
         },
         {
           icon: Plug,
-          text: "Custom API integrations that connect your real stack",
+          text: t.developer.apis,
         },
       ],
     },
     {
       icon: Megaphone,
-      title: "The Marketing Engine",
+      title: t.marketing.title,
       accent: "indigo",
       items: [
         {
           icon: Filter,
-          text: "High-converting funnels from first click to close",
+          text: t.marketing.funnels,
         },
         {
           icon: Target,
@@ -91,7 +93,7 @@ function columnsFor(copy: HomeCopy): Advantage[] {
         },
         {
           icon: LineChart,
-          text: "Data-driven CRO so every experiment ships with evidence",
+          text: t.marketing.cro,
         },
       ],
     },
@@ -99,7 +101,8 @@ function columnsFor(copy: HomeCopy): Advantage[] {
 }
 
 export function DualThreat({ copy }: { copy: HomeCopy }) {
-  const columns = columnsFor(copy);
+  const t = getServerMessages().dualThreat;
+  const columns = columnsFor(copy, t);
   return (
     <section
       id="why-us"
@@ -109,7 +112,7 @@ export function DualThreat({ copy }: { copy: HomeCopy }) {
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
-            Design. Build. Grow.
+            {t.eyebrow}
           </p>
           <h2
             id="why-heading"

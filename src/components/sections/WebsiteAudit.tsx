@@ -1,10 +1,15 @@
 import { TrackedLink } from "@/components/TrackedLink";
 import { WebsiteAuditExport } from "@/components/WebsiteAuditExport";
 import { WebsiteAuditVideo } from "@/components/WebsiteAuditVideo";
+import { localizePath } from "@/lib/i18n/config";
+import { getLocale } from "@/lib/i18n/server";
+import { getMessages } from "@/lib/i18n/messages";
 import { WEBSITE_AUDIT_PAGE_PATH } from "@/lib/media";
 import type { HomeCopy } from "@/lib/visitorRegion";
 
 export function WebsiteAudit({ copy }: { copy: HomeCopy }) {
+  const locale = getLocale();
+  const t = getMessages(locale).websiteAudit;
   return (
     <section
       id="media"
@@ -14,13 +19,13 @@ export function WebsiteAudit({ copy }: { copy: HomeCopy }) {
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
-            Media
+            {t.eyebrow}
           </p>
           <h2
             id="website-audit-heading"
             className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl"
           >
-            See How DigiSol Audits Your Website
+            {t.title}
           </h2>
           <p className="mt-4 text-zinc-400">{copy.auditBody}</p>
         </div>
@@ -30,7 +35,7 @@ export function WebsiteAudit({ copy }: { copy: HomeCopy }) {
           <WebsiteAuditExport location="homepage_website_audit" />
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <TrackedLink
-              href="/#contact"
+              href={localizePath("/#contact", locale)}
               eventName="cta_click"
               eventParams={{
                 cta_name: "book_consultation",
@@ -38,13 +43,13 @@ export function WebsiteAudit({ copy }: { copy: HomeCopy }) {
               }}
               className="inline-flex items-center rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
             >
-              Book a consultation
+              {t.bookConsult}
             </TrackedLink>
             <a
               href={WEBSITE_AUDIT_PAGE_PATH}
               className="text-sm font-medium text-indigo-300 transition hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
             >
-              Full media page &amp; transcript
+              {t.fullPage}
             </a>
           </div>
         </div>
