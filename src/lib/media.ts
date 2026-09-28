@@ -15,6 +15,8 @@ export const WEBSITE_AUDIT_VIDEO_URL = `${DIGISOL_SITE_URL}${WEBSITE_AUDIT_VIDEO
 export const WEBSITE_AUDIT_PAGE_URL = `${DIGISOL_SITE_URL}${WEBSITE_AUDIT_PAGE_PATH}`;
 
 export const WEBSITE_AUDIT_UPLOAD_DATE = "2026-09-21";
+/** Google rejects date-only uploadDate values; it needs a time and timezone. */
+export const WEBSITE_AUDIT_UPLOAD_DATETIME = `${WEBSITE_AUDIT_UPLOAD_DATE}T00:00:00-06:00`;
 
 /** Frame from 0:20 of the video (1920×1080). */
 export const WEBSITE_AUDIT_THUMBNAIL_PATH = "/media/website-audit-thumbnail.jpg";
