@@ -2,6 +2,8 @@ import {
   DIGISOL_INSTAGRAM_HANDLE,
   DIGISOL_INSTAGRAM_URL,
   DIGISOL_SITE_URL,
+  DIGISOL_TIKTOK_URL,
+  DIGISOL_YOUTUBE_URL,
   LINKEDIN_ENABLED,
 } from "@/lib/site";
 
@@ -332,6 +334,8 @@ export function dispatchSocialPack(issue: DispatchIssue) {
     `Home: ${DIGISOL_SITE_URL}`,
     `Contact: ${DIGISOL_SITE_URL}/#contact`,
     `Instagram: ${DIGISOL_INSTAGRAM_URL}`,
+    `YouTube: ${DIGISOL_YOUTUBE_URL}`,
+    `TikTok: ${DIGISOL_TIKTOK_URL}`,
     "",
     "FACEBOOK / THREADS",
     facebook,

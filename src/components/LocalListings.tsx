@@ -1,6 +1,7 @@
 "use client";
 
-import { Facebook, Instagram, Linkedin, Star } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Star, Youtube } from "lucide-react";
+import { TikTokIcon } from "@/components/TikTokIcon";
 import { TrackedLink } from "@/components/TrackedLink";
 import {
   DIGISOL_FACEBOOK_URL,
@@ -8,6 +9,8 @@ import {
   DIGISOL_GOOGLE_REVIEW_URL,
   DIGISOL_INSTAGRAM_URL,
   DIGISOL_LINKEDIN_URL,
+  DIGISOL_TIKTOK_URL,
+  DIGISOL_YOUTUBE_URL,
   LINKEDIN_ENABLED,
 } from "@/lib/site";
 
@@ -87,6 +90,28 @@ export function ListingLinks({ location }: { location: ListingLocation }) {
       >
         <Instagram className="h-4 w-4 shrink-0 text-sky-400" aria-hidden="true" />
         Instagram
+      </TrackedLink>
+      <TrackedLink
+        href={DIGISOL_YOUTUBE_URL}
+        eventName="social_click"
+        eventParams={{ network: "youtube", location }}
+        target="_blank"
+        rel="noopener noreferrer me"
+        className={className}
+      >
+        <Youtube className="h-4 w-4 shrink-0 text-sky-400" aria-hidden="true" />
+        YouTube
+      </TrackedLink>
+      <TrackedLink
+        href={DIGISOL_TIKTOK_URL}
+        eventName="social_click"
+        eventParams={{ network: "tiktok", location }}
+        target="_blank"
+        rel="noopener noreferrer me"
+        className={className}
+      >
+        <TikTokIcon className="h-4 w-4 shrink-0 text-sky-400" />
+        TikTok
       </TrackedLink>
       <TrackedLink
         href={DIGISOL_GOOGLE_LISTING_URL}

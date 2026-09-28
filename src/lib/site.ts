@@ -24,6 +24,12 @@ export const DIGISOL_INSTAGRAM_HANDLE =
   process.env.NEXT_PUBLIC_DIGISOL_INSTAGRAM_HANDLE?.trim() || "digi.sol20269";
 export const DIGISOL_INSTAGRAM_URL =
   `https://www.instagram.com/${DIGISOL_INSTAGRAM_HANDLE}/`;
+export const DIGISOL_YOUTUBE_URL =
+  process.env.NEXT_PUBLIC_DIGISOL_YOUTUBE_URL?.trim() ||
+  "https://www.youtube.com/channel/UC5pqH5vLTuTTp_RyIZ2HllQ";
+export const DIGISOL_TIKTOK_HANDLE =
+  process.env.NEXT_PUBLIC_DIGISOL_TIKTOK_HANDLE?.trim() || "digisol96";
+export const DIGISOL_TIKTOK_URL = `https://www.tiktok.com/@${DIGISOL_TIKTOK_HANDLE}`;
 export const DIGISOL_GOOGLE_LISTING_URL =
   "https://g.page/r/CcL2FJtD6brkECE";
 /** Direct “Write a review” link for the Google Business Profile. */
@@ -34,6 +40,8 @@ export const DIGISOL_SAME_AS: readonly string[] = [
   DIGISOL_FACEBOOK_URL,
   ...(LINKEDIN_ENABLED ? [DIGISOL_LINKEDIN_URL] : []),
   DIGISOL_INSTAGRAM_URL,
+  DIGISOL_YOUTUBE_URL,
+  DIGISOL_TIKTOK_URL,
   DIGISOL_GOOGLE_LISTING_URL,
 ];
 export const DIGISOL_PHONE = "+1-587-577-0782";
