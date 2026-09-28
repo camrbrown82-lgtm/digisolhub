@@ -12,6 +12,7 @@ import {
 import { getEmailLogoUrl } from "@/lib/emailLogo";
 import { fetchDigisolGa4Summary } from "@/lib/ga4";
 import { reviewsForAgent } from "@/lib/googleReviews";
+import { googleSetupForAgent } from "@/lib/google/audit";
 import { summarizeLeadPerformance, type LeadRecord } from "@/lib/lead-pipeline";
 import { reconcileHubEmailStats } from "@/lib/resendStats";
 import { summarizeSiteEvents } from "@/lib/site-analytics";
@@ -244,7 +245,7 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
               ctx.clientId,
             );
 
-            const [contacts, unsubscribed, site, leadsResult, ga4, email, googleReviews] =
+            const [contacts, unsubscribed, site, leadsResult, ga4, email, googleReviews, googleSetup] =
               await Promise.all([
                 ctx.supabase
                   .from("contacts")
@@ -275,6 +276,7 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
                 fetchDigisolGa4Summary(days),
                 reconcileHubEmailStats(ctx.supabase, scopedIds),
                 reviewsForAgent(ctx.supabase, ctx.clientId),
+                googleSetupForAgent(ctx.supabase, ctx.clientId),
               ]);
 
             const website = summarizeSiteEvents(site.data ?? [], ctx.domain);
@@ -286,6 +288,7 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
               operator: DIGISOL_OPERATOR.name,
               days,
               googleReviews,
+              googleSetup,
               email: {
                 contacts: contacts.count ?? 0,
                 unsubscribed: unsubscribed.count ?? 0,

@@ -9,6 +9,7 @@ import {
 import { getEmailLogoUrl } from "@/lib/emailLogo";
 import { fetchDigisolGa4Summary } from "@/lib/ga4";
 import { reviewsForAgent } from "@/lib/googleReviews";
+import { googleSetupForAgent } from "@/lib/google/audit";
 import { summarizeLeadPerformance, type LeadRecord } from "@/lib/lead-pipeline";
 import {
   BRAND_COPY_TEMPERATURE,
@@ -174,14 +175,16 @@ export async function fetchCompanyAnalyticsTool(
   const pipeline = summarizeLeadPerformance((leadsResult.data ?? []) as LeadRecord[]);
   const isDigisol =
     scope.companyName.toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase();
-  const [ga4, googleReviews] = await Promise.all([
+  const [ga4, googleReviews, googleSetup] = await Promise.all([
     isDigisol ? fetchDigisolGa4Summary(days) : Promise.resolve(null),
     reviewsForAgent(ctx.supabase, scope.companyId),
+    googleSetupForAgent(ctx.supabase, scope.companyId),
   ]);
 
   return {
     tool: "fetchCompanyAnalytics" as const,
     googleReviews,
+    googleSetup,
     companyId: scope.companyId,
     companyName: scope.companyName,
     days,

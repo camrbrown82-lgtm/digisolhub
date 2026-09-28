@@ -468,6 +468,21 @@ export const snapshotGoogleReviews = inngest.createFunction(
   },
 );
 
+/** Monday check of every company's GA4, Search Console and Google Ads, emailed as one digest. */
+export const auditGoogleSetups = inngest.createFunction(
+  {
+    id: "audit-google-setups",
+    retries: 1,
+    triggers: [{ cron: "TZ=America/Edmonton 0 7 * * 1" }, { event: "hub/google-setup.audit" }],
+  },
+  async ({ step }) => {
+    return step.run("audit", async () => {
+      const { auditAllGoogleSetups } = await import("@/lib/google/audit");
+      return auditAllGoogleSetups(createAdminClient());
+    });
+  },
+);
+
 /** Kaylev competitive analysis: research, audit, and write the report in durable steps. */
 export const runCompetitiveAnalysis = inngest.createFunction(
   {
@@ -686,5 +701,6 @@ export const functions = [
   runSingleWorkflow,
   sendDispatchIssues,
   snapshotGoogleReviews,
+  auditGoogleSetups,
   runCompetitiveAnalysis,
 ];

@@ -14,6 +14,7 @@ import {
   Palette,
   Plug,
   Radar,
+  SearchCheck,
   Swords,
   Workflow,
 } from "lucide-react";
@@ -21,6 +22,7 @@ import { createBrowserSupabase } from "@/lib/supabase/client";
 
 const nav = [
   { href: "/hub/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/hub/google", label: "Google setup", icon: SearchCheck },
   { href: "/hub/clients", label: "Companies", icon: Building2 },
   { href: "/hub/brand", label: "Brand", icon: Palette },
   { href: "/hub/contacts", label: "Contacts", icon: Contact },

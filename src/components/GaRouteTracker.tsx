@@ -33,8 +33,8 @@ function locationContentGroup(pathname: string) {
 }
 
 /**
- * Sends GA4 + first-party pageviews on App Router navigations
- * (city landers included). Skips Hub and internal-traffic browsers.
+ * Sends first-party pageviews and the GA4 city-lander event on App Router
+ * navigations. Skips Hub and internal-traffic browsers.
  */
 export function GaRouteTracker() {
   const pathname = usePathname();
@@ -52,19 +52,12 @@ export function GaRouteTracker() {
     const title = document.title;
     const city = locationContentGroup(pathname);
 
-    if (typeof window.gtag === "function") {
-      window.gtag("event", "page_view", {
+    // No page_view here: GA4 enhanced measurement sends it on load and on history changes.
+    if (city && typeof window.gtag === "function") {
+      trackEvent("location_page_view", {
+        city,
         page_path: path,
-        page_title: title,
-        page_location: window.location.href,
-        content_group: city ? `locations/${city}` : "site",
       });
-      if (city) {
-        trackEvent("location_page_view", {
-          city,
-          page_path: path,
-        });
-      }
     }
 
     const key = digisolSiteKey();
