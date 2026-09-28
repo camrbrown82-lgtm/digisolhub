@@ -135,6 +135,11 @@ function ItemCard({
           {item.kind === "recurring" ? " (first month)" : ""}
         </p>
       ) : null}
+      {item.timeline ? (
+        <p className="mt-1 text-xs font-medium text-sky-300">
+          Typical launch: {item.timeline}
+        </p>
+      ) : null}
       <p className="mt-2 text-sm leading-relaxed text-zinc-400">{item.blurb}</p>
       <ul className="mt-4 space-y-1.5">
         {item.includes.map((line) => (
@@ -480,6 +485,13 @@ export function PricingBuilder({
           added at payment · scope confirmed after payment.
         </p>
       )}
+      <p className="mt-1.5 text-xs text-zinc-400">
+        Website packages can also be paid 50% up front and 50% at launch by
+        invoice.{" "}
+        <a href="#quote" className="font-medium text-indigo-300 hover:text-indigo-200">
+          Request an invoice
+        </a>
+      </p>
       {error ? <p className="mt-3 text-sm text-rose-300">{error}</p> : null}
     </form>
   );

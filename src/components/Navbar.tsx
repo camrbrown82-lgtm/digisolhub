@@ -6,6 +6,7 @@ import {
   DIGISOL_LOGO_BADGE,
   DIGISOL_LOGO_WORDMARK,
 } from "@/components/Logo";
+import { QUOTE_HREF, jumpToQuote } from "@/components/QuickQuote";
 import { TrackedLink } from "@/components/TrackedLink";
 
 const links = [
@@ -118,12 +119,13 @@ export function Navbar() {
               </a>
             ))}
             <TrackedLink
-              href="/#contact"
+              href={QUOTE_HREF}
               eventName="cta_click"
-              eventParams={{ cta_name: "book_consultation", location: "nav" }}
-              className="inline-flex items-center rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-sky-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+              eventParams={{ cta_name: "get_quote", location: "nav" }}
+              onClick={jumpToQuote}
+              className="inline-flex items-center whitespace-nowrap rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-sky-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
             >
-              Contact
+              Get a free quote
             </TrackedLink>
           </nav>
 
@@ -178,17 +180,27 @@ export function Navbar() {
               </li>
             ))}
             <li>
-              <TrackedLink
+              <a
                 href="/#contact"
-                eventName="cta_click"
-                eventParams={{
-                  cta_name: "book_consultation",
-                  location: "nav_mobile",
-                }}
-                className="block rounded-full bg-indigo-600 px-4 py-2.5 text-center text-sm font-semibold text-white"
+                className="block rounded-lg px-3 py-2 text-indigo-100 hover:bg-indigo-500/10 hover:text-sky-300"
                 onClick={() => setOpen(false)}
               >
                 Contact
+              </a>
+            </li>
+            <li>
+              <TrackedLink
+                href={QUOTE_HREF}
+                eventName="cta_click"
+                eventParams={{ cta_name: "get_quote", location: "nav_mobile" }}
+                className="block rounded-full bg-indigo-600 px-4 py-2.5 text-center text-sm font-semibold text-white"
+                onClick={(event) => {
+                  setOpen(false);
+                  // Wait for the menu to close and release its scroll lock.
+                  jumpToQuote(event, 80);
+                }}
+              >
+                Get a free quote
               </TrackedLink>
             </li>
             <li className="mt-4 border-t border-indigo-500/20 pt-4">

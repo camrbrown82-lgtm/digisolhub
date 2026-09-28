@@ -1,5 +1,6 @@
-import { Code2, Megaphone, Palette, TrendingUp, ShoppingBag, type LucideIcon } from "lucide-react";
+import { ArrowRight, Code2, Megaphone, Palette, TrendingUp, ShoppingBag, type LucideIcon } from "lucide-react";
 import { BrandCard, brandAccent, type BrandAccent } from "@/components/BrandCard";
+import { PRICING_FROM } from "@/lib/pricingContent";
 import type { HomeCopy } from "@/lib/visitorRegion";
 
 export function Services({ copy }: { copy: HomeCopy }) {
@@ -102,6 +103,16 @@ export function Services({ copy }: { copy: HomeCopy }) {
             );
           })}
         </ul>
+        <p className="mt-10 text-center text-sm text-zinc-400">
+          Transparent pricing: custom websites from {PRICING_FROM} plus GST.{" "}
+          <a
+            href="/pricing"
+            className="inline-flex items-center gap-1 font-semibold text-indigo-300 hover:text-sky-300"
+          >
+            See packages
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+          </a>
+        </p>
       </div>
     </section>
   );

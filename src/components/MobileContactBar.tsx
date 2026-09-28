@@ -2,6 +2,7 @@
 
 import { FileText, MessageSquareText, Phone } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { QUOTE_HREF, jumpToQuote } from "@/components/QuickQuote";
 import { trackEvent } from "@/lib/analytics";
 import { DIGISOL_SMS_HREF, DIGISOL_TEL_HREF } from "@/lib/site";
 
@@ -30,15 +31,11 @@ export function MobileContactBar() {
           Text
         </a>
         <a
-          href="/#quote"
+          href={QUOTE_HREF}
           className={`${item} bg-indigo-600 text-white active:bg-indigo-500`}
           onClick={(event) => {
             track("quote");
-            const form = document.getElementById("quote");
-            if (form) {
-              event.preventDefault();
-              form.scrollIntoView({ behavior: "smooth", block: "start" });
-            }
+            jumpToQuote(event);
           }}
         >
           <FileText className="h-5 w-5" aria-hidden="true" />

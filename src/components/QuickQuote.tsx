@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, type MouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { submitLead } from "@/lib/leadSubmit";
@@ -9,7 +9,19 @@ import { DIGISOL_EMAIL, DIGISOL_PHONE_DISPLAY } from "@/lib/site";
 const field =
   "w-full rounded-lg border border-white/15 bg-zinc-950/80 px-3 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30";
 
-/** Four-field quote request for the hero and blog posts; same pipeline as the full form. */
+export const QUOTE_HREF = "/#quote";
+
+/** Scrolls to this page's quote form when it has one; otherwise the link goes to the homepage form. */
+export function jumpToQuote(event: MouseEvent<HTMLAnchorElement>, delayMs = 0) {
+  const form = document.getElementById("quote");
+  if (!form) return;
+  event.preventDefault();
+  const scroll = () => form.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (delayMs) window.setTimeout(scroll, delayMs);
+  else scroll();
+}
+
+/** Four-field quote request for the hero, pricing, and blog posts; same pipeline as the full form. */
 export function QuickQuote({
   location,
   id = "quote",

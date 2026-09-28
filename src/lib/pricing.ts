@@ -17,6 +17,8 @@ export type PricingItem = {
   /** Shown as starting / popular etc. */
   badge?: string;
   featured?: boolean;
+  /** Typical kickoff-to-launch time for website packages. */
+  timeline?: string;
 };
 
 /** DigiSol Hub — shown first; can be bought alone (no website package required). */
@@ -50,6 +52,7 @@ export const PRICING_PACKAGES: PricingItem[] = [
     kind: "one_time",
     amount: 4500_00,
     badge: "Start here",
+    timeline: "2–3 weeks",
     includes: [
       "Brand-led website design (not a template)",
       "Next.js build · up to 6 core pages",
@@ -68,6 +71,7 @@ export const PRICING_PACKAGES: PricingItem[] = [
     amount: 7500_00,
     badge: "Most booked",
     featured: true,
+    timeline: "4–5 weeks",
     includes: [
       "Everything in Foundation",
       "Google Business Profile + citation base",
@@ -85,6 +89,7 @@ export const PRICING_PACKAGES: PricingItem[] = [
     kind: "one_time",
     amount: 12000_00,
     badge: "Scale",
+    timeline: "6–8 weeks",
     includes: [
       "Everything in Growth Engine",
       "Google Ads + Meta campaign architecture",
