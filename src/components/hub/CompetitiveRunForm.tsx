@@ -30,6 +30,7 @@ export function CompetitiveRunForm({ companyName, defaults, activeRunId, activeS
   useEffect(() => {
     if (!runId) return;
     let cancelled = false;
+    const startedAt = Date.now();
     const tick = async () => {
       try {
         const res = await fetch(`/api/hub/competitive?id=${runId}`, { cache: "no-store" });
@@ -47,6 +48,10 @@ export function CompetitiveRunForm({ companyName, defaults, activeRunId, activeS
           setStage(null);
           setError(json.error || "The analysis failed. Try again.");
           router.refresh();
+          return;
+        }
+        if (json.status === "queued" && Date.now() - startedAt > 90_000) {
+          setStage("Still waiting for the background worker to pick this up (check Inngest)");
           return;
         }
         setStage(json.stage || "Working");
@@ -109,6 +114,7 @@ export function CompetitiveRunForm({ companyName, defaults, activeRunId, activeS
         <label className="text-xs text-zinc-400">
           Website
           <input
+            name="website"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://example.com"
@@ -119,6 +125,7 @@ export function CompetitiveRunForm({ companyName, defaults, activeRunId, activeS
         <label className="text-xs text-zinc-400">
           Industry <span className="text-zinc-600">(blank = Kaylev infers it)</span>
           <input
+            name="industry"
             value={industry}
             onChange={(e) => setIndustry(e.target.value)}
             placeholder="e.g. residential HVAC"
@@ -129,6 +136,7 @@ export function CompetitiveRunForm({ companyName, defaults, activeRunId, activeS
         <label className="text-xs text-zinc-400">
           Service area <span className="text-zinc-600">(blank = inferred)</span>
           <input
+            name="serviceArea"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             placeholder="e.g. Airdrie and Calgary, AB"
@@ -140,6 +148,7 @@ export function CompetitiveRunForm({ companyName, defaults, activeRunId, activeS
       <label className="mt-3 block text-xs text-zinc-400">
         Competitor websites <span className="text-zinc-600">(optional, one per line, up to 5 — leave blank and Kaylev finds them)</span>
         <textarea
+          name="competitorUrls"
           value={competitors}
           onChange={(e) => setCompetitors(e.target.value)}
           rows={3}
