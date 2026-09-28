@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies, headers } from "next/headers";
 import { Inter } from "next/font/google";
 import Script from "next/script";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -10,7 +11,9 @@ import { PublicKaylevChat } from "@/components/PublicKaylevChat";
 import { PublicSiteAnalytics } from "@/components/PublicSiteAnalytics";
 import { AttributionCaptureBoundary } from "@/components/AttributionCaptureBoundary";
 import { LanguageSuggestion } from "@/components/LanguageSuggestion";
+import { ADSENSE_SCRIPT_SRC, PAGE_PATH_HEADER, shouldLoadAdSense } from "@/lib/adsense";
 import { LOCALE_META } from "@/lib/i18n/config";
+import { INTERNAL_TRAFFIC_COOKIE } from "@/lib/internalTraffic";
 import { LocaleProvider } from "@/lib/i18n/client";
 import { getLocale } from "@/lib/i18n/server";
 import { shareCardImages } from "@/lib/shareCard";
@@ -168,8 +171,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = getLocale();
+  const requestHeaders = headers();
+  const showAds = shouldLoadAdSense({
+    host: requestHeaders.get("host"),
+    path: requestHeaders.get(PAGE_PATH_HEADER),
+    internal: cookies().get(INTERNAL_TRAFFIC_COOKIE)?.value === "1",
+  });
   return (
     <html lang={LOCALE_META[locale].intl} className={inter.variable}>
+      <head>
+        {showAds ? <script async src={ADSENSE_SCRIPT_SRC} crossOrigin="anonymous" /> : null}
+      </head>
       <body className="font-sans min-h-screen bg-zinc-950 text-zinc-100">
         <Script
           src="https://cdn.cookiehub.eu/c2/d9c0b74d.js"

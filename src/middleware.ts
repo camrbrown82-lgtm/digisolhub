@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { PAGE_PATH_HEADER } from "@/lib/adsense";
 import { isLikelyBot, locationSlugFromGeo } from "@/lib/geoRouting";
 import {
   hubForbiddenResponse,
@@ -169,6 +170,7 @@ function savedLocaleRedirect(request: NextRequest, path: string, locale: Locale)
 function nextWithGeo(request: NextRequest, geo: VisitorGeo, path: string, locale: Locale) {
   const { requestHeaders, visitor } = withGeoRequestHeaders(request, geo);
   requestHeaders.set(LOCALE_HEADER, locale);
+  requestHeaders.set(PAGE_PATH_HEADER, path);
   const init = { request: { headers: requestHeaders } };
   let response: NextResponse;
   if (locale === DEFAULT_LOCALE) {
