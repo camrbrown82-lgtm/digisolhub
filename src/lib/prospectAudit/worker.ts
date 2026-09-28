@@ -11,7 +11,10 @@ import { getResendApiKey } from "@/lib/email";
 import { evaluateCaslPublishedContact } from "@/lib/prospectAudit/casl";
 import { prospectSendBlockReason } from "@/lib/prospectAudit/sendGate";
 import { sendProspectAuditEmail } from "@/lib/prospectAudit/email";
-import { ensureProspectQueue } from "@/lib/prospectAudit/ensureQueue";
+import {
+  ensureProspectQueue,
+  type EnsureProspectQueueResult,
+} from "@/lib/prospectAudit/ensureQueue";
 import {
   DEFAULT_PROSPECT_TRADES,
   PROSPECT_AUDIT_BATCH_DEFAULT,
@@ -65,12 +68,7 @@ export type ProspectAuditWorkerResult = {
   manual?: boolean;
   expandedSectors?: boolean;
   requeuedDryRuns?: number;
-  queueSeed?: {
-    pendingBefore: number;
-    inserted: number;
-    skippedExisting: number;
-    catalogRemaining: number;
-  };
+  queueSeed?: EnsureProspectQueueResult;
   results: Array<Record<string, unknown>>;
   totals: {
     attempted: number;
@@ -125,12 +123,15 @@ export async function runProspectAuditWorker(
     throw new Error("DigiSol house profile is missing");
   }
 
-  // Auto-fill empty/low queue from Alberta catalog (root cause of "no prospects").
+  // Auto-fill the queue: Alberta catalog first, then web discovery.
   let queueSeed: ProspectAuditWorkerResult["queueSeed"];
   try {
     queueSeed = await ensureProspectQueue(opts.db, clientId, {
-      minPending: Math.max(PROSPECT_AUDIT_BATCH_DEFAULT, 8),
-      fillCount: 16,
+      minPending: Math.max(PROSPECT_AUDIT_BATCH_DEFAULT, opts.batchSize ?? 0),
+      fillCount: Math.max(8, opts.batchSize ?? 0),
+      sectors: opts.trades?.length
+        ? opts.trades.map((t) => String(t).toLowerCase())
+        : undefined,
     });
   } catch (seedErr) {
     console.warn(
@@ -321,7 +322,11 @@ export async function runProspectAuditWorker(
         {
           skipped: true,
           reason: "empty_queue",
-          note: "No pending prospects after seed — expand ALBERTA_PROSPECT_SEED.",
+          note: queueSeed?.discoverySearches?.length
+            ? `Searched ${queueSeed.discoverySearches
+                .map((s) => `${s.sector} in ${s.city}`)
+                .join(", ")} but found no new businesses with a published email. Run again to search the next sectors and cities.`
+            : "No pending prospects and web discovery could not run (check OPENAI_API_KEY).",
         },
       ],
       totals,

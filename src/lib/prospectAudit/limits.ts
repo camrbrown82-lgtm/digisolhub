@@ -48,6 +48,7 @@ export const DEFAULT_PROSPECT_TRADES = [
   "hvac",
   "electrical",
   "plumbing",
+  "roofing",
   "general",
   "construction",
   "landscaping",

@@ -10,8 +10,12 @@ import {
   enqueueFromChat,
   type ChatProspectItem,
 } from "@/lib/prospectAudit/enqueueFromChat";
+import { discoverProspects } from "@/lib/prospectAudit/discover";
 import { prospectHostKey } from "@/lib/prospectAudit/seedCatalog";
+import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { resolveClientId } from "@/lib/workspace";
+
+export const maxDuration = 120;
 
 type ChatMessage = { role?: string; content?: string };
 
@@ -63,7 +67,7 @@ Return JSON only:
       "businessName": "string",
       "url": "https://... or empty",
       "email": "only if the user stated an email, else empty",
-      "trade": "hvac|plumbing|electrical|roofing|dental|legal|restaurant|retail|general",
+      "trade": "hvac|plumbing|electrical|roofing|landscaping|construction|cleaning|auto|dental|legal|accounting|salon|fitness|realestate|photography|healthcare|restaurant|retail|professional|general",
       "city": "Alberta city or empty",
       "source": "facebook|form|website|prospect_audit"
     }
@@ -74,7 +78,7 @@ Rules:
 - kind "audit" when they want a website audited. kind "lead" for organic inquiries (Facebook, a form, just curious) with no audit.
 - Never invent a website or email. Leave url empty if they did not say it.
 - Trades (hvac, plumbing, electrical, roofing, mechanical) are prospect-audit trades. Other industries stay audits but are not trades.
-- catalog is only when they ask for several from the Alberta list ("3 Calgary HVAC", "a few plumbers in Edmonton") and did not name specific sites.
+- catalog is when they ask you to find or search for several businesses by sector and/or city ("3 Calgary HVAC", "find 5 dentists in Red Deer", "search other sectors") and did not name specific sites. Use trade "general" when no sector is given. Limit defaults to 5, max 10.
 - If they only chat with no businesses, return items: [] and catalog: null.`,
       },
       ...messages,
@@ -108,13 +112,17 @@ Rules:
   const usedHosts = new Set(
     (existing ?? []).map((row) => prospectHostKey(String(row.url || ""))),
   );
-  if (parsed.catalog && (parsed.catalog.trade || parsed.catalog.city)) {
-    for (const seed of catalogSeeds({
+  const searchNotes: string[] = [];
+  if (parsed.catalog) {
+    const limit = Math.min(10, Math.max(1, parsed.catalog.limit || 5));
+    const seeds = catalogSeeds({
       trade: parsed.catalog.trade,
       city: parsed.catalog.city,
-      limit: parsed.catalog.limit,
+      limit,
       usedHosts,
-    })) {
+    });
+    for (const seed of seeds) {
+      usedHosts.add(prospectHostKey(seed.url));
       items.push({
         kind: "audit",
         businessName: seed.businessName,
@@ -124,12 +132,46 @@ Rules:
         source: "prospect_audit",
       });
     }
+
+    if (seeds.length < limit) {
+      const trade = (parsed.catalog.trade || "").trim().toLowerCase();
+      const city = (parsed.catalog.city || "").trim();
+      const discovery = await discoverProspects(
+        hasAdminClient() ? createAdminClient() : supabase,
+        clientId,
+        {
+          usedHosts,
+          want: limit - seeds.length,
+          maxSearches: 2,
+          sectors: trade && trade !== "general" ? [trade] : undefined,
+          cities: city ? [city] : undefined,
+        },
+      );
+      for (const p of discovery.prospects.slice(0, limit - seeds.length)) {
+        items.push({
+          kind: "audit",
+          businessName: p.businessName,
+          url: p.url,
+          trade: p.trade,
+          city: p.city,
+          source: "prospect_audit",
+        });
+      }
+      if (discovery.searches.length) {
+        searchNotes.push(
+          `Searched the web for ${discovery.searches
+            .map((s) => `${s.sector} in ${s.city}`)
+            .join(", ")} and kept ${discovery.prospects.length} with a published email.`,
+        );
+      }
+    }
   }
 
   if (items.length === 0) {
     return NextResponse.json({
-      reply:
-        "Tell me the business, the trade, and the website. Trades go under Prospect audits — trades. Other audits go under Prospect audits — other. Facebook or form inquiries go under New leads. I will not invent a site.",
+      reply: searchNotes.length
+        ? `${searchNotes.join(" ")} Nothing new to file this time. Ask again and I will search the next cities.`
+        : "Tell me the business, the trade, and the website, or ask me to find some (\"find 5 dentists in Red Deer\"). Trades go under Prospect audits — trades. Other audits go under Prospect audits — other. Facebook or form inquiries go under New leads. I will not invent a site.",
       added: [],
     });
   }
@@ -142,6 +184,7 @@ Rules:
     return `${row.name} → ${where}`;
   });
   const reply = [
+    ...searchNotes,
     lines.length
       ? `Filed ${lines.length}:\n${lines.join("\n")}`
       : "Nothing new was filed.",

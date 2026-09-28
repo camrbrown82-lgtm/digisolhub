@@ -37,7 +37,13 @@ export function ProspectAuditRunButton() {
           caslBlocked?: number;
           failed?: number;
         };
-        queueSeed?: { inserted?: number; pendingBefore?: number };
+        queueSeed?: {
+          inserted?: number;
+          pendingBefore?: number;
+          discovered?: number;
+          discoveryTier?: string;
+          discoverySearches?: Array<{ sector: string; city: string }>;
+        };
         requeuedDryRuns?: number;
         expandedSectors?: boolean;
         results?: Array<{ reason?: string; note?: string }>;
@@ -50,9 +56,20 @@ export function ProspectAuditRunButton() {
       const ran = t.attempted ?? 0;
       const compliant = t.audited ?? 0;
       const seeded = json.queueSeed?.inserted ?? 0;
+      const discovered = json.queueSeed?.discovered ?? 0;
+      const searched = json.queueSeed?.discoverySearches ?? [];
       setMessage(
         [
-          seeded ? `Seeded ${seeded} prospect${seeded === 1 ? "" : "s"}.` : null,
+          discovered
+            ? `Found ${discovered} new business${discovered === 1 ? "" : "es"} with a published email (searched ${searched
+                .map((s) => `${s.sector} in ${s.city}`)
+                .join(", ")}).`
+            : seeded
+              ? `Seeded ${seeded} prospect${seeded === 1 ? "" : "s"}.`
+              : null,
+          json.queueSeed?.discoveryTier === "other"
+            ? "Trades are searched out, so Kaylev moved on to other sectors."
+            : null,
           json.requeuedDryRuns
             ? `Re-queued ${json.requeuedDryRuns} dry-run/Resend row${json.requeuedDryRuns === 1 ? "" : "s"}.`
             : null,
