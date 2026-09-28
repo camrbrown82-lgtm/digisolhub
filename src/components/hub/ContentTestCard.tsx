@@ -198,6 +198,13 @@ export function ContentTestCard({
                 />
               ) : variant.asset?.public_url && mime.startsWith("video/") ? (
                 <video src={variant.asset.public_url} controls className="max-h-48 rounded-lg" />
+              ) : !variant.asset && variant.media_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={variant.media_url}
+                  alt="Newsletter preview card"
+                  className="max-h-48 rounded-lg border border-zinc-800 object-contain"
+                />
               ) : variant.asset?.public_url ? (
                 <a
                   href={variant.asset.public_url}

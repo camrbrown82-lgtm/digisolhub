@@ -14,7 +14,7 @@ export type TestAssetOption = {
   isPoster: boolean;
 };
 type TemplateOption = { id: string; name: string; subject: string | null };
-type IssueOption = { slug: string; title: string; url: string };
+type IssueOption = { slug: string; title: string; url: string; card: string };
 
 type VariantDraft = { label: string; body: string; assetId: string; emailTemplateId: string };
 type PlanExtras = {
@@ -80,6 +80,7 @@ export function ContentTestBuilder({
   );
   const issue = issues.find((i) => i.slug === dispatchSlug);
   const resolvedLanding = sourceKind === "dispatch" && issue ? issue.url : landingUrl;
+  const newsletterCard = sourceKind === "dispatch" && issue ? issue.card : "";
   const busy = planning || saving;
 
   function setVariant(variant: TestVariant, patch: Partial<VariantDraft>) {
@@ -360,13 +361,13 @@ export function ContentTestBuilder({
                     />
                   </label>
                   <label className="block text-sm text-zinc-300">
-                    Poster, image, video, or file
+                    {newsletterCard ? "Visual" : "Poster, image, video, or file"}
                     <select
                       value={draft.assetId}
                       onChange={(e) => setVariant(variant, { assetId: e.target.value })}
                       className="hub-field mt-1.5"
                     >
-                      <option value="">None</option>
+                      <option value="">{newsletterCard ? "The newsletter's preview card" : "None"}</option>
                       {[
                         ["Posters", posters],
                         ["Images", images],
@@ -385,7 +386,15 @@ export function ContentTestBuilder({
                       )}
                     </select>
                   </label>
-                  {extras?.visuals[variant] && !draft.assetId ? (
+                  {newsletterCard && !draft.assetId ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={newsletterCard}
+                      alt="Newsletter preview card"
+                      className="max-h-40 rounded-lg border border-zinc-800 object-contain"
+                    />
+                  ) : null}
+                  {extras?.visuals[variant] && !draft.assetId && !newsletterCard ? (
                     <p className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-2 text-xs text-zinc-400">
                       <span className="text-fuchsia-200/80">Kaylev&apos;s visual idea:</span>{" "}
                       {extras.visuals[variant]}{" "}

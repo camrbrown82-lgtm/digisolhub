@@ -245,6 +245,10 @@ export function dispatchUrl(slug: string) {
   return `${DIGISOL_SITE_URL}${dispatchPath(slug)}`;
 }
 
+export function dispatchCardUrl(slug: string) {
+  return `${dispatchUrl(slug)}/card.jpg`;
+}
+
 export function getDispatchIssue(slug: string) {
   return DISPATCH_ISSUES.find((issue) => issue.slug === slug);
 }

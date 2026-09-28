@@ -45,13 +45,13 @@ export function generateMetadata({ params }: PageProps): Metadata {
       locale: "en_CA",
       siteName: "DigiSol",
       publishedTime: issue.publishedAt,
-      images: [{ url: "/logo.jpg", alt: "DigiSol Dispatch" }],
+      images: [{ url: `/dispatch/${issue.slug}/card.jpg`, width: 1200, height: 630, alt: issue.title }],
     },
     twitter: {
       card: "summary_large_image",
       title: issue.title,
       description: issue.excerpt,
-      images: ["/logo.jpg"],
+      images: [`/dispatch/${issue.slug}/card.jpg`],
     },
   };
 }

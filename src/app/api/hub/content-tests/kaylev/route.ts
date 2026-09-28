@@ -154,11 +154,13 @@ Rules:
       `Channels: ${channels.map((c) => channelInfo(c)?.label || c).join(", ") || "Facebook, Instagram, LinkedIn"}`,
       landingUrl ? `Landing page: ${landingUrl}` : "",
       issue
-        ? `Newsletter issue to promote: "${issue.title}"\nSummary: ${issue.excerpt}\nSections: ${issue.sections.map((s) => s.heading).join("; ")}${issue.cta ? `\nOffer: ${issue.cta.heading}. ${issue.cta.body}` : ""}`
+        ? `Newsletter issue to promote: "${issue.title}"\nSummary: ${issue.excerpt}\nSections: ${issue.sections.map((s) => s.heading).join("; ")}${issue.cta ? `\nOffer: ${issue.cta.heading}. ${issue.cta.body}` : ""}\nThis is a newsletter test: both variants share the newsletter's own preview card as the visual (issue title, volume, and offer), so the ONLY variable is the post copy. Get people to read this issue. Set assetId to null unless an asset is provided, and set visualIdea to "Newsletter preview card".`
         : "",
       assets.length
         ? `Assets available (id | name | type | about):\n${assets.map((a) => `${a.id} | ${a.name} | ${a.type} | ${a.about}`).join("\n")}`
-        : "No assets selected; set assetId to null and describe the visual in visualIdea.",
+        : issue
+          ? ""
+          : "No assets selected; set assetId to null and describe the visual in visualIdea.",
       templates.length
         ? `Email templates in play: ${templates.map((t) => `${t.name} (subject: ${t.subject || "none"})`).join("; ")}`
         : "",

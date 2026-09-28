@@ -10,7 +10,7 @@ import { NewWorkflowButton } from "@/components/hub/NewWorkflowButton";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
 import { loadContentTests } from "@/lib/contentTestData";
-import { DISPATCH_ISSUES, dispatchUrl } from "@/lib/dispatch";
+import { DISPATCH_ISSUES, dispatchCardUrl, dispatchUrl } from "@/lib/dispatch";
 import { ensureContentTestSchema } from "@/lib/ensureContentTestSchema";
 import { parsePosterMeta } from "@/lib/posterSocial";
 import { socialProviderConfigured } from "@/lib/social/providers";
@@ -109,7 +109,12 @@ export default async function CampaignsPage() {
   const dispatchIssues = isDigisol
     ? [...DISPATCH_ISSUES]
         .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
-        .map((issue) => ({ slug: issue.slug, title: issue.title, url: dispatchUrl(issue.slug) }))
+        .map((issue) => ({
+          slug: issue.slug,
+          title: issue.title,
+          url: dispatchUrl(issue.slug),
+          card: dispatchCardUrl(issue.slug),
+        }))
     : [];
   const workspaceDomain = (workspace as { domain?: string | null } | null)?.domain?.trim() || "";
   const defaultLandingUrl = workspaceDomain

@@ -8,6 +8,7 @@ import {
   type TestVariant,
   type VariantMetrics,
 } from "@/lib/contentTests";
+import { dispatchCardUrl, getDispatchIssue } from "@/lib/dispatch";
 import { ensureContentTestSchema } from "@/lib/ensureContentTestSchema";
 import { getWorkspaceClient, resolveClientId } from "@/lib/workspace";
 
@@ -113,6 +114,10 @@ export async function POST(request: Request) {
     ? await supabase.from("assets").select("id, public_url, mime_type").in("id", assetIds)
     : { data: [] as { id: string; public_url: string | null; mime_type: string | null }[] };
   const assetById = new Map((assets ?? []).map((row) => [row.id, row]));
+  const dispatchSlug = (source as { kind?: unknown; dispatchSlug?: unknown }).kind === "dispatch"
+    ? String((source as { dispatchSlug?: unknown }).dispatchSlug || "")
+    : "";
+  const newsletterCard = dispatchSlug && getDispatchIssue(dispatchSlug) ? dispatchCardUrl(dispatchSlug) : null;
 
   const rows = TEST_VARIANTS.map((variant) => {
     const input = variantInputs.find((v) => v.variant === variant) ?? {};
@@ -124,7 +129,12 @@ export async function POST(request: Request) {
       body: text(input.body, 3000) || null,
       asset_id: asset ? input.assetId : null,
       email_template_id: input.emailTemplateId || null,
-      media_url: asset?.public_url && !(asset.mime_type || "").startsWith("video/") ? asset.public_url : null,
+      media_url:
+        asset?.public_url && !(asset.mime_type || "").startsWith("video/")
+          ? asset.public_url
+          : asset
+            ? null
+            : newsletterCard,
       metrics: {},
     };
   });
