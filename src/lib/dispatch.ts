@@ -3,6 +3,16 @@ import { DIGISOL_INSTAGRAM_HANDLE, DIGISOL_INSTAGRAM_URL, DIGISOL_SITE_URL } fro
 export type DispatchSection = {
   heading: string;
   body: string[];
+  bullets?: string[];
+  /** Paragraphs shown after the bullet list. */
+  after?: string[];
+};
+
+export type DispatchCta = {
+  heading: string;
+  body: string;
+  href: string;
+  label: string;
 };
 
 export type DispatchIssue = {
@@ -20,76 +30,138 @@ export type DispatchIssue = {
   about?: string[];
   /** One line for LinkedIn describing what this issue covers. */
   socialBlurb?: string;
+  /** Opening line of the subscriber email; defaults to "A new issue is live." */
+  emailIntro?: string;
+  emailSubject?: string;
+  /** Replaces the default "book a consultation" call to action. */
+  cta?: DispatchCta;
 };
 
 export const DISPATCH_ISSUES: DispatchIssue[] = [
   {
-    slug: "whats-new-at-digisol-september-2026",
+    slug: "digisol-launch-growth-platform-for-alberta-businesses",
     volume: 2,
     month: "September",
     year: 2026,
-    title: "What’s New at DigiSol: Kaylev, Smarter Follow-Ups, and Cleaner Lead Data",
+    title: "DigiSol Officially Launches: The All-in-One Growth Platform for Alberta Businesses",
     excerpt:
-      "Kaylev now answers visitors 24/7 and audits more Alberta industries, follow-ups pace themselves, spam and email scanners stay out of your lead list, and Analytics shows who is actually visiting.",
+      "DigiSol is officially open. A custom website, the DigiSol Hub, and Kaylev, your AI assistant, work together to bring in leads, follow up automatically, and show you exactly what’s working. Here’s everything the platform does for your business, and the launch packages to get started.",
     publishedAt: "2026-09-28",
-    readingMinutes: 5,
+    readingMinutes: 8,
     keywords: [
-      "website design Airdrie",
-      "web developer Airdrie",
-      "local SEO Airdrie",
-      "AI lead capture Alberta",
+      "marketing automation Alberta",
       "small business CRM Alberta",
-      "marketing automation Calgary",
+      "AI lead capture Alberta",
+      "website design Airdrie",
+      "local SEO Calgary",
+      "Google Ads management Alberta",
     ],
     about: [
+      "Marketing automation platform for small businesses",
+      "Small business CRM",
       "AI lead capture",
-      "Marketing automation for Alberta businesses",
-      "Airdrie web development",
+      "Alberta web design and development",
     ],
     socialBlurb:
-      "This DigiSol Dispatch covers what’s new: Kaylev’s 24/7 lead capture and audits, follow-ups that pace themselves, spam-free lead lists, and visitor demographics for Alberta companies.",
+      "DigiSol is officially launched: one platform for Alberta businesses that combines a custom website, a CRM with automated follow-ups, AI lead capture, and analytics that show what’s working. Launch packages start at $750.",
+    emailSubject: "It’s official: DigiSol has launched (Dispatch Vol. 2)",
+    emailIntro:
+      "It’s official: DigiSol has launched. This is our biggest issue yet, a full breakdown of what the platform can do for your business, plus the launch packages.",
+    cta: {
+      heading: "Launch packages are live",
+      body: "Start with the DigiSol Hub for $750, or choose a website package and add a monthly retainer. Prices in CAD before GST, with secure checkout.",
+      href: "/pricing",
+      label: "See launch pricing",
+    },
     sections: [
       {
-        heading: "Why a “what’s new” issue",
+        heading: "DigiSol is officially open for business",
         body: [
-          "Most of what DigiSol ships lives behind the scenes: the website you see, plus the Hub and Kaylev working after hours. This issue is a quick tour of what changed this month, and what it means if you run a business in Airdrie, Calgary, Edmonton, or Red Deer.",
-          "Dispatch is also moving from once a month to two to four issues a month: shorter notes on local SEO, website design, and the follow-up systems that turn visits into booked work.",
+          "For months, every part of DigiSol ran on our own business first: the website, the lead capture, the automated follow-ups, the analytics, and Kaylev. It works, and today it’s available to companies across Airdrie, Calgary, Edmonton, Red Deer, and the rest of Alberta.",
+          "DigiSol is not just a web design shop. It’s a growth platform: the software that brings customers in, follows up with them automatically, and shows you which marketing is paying off. Every company gets its own private workspace, its own brand kit, and its own data. Nothing is shared between companies.",
         ],
       },
       {
-        heading: "Kaylev answers your website around the clock",
+        heading: "One platform instead of five tools",
         body: [
-          "Kaylev is DigiSol’s AI assistant. On wwwdigisol.com it answers questions, captures the lead, and can walk a visitor through a free audit of their own site on the spot. Drop a URL in the chat and it checks speed, titles, descriptions, and the basics Google looks for.",
-          "The same assistant is part of every DigiSol build, so your site keeps catching leads at midnight instead of waiting for Monday morning.",
+          "Most small businesses pay for a website builder, a CRM, an email tool, an analytics dashboard, and a design app, and none of them talk to each other. DigiSol puts it all in one place:",
+        ],
+        bullets: [
+          "A custom website built to convert: designed for your brand (not a template), fast on phones, and wired to capture every lead.",
+          "The DigiSol Hub: your CRM, contacts, pipeline, email campaigns, and automated workflows.",
+          "Kaylev, your AI assistant: answers visitors around the clock, writes your emails, and analyses your competitors.",
+          "Analytics: website traffic, Google Ads, Meta Ads, and Instagram results in one dashboard.",
+          "Branded content: posters, emails, and exports that always use your logo, colours, and voice.",
         ],
       },
       {
-        heading: "Free audits for more Alberta industries",
+        heading: "Analytics that show what’s actually working",
         body: [
-          "Kaylev started with trades: HVAC, plumbing, and electrical companies around Calgary and Edmonton. It now finds and audits local businesses across more sectors: roofing, landscaping, renovation, cleaning, auto repair, and then dental, legal, accounting, salons, fitness, real estate, and clinics.",
-          "Each audit scores the site and lists the fixes that matter most. Audits only go to businesses that publish a contact email on their own website, which keeps outreach within Canada’s anti-spam rules (CASL).",
+          "Clicks and page views don’t pay the bills. Hub Analytics connects your marketing to real leads so you know where to spend.",
+        ],
+        bullets: [
+          "Traffic, top pages, and where visitors come from, straight from Google Analytics.",
+          "Google Ads conversions, Meta Ads, and Instagram insights shown next to your website traffic.",
+          "New Demographics: cities, devices, age, and gender, with your ad visitors compared to everyone else.",
+          "Bot filtering that flags data-centre traffic, so fake visits don’t steer your ad targeting.",
+          "Conversion tracking for forms, chats, calls, email clicks, bookings, and purchases.",
         ],
       },
       {
-        heading: "Follow-ups that pace themselves",
+        heading: "Automated workflows without the busywork",
         body: [
-          "The DigiSol Hub now runs follow-up sequences with guardrails built in. Nobody gets two automatic emails within 24 hours. Sequences stop the moment someone unsubscribes, and they step aside when you move a lead forward in the pipeline, so you are never double-messaging someone you are already talking to.",
-          "Each workflow now shows everyone in it, where they are, and what was sent last, so you can see the whole nurture at a glance.",
+          "Following up is where most small businesses lose the sale. The Hub does it for you, politely and on time.",
+        ],
+        bullets: [
+          "Every lead lands in one place: website forms, chat conversations, and Google Ads lead forms, with an instant alert.",
+          "Describe the follow-up you want, and Kaylev drafts the emails, matches the right one to each contact, and shows you an approval table before anything sends.",
+          "Guardrails built in: no more than one automatic email per person every 24 hours, sequences stop the moment someone unsubscribes, and they step aside when you move a lead forward.",
+          "See everyone in each workflow, where they are, and what they received last.",
+          "Spam and email security scanners are filtered out, so you only nurture real people.",
+          "Test two versions of a campaign and see which one wins.",
         ],
       },
       {
-        heading: "Real people in, spam and scanners out",
+        heading: "Kaylev: the assistant that never clocks out",
         body: [
-          "Two things quietly inflate lead lists: form spam and email security scanners. The contact form now recognises the usual pitches (review removal, pay-after-results SEO, move-to-WhatsApp offers) and files them away without alerts, ad conversions, or follow-up emails.",
-          "Many offices run scanners that open and click every link in a new email within seconds. The Hub now ignores anything under 20 seconds after delivery, waits a day to see if a real person follows up, and only then stops emailing that address. Your “engaged” list stays people, not software.",
+          "Kaylev is DigiSol’s built-in AI. It works inside your Hub and on your website, using your business details and your brand kit.",
+        ],
+        bullets: [
+          "Answers website visitors 24/7 and saves their details straight to your contacts.",
+          "Runs free website audits on the spot: speed, titles, descriptions, and the basics Google looks for.",
+          "New competitive analysis: finds your top local competitors, scores you against them in nine areas (website, SEO, local SEO, reviews, content, offer, conversion, social, and trust), and hands you a prioritised action plan with step-by-step instructions.",
+          "Writes emails in your brand voice and designs posters with your official logo and colours.",
         ],
       },
       {
-        heading: "See who is visiting, and brand it your way",
+        heading: "Launch packages",
         body: [
-          "Analytics has a new Demographics section: cities, devices, and (once traffic is large enough) age and gender, with your Google Ads visitors shown next to everyone else. It also flags data-center towns, so bot traffic does not steer your targeting.",
-          "Every company in the Hub keeps its own brand kit: colours, logo, and voice for posters, emails, and exports. Nothing from DigiSol’s brand bleeds into yours.",
-          "Want any of this set up for your company? Book a free consultation at https://wwwdigisol.com/#contact, or ask Kaylev for a free audit on the homepage.",
+          "Start with what you need today and add more as you grow. Every website package sends its leads straight into your own DigiSol Hub workspace.",
+        ],
+        bullets: [
+          "DigiSol Hub, $750 one time: your workspace, lead capture, automated follow-ups, and campaign monitoring. Works with the website you already have.",
+          "Foundation, $4,500: a custom-designed website (up to 6 pages), mobile-first and fast, with lead capture into the Hub, Google Analytics tracking, and local business schema.",
+          "Growth Engine, $7,500: everything in Foundation plus your Google Business Profile, local SEO, conversion-focused pages, an automated nurture workflow, and city landing pages.",
+          "Full Funnel, $12,000: everything in Growth Engine plus Google Ads and Meta campaigns, landing pages built for paid traffic, a campaign dashboard, and quarterly strategy reviews.",
+          "Monthly retainers: Local Growth $1,200, Paid Media $1,800 (ad spend separate), or Full Growth $2,800 with local SEO, ads, content, and priority support.",
+          "Add-ons: extra pages, city landing packs, e-commerce, custom web apps, and brand kit refreshes.",
+        ],
+        after: [
+          "All prices are in Canadian dollars before GST. Build your own package and check out securely at https://wwwdigisol.com/pricing, or book a free consultation and we’ll recommend the right fit.",
+        ],
+      },
+      {
+        heading: "How to get started",
+        body: [
+          "Three easy ways to take the first step:",
+        ],
+        bullets: [
+          "Get a free website audit: drop your URL into Kaylev’s chat at https://wwwdigisol.com.",
+          "Book a free consultation at https://wwwdigisol.com/#contact.",
+          "Choose your package at https://wwwdigisol.com/pricing.",
+        ],
+        after: [
+          "Know a business owner juggling five tools to do one job? Forward them this issue.",
         ],
       },
     ],

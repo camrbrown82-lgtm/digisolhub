@@ -136,6 +136,30 @@ export default function DispatchIssuePage({ params }: PageProps) {
                     {paragraph}
                   </p>
                 ))}
+                {section.bullets?.length ? (
+                  <ul className="mt-4 space-y-2.5">
+                    {section.bullets.map((item) => (
+                      <li
+                        key={item}
+                        className="flex gap-3 text-base leading-relaxed text-zinc-300"
+                      >
+                        <span
+                          className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400"
+                          aria-hidden="true"
+                        />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {section.after?.map((paragraph, paragraphIndex) => (
+                  <p
+                    key={`${section.heading}-after-${paragraphIndex}`}
+                    className="mt-4 text-base leading-relaxed text-zinc-300"
+                  >
+                    {paragraph}
+                  </p>
+                ))}
               </section>
             ))}
           </div>
@@ -144,24 +168,44 @@ export default function DispatchIssuePage({ params }: PageProps) {
           </div>
           <div className="mt-8 rounded-2xl border border-indigo-400/25 bg-indigo-500/10 p-6 text-center">
             <h2 className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-xl font-semibold text-transparent">
-              Ready to apply this in Alberta?
+              {issue.cta?.heading ?? "Ready to apply this in Alberta?"}
             </h2>
             <p className="mt-2 text-sm text-zinc-400">
-              Book a free consultation for website design, Next.js engineering,
-              and full-funnel CRO.
+              {issue.cta?.body ??
+                "Book a free consultation for website design, Next.js engineering, and full-funnel CRO."}
             </p>
-            <TrackedLink
-              href="/#contact"
-              eventName="cta_click"
-              eventParams={{
-                cta_name: "book_consultation",
-                location: "dispatch_issue",
-              }}
-              className="mt-5 inline-flex items-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-indigo-500"
-            >
-              Book a Free Consultation
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </TrackedLink>
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+              {issue.cta ? (
+                <TrackedLink
+                  href={issue.cta.href}
+                  eventName="cta_click"
+                  eventParams={{
+                    cta_name: "dispatch_issue_cta",
+                    location: "dispatch_issue",
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-indigo-500"
+                >
+                  {issue.cta.label}
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </TrackedLink>
+              ) : null}
+              <TrackedLink
+                href="/#contact"
+                eventName="cta_click"
+                eventParams={{
+                  cta_name: "book_consultation",
+                  location: "dispatch_issue",
+                }}
+                className={
+                  issue.cta
+                    ? "inline-flex items-center gap-2 rounded-full border border-indigo-400/40 px-6 py-3 text-sm font-semibold text-indigo-100 transition hover:bg-indigo-500/15"
+                    : "inline-flex items-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-indigo-500"
+                }
+              >
+                Book a Free Consultation
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </TrackedLink>
+            </div>
           </div>
           <div id="export" className="mt-8 scroll-mt-8">
             <DispatchExport issue={issue} />

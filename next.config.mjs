@@ -16,6 +16,11 @@ const nextConfig = {
         permanent: true,
       },
       {
+        source: "/dispatch/whats-new-at-digisol-september-2026",
+        destination: "/dispatch/digisol-launch-growth-platform-for-alberta-businesses",
+        permanent: true,
+      },
+      {
         source: "/hub/leads",
         destination: "/hub/contacts",
         permanent: true,
