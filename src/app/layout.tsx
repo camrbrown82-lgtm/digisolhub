@@ -31,6 +31,9 @@ import {
 } from "@/lib/site";
 import "./globals.css";
 
+const META_APP_ID =
+  process.env.NEXT_PUBLIC_META_APP_ID?.trim() || process.env.FACEBOOK_APP_ID?.trim() || "";
+
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
@@ -48,9 +51,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
-  ...(process.env.NEXT_PUBLIC_META_APP_ID?.trim()
-    ? { facebook: { appId: process.env.NEXT_PUBLIC_META_APP_ID.trim() } }
-    : {}),
+  ...(META_APP_ID ? { facebook: { appId: META_APP_ID } } : {}),
   icons: {
     icon: [{ url: "/logo.jpg", type: "image/jpeg" }],
     shortcut: "/logo.jpg",
