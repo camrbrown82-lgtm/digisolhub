@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
 import { logAgentActivity } from "@/lib/agent/digisol/activityLog";
-import { getResendApiKey, getResendFrom } from "@/lib/email";
+import { sendLeadAlert } from "@/lib/leadAlert";
 import { upsertLead } from "@/lib/leads";
 import { emptyAttribution } from "@/lib/meta/attribution";
 import { timingSafeStringEqual } from "@/lib/security";
-import { DIGISOL_EMAIL } from "@/lib/site";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { ensureDigisolClient } from "@/lib/workspace";
 
@@ -45,39 +43,6 @@ function googleAdsLeadKey() {
   return (process.env.GOOGLE_ADS_LEAD_KEY ?? "").trim();
 }
 
-/** Tell Cameron right away, the same way the website contact form does. */
-async function notifyOwner(lead: {
-  name: string;
-  email: string;
-  phone: string;
-  company: string;
-  message: string;
-}) {
-  const apiKey = getResendApiKey();
-  if (!apiKey) return;
-  try {
-    await new Resend(apiKey).emails.send({
-      from: getResendFrom(),
-      to: [DIGISOL_EMAIL],
-      ...(lead.email ? { replyTo: lead.email } : {}),
-      subject: `Google Ads lead — ${lead.name || lead.email || lead.phone || "new lead"}`,
-      text: [
-        `Name: ${lead.name || "-"}`,
-        `Email: ${lead.email || "-"}`,
-        `Phone: ${lead.phone || "-"}`,
-        `Business: ${lead.company || "-"}`,
-        "",
-        lead.message,
-        "",
-        lead.email
-          ? "They're in Hub Contacts and will get your inbound New lead workflow (if it's switched on)."
-          : "No email on this form, so they're in the Hub Leads pipeline only. Call them.",
-      ].join("\n"),
-    });
-  } catch (error) {
-    console.error("Google Ads lead owner notification failed", error);
-  }
-}
 
 /**
  * Google Ads lead form asset → Hub contact. Google POSTs each submission here
@@ -142,10 +107,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, test: true });
   }
 
-  if (name || email || phone || company) {
-    await notifyOwner({ name, email, phone, company, message });
-  }
-
   if (!email) {
     // Phone-only form: keep it in the Leads pipeline so it isn't lost.
     if (houseId && (name || phone || company)) {
@@ -158,6 +119,14 @@ export async function POST(request: Request) {
         channel: "phone",
         stage: "new",
         notes_preview: message.slice(0, 280),
+      });
+      await sendLeadAlert({
+        sourceLabel: "Google Ads lead form",
+        name,
+        phone,
+        company,
+        message,
+        note: "No email on this form, so they're in the Hub Leads pipeline only. Call them.",
       });
     }
     return NextResponse.json({ ok: true, contact: false, reason: "no_email" });
@@ -181,6 +150,16 @@ export async function POST(request: Request) {
     tags: ["lead", "google_ads", "google_ads_lead_form"],
     attribution,
     pinHouseClient: true,
+  });
+
+  await sendLeadAlert({
+    sourceLabel: "Google Ads lead form",
+    name,
+    email,
+    phone,
+    company,
+    message,
+    contactId: result.id ?? null,
   });
 
   return NextResponse.json({ ok: true, contactId: result.id, created: result.created });

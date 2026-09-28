@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ensureAnalyticsSocialSchema } from "@/lib/ensureAnalyticsSocialSchema";
+import { ensureMetaSchema } from "@/lib/ensureMetaSchema";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { cronAuthorized } from "@/lib/security";
 import { processSocialPostQueue } from "@/lib/social/dispatchSocialCampaign";
@@ -25,6 +26,8 @@ export async function GET(request: Request) {
 
   try {
     await ensureAnalyticsSocialSchema().catch(() => null);
+    // Most frequent cron: keeps runtime-added contact columns (click ids, Kaylev email claim) in place.
+    await ensureMetaSchema().catch(() => null);
     const db = createAdminClient();
     const result = await processSocialPostQueue(db, { limit: 10 });
     return NextResponse.json({ ok: true, ...result });

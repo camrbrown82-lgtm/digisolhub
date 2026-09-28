@@ -47,6 +47,7 @@ export function Contact({
         body: JSON.stringify({
           name: data.get("fullName"),
           email: data.get("email"),
+          phone: data.get("phone"),
           company: data.get("business"),
           service: data.get("service"),
           message: data.get("details"),
@@ -201,6 +202,22 @@ export function Contact({
                   required
                   className={fieldClass}
                   placeholder="you@company.com"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="phone"
+                  className="block text-sm font-medium text-zinc-200"
+                >
+                  Phone <span className="font-normal text-zinc-500">(optional, for a quick call back)</span>
+                </label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  autoComplete="tel"
+                  className={fieldClass}
+                  placeholder="403-555-0123"
                 />
               </div>
               <div>

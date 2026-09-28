@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
-import { getResendApiKey, getResendFrom } from "@/lib/email";
+import { sendLeadAlert } from "@/lib/leadAlert";
 import { getWeb3FormsAccessKey } from "@/lib/supabase/env";
 import { hasAdminClient, createAdminClient } from "@/lib/supabase/admin";
 import { normalizeLead, upsertLead } from "@/lib/leads";
@@ -72,40 +71,6 @@ async function sendViaWeb3Forms(
   };
 }
 
-async function sendViaResend(fields: {
-  name: string;
-  email: string;
-  company: string;
-  service: string;
-  message: string;
-}) {
-  const apiKey = getResendApiKey();
-  if (!apiKey) return { ok: false, message: "Resend is not configured." };
-
-  const resend = new Resend(apiKey);
-  const replyTo =
-    process.env.RESEND_REPLY_TO?.trim() || fields.email || OWNER_EMAIL;
-  const { error } = await resend.emails.send({
-    from: getResendFrom(),
-    to: [OWNER_EMAIL],
-    replyTo,
-    subject: `DigiSol consultation — ${fields.name || fields.email}`,
-    text: [
-      `Name: ${fields.name}`,
-      `Email: ${fields.email}`,
-      `Business: ${fields.company}`,
-      `Service: ${fields.service}`,
-      "",
-      fields.message,
-    ].join("\n"),
-  });
-
-  return {
-    ok: !error,
-    message: error?.message || "",
-  };
-}
-
 export async function POST(request: Request) {
   const limited = rateLimit({
     key: `contact:${clientIp(request)}`,
@@ -137,6 +102,7 @@ export async function POST(request: Request) {
   const fields = {
     name: str(body.name),
     email: str(body.email).toLowerCase(),
+    phone: str(body.phone),
     company: str(body.company),
     service: str(body.service),
     message: str(body.message),
@@ -149,32 +115,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const accessKey = getWeb3FormsAccessKey();
   const deliveryErrors: string[] = [];
   let delivered = false;
-
-  if (accessKey) {
-    const web3 = await sendViaWeb3Forms(accessKey, fields);
-    if (web3.ok) {
-      delivered = true;
-    } else {
-      deliveryErrors.push(web3.message || "Web3Forms rejected the submission.");
-      console.error("Web3Forms contact failure", web3.message);
-    }
-  } else {
-    deliveryErrors.push("WEB3FORMS_ACCESS_KEY is not set.");
-  }
-
-  if (!delivered) {
-    const resend = await sendViaResend(fields);
-    if (resend.ok) {
-      delivered = true;
-    } else if (resend.message) {
-      deliveryErrors.push(resend.message);
-      console.error("Resend contact fallback failure", resend.message);
-    }
-  }
-
   let leadSaved = false;
   let contactId: string | undefined;
   const eventId =
@@ -200,6 +142,29 @@ export async function POST(request: Request) {
     } catch (error) {
       console.error("Lead ingest failed", error);
       deliveryErrors.push("Could not save lead to Hub.");
+    }
+  }
+
+  // Every submission alerts Cameron, even from someone already in Contacts.
+  const alert = await sendLeadAlert({
+    sourceLabel: "Website contact form",
+    ...fields,
+    contactId: contactId ?? null,
+  });
+  if (alert.ok) {
+    delivered = true;
+  } else {
+    deliveryErrors.push(alert.message || "Lead alert failed.");
+    console.error("Lead alert failed", alert.message);
+    const accessKey = getWeb3FormsAccessKey();
+    if (accessKey) {
+      const web3 = await sendViaWeb3Forms(accessKey, fields);
+      if (web3.ok) {
+        delivered = true;
+      } else {
+        deliveryErrors.push(web3.message || "Web3Forms rejected the submission.");
+        console.error("Web3Forms contact failure", web3.message);
+      }
     }
   }
 

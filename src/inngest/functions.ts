@@ -250,6 +250,53 @@ export const runWorkflowsOnLead = inngest.createFunction(
   },
 );
 
+/**
+ * Website form and Google Ads leads alert Cameron as they arrive. Kaylev chat leads
+ * and audited prospects who click are reported here, once per contact.
+ */
+export const alertOwnerOnLead = inngest.createFunction(
+  {
+    id: "alert-owner-on-lead",
+    idempotency: "event.data.contactId",
+    triggers: [{ event: "hub/lead.created" }],
+  },
+  async ({ event, step }) => {
+    const contactId = event.data.contactId as string | null;
+    if (!contactId) return { skipped: "no_contact" };
+    return step.run("send-alert", async () => {
+      const admin = createAdminClient();
+      const { data: contact } = await admin
+        .from("contacts")
+        .select("id, name, email, phone, company, service, source, tags, notes_preview")
+        .eq("id", contactId)
+        .maybeSingle();
+      if (!contact) return { skipped: "missing" };
+      const tags = (contact.tags as string[] | null) ?? [];
+      const audited =
+        tags.includes("prospect_audit_engaged") ||
+        String(contact.source || "").startsWith("prospect_audit");
+      const chat = !audited && contact.source === "visitor_chat";
+      if (!audited && !chat) return { skipped: "alerted_at_capture_or_manual" };
+      const { sendLeadAlert } = await import("@/lib/leadAlert");
+      const result = await sendLeadAlert({
+        sourceLabel: audited ? "Audited prospect clicked" : "Kaylev chat",
+        name: contact.name,
+        email: contact.email,
+        phone: contact.phone,
+        company: contact.company,
+        service: contact.service,
+        message: contact.notes_preview,
+        contactId: contact.id,
+        note: audited
+          ? "They clicked a link in the website audit DigiSol emailed them. Good moment to call."
+          : "They left their details with Kaylev on the website.",
+      });
+      if (!result.ok) throw new Error(result.message || "Lead alert failed");
+      return { sent: true };
+    });
+  },
+);
+
 export const runWorkflowsOnTag = inngest.createFunction(
   { id: "run-workflows-on-tag", triggers: [{ event: "hub/tag.added" }] },
   async ({ event, step }) => {
@@ -376,6 +423,7 @@ export const sendDispatchIssues = inngest.createFunction(
 
 export const functions = [
   runWorkflowsOnLead,
+  alertOwnerOnLead,
   runWorkflowsOnTag,
   runWorkflowsOnOpen,
   runSingleWorkflow,
