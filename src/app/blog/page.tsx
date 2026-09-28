@@ -17,7 +17,7 @@ export const metadata: Metadata = {
       "Practical advice on Google reviews, local search, and websites that bring in customers.",
     url: `${DIGISOL_SITE_URL}/blog`,
     type: "website",
-    images: shareCardImages("DigiSol guides for Alberta businesses"),
+    images: shareCardImages("DigiSol guides for Alberta businesses", { page: "blog" }),
   },
 };
 

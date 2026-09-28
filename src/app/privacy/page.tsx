@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     siteName: "DigiSol",
     locale: "en_CA",
     type: "website",
-    images: shareCardImages("DigiSol"),
+    images: shareCardImages("DigiSol privacy policy", { page: "privacy" }),
   },
 };
 

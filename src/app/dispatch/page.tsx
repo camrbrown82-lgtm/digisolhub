@@ -18,7 +18,7 @@ export const metadata: Metadata = {
       "Local SEO and growth notes for Alberta companies. Read the latest issue and export it to socials.",
     url: `${DIGISOL_SITE_URL}/dispatch`,
     type: "website",
-    images: shareCardImages("DigiSol Dispatch newsletter"),
+    images: shareCardImages("DigiSol Dispatch newsletter", { page: "dispatch" }),
   },
 };
 

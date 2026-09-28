@@ -27,13 +27,13 @@ export function generateMetadata(): Metadata {
       url: `${DIGISOL_SITE_URL}${localizePath("/", locale)}`,
       siteName: "DigiSol",
       type: "website",
-      images: shareCardImages(t.homeShareAlt),
+      images: shareCardImages(t.homeShareAlt, { locale }),
     },
     twitter: {
       card: "summary_large_image",
       title: t.homeTitle,
       description: t.homeShareDescription,
-      images: shareCardImages(t.homeShareAlt),
+      images: shareCardImages(t.homeShareAlt, { locale }),
     },
   });
 }

@@ -30,7 +30,7 @@ export function generateMetadata(): Metadata {
       description: t.metaDescription,
       url: `${DIGISOL_SITE_URL}${localizePath("/pricing", locale)}`,
       type: "website",
-      images: shareCardImages(t.shareAlt),
+      images: shareCardImages(t.shareAlt, { page: "pricing", locale }),
     },
   });
 }

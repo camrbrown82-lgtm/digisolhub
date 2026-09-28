@@ -73,12 +73,9 @@ export const metadata: Metadata = {
     type: "website",
     images: shareCardImages("DigiSol: custom websites, SEO, and growth marketing from Airdrie, Alberta"),
   },
+  // Card type only: pages inherit this block unless they set their own, and X falls back to each page's og:title, og:description and og:image.
   twitter: {
     card: "summary_large_image",
-    title: "DigiSol | Airdrie Web Design, Development & Marketing",
-    description:
-      "Custom websites, SEO, and growth marketing from Airdrie, Alberta — one partner from first look to closed deal.",
-    images: shareCardImages("DigiSol: custom websites, SEO, and growth marketing from Airdrie, Alberta"),
   },
 };
 

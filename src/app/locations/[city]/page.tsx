@@ -47,13 +47,13 @@ export function generateMetadata({ params }: PageProps): Metadata {
       url: localizedUrl(page, locale),
       type: "website",
       siteName: "DigiSol",
-      images: shareCardImages(getMessages(locale).meta.cityShareAlt(page.name), page.slug),
+      images: shareCardImages(getMessages(locale).meta.cityShareAlt(page.name), { city: page.slug, locale }),
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [shareCardPath(page.slug)],
+      images: [shareCardPath({ city: page.slug, locale })],
     },
   });
 }

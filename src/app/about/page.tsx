@@ -13,6 +13,7 @@ import {
 import { localizePath } from "@/lib/i18n/config";
 import { getLocale, localizedMetadata } from "@/lib/i18n/server";
 import { getMessages } from "@/lib/i18n/messages";
+import { shareCardImages } from "@/lib/shareCard";
 import { DIGISOL_FOUNDER, DIGISOL_FOUNDER_TITLE, DIGISOL_SITE_URL } from "@/lib/site";
 
 export function generateMetadata(): Metadata {
@@ -27,12 +28,7 @@ export function generateMetadata(): Metadata {
       url: `${DIGISOL_SITE_URL}${localizePath(CREDENTIALS_PAGE_PATH, locale)}`,
       siteName: "DigiSol",
       type: "profile",
-      images: [
-        {
-          url: FOUNDER_PHOTO,
-          alt: t.photoAlt(DIGISOL_FOUNDER),
-        },
-      ],
+      images: shareCardImages(t.photoAlt(DIGISOL_FOUNDER), { page: "about", locale }),
     },
   });
 }

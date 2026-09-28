@@ -20,7 +20,7 @@ export function generateMetadata(): Metadata {
       description: t.locationsShareDescription,
       url: `${DIGISOL_SITE_URL}${localizePath("/locations", locale)}`,
       type: "website",
-      images: shareCardImages(t.locationsShareAlt),
+      images: shareCardImages(t.locationsShareAlt, { page: "locations", locale }),
     },
   });
 }

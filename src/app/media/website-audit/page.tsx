@@ -43,13 +43,13 @@ export const metadata: Metadata = {
         type: "video/mp4",
       },
     ],
-    images: shareCardImages("DigiSol website audit presentation"),
+    images: shareCardImages("DigiSol website audit presentation", { page: "video" }),
   },
   twitter: {
-    card: "player",
+    card: "summary_large_image",
     title: WEBSITE_AUDIT_TITLE,
     description: WEBSITE_AUDIT_DESCRIPTION,
-    images: [shareCardPath()],
+    images: [shareCardPath({ page: "video" })],
   },
 };
 
