@@ -22,7 +22,14 @@ type ProspectRow = {
   contact_id: string | null;
   error_message: string | null;
   created_at: string;
-  metadata: { mailScanner?: unknown } | null;
+  metadata: {
+    mailScanner?: {
+      suspectedAt?: string;
+      eventAt?: string;
+      confirmedAt?: string;
+      clearedAt?: string;
+    };
+  } | null;
 };
 
 export default async function ProspectsPage() {
@@ -182,11 +189,7 @@ export default async function ProspectsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge status={row.audit_status} casl={row.casl_status} />
-                    {row.metadata?.mailScanner ? (
-                      <div className="mt-1 max-w-[220px] text-xs text-amber-200/80">
-                        Mail scanner, no follow-ups
-                      </div>
-                    ) : null}
+                    <ScannerNote scanner={row.metadata?.mailScanner} />
                     {row.error_message ? (
                       <div className="mt-1 max-w-[220px] text-xs text-amber-200/80">
                         {row.error_message.slice(0, 120)}
@@ -256,6 +259,21 @@ function StatusBadge({ status, casl }: { status: string; casl: string }) {
         : ""}
     </span>
   );
+}
+
+function ScannerNote({
+  scanner,
+}: {
+  scanner?: NonNullable<ProspectRow["metadata"]>["mailScanner"];
+}) {
+  if (!scanner || scanner.clearedAt) return null;
+  const suspectedAt = scanner.suspectedAt || scanner.eventAt;
+  const text = scanner.confirmedAt || !suspectedAt
+    ? "Mail scanner, no follow-ups"
+    : `Possible mail scanner. Follow-ups stop ${new Date(
+        new Date(suspectedAt).getTime() + 24 * 60 * 60 * 1000,
+      ).toLocaleString()} unless someone really opens it.`;
+  return <div className="mt-1 max-w-[220px] text-xs text-amber-200/80">{text}</div>;
 }
 
 function hostFromUrl(url: string) {

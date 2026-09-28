@@ -2,7 +2,7 @@ import { type GetStepTools } from "inngest";
 import { inngest } from "@/inngest/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmailToContact } from "@/lib/email";
-import { isMailScannerContact } from "@/lib/mailScanner";
+import { isMailScannerContact, resolveScannerStatus } from "@/lib/mailScanner";
 import { contactMatchesAudience, leadAudienceOf } from "@/lib/workflowGraph";
 
 type FlowNode = {
@@ -52,12 +52,14 @@ async function sendBlockFor(
 ): Promise<SendBlock | null> {
   const { data: contact } = await admin
     .from("contacts")
-    .select("id, unsubscribed_at, tags")
+    .select("id, unsubscribed_at")
     .eq("id", contactId)
     .maybeSingle();
   if (!contact) return "missing";
   if (contact.unsubscribed_at) return "unsubscribed";
-  if (isMailScannerContact(contact.tags as string[] | null)) return "mail_scanner";
+  if ((await resolveScannerStatus(admin, contactId)).state === "confirmed") {
+    return "mail_scanner";
+  }
   if (automatic) {
     const { count } = await admin
       .from("leads")
@@ -141,7 +143,7 @@ async function runGraph(opts: {
           if (automatic) {
             const gate = await opts.step.run(`gate-${current.id}`, async () => {
               const block = await sendBlockFor(admin, opts.contactId, true);
-              if (block) return { block, holdUntil: null };
+              if (block) return { block, holdUntil: null, holdReason: "" };
               const { data: last } = await admin
                 .from("sends")
                 .select("created_at")
@@ -149,12 +151,22 @@ async function runGraph(opts: {
                 .order("created_at", { ascending: false })
                 .limit(1)
                 .maybeSingle();
-              const earliest = last?.created_at
+              let earliest = last?.created_at
                 ? new Date(last.created_at as string).getTime() + MIN_EMAIL_GAP_MS
                 : 0;
+              let holdReason = "24h email gap";
+              const scanner = await resolveScannerStatus(admin, opts.contactId);
+              if (scanner.state === "suspected") {
+                const until = new Date(scanner.until).getTime();
+                if (until > earliest) {
+                  earliest = until;
+                  holdReason = "possible mail scanner, waiting a day for a real open";
+                }
+              }
               return {
                 block: null,
                 holdUntil: earliest > Date.now() ? new Date(earliest).toISOString() : null,
+                holdReason,
               };
             });
             if (gate.block) {
@@ -164,13 +176,13 @@ async function runGraph(opts: {
             }
             if (gate.holdUntil) {
               if (runId) {
-                const snapshot = [...log, `holding until ${gate.holdUntil} (24h email gap)`];
+                const snapshot = [...log, `holding until ${gate.holdUntil} (${gate.holdReason})`];
                 await opts.step.run(`hold-progress-${current.id}`, async () => {
                   await admin.from("workflow_runs").update({ log: snapshot }).eq("id", runId);
                 });
               }
               await opts.step.sleepUntil(`hold-${current.id}`, gate.holdUntil);
-              log.push(`held until ${gate.holdUntil} (24h email gap)`);
+              log.push(`held until ${gate.holdUntil} (${gate.holdReason})`);
             }
           }
           const outcome = await opts.step.run(`send-${current.id}`, async () => {

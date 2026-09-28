@@ -7,6 +7,7 @@ import {
   isScannerEngagement,
   promoteProspectOnEngagement,
 } from "@/lib/prospectAudit/promote";
+import { clearScannerFlags } from "@/lib/mailScanner";
 import { verifyResendWebhookSignature } from "@/lib/resendWebhook";
 import { unsubscribeContactsByEmail } from "@/lib/unsubscribeContact";
 
@@ -191,6 +192,9 @@ export async function POST(request: Request) {
   }
 
   if (event === "opened" || event === "clicked") {
+    await clearScannerFlags(admin, send?.contact_id ?? existing.contact_id).catch((err) =>
+      console.error("clearScannerFlags", err),
+    );
     await promoteProspectOnEngagement({
       db: admin,
       resendId,
