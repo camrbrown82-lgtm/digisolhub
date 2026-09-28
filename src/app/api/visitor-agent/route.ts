@@ -22,6 +22,7 @@ import {
   DIGISOL_SITE_URL,
   DIGISOL_TIKTOK_HANDLE,
   DIGISOL_TIKTOK_URL,
+  DIGISOL_YOUTUBE_FEATURED_URL,
   DIGISOL_YOUTUBE_URL,
 } from "@/lib/site";
 import {
@@ -230,7 +231,7 @@ Avoid: ${DIGISOL_BRAND.dontSay}
 - Website: ${DIGISOL_SITE_URL}
 - Facebook Page: ${DIGISOL_FACEBOOK_URL}
 - Instagram: @${DIGISOL_INSTAGRAM_HANDLE} (${DIGISOL_INSTAGRAM_URL})
-- YouTube: ${DIGISOL_YOUTUBE_URL}
+- YouTube: ${DIGISOL_YOUTUBE_URL} (featured video: ${DIGISOL_YOUTUBE_FEATURED_URL})
 - TikTok: @${DIGISOL_TIKTOK_HANDLE} (${DIGISOL_TIKTOK_URL})
 - Google Business Profile: ${DIGISOL_GOOGLE_LISTING_URL}
 If a visitor asks how to reach DigiSol, share the email/phone above. DigiSol's Facebook presence is a **Page** (not a personal profile).

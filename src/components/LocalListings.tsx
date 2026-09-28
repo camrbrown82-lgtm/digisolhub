@@ -10,7 +10,7 @@ import {
   DIGISOL_INSTAGRAM_URL,
   DIGISOL_LINKEDIN_URL,
   DIGISOL_TIKTOK_URL,
-  DIGISOL_YOUTUBE_URL,
+  DIGISOL_YOUTUBE_FEATURED_URL,
   LINKEDIN_ENABLED,
 } from "@/lib/site";
 
@@ -92,7 +92,7 @@ export function ListingLinks({ location }: { location: ListingLocation }) {
         Instagram
       </TrackedLink>
       <TrackedLink
-        href={DIGISOL_YOUTUBE_URL}
+        href={DIGISOL_YOUTUBE_FEATURED_URL}
         eventName="social_click"
         eventParams={{ network: "youtube", location }}
         target="_blank"

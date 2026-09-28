@@ -27,6 +27,10 @@ export const DIGISOL_INSTAGRAM_URL =
 export const DIGISOL_YOUTUBE_URL =
   process.env.NEXT_PUBLIC_DIGISOL_YOUTUBE_URL?.trim() ||
   "https://www.youtube.com/channel/UC5pqH5vLTuTTp_RyIZ2HllQ";
+/** Where the site's YouTube icon sends visitors; schema sameAs keeps the channel URL. */
+export const DIGISOL_YOUTUBE_FEATURED_URL =
+  process.env.NEXT_PUBLIC_DIGISOL_YOUTUBE_FEATURED_URL?.trim() ||
+  "https://youtu.be/hrSZwIqXStA";
 export const DIGISOL_TIKTOK_HANDLE =
   process.env.NEXT_PUBLIC_DIGISOL_TIKTOK_HANDLE?.trim() || "digisol96";
 export const DIGISOL_TIKTOK_URL = `https://www.tiktok.com/@${DIGISOL_TIKTOK_HANDLE}`;

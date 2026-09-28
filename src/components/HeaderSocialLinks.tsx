@@ -9,7 +9,7 @@ import {
   DIGISOL_INSTAGRAM_URL,
   DIGISOL_TIKTOK_HANDLE,
   DIGISOL_TIKTOK_URL,
-  DIGISOL_YOUTUBE_URL,
+  DIGISOL_YOUTUBE_FEATURED_URL,
 } from "@/lib/site";
 
 const iconLink =
@@ -47,13 +47,13 @@ export function HeaderSocialLinks({
         <Instagram className="h-4 w-4" aria-hidden="true" />
       </TrackedLink>
       <TrackedLink
-        href={DIGISOL_YOUTUBE_URL}
+        href={DIGISOL_YOUTUBE_FEATURED_URL}
         eventName="social_click"
         eventParams={{ network: "youtube", location }}
         target="_blank"
         rel="noopener noreferrer me"
-        aria-label="Subscribe to DigiSol on YouTube"
-        title="Subscribe on YouTube"
+        aria-label="Watch DigiSol on YouTube"
+        title="Watch on YouTube"
         className={iconLink}
       >
         <Youtube className="h-4 w-4" aria-hidden="true" />
