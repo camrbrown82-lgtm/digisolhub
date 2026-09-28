@@ -1,9 +1,8 @@
-import type {
-  CompetitiveReport as Report,
-  MarketPresence,
-  SiteSnapshot,
-} from "@/lib/competitive/schema";
+import { COMPETITIVE_DIMENSIONS, type MarketPresence, type SiteSnapshot } from "@/lib/competitive/schema";
+import type { StoredCompetitiveReport as Report } from "@/lib/competitive/scoring";
 import { prospectHostKey } from "@/lib/prospectAudit/seedCatalog";
+
+const dimensionLabel = (key: string) => COMPETITIVE_DIMENSIONS.find((d) => d.key === key)?.label ?? key;
 
 type Props = {
   companyName: string;
@@ -72,6 +71,9 @@ export function CompetitiveReport({ companyName, report, inputs, sources, comple
     sources.competitors?.find((s) => prospectHostKey(s.url) === prospectHostKey(url));
   const companyPresence = sources.company ? presenceFor(sources.company.url) : undefined;
   const actions = [...report.actionPlan].sort((a, b) => a.priority - b.priority);
+  const changes = report.changes;
+  const checksFor = (key: string) =>
+    report.scorecard?.company.dimensions.find((d) => d.key === key)?.checks ?? [];
 
   return (
     <div className="space-y-6">
@@ -92,6 +94,20 @@ export function CompetitiveReport({ companyName, report, inputs, sources, comple
               {Math.round(report.overallScore)}
             </div>
             <div className="text-xs text-zinc-400">out of 100</div>
+            {changes ? (
+              <div
+                className={`mt-1 text-xs font-medium ${
+                  changes.overallDelta > 0
+                    ? "text-emerald-300"
+                    : changes.overallDelta < 0
+                      ? "text-rose-300"
+                      : "text-zinc-400"
+                }`}
+              >
+                {changes.overallDelta > 0 ? "+" : ""}
+                {changes.overallDelta} since last analysis
+              </div>
+            ) : null}
             <div className="mt-2">
               <Pill tone="bg-indigo-500/20 text-indigo-100">{POSITION_COPY[report.position]}</Pill>
             </div>
@@ -118,9 +134,57 @@ export function CompetitiveReport({ companyName, report, inputs, sources, comple
         ) : null}
       </section>
 
+      {changes ? (
+        <Section
+          title="Since the last analysis"
+          subtitle={`Compared with ${
+            changes.previousDate ? new Date(changes.previousDate).toLocaleDateString() : "the previous run"
+          }, scored on the same checklist: ${changes.previousOverall} → ${Math.round(report.overallScore)}.`}
+        >
+          {changes.gained.length || changes.lost.length ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-emerald-300/80">Improvements</h3>
+                <ul className="mt-2 space-y-1 text-sm">
+                  {changes.gained.length ? (
+                    changes.gained.map((g) => (
+                      <li key={`${g.dimension}-${g.label}`} className="text-zinc-200">
+                        <span className="text-emerald-300">+{g.points}</span> {g.label}
+                        <span className="text-zinc-500"> · {dimensionLabel(g.dimension)}</span>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="text-zinc-500">None detected.</li>
+                  )}
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-rose-300/80">Went backwards</h3>
+                <ul className="mt-2 space-y-1 text-sm">
+                  {changes.lost.length ? (
+                    changes.lost.map((g) => (
+                      <li key={`${g.dimension}-${g.label}`} className="text-zinc-200">
+                        <span className="text-rose-300">−{g.points}</span> {g.label}
+                        <span className="text-zinc-500"> · {dimensionLabel(g.dimension)}</span>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="text-zinc-500">Nothing.</li>
+                  )}
+                </ul>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-400">No changes detected on the checklist since the last analysis.</p>
+          )}
+        </Section>
+      ) : null}
+
       <Section
         title="Scorecard"
-        subtitle={`${companyName} (indigo) against the competitor average (grey) in each area.`}
+        subtitle={`${companyName} (indigo) against the competitor average (grey) in each area.${
+          report.scorecard ? " Scores come from a fixed checklist, so the same site always gets the same score." : ""
+        }`}
       >
         <div className="space-y-4">
           {report.dimensions.map((d) => (
@@ -139,6 +203,25 @@ export function CompetitiveReport({ companyName, report, inputs, sources, comple
                 <span className="text-xs text-zinc-400">{Math.round(d.competitorAverage)} avg</span>
               </div>
               <p className="mt-3 text-sm text-zinc-300">{d.evidence}</p>
+              {checksFor(d.key).length ? (
+                <details className="mt-3 text-sm">
+                  <summary className="cursor-pointer text-xs text-indigo-300 hover:text-indigo-200">
+                    How this score was worked out
+                  </summary>
+                  <ul className="mt-2 space-y-1">
+                    {checksFor(d.key).map((c) => (
+                      <li key={c.id} className="flex items-start justify-between gap-3">
+                        <span className={c.points >= c.max ? "text-zinc-200" : "text-zinc-500"}>
+                          {c.points >= c.max ? "✓" : c.points > 0 ? "◐" : "✗"} {c.label}
+                        </span>
+                        <span className="shrink-0 text-xs text-zinc-400">
+                          {c.points}/{c.max}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
             </div>
           ))}
         </div>

@@ -147,6 +147,12 @@ function detectFeatures(pages: Array<{ url: string; html: string }>) {
   const pricingPath = paths.find((p) => /pric|package|plans?\b|rates/i.test(p));
   add(pricingPath, `Pricing/packages page (${pricingPath})`);
   add(prices.length, `Prices published on the site: ${prices.join(", ")}`);
+  add(
+    /\bid=["']services["']|href=["'][^"']*[/#]services?\b/i.test(html) ||
+      paths.some((p) => /service|what-we-do|solutions/i.test(p)) ||
+      /^#{1,3} .*\b(services|what we do)\b/im.test(text),
+    "Services page or section",
+  );
   const forms = (html.match(/<form\b/gi) ?? []).length;
   add(forms, `${forms} form(s) on the pages read`);
   add(/<form\b[\s\S]{0,4000}?(quote|estimate)/i.test(html) || /get (a|my) (free )?(quote|estimate)/i.test(text), "Quote/estimate request form or CTA");
@@ -180,9 +186,11 @@ function detectFeatures(pages: Array<{ url: string; html: string }>) {
 
   const schemaTypes = new Set<string>();
   for (const block of Array.from(html.matchAll(/<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi))) {
-    for (const t of Array.from(block[1].matchAll(/"@type"\s*:\s*"([^"]+)"/g))) schemaTypes.add(t[1]);
+    for (const t of Array.from(block[1].matchAll(/"@type"\s*:\s*("[^"]+"|\[[^\]]*\])/g))) {
+      for (const name of Array.from(t[1].matchAll(/"([^"]+)"/g))) schemaTypes.add(name[1]);
+    }
   }
-  add(schemaTypes.size, `Structured data types: ${Array.from(schemaTypes).slice(0, 12).join(", ")}`);
+  add(schemaTypes.size, `Structured data types: ${Array.from(schemaTypes).slice(0, 24).join(", ")}`);
   return features;
 }
 

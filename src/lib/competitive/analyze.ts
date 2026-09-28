@@ -9,13 +9,18 @@ import { htmlToPlainExcerpt } from "@/lib/prospectAudit/casl";
 import { BLOCKED_DOMAINS } from "@/lib/prospectAudit/discover";
 import { normalizeProspectUrl, prospectHostKey } from "@/lib/prospectAudit/seedCatalog";
 import {
-  COMPETITIVE_DIMENSIONS,
   competitiveReportSchema,
   type CompetitiveInputs,
-  type CompetitiveReport,
   type MarketPresence,
   type SiteSnapshot,
 } from "@/lib/competitive/schema";
+import {
+  applyScorecard,
+  scorecardPromptBlock,
+  type ScoreComparison,
+  type Scorecard,
+  type StoredCompetitiveReport,
+} from "@/lib/competitive/scoring";
 
 export const COMPETITIVE_RESEARCH_MODEL =
   process.env.OPENAI_COMPETITIVE_RESEARCH_MODEL?.trim() || "gpt-4.1-mini";
@@ -273,14 +278,16 @@ export async function synthesizeReport(input: {
   company: SiteSnapshot;
   competitors: SiteSnapshot[];
   presence: MarketPresence[];
-}): Promise<{ report: CompetitiveReport; tokens: number }> {
+  scorecard: Scorecard;
+  changes: ScoreComparison | null;
+}): Promise<{ report: StoredCompetitiveReport; tokens: number }> {
   const openai = openaiClient();
   const presenceFor = (url: string) =>
     input.presence.find((p) => prospectHostKey(p.url) === prospectHostKey(url));
 
   const result = await generateText({
     model: openai(COMPETITIVE_REPORT_MODEL),
-    temperature: 0.3,
+    temperature: 0,
     maxOutputTokens: 9000,
     output: Output.object({ schema: competitiveReportSchema }),
     prompt: `You are Kaylev, DigiSol's growth analyst. Write a comprehensive competitive analysis for ${input.companyName}, a ${input.inputs.industry} business serving ${input.inputs.location}.
@@ -293,8 +300,11 @@ ${input.companyName}'s own website is given in full below: the exact copy of its
 - Score the company from its actual pages, not from its homepage alone.
 - Competitor pages are shorter samples, so only claim a competitor lacks something when it's clearly absent from what was read.
 
-Score every dimension 0-100 for the company and as an average across competitors, in this order:
-${COMPETITIVE_DIMENSIONS.map((d) => `- ${d.key}: ${d.label}`).join("\n")}
+## Scores (fixed — do not change them)
+Scores come from a fixed checklist so they stay consistent between runs. Copy these numbers into the dimensions (in this order) and overallScore, and write evidence that explains them: what earned the points and what is missing.
+${scorecardPromptBlock(input.scorecard, input.changes)}
+- If there were improvements since the previous analysis, open the executive summary by naming them and the score change. Never describe an improvement as a weakness.
+- Base the action plan on the missing checklist items with the biggest point values and competitor gaps, plus anything else the evidence shows.
 
 The action plan is the most important part. Give 8-12 actions ordered by priority (highest impact for the least effort first, and close the biggest competitor gaps first). Each needs 4-8 concrete steps someone can follow, practical "how to achieve" recommendations (tools, examples, sample wording, what good looks like), a timeframe, an owner (DigiSol for web/SEO/automation work, Client for things only the business can do such as asking for reviews or photos, Kaylev for automated audits, follow-ups and monitoring), and a measurable KPI with a target.
 
@@ -308,5 +318,12 @@ ${input.competitors.map((c) => describeSite(c, presenceFor(c.url))).join("\n\n")
   });
 
   if (!result.output) throw new Error("Kaylev could not produce a report. Try again.");
-  return { report: result.output, tokens: tokensOf(result.usage) };
+  return {
+    report: {
+      ...applyScorecard(result.output, input.scorecard),
+      scorecard: input.scorecard,
+      changes: input.changes,
+    },
+    tokens: tokensOf(result.usage),
+  };
 }

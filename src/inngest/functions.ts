@@ -512,6 +512,7 @@ export const runCompetitiveAnalysis = inngest.createFunction(
       const client = data?.clients as { name?: string } | { name?: string }[] | null;
       const name = (Array.isArray(client) ? client[0]?.name : client?.name) || "This company";
       return {
+        clientId: (data?.client_id as string | null) ?? null,
         companyName: name,
         inputs: (data?.inputs ?? {}) as {
           url: string;
@@ -570,6 +571,70 @@ export const runCompetitiveAnalysis = inngest.createFunction(
       );
     });
 
+    const scores = await step.run("score", async () => {
+      const { buildScorecard, compareScores } = await import("@/lib/competitive/scoring");
+      const { prospectHostKey } = await import("@/lib/prospectAudit/seedCatalog");
+      type Presence = (typeof presence)[number]["presence"];
+      const sameHost = (a: string, b: string) => prospectHostKey(a) === prospectHostKey(b);
+
+      const { data: prev } = row.clientId
+        ? await admin
+            .from("competitive_analyses")
+            .select("id, inputs, sources, completed_at")
+            .eq("client_id", row.clientId)
+            .eq("status", "completed")
+            .neq("id", analysisId)
+            .order("completed_at", { ascending: false })
+            .limit(1)
+            .maybeSingle()
+        : { data: null };
+      const prevSources = (prev?.sources ?? {}) as { company?: typeof company; presence?: Presence[] };
+
+      // A web search that misses the company's Google rating shouldn't read as losing it.
+      const prevCompanyPresence = prevSources.presence?.find((p) => sameHost(p.url, company.url));
+      const allPresence = presence.map((p) => {
+        const current = p.presence;
+        if (
+          sameHost(current.url, company.url) &&
+          current.googleRating === "unknown" &&
+          prevCompanyPresence &&
+          prevCompanyPresence.googleRating !== "unknown"
+        ) {
+          return {
+            ...current,
+            googleRating: prevCompanyPresence.googleRating,
+            reviewCount: prevCompanyPresence.reviewCount,
+            googleSource: prevCompanyPresence.googleSource,
+            googleMapsUrl: prevCompanyPresence.googleMapsUrl,
+            notes: `${current.notes} (Google rating carried over from the previous analysis.)`.trim(),
+          };
+        }
+        return current;
+      });
+
+      const scorecard = buildScorecard({
+        company,
+        competitors,
+        presence: allPresence,
+        location: inputs.location,
+      });
+      let changes = null;
+      if (prev && prevSources.company) {
+        // Re-score the old run with today's checklist and location so the comparison is like for like.
+        const before = buildScorecard({
+          company: prevSources.company,
+          competitors: [],
+          presence: prevSources.presence ?? [],
+          location: inputs.location,
+        });
+        changes = compareScores(scorecard.company, before.company, {
+          previousId: prev.id as string,
+          previousDate: (prev.completed_at as string | null) ?? null,
+        });
+      }
+      return { scorecard, changes, presence: allPresence };
+    });
+
     const report = await step.run("report", async () => {
       await setStage("Writing the analysis and action plan");
       return synthesizeReport({
@@ -577,7 +642,9 @@ export const runCompetitiveAnalysis = inngest.createFunction(
         inputs,
         company,
         competitors,
-        presence: presence.map((p) => p.presence),
+        presence: scores.presence,
+        scorecard: scores.scorecard,
+        changes: scores.changes,
       });
     });
 
@@ -597,7 +664,7 @@ export const runCompetitiveAnalysis = inngest.createFunction(
           sources: {
             company,
             competitors,
-            presence: presence.map((p) => p.presence),
+            presence: scores.presence,
           },
           model: COMPETITIVE_REPORT_MODEL,
           tokens_total: tokens,
