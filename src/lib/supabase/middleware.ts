@@ -18,6 +18,28 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  const path = request.nextUrl.pathname;
+  const isHub = path === "/hub" || path.startsWith("/hub/");
+  const isLogin = path === "/hub/login";
+  const isHubApi = path.startsWith("/api/hub/");
+  // Typed URL, bookmark, or a link from outside the Hub = a new visit.
+  const enteringHub =
+    isHub &&
+    request.headers.get("sec-fetch-dest") === "document" &&
+    !cameFromHub(request);
+
+  // A new visit always re-asks the password, so drop the old session locally
+  // instead of waiting on a Supabase round trip (which can stall the click).
+  if (isLogin && enteringHub) {
+    for (const cookie of request.cookies.getAll()) {
+      if (cookie.name.startsWith("sb-")) {
+        supabaseResponse.cookies.set(cookie.name, "", { path: "/", maxAge: 0 });
+      }
+    }
+    clearHubPass(supabaseResponse);
+    return supabaseResponse;
+  }
+
   try {
     const supabase = createServerClient(url, key, {
       cookies: {
@@ -38,15 +60,6 @@ export async function updateSession(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    const path = request.nextUrl.pathname;
-    const isHub = path === "/hub" || path.startsWith("/hub/");
-    const isLogin = path === "/hub/login";
-    const isHubApi = path.startsWith("/api/hub/");
-    // Typed URL, bookmark, or a link from outside the Hub = a new visit.
-    const enteringHub =
-      isHub &&
-      request.headers.get("sec-fetch-dest") === "document" &&
-      !cameFromHub(request);
     const passFresh = !enteringHub && hasFreshHubPass(request);
 
     const redirectTo = (pathname: string, params: Record<string, string> = {}) => {
