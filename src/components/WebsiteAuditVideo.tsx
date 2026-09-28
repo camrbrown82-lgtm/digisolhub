@@ -1,4 +1,5 @@
 import {
+  WEBSITE_AUDIT_THUMBNAIL_PATH,
   WEBSITE_AUDIT_TITLE,
   WEBSITE_AUDIT_VIDEO_PATH,
 } from "@/lib/media";
@@ -10,7 +11,7 @@ type WebsiteAuditVideoProps = {
 
 export function WebsiteAuditVideo({
   className = "",
-  poster = "/logo.jpg",
+  poster = WEBSITE_AUDIT_THUMBNAIL_PATH,
 }: WebsiteAuditVideoProps) {
   return (
     <video

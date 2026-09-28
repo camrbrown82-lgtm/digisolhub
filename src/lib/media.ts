@@ -16,6 +16,12 @@ export const WEBSITE_AUDIT_PAGE_URL = `${DIGISOL_SITE_URL}${WEBSITE_AUDIT_PAGE_P
 
 export const WEBSITE_AUDIT_UPLOAD_DATE = "2026-09-21";
 
+/** Frame from 0:20 of the video (1920×1080). */
+export const WEBSITE_AUDIT_THUMBNAIL_PATH = "/media/website-audit-thumbnail.jpg";
+export const WEBSITE_AUDIT_THUMBNAIL_URL = `${DIGISOL_SITE_URL}${WEBSITE_AUDIT_THUMBNAIL_PATH}`;
+export const WEBSITE_AUDIT_DURATION_SECONDS = 192;
+export const WEBSITE_AUDIT_DURATION_ISO = "PT3M12S";
+
 export const WEBSITE_AUDIT_TITLE =
   "DigiSol Website Audit — How Alberta Businesses Win Online";
 export const WEBSITE_AUDIT_DESCRIPTION =

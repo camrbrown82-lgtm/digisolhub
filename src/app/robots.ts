@@ -15,7 +15,7 @@ export default function robots(): MetadataRoute.Robots {
         "/api/",
       ],
     },
-    sitemap: `${DIGISOL_SITE_URL}/sitemap.xml`,
+    sitemap: [`${DIGISOL_SITE_URL}/sitemap.xml`, `${DIGISOL_SITE_URL}/video-sitemap.xml`],
     host: "wwwdigisol.com",
   };
 }

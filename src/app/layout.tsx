@@ -15,6 +15,8 @@ import {
   WEBSITE_AUDIT_PAGE_URL,
   WEBSITE_AUDIT_TITLE,
   WEBSITE_AUDIT_UPLOAD_DATE,
+  WEBSITE_AUDIT_DURATION_ISO,
+  WEBSITE_AUDIT_THUMBNAIL_URL,
   WEBSITE_AUDIT_VIDEO_URL,
 } from "@/lib/media";
 import {
@@ -153,8 +155,9 @@ const organizationJsonLd = {
     url: WEBSITE_AUDIT_PAGE_URL,
     contentUrl: WEBSITE_AUDIT_VIDEO_URL,
     embedUrl: WEBSITE_AUDIT_PAGE_URL,
-    thumbnailUrl: `${DIGISOL_SITE_URL}/logo.jpg`,
+    thumbnailUrl: WEBSITE_AUDIT_THUMBNAIL_URL,
     uploadDate: WEBSITE_AUDIT_UPLOAD_DATE,
+    duration: WEBSITE_AUDIT_DURATION_ISO,
   },
 };
 

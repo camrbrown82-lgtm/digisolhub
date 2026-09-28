@@ -13,6 +13,8 @@ import {
   WEBSITE_AUDIT_TITLE,
   WEBSITE_AUDIT_UPLOAD_DATE,
   WEBSITE_AUDIT_VIDEO_URL,
+  WEBSITE_AUDIT_DURATION_ISO,
+  WEBSITE_AUDIT_THUMBNAIL_URL,
 } from "@/lib/media";
 import {
   DIGISOL_CITY,
@@ -56,8 +58,9 @@ const videoJsonLd = {
   "@type": "VideoObject",
   name: WEBSITE_AUDIT_TITLE,
   description: WEBSITE_AUDIT_DESCRIPTION,
-  thumbnailUrl: `${DIGISOL_SITE_URL}/logo.jpg`,
+  thumbnailUrl: WEBSITE_AUDIT_THUMBNAIL_URL,
   uploadDate: WEBSITE_AUDIT_UPLOAD_DATE,
+  duration: WEBSITE_AUDIT_DURATION_ISO,
   contentUrl: WEBSITE_AUDIT_VIDEO_URL,
   embedUrl: WEBSITE_AUDIT_PAGE_URL,
   inLanguage: "en-CA",
