@@ -15,6 +15,7 @@ import { parseAttributionFromBody } from "@/lib/meta/attribution";
 import { getOpenAIApiKey } from "@/lib/openai";
 import { clientIp, rateLimit } from "@/lib/security";
 import { hasAdminClient } from "@/lib/supabase/admin";
+import { PUBLIC_PROJECTS } from "@/lib/projects";
 import { TESTIMONIALS } from "@/lib/testimonials";
 import {
   DIGISOL_EMAIL,
@@ -257,6 +258,9 @@ ${DIGISOL_GUARANTEES.map((g) => `- ${g.title}: ${g.body}`).join("\n")}
 
 ## Client testimonials (the only ones that exist; quote or paraphrase faithfully, never invent others, clients, or results)
 ${TESTIMONIALS.map((item) => `- ${item.name ? `${item.name}, ${item.company}` : item.company}${item.status === "in_progress" ? " (project still in progress)" : ""}: "${item.quote}"`).join("\n")}
+
+## Client projects currently in beta (the only ones you may name as DigiSol work; don't add details beyond these)
+${PUBLIC_PROJECTS.map((project) => `- ${project.company} (${project.status}): ${project.summary} DigiSol's role: ${project.role}${project.url ? ` Site: ${project.url}` : ""}`).join("\n")}
 
 If a visitor asks how to reach DigiSol, share the email/phone above. DigiSol's Facebook presence is a **Page** (not a personal profile).
 

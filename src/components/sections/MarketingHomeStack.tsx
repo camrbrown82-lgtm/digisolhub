@@ -8,6 +8,7 @@ import { Guarantee } from "@/components/sections/Guarantee";
 import { Hero } from "@/components/sections/Hero";
 import { KaylevValueProp } from "@/components/sections/KaylevValueProp";
 import { LocalCitySeo } from "@/components/sections/LocalCitySeo";
+import { OurWork } from "@/components/sections/OurWork";
 import { Services } from "@/components/sections/Services";
 import { TechStackSection } from "@/components/sections/TechStackSection";
 import { Testimonials } from "@/components/sections/Testimonials";
@@ -52,6 +53,7 @@ export function MarketingHomeStack({
       <Services copy={copy} />
       <GoogleAutopilot />
       <Guarantee />
+      <OurWork />
       <Testimonials />
       <TechStackSection />
       <WebsiteAudit copy={copy} />

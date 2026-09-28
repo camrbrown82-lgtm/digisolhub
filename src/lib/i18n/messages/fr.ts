@@ -646,6 +646,26 @@ export const fr: Messages = {
     },
   },
 
+  ourWork: {
+    eyebrow: "Nos réalisations",
+    title: "En version bêta",
+    intro: "Les produits que nous concevons et gérons pour nos clients en ce moment. D’autres lancements s’en viennent.",
+    roleLabel: "Le rôle de DigiSol",
+    status: { beta: "Bêta", launched: "En ligne" },
+    visitSite: "Visiter le site",
+    projects: {
+      "campaign-builder": {
+        summary:
+          "Une application née comme outil de campagne politique, qui devient une application d’affaires complète.",
+        role: "Idées de produit et code pour passer des campagnes politiques aux affaires, avec la croissance sur les réseaux sociaux par DigiSol Hub prévue ensuite.",
+      },
+      "dealfinder-auctions": {
+        summary: "Un site d’enchères en ligne.",
+        role: "Conception et développement du site, avec des tests en direct avant le lancement officiel.",
+      },
+    },
+  },
+
   techStack: {
     eyebrow: "Infrastructure de niveau entreprise",
     title: "Conçu avec des outils modernes",

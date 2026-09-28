@@ -369,6 +369,17 @@ export const en = {
     quotes: {} as Partial<Record<string, string>>,
   },
 
+  ourWork: {
+    eyebrow: "Our work",
+    title: "Now in beta",
+    intro: "Products we're building and running for our clients right now. More launching soon.",
+    roleLabel: "What DigiSol does",
+    status: { beta: "Beta", launched: "Live" },
+    visitSite: "Visit site",
+    /** Translations of `PROJECTS` copy; English shows the originals. */
+    projects: {} as Partial<Record<string, { summary: string; role: string }>>,
+  },
+
   techStack: {
     eyebrow: "Enterprise infrastructure",
     title: "Engineered with modern tools",
