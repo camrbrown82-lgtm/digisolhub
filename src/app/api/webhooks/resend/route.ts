@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { logAbVariantEngagement } from "@/lib/abVariantTracking";
 import { emitHubEvent } from "@/lib/events";
-import { promoteProspectOnEngagement } from "@/lib/prospectAudit/promote";
+import {
+  isScannerEngagement,
+  promoteProspectOnEngagement,
+} from "@/lib/prospectAudit/promote";
 import { verifyResendWebhookSignature } from "@/lib/resendWebhook";
 import { unsubscribeContactsByEmail } from "@/lib/unsubscribeContact";
 
@@ -107,20 +110,21 @@ export async function POST(request: Request) {
   // Prefer matching resend_id; never wipe an earlier opened_at with null.
   const { data: existing } = await admin
     .from("sends")
-    .select("id, contact_id, campaign_id, variant, opened_at, clicked_at")
+    .select("id, contact_id, campaign_id, variant, opened_at, clicked_at, created_at")
     .eq("resend_id", resendId)
     .maybeSingle();
 
   if (!existing?.id) {
     console.warn("[resend-webhook] no send for", resendId, type);
     // Still try prospect promote by resend_id alone.
-    if (event === "clicked") {
+    if (event === "opened" || event === "clicked") {
       await promoteProspectOnEngagement({
         db: admin,
         resendId,
         contactId: null,
         sendId: null,
         event,
+        eventAt,
       }).catch((err) => console.error("promoteProspectOnEngagement", err));
     }
     return NextResponse.json({
@@ -129,6 +133,13 @@ export async function POST(request: Request) {
       resendId,
       type,
     });
+  }
+
+  if (
+    (event === "opened" || event === "clicked") &&
+    isScannerEngagement(existing.created_at, eventAt)
+  ) {
+    return NextResponse.json({ ok: true, matched: true, ignored: "scanner" });
   }
 
   const safePatch: Record<string, string> = { ...patch };
@@ -168,14 +179,15 @@ export async function POST(request: Request) {
     });
   }
 
-  // Only clicks promote a cold prospect: mail scanners and Apple Mail fire opens on their own.
-  if (event === "clicked") {
+  if (event === "opened" || event === "clicked") {
     await promoteProspectOnEngagement({
       db: admin,
       resendId,
       contactId: send?.contact_id ?? existing.contact_id ?? null,
       sendId: send?.id ?? existing.id,
       event,
+      eventAt,
+      sentAt: existing.created_at,
     }).catch((err) => {
       console.error("promoteProspectOnEngagement", err);
     });

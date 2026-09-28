@@ -3,9 +3,22 @@ import { emitHubEvent } from "@/lib/events";
 import { logAgentActivity } from "@/lib/agent/digisol/activityLog";
 import { DIGISOL_OPERATOR } from "@/lib/agent/digisol/scope";
 
+/** Opens/clicks faster than this after send are mail security scanners, not people. */
+export const SCANNER_WINDOW_MS = 20_000;
+
+export function isScannerEngagement(
+  sentAt: string | null | undefined,
+  eventAt: string | null | undefined,
+) {
+  if (!sentAt || !eventAt) return false;
+  const gap = new Date(eventAt).getTime() - new Date(sentAt).getTime();
+  return Number.isFinite(gap) && gap < SCANNER_WINDOW_MS;
+}
+
 /**
- * On a click in a prospect-audit send, promote cold prospect → active DigiSol lead
- * and queue follow-up via existing Hub/Inngest workflows.
+ * On an open or click in a prospect-audit send, promote cold prospect → active
+ * DigiSol lead and queue follow-up via existing Hub/Inngest workflows.
+ * Engagement under 20s after send is ignored as a scanner.
  */
 export async function promoteProspectOnEngagement(input: {
   db: SupabaseClient;
@@ -13,11 +26,13 @@ export async function promoteProspectOnEngagement(input: {
   contactId?: string | null;
   sendId?: string | null;
   event: "opened" | "clicked";
+  eventAt: string;
+  sentAt?: string | null;
 }) {
   let prospectQuery = input.db
     .from("prospects")
     .select(
-      "id, client_id, business_name, contact_email, contact_id, trade, url, promoted_at, engaged_at, audit_summary",
+      "id, client_id, business_name, contact_email, contact_id, trade, url, promoted_at, engaged_at, emailed_at, audit_summary",
     )
     .limit(1);
 
@@ -32,6 +47,21 @@ export async function promoteProspectOnEngagement(input: {
   const { data: prospect } = await prospectQuery.maybeSingle();
   if (!prospect) {
     return { promoted: false, reason: "not_prospect_send" as const };
+  }
+
+  const sentAt = input.sentAt || prospect.emailed_at;
+  if (isScannerEngagement(sentAt, input.eventAt)) {
+    if (prospect.client_id) {
+      await logAgentActivity({
+        supabase: input.db,
+        clientId: prospect.client_id,
+        action: "prospect_audit:scanner_ignored",
+        toolName: "promoteProspectOnEngagement",
+        status: "ok",
+        input: { prospectId: prospect.id, event: input.event, sentAt, eventAt: input.eventAt },
+      });
+    }
+    return { promoted: false, reason: "scanner" as const };
   }
 
   const now = new Date().toISOString();

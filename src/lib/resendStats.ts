@@ -1,8 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 import { getResendApiKey } from "@/lib/email";
-import { promoteProspectOnEngagement } from "@/lib/prospectAudit/promote";
-
 export type ResendAccountMetrics = {
   configured: boolean;
   error?: string;
@@ -191,7 +189,6 @@ export async function syncResendEngagementFromApi(
 
       const patch: Record<string, string> = {};
       const now = new Date().toISOString();
-      let promoteEvent: "opened" | "clicked" | null = null;
 
       const opened =
         lastEvent === "opened" ||
@@ -203,12 +200,10 @@ export async function syncResendEngagementFromApi(
       if (opened && !row.opened_at) {
         patch.opened_at = now;
         patch.status = clicked ? "clicked" : "opened";
-        promoteEvent = "opened";
       }
       if (clicked && !row.clicked_at) {
         patch.clicked_at = now;
         patch.status = "clicked";
-        promoteEvent = "clicked";
       }
       if (
         (lastEvent === "bounced" || lastEvent.includes("bounce")) &&
@@ -221,17 +216,8 @@ export async function syncResendEngagementFromApi(
       if (Object.keys(patch).length === 0) return false;
 
       await db.from("sends").update(patch).eq("id", row.id);
-
-      // Opens alone don't promote a cold prospect; scanners fire them automatically.
-      if (promoteEvent === "clicked") {
-        await promoteProspectOnEngagement({
-          db,
-          resendId,
-          contactId: row.contact_id,
-          sendId: row.id,
-          event: promoteEvent,
-        }).catch(() => null);
-      }
+      // No promotion here: Resend only reports last_event, not when it happened,
+      // so the 20s scanner rule can only be applied by the webhook.
       return true;
     }),
   );
