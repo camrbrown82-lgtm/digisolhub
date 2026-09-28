@@ -3,6 +3,7 @@ import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { logAbVariantEngagement } from "@/lib/abVariantTracking";
 import { emitHubEvent } from "@/lib/events";
 import {
+  flagMailScanner,
   isScannerEngagement,
   promoteProspectOnEngagement,
 } from "@/lib/prospectAudit/promote";
@@ -139,7 +140,17 @@ export async function POST(request: Request) {
     (event === "opened" || event === "clicked") &&
     isScannerEngagement(existing.created_at, eventAt)
   ) {
-    return NextResponse.json({ ok: true, matched: true, ignored: "scanner" });
+    const flagged = await flagMailScanner({
+      db: admin,
+      contactId: existing.contact_id,
+      event,
+      sentAt: existing.created_at,
+      eventAt,
+    }).catch((err) => {
+      console.error("flagMailScanner", err);
+      return false;
+    });
+    return NextResponse.json({ ok: true, matched: true, ignored: "scanner", flagged });
   }
 
   const safePatch: Record<string, string> = { ...patch };

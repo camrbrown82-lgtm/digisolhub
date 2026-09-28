@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { emitHubEvent } from "@/lib/events";
 import { logAgentActivity } from "@/lib/agent/digisol/activityLog";
 import { DIGISOL_OPERATOR } from "@/lib/agent/digisol/scope";
+import { MAIL_SCANNER_TAG } from "@/lib/mailScanner";
 
 /** Opens/clicks faster than this after send are mail security scanners, not people. */
 export const SCANNER_WINDOW_MS = 20_000;
@@ -13,6 +14,72 @@ export function isScannerEngagement(
   if (!sentAt || !eventAt) return false;
   const gap = new Date(eventAt).getTime() - new Date(sentAt).getTime();
   return Number.isFinite(gap) && gap < SCANNER_WINDOW_MS;
+}
+
+/**
+ * A cold audit prospect whose mail is read by a security scanner gets no more
+ * emails: every send path refuses contacts tagged mail_scanner. Real leads
+ * (inbound or already promoted) are never flagged.
+ */
+export async function flagMailScanner(input: {
+  db: SupabaseClient;
+  contactId?: string | null;
+  event: "opened" | "clicked";
+  sentAt?: string | null;
+  eventAt: string;
+}) {
+  if (!input.contactId) return false;
+  const { data: contact } = await input.db
+    .from("contacts")
+    .select("id, tags, client_id")
+    .eq("id", input.contactId)
+    .maybeSingle();
+  if (!contact) return false;
+  const tags = (contact.tags as string[] | null) ?? [];
+  const coldProspect = tags.some((t) => t === "prospect_audit" || t === "cold_prospect");
+  const realLead = tags.some((t) => t === "active_lead" || t === "prospect_audit_engaged");
+  if (!coldProspect || realLead || tags.includes(MAIL_SCANNER_TAG)) return false;
+
+  await input.db
+    .from("contacts")
+    .update({ tags: [...tags, MAIL_SCANNER_TAG] })
+    .eq("id", contact.id);
+
+  const { data: prospects } = await input.db
+    .from("prospects")
+    .select("id, metadata")
+    .eq("contact_id", contact.id);
+  for (const row of prospects ?? []) {
+    await input.db
+      .from("prospects")
+      .update({
+        metadata: {
+          ...((row.metadata as Record<string, unknown> | null) ?? {}),
+          mailScanner: { event: input.event, sentAt: input.sentAt, eventAt: input.eventAt },
+        },
+      })
+      .eq("id", row.id);
+  }
+
+  const gapSec = input.sentAt
+    ? Math.round((new Date(input.eventAt).getTime() - new Date(input.sentAt).getTime()) / 1000)
+    : null;
+  await input.db.from("notes").insert({
+    contact_id: contact.id,
+    body: `Mail security scanner detected (${input.event}${gapSec != null ? ` ${gapSec}s after send` : ""}). No more emails will go to this contact. Remove the mail_scanner tag to allow emails again.`,
+  });
+
+  if (contact.client_id) {
+    await logAgentActivity({
+      supabase: input.db,
+      clientId: contact.client_id as string,
+      action: "prospect_audit:mail_scanner",
+      toolName: "flagMailScanner",
+      status: "ok",
+      input: { contactId: contact.id, event: input.event, sentAt: input.sentAt, eventAt: input.eventAt },
+    });
+  }
+  return true;
 }
 
 /**
@@ -51,16 +118,13 @@ export async function promoteProspectOnEngagement(input: {
 
   const sentAt = input.sentAt || prospect.emailed_at;
   if (isScannerEngagement(sentAt, input.eventAt)) {
-    if (prospect.client_id) {
-      await logAgentActivity({
-        supabase: input.db,
-        clientId: prospect.client_id,
-        action: "prospect_audit:scanner_ignored",
-        toolName: "promoteProspectOnEngagement",
-        status: "ok",
-        input: { prospectId: prospect.id, event: input.event, sentAt, eventAt: input.eventAt },
-      });
-    }
+    await flagMailScanner({
+      db: input.db,
+      contactId: prospect.contact_id || input.contactId,
+      event: input.event,
+      sentAt,
+      eventAt: input.eventAt,
+    });
     return { promoted: false, reason: "scanner" as const };
   }
 

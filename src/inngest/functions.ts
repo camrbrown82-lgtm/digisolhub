@@ -2,6 +2,7 @@ import { type GetStepTools } from "inngest";
 import { inngest } from "@/inngest/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmailToContact } from "@/lib/email";
+import { isMailScannerContact } from "@/lib/mailScanner";
 import { contactMatchesAudience, leadAudienceOf } from "@/lib/workflowGraph";
 
 type FlowNode = {
@@ -42,7 +43,7 @@ const HANDS_ON_STAGES = ["qualified", "meeting", "proposal", "won", "lost"];
 /** Automatic workflow emails never land within this long of any other email to the same person. */
 const MIN_EMAIL_GAP_MS = 24 * 60 * 60 * 1000;
 
-type SendBlock = "missing" | "unsubscribed" | "hands_on";
+type SendBlock = "missing" | "unsubscribed" | "mail_scanner" | "hands_on";
 
 async function sendBlockFor(
   admin: ReturnType<typeof createAdminClient>,
@@ -51,11 +52,12 @@ async function sendBlockFor(
 ): Promise<SendBlock | null> {
   const { data: contact } = await admin
     .from("contacts")
-    .select("id, unsubscribed_at")
+    .select("id, unsubscribed_at, tags")
     .eq("id", contactId)
     .maybeSingle();
   if (!contact) return "missing";
   if (contact.unsubscribed_at) return "unsubscribed";
+  if (isMailScannerContact(contact.tags as string[] | null)) return "mail_scanner";
   if (automatic) {
     const { count } = await admin
       .from("leads")
@@ -70,6 +72,7 @@ async function sendBlockFor(
 const SEND_BLOCK_LOG: Record<SendBlock, string> = {
   missing: "stopped: contact was removed",
   unsubscribed: "stopped: contact unsubscribed — no more emails",
+  mail_scanner: "stopped: their mail is read by a security scanner — no more emails",
   hands_on: "stopped: lead moved past Contacted in the pipeline — you're handling it",
 };
 
@@ -375,6 +378,7 @@ async function executeMatchingWorkflows(
       .eq("id", contactId)
       .maybeSingle();
     if (!contact || contact.unsubscribed_at) return [];
+    if (isMailScannerContact(contact.tags as string[] | null)) return [];
 
     // A company's workflows only ever run for that company's contacts.
     let query = admin

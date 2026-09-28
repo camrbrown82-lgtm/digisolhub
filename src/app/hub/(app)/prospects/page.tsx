@@ -22,6 +22,7 @@ type ProspectRow = {
   contact_id: string | null;
   error_message: string | null;
   created_at: string;
+  metadata: { mailScanner?: unknown } | null;
 };
 
 export default async function ProspectsPage() {
@@ -40,7 +41,7 @@ export default async function ProspectsPage() {
   let listQuery = supabase
     .from("prospects")
     .select(
-      "id, business_name, url, trade, city, contact_email, audit_status, audit_score, casl_status, emailed_at, last_audited_at, engaged_at, contact_id, error_message, created_at",
+      "id, business_name, url, trade, city, contact_email, audit_status, audit_score, casl_status, emailed_at, last_audited_at, engaged_at, contact_id, error_message, created_at, metadata",
     )
     .in("audit_status", ["audited", "emailed", "promoted"])
     .neq("casl_status", "blocked")
@@ -181,6 +182,11 @@ export default async function ProspectsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge status={row.audit_status} casl={row.casl_status} />
+                    {row.metadata?.mailScanner ? (
+                      <div className="mt-1 max-w-[220px] text-xs text-amber-200/80">
+                        Mail scanner, no follow-ups
+                      </div>
+                    ) : null}
                     {row.error_message ? (
                       <div className="mt-1 max-w-[220px] text-xs text-amber-200/80">
                         {row.error_message.slice(0, 120)}

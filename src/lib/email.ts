@@ -8,6 +8,7 @@ import {
   resolveEmailLogoFile,
 } from "@/lib/emailLogo";
 import { mergeVarsFromBrand, renderMergeFields } from "@/lib/emailTemplates";
+import { isMailScannerContact } from "@/lib/mailScanner";
 import { oneClickUnsubscribeUrl, wrapCampaignHtml } from "@/lib/unsubscribe";
 import { Resend } from "resend";
 
@@ -124,6 +125,17 @@ export async function sendEmailToContact(input: SendEmailInput) {
 
   if (contact.unsubscribed_at) {
     throw new Error("Contact is unsubscribed");
+  }
+
+  const { data: tagRow } = await db
+    .from("contacts")
+    .select("tags")
+    .eq("id", contact.id)
+    .maybeSingle();
+  if (isMailScannerContact(tagRow?.tags as string[] | null)) {
+    throw new Error(
+      "Contact's mail is read by a security scanner, so emails are paused. Remove the mail_scanner tag to send.",
+    );
   }
 
   const clientId =
