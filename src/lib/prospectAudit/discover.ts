@@ -75,7 +75,7 @@ const SECTOR_LABELS: Record<string, string> = {
   professional: "local professional services firm",
 };
 
-const BLOCKED_DOMAINS = [
+export const BLOCKED_DOMAINS = [
   "yelp.com",
   "yelp.ca",
   "homestars.com",

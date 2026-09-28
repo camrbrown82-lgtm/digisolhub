@@ -1,0 +1,151 @@
+import Link from "next/link";
+import { CompetitiveReport } from "@/components/hub/CompetitiveReport";
+import { CompetitiveRunForm } from "@/components/hub/CompetitiveRunForm";
+import { PrintButton } from "@/components/hub/PrintButton";
+import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
+import type {
+  CompetitiveReport as Report,
+  MarketPresence,
+  SiteSnapshot,
+} from "@/lib/competitive/schema";
+import { ensureCompetitiveSchema } from "@/lib/ensureCompetitiveSchema";
+import { createClient } from "@/lib/supabase/server";
+import { getWorkspaceClient, resolveClientId } from "@/lib/workspace";
+
+export const dynamic = "force-dynamic";
+
+type Inputs = { url: string; industry: string; location: string; competitorUrls: string[] };
+
+type AnalysisRow = {
+  id: string;
+  status: string;
+  stage: string | null;
+  error: string | null;
+  inputs: Inputs;
+  created_at: string;
+  completed_at: string | null;
+};
+
+export default async function CompetitivePage({
+  searchParams,
+}: {
+  searchParams: { id?: string };
+}) {
+  await Promise.race([
+    ensureCompetitiveSchema().catch(() => null),
+    new Promise((resolve) => setTimeout(resolve, 3000)),
+  ]);
+  const supabase = await createClient();
+  const active = await getWorkspaceClient(supabase);
+  const clientId = (await resolveClientId(supabase)) || active?.id || "";
+  const companyName = active?.name || "This company";
+
+  const { data: historyData, error: historyError } = await supabase
+    .from("competitive_analyses")
+    .select("id, status, stage, error, inputs, created_at, completed_at")
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: false })
+    .limit(20);
+  const history = (historyData ?? []) as AnalysisRow[];
+
+  const running = history.find((r) => r.status === "queued" || r.status === "running");
+  const selectedId =
+    searchParams.id || history.find((r) => r.status === "completed")?.id || null;
+
+  const { data: selected } = selectedId
+    ? await supabase
+        .from("competitive_analyses")
+        .select("id, status, inputs, result, sources, completed_at, client_id")
+        .eq("id", selectedId)
+        .eq("client_id", clientId)
+        .maybeSingle()
+    : { data: null };
+
+  const lastInputs = history[0]?.inputs;
+  const domain = active?.domain
+    ? active.domain.startsWith("http")
+      ? active.domain
+      : `https://${active.domain}`
+    : "";
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold text-white">Competitive analysis</h1>
+          <WorkspaceScope companyName={active?.name} noun="analyses" />
+          <p className="mt-2 max-w-2xl text-sm text-zinc-400">
+            Each analysis belongs to the company you&apos;re working on. Switch Working on to
+            analyse another client or DigiSol itself.
+          </p>
+        </div>
+        {selected?.result ? <PrintButton label="Print / save PDF" /> : null}
+      </div>
+
+      {historyError ? (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          Could not load analyses: {historyError.message}
+        </div>
+      ) : null}
+
+      <div className="print:hidden">
+        <CompetitiveRunForm
+          companyName={companyName}
+          defaults={{
+            url: lastInputs?.url || domain,
+            industry: lastInputs?.industry || "",
+            location: lastInputs?.location || "",
+            competitorUrls: [],
+          }}
+          activeRunId={running?.id ?? null}
+          activeStage={running?.stage ?? null}
+        />
+      </div>
+
+      {history.length > 1 ? (
+        <div className="flex flex-wrap items-center gap-2 text-xs print:hidden">
+          <span className="text-zinc-500">Past analyses:</span>
+          {history.map((r) => (
+            <Link
+              key={r.id}
+              href={`/hub/competitive?id=${r.id}`}
+              className={`rounded-full border px-3 py-1 ${
+                r.id === selected?.id
+                  ? "border-indigo-400/60 bg-indigo-500/15 text-indigo-100"
+                  : "border-zinc-700 text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              {new Date(r.created_at).toLocaleDateString()} · {r.status}
+            </Link>
+          ))}
+        </div>
+      ) : null}
+
+      {history[0]?.status === "failed" && !running ? (
+        <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+          The last analysis failed: {history[0].error || "unknown error"}. Run it again.
+        </div>
+      ) : null}
+
+      {selected?.result ? (
+        <CompetitiveReport
+          companyName={companyName}
+          report={selected.result as Report}
+          inputs={selected.inputs as Inputs}
+          sources={
+            (selected.sources ?? {}) as {
+              company?: SiteSnapshot;
+              competitors?: SiteSnapshot[];
+              presence?: MarketPresence[];
+            }
+          }
+          completedAt={selected.completed_at}
+        />
+      ) : !running ? (
+        <div className="rounded-2xl border border-dashed border-zinc-700 p-8 text-center text-sm text-zinc-400">
+          No analysis for {companyName} yet. Run one above.
+        </div>
+      ) : null}
+    </div>
+  );
+}

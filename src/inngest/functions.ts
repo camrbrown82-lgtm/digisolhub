@@ -453,6 +453,149 @@ export const sendDispatchIssues = inngest.createFunction(
   },
 );
 
+/** Kaylev competitive analysis: research, audit, and write the report in durable steps. */
+export const runCompetitiveAnalysis = inngest.createFunction(
+  {
+    id: "run-competitive-analysis",
+    retries: 1,
+    concurrency: { limit: 2 },
+    triggers: [{ event: "hub/competitive.run" }],
+    onFailure: async ({ event, error }) => {
+      const analysisId = (event.data.event.data as { analysisId?: string }).analysisId;
+      if (!analysisId) return;
+      await createAdminClient()
+        .from("competitive_analyses")
+        .update({ status: "failed", stage: null, error: error.message.slice(0, 1000) })
+        .eq("id", analysisId);
+    },
+  },
+  async ({ event, step }) => {
+    const analysisId = event.data.analysisId as string;
+    const {
+      findCompetitors,
+      inferProfile,
+      researchPresence,
+      snapshotSite,
+      synthesizeReport,
+      toSiteUrl,
+      COMPETITIVE_REPORT_MODEL,
+    } = await import("@/lib/competitive/analyze");
+    const admin = createAdminClient();
+    const setStage = (stage: string, extra: Record<string, unknown> = {}) =>
+      admin
+        .from("competitive_analyses")
+        .update({ status: "running", stage, ...extra })
+        .eq("id", analysisId);
+
+    const row = await step.run("load", async () => {
+      const { data } = await admin
+        .from("competitive_analyses")
+        .select("id, client_id, inputs, clients(name)")
+        .eq("id", analysisId)
+        .single();
+      await setStage("Reading the website");
+      const client = data?.clients as { name?: string } | { name?: string }[] | null;
+      const name = (Array.isArray(client) ? client[0]?.name : client?.name) || "This company";
+      return {
+        companyName: name,
+        inputs: (data?.inputs ?? {}) as {
+          url: string;
+          industry: string;
+          location: string;
+          competitorUrls: string[];
+        },
+      };
+    });
+
+    const company = await step.run("snapshot-company", () =>
+      snapshotSite(row.companyName, row.inputs.url),
+    );
+
+    const profile = await step.run("profile", async () => {
+      const p = await inferProfile({
+        companyName: row.companyName,
+        snapshot: company,
+        industry: row.inputs.industry,
+        location: row.inputs.location,
+      });
+      await setStage("Finding competitors");
+      return p;
+    });
+    const inputs = { ...row.inputs, industry: profile.industry, location: profile.location };
+
+    const found = await step.run("competitors", async () => {
+      if (inputs.competitorUrls.length > 0) {
+        return {
+          competitors: inputs.competitorUrls.map((u) => {
+            const url = toSiteUrl(u);
+            return { name: new URL(url).hostname.replace(/^www\./, ""), url };
+          }),
+          tokens: 0,
+        };
+      }
+      return findCompetitors({
+        companyName: row.companyName,
+        companyUrl: company.url,
+        industry: inputs.industry,
+        location: inputs.location,
+      });
+    });
+
+    const competitors = await step.run("snapshot-competitors", async () => {
+      await setStage(`Auditing ${found.competitors.length} competitor websites`);
+      return Promise.all(found.competitors.map((c) => snapshotSite(c.name, c.url)));
+    });
+
+    const presence = await step.run("presence", async () => {
+      await setStage("Checking reviews, listings and social presence");
+      return Promise.all(
+        [company, ...competitors].map((s) =>
+          researchPresence({ name: s.name, url: s.url, location: inputs.location }),
+        ),
+      );
+    });
+
+    const report = await step.run("report", async () => {
+      await setStage("Writing the analysis and action plan");
+      return synthesizeReport({
+        companyName: row.companyName,
+        inputs,
+        company,
+        competitors,
+        presence: presence.map((p) => p.presence),
+      });
+    });
+
+    await step.run("save", async () => {
+      const tokens =
+        profile.tokens +
+        found.tokens +
+        presence.reduce((sum, p) => sum + p.tokens, 0) +
+        report.tokens;
+      await admin
+        .from("competitive_analyses")
+        .update({
+          status: "completed",
+          stage: null,
+          inputs,
+          result: report.report,
+          sources: {
+            company,
+            competitors,
+            presence: presence.map((p) => p.presence),
+          },
+          model: COMPETITIVE_REPORT_MODEL,
+          tokens_total: tokens,
+          completed_at: new Date().toISOString(),
+          error: null,
+        })
+        .eq("id", analysisId);
+    });
+
+    return { analysisId, competitors: competitors.length };
+  },
+);
+
 export const functions = [
   runWorkflowsOnLead,
   alertOwnerOnLead,
@@ -460,4 +603,5 @@ export const functions = [
   runWorkflowsOnOpen,
   runSingleWorkflow,
   sendDispatchIssues,
+  runCompetitiveAnalysis,
 ];
