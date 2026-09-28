@@ -453,6 +453,21 @@ export const sendDispatchIssues = inngest.createFunction(
   },
 );
 
+/** Daily Google rating + review snapshot for every company with a linked listing. */
+export const snapshotGoogleReviews = inngest.createFunction(
+  {
+    id: "snapshot-google-reviews",
+    retries: 1,
+    triggers: [{ cron: "TZ=America/Edmonton 0 8 * * *" }, { event: "hub/google-reviews.snapshot" }],
+  },
+  async ({ step }) => {
+    return step.run("snapshot", async () => {
+      const { snapshotAllClientReviews } = await import("@/lib/googleReviews");
+      return snapshotAllClientReviews(createAdminClient());
+    });
+  },
+);
+
 /** Kaylev competitive analysis: research, audit, and write the report in durable steps. */
 export const runCompetitiveAnalysis = inngest.createFunction(
   {
@@ -603,5 +618,6 @@ export const functions = [
   runWorkflowsOnOpen,
   runSingleWorkflow,
   sendDispatchIssues,
+  snapshotGoogleReviews,
   runCompetitiveAnalysis,
 ];

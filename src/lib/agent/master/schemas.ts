@@ -49,7 +49,7 @@ export const MASTER_TOOL_SCHEMAS: ChatCompletionTool[] = [
     function: {
       name: "fetchCompanyAnalytics",
       description:
-        "Evaluate traffic, conversion signals, and weak points for a company using Hub site_events, CRM send metrics, lead pipeline, and DigiSol GA4 when available.",
+        "Evaluate traffic, conversion signals, and weak points for a company using Hub site_events, CRM send metrics, lead pipeline, DigiSol GA4 when available, and the company's verified Google rating, review count, trend and latest reviews.",
       parameters: {
         type: "object",
         properties: {

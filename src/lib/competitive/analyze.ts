@@ -2,6 +2,7 @@ import { generateText, Output } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { z } from "zod";
 import { runWebsiteAudit } from "@/lib/agent/websiteAudit";
+import { findPlaceForSite, placesConfigured } from "@/lib/googleReviews";
 import { getOpenAIApiKey } from "@/lib/openai";
 import { htmlToPlainExcerpt } from "@/lib/prospectAudit/casl";
 import { BLOCKED_DOMAINS } from "@/lib/prospectAudit/discover";
@@ -180,6 +181,19 @@ export async function researchPresence(input: {
     social: [],
     notes: "",
   };
+  const verified = placesConfigured()
+    ? await findPlaceForSite(input).catch(() => null)
+    : null;
+  const withGoogle = (p: MarketPresence): MarketPresence =>
+    verified && verified.rating != null
+      ? {
+          ...p,
+          googleRating: verified.rating.toFixed(1),
+          reviewCount: String(verified.reviewCount ?? 0),
+          googleSource: "google",
+          googleMapsUrl: verified.mapsUrl ?? undefined,
+        }
+      : { ...p, googleSource: p.googleRating === "unknown" ? undefined : "web" };
   try {
     const openai = openaiClient();
     const result = await generateText({
@@ -200,18 +214,18 @@ Reply with only JSON:
     });
     const parsed = parseJsonBlock<Partial<MarketPresence>>(result.text);
     return {
-      presence: {
+      presence: withGoogle({
         ...fallback,
         googleRating: String(parsed?.googleRating ?? "unknown"),
         reviewCount: String(parsed?.reviewCount ?? "unknown"),
         listings: Array.isArray(parsed?.listings) ? parsed!.listings!.map(String).slice(0, 8) : [],
         social: Array.isArray(parsed?.social) ? parsed!.social!.map(String).slice(0, 8) : [],
         notes: String(parsed?.notes ?? "").slice(0, 600),
-      },
+      }),
       tokens: tokensOf(result.usage),
     };
   } catch {
-    return { presence: fallback, tokens: 0 };
+    return { presence: withGoogle(fallback), tokens: 0 };
   }
 }
 
@@ -223,7 +237,7 @@ Title: ${s.title || "(missing)"}
 Meta description: ${s.metaDescription || "(missing)"}
 H1: ${s.h1 || "(missing)"}
 Audit issues: ${s.issues.join(" | ") || "none flagged"}
-Google rating: ${p?.googleRating ?? "unknown"} · Google reviews: ${p?.reviewCount ?? "unknown"}
+Google rating: ${p?.googleRating ?? "unknown"} · Google reviews: ${p?.reviewCount ?? "unknown"}${p?.googleSource === "google" ? " (verified from Google)" : p?.googleSource === "web" ? " (web search estimate)" : ""}
 Other listings: ${p?.listings.join("; ") || "none found"}
 Social: ${p?.social.join(", ") || "none found"}
 Notes: ${p?.notes || "-"}

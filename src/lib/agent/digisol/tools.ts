@@ -11,6 +11,7 @@ import {
 } from "@/lib/email";
 import { getEmailLogoUrl } from "@/lib/emailLogo";
 import { fetchDigisolGa4Summary } from "@/lib/ga4";
+import { reviewsForAgent } from "@/lib/googleReviews";
 import { summarizeLeadPerformance, type LeadRecord } from "@/lib/lead-pipeline";
 import { reconcileHubEmailStats } from "@/lib/resendStats";
 import { summarizeSiteEvents } from "@/lib/site-analytics";
@@ -214,7 +215,7 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
 
     fetchDigisolAnalytics: tool({
       description:
-        "Pull DigiSol GA4 traffic/conversion metrics plus reconciled Hub + Resend email open/click stats. Strictly DigiSol house property only.",
+        "Pull DigiSol GA4 traffic/conversion metrics, reconciled Hub + Resend email open/click stats, and verified Google rating, review count, trend and latest reviews. Strictly DigiSol house property only.",
       inputSchema: z.object({
         days: z
           .number()
@@ -243,7 +244,7 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
               ctx.clientId,
             );
 
-            const [contacts, unsubscribed, site, leadsResult, ga4, email] =
+            const [contacts, unsubscribed, site, leadsResult, ga4, email, googleReviews] =
               await Promise.all([
                 ctx.supabase
                   .from("contacts")
@@ -273,6 +274,7 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
                   .limit(500),
                 fetchDigisolGa4Summary(days),
                 reconcileHubEmailStats(ctx.supabase, scopedIds),
+                reviewsForAgent(ctx.supabase, ctx.clientId),
               ]);
 
             const website = summarizeSiteEvents(site.data ?? [], ctx.domain);
@@ -283,6 +285,7 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
             return {
               operator: DIGISOL_OPERATOR.name,
               days,
+              googleReviews,
               email: {
                 contacts: contacts.count ?? 0,
                 unsubscribed: unsubscribed.count ?? 0,

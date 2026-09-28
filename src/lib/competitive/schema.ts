@@ -116,6 +116,9 @@ export type MarketPresence = {
   url: string;
   googleRating: string;
   reviewCount: string;
+  /** "google" when rating/count came straight from the Places API. */
+  googleSource?: "google" | "web";
+  googleMapsUrl?: string;
   listings: string[];
   social: string[];
   notes: string;

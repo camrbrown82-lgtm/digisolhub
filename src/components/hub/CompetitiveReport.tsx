@@ -107,6 +107,9 @@ export function CompetitiveReport({ companyName, report, inputs, sources, comple
             </span>
             <span>
               Google reviews: <span className="text-zinc-200">{companyPresence?.reviewCount ?? "unknown"}</span>
+              {companyPresence?.googleSource === "google" ? (
+                <span className="ml-1 text-emerald-400">verified by Google</span>
+              ) : null}
             </span>
             <span>
               Competitors analysed: <span className="text-zinc-200">{report.competitors.length}</span>
@@ -252,7 +255,14 @@ export function CompetitiveReport({ companyName, report, inputs, sources, comple
                 </div>
                 <div className="mt-2 flex flex-wrap gap-3 text-xs text-zinc-500">
                   {snap ? <span>Site {snap.ok ? `${snap.score}/100` : "didn't load"}</span> : null}
-                  {pres ? <span>Google {pres.googleRating} ({pres.reviewCount} reviews)</span> : null}
+                  {pres ? (
+                    <span>
+                      Google {pres.googleRating} ({pres.reviewCount} reviews)
+                      {pres.googleSource === "google" ? (
+                        <span className="ml-1 text-emerald-400">verified</span>
+                      ) : null}
+                    </span>
+                  ) : null}
                 </div>
                 <p className="mt-3 text-sm text-zinc-300">{c.overview}</p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">

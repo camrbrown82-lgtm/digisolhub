@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { CopySnippet } from "@/components/hub/CopySnippet";
 import { GoogleAdsPanel } from "@/components/hub/GoogleAdsPanel";
+import { GoogleReviewsPanel } from "@/components/hub/GoogleReviewsPanel";
 import { MetaAdsPanel } from "@/components/hub/MetaAdsPanel";
 import { InstagramInsightsPanel } from "@/components/hub/InstagramInsightsPanel";
 import { WebsiteAuditPanel } from "@/components/hub/WebsiteAuditPanel";
@@ -21,6 +22,7 @@ import {
 } from "@/lib/lead-pipeline";
 import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
 import { loadContentTests, type ContentTestLoad } from "@/lib/contentTestData";
+import { emptyReviewSummary, loadReviewSummary } from "@/lib/googleReviews";
 import { fetchAnalyticsEventsSummary } from "@/lib/analyticsEvents";
 import { reconcileHubEmailStats } from "@/lib/resendStats";
 import {
@@ -129,6 +131,11 @@ export default async function AnalyticsPage() {
     8000,
     { tests: [], gaConfigured: false } as ContentTestLoad,
   );
+  const reviewsPromise = withTimeout(
+    loadReviewSummary(supabase, active?.id ?? null),
+    5000,
+    emptyReviewSummary(),
+  );
 
   const ga4TimeoutFallback: Ga4Summary = {
     ...emptyGa4,
@@ -220,6 +227,7 @@ export default async function AnalyticsPage() {
     ]);
 
   const contentTests = await contentTestsPromise;
+  const reviews = await reviewsPromise;
   const website = summarizeSiteEvents(site.data ?? [], active?.domain);
   const maxDaily = Math.max(1, ...website.daily.map((item) => item.count));
   const pipeline = summarizeLeadPerformance((leadsResult.data ?? []) as LeadRecord[]);
@@ -473,6 +481,12 @@ export default async function AnalyticsPage() {
           </div>
         </section>
       ) : null}
+
+      <GoogleReviewsPanel
+        key={active?.id ?? "none"}
+        companyName={active?.name}
+        initial={reviews}
+      />
 
       <WebsiteAuditPanel
         companyName={active?.name}
