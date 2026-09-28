@@ -356,6 +356,19 @@ export const en = {
     short: GUARANTEE_SHORT,
   },
 
+  testimonials: {
+    eyebrow: "Client words",
+    title: "What clients say",
+    intro: "Real feedback from the companies we build with.",
+    owner: (company: string) => `Owner, ${company}`,
+    inProgress: "Project in progress",
+    stars: (n: number) => `${n} out of 5 stars`,
+    visitSite: "Visit site",
+    /** Set when a quote is shown translated; English shows the originals. */
+    translatedNote: "",
+    quotes: {} as Partial<Record<string, string>>,
+  },
+
   techStack: {
     eyebrow: "Enterprise infrastructure",
     title: "Engineered with modern tools",

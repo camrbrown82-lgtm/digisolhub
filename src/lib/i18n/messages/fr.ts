@@ -629,6 +629,23 @@ export const fr: Messages = {
       "Révisions illimitées jusqu’au lancement, garantie de lancement à temps et réponse en un jour ouvrable.",
   },
 
+  testimonials: {
+    eyebrow: "La parole aux clients",
+    title: "Ce que disent nos clients",
+    intro: "De vrais commentaires des entreprises avec qui nous travaillons.",
+    owner: (company) => `Propriétaire, ${company}`,
+    inProgress: "Projet en cours",
+    stars: (n) => `${n} étoiles sur 5`,
+    visitSite: "Visiter le site",
+    translatedNote: "Témoignages traduits de l’anglais.",
+    quotes: {
+      "campaign-builder":
+        "DigiSol a fait un travail formidable en m’aidant avec des idées et en contribuant du code pour m’aider à passer d’une application strictement destinée aux campagnes politiques à une véritable application d’affaires. Prévoit d’adopter son logiciel pour stimuler la croissance sur les réseaux sociaux.",
+      "dealfinder-auctions":
+        "Toujours en cours, mais le travail que DigiSol a accompli jusqu’ici sur le site d’enchères de DealFinder est vraiment impressionnant. Les tests en direct sont prévus peu avant le lancement officiel. Témoignage à mettre à jour après le lancement.",
+    },
+  },
+
   techStack: {
     eyebrow: "Infrastructure de niveau entreprise",
     title: "Conçu avec des outils modernes",

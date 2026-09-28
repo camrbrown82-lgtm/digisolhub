@@ -10,6 +10,7 @@ import { KaylevValueProp } from "@/components/sections/KaylevValueProp";
 import { LocalCitySeo } from "@/components/sections/LocalCitySeo";
 import { Services } from "@/components/sections/Services";
 import { TechStackSection } from "@/components/sections/TechStackSection";
+import { Testimonials } from "@/components/sections/Testimonials";
 import { WebsiteAudit } from "@/components/sections/WebsiteAudit";
 import type { LocationPage } from "@/lib/locations";
 import type { HomeCopy } from "@/lib/visitorRegion";
@@ -51,6 +52,7 @@ export function MarketingHomeStack({
       <Services copy={copy} />
       <GoogleAutopilot />
       <Guarantee />
+      <Testimonials />
       <TechStackSection />
       <WebsiteAudit copy={copy} />
       <Audience copy={copy} />
