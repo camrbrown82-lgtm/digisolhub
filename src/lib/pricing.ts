@@ -224,12 +224,38 @@ export const LAUNCH_PROMO = {
   buildPercent: 20,
   /** Hub, add-ons, and the first month of any retainer. */
   otherPercent: 10,
+  /** Mountain time (MDT, UTC-6). Runs Oct 2 through Oct 31. */
+  startsAt: "2026-10-02T00:00:00-06:00",
+  endsAt: "2026-11-01T00:00:00-06:00",
+  startLabel: "October 2",
+  endLabel: "October 31",
 } as const;
 
 export type PromoCode = typeof LAUNCH_PROMO.code;
 
-export function normalizePromoCode(raw?: string | null): PromoCode | null {
-  return raw?.trim().toUpperCase() === LAUNCH_PROMO.code ? LAUNCH_PROMO.code : null;
+export function launchPromoStatus(now = new Date()): "upcoming" | "active" | "ended" {
+  if (now < new Date(LAUNCH_PROMO.startsAt)) return "upcoming";
+  if (now >= new Date(LAUNCH_PROMO.endsAt)) return "ended";
+  return "active";
+}
+
+/** Returns the code only when it matches and the promo window is open. */
+export function normalizePromoCode(raw?: string | null, now = new Date()): PromoCode | null {
+  return raw?.trim().toUpperCase() === LAUNCH_PROMO.code && launchPromoStatus(now) === "active"
+    ? LAUNCH_PROMO.code
+    : null;
+}
+
+export function promoCodeError(raw: string, now = new Date()): string | null {
+  const value = raw.trim();
+  if (!value) return null;
+  if (value.toUpperCase() !== LAUNCH_PROMO.code) {
+    return `"${value.slice(0, 40)}" isn't a valid promo code.`;
+  }
+  const status = launchPromoStatus(now);
+  if (status === "upcoming") return `${LAUNCH_PROMO.code} starts ${LAUNCH_PROMO.startLabel}.`;
+  if (status === "ended") return `${LAUNCH_PROMO.code} ended ${LAUNCH_PROMO.endLabel}.`;
+  return null;
 }
 
 /** Percent off for one item under a promo; retainers get it on the first month only. */

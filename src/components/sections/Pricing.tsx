@@ -11,7 +11,9 @@ import {
   PRICING_PACKAGES,
   PRICING_RETAINERS,
   formatCad,
+  launchPromoStatus,
   normalizePromoCode,
+  promoCodeError,
   promoDiscountCents,
   promoPercentFor,
   summarizeSelection,
@@ -25,6 +27,8 @@ function LaunchBanner({
   applied: boolean;
   onApply: () => void;
 }) {
+  const status = launchPromoStatus();
+  if (status === "ended") return null;
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-400/30 bg-emerald-500/10 p-5 text-left">
       <div>
@@ -35,10 +39,17 @@ function LaunchBanner({
         <p className="mt-1.5 text-sm text-zinc-200">
           {LAUNCH_PROMO.buildPercent}% off website build and design (Foundation,
           Growth Engine, Full Funnel) and {LAUNCH_PROMO.otherPercent}% off
-          everything else: the Hub, add-ons, and the first month of any retainer.
+          everything else: the Hub, add-ons, and the first month of any retainer.{" "}
+          <span className="text-zinc-400">
+            {LAUNCH_PROMO.startLabel} to {LAUNCH_PROMO.endLabel}.
+          </span>
         </p>
       </div>
-      {applied ? (
+      {status === "upcoming" ? (
+        <span className="rounded-full border border-emerald-400/40 px-4 py-2 text-sm font-semibold text-emerald-200">
+          Starts {LAUNCH_PROMO.startLabel}
+        </span>
+      ) : applied ? (
         <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-200">
           <Check className="h-4 w-4" aria-hidden="true" />
           {LAUNCH_PROMO.code} applied
@@ -154,9 +165,13 @@ export function PricingBuilder({
   initialPromo?: string;
 }) {
   const strong = view === "strong";
-  const [promoInput, setPromoInput] = useState(normalizePromoCode(initialPromo) ?? "");
+  const [promoInput, setPromoInput] = useState(
+    initialPromo?.trim().toUpperCase() === LAUNCH_PROMO.code ? LAUNCH_PROMO.code : "",
+  );
   const [appliedPromo, setAppliedPromo] = useState(normalizePromoCode(initialPromo));
-  const [promoError, setPromoError] = useState("");
+  const [promoError, setPromoError] = useState(
+    initialPromo ? (promoCodeError(initialPromo) ?? "") : "",
+  );
   const [packageId, setPackageId] = useState(strong ? "" : "growth");
   const [retainerId, setRetainerId] = useState<string>("");
   const [hubSelected, setHubSelected] = useState(true);
@@ -205,7 +220,7 @@ export function PricingBuilder({
     }
     if (!code) {
       setAppliedPromo(null);
-      setPromoError(`"${raw.trim()}" isn't a valid promo code.`);
+      setPromoError(promoCodeError(raw) ?? "That promo code isn't valid.");
       return;
     }
     setPromoInput(code);

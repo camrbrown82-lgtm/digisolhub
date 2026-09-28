@@ -3,6 +3,7 @@ import {
   LAUNCH_PROMO,
   getPricingItem,
   normalizePromoCode,
+  promoCodeError,
   promoDiscountCents,
   promoPercentFor,
   summarizeSelection,
@@ -38,13 +39,11 @@ export async function POST(request: Request) {
   } | null;
 
   const rawPromo = body?.promoCode?.trim() || "";
-  const promo = normalizePromoCode(rawPromo);
-  if (rawPromo && !promo) {
-    return NextResponse.json(
-      { error: `"${rawPromo.slice(0, 40)}" isn't a valid promo code.` },
-      { status: 400 },
-    );
+  const promoError = promoCodeError(rawPromo);
+  if (promoError) {
+    return NextResponse.json({ error: promoError }, { status: 400 });
   }
+  const promo = normalizePromoCode(rawPromo);
 
   const ids = Array.isArray(body?.itemIds)
     ? body!.itemIds.filter((id) => typeof id === "string")
