@@ -3,6 +3,7 @@ import { BlogHighlights } from "@/components/sections/BlogHighlights";
 import { Contact } from "@/components/sections/Contact";
 import { DispatchArchive } from "@/components/sections/DispatchArchive";
 import { DualThreat } from "@/components/sections/DualThreat";
+import { GoogleAutopilot } from "@/components/sections/GoogleAutopilot";
 import { Guarantee } from "@/components/sections/Guarantee";
 import { Hero } from "@/components/sections/Hero";
 import { KaylevValueProp } from "@/components/sections/KaylevValueProp";
@@ -48,6 +49,7 @@ export function MarketingHomeStack({
         analyticsLocation={analyticsKaylev}
       />
       <Services copy={copy} />
+      <GoogleAutopilot />
       <Guarantee />
       <TechStackSection />
       <WebsiteAudit copy={copy} />

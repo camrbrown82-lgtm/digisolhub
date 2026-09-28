@@ -182,6 +182,38 @@ export function GoogleSetupPanel({
         </p>
       ) : null}
 
+      {!adsReady ? (
+        <section className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-5 text-sm text-amber-100/90">
+          <p className="font-semibold text-amber-50">Reminder: set up a Google Ads manager account</p>
+          <p className="mt-1">
+            Analytics and Search Console checks work now. Google Ads checks and fixes (wasted searches,
+            auto-tagging, campaign networks) switch on once DigiSol has a manager account. It&apos;s free.
+          </p>
+          <ol className="mt-3 list-decimal space-y-1 pl-5">
+            <li>
+              Create it at{" "}
+              <a
+                href="https://ads.google.com/home/tools/manager-accounts/"
+                target="_blank"
+                rel="noreferrer"
+                className="text-indigo-300 hover:text-indigo-200"
+              >
+                ads.google.com/home/tools/manager-accounts
+              </a>{" "}
+              with a DigiSol email.
+            </li>
+            <li>Link DigiSol&apos;s own ad account (and each client&apos;s) under it: Accounts → + → Link existing account.</li>
+            <li>Admin → Access and security → add {robotEmail || "the robot email"} as Standard.</li>
+            <li>Admin → API Center → copy the developer token and apply for Basic access.</li>
+            <li>
+              In Vercel add <code className="text-amber-50">GOOGLE_ADS_DEVELOPER_TOKEN</code> and{" "}
+              <code className="text-amber-50">GOOGLE_ADS_MANAGER_ID</code>, then redeploy. This reminder
+              disappears once both are set.
+            </li>
+          </ol>
+        </section>
+      ) : null}
+
       <details
         open={!allConnected}
         className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 text-sm text-zinc-300"
@@ -221,7 +253,7 @@ export function GoogleSetupPanel({
               : "link the account under DigiSol's Google Ads manager account."}
             {!adsReady ? (
               <span className="mt-1 block text-amber-200/80">
-                Ads checks start once GOOGLE_ADS_DEVELOPER_TOKEN and GOOGLE_ADS_MANAGER_ID are set on Vercel.
+                Skip this for now. See the manager account reminder above.
               </span>
             ) : null}
           </li>

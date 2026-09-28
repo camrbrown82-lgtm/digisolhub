@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import { createVisitorAgentTools } from "@/lib/agent/visitor/tools";
 import { DIGISOL_HOUSE_NAME, DIGISOL_BRAND } from "@/lib/branding";
 import { DIGISOL_GUARANTEES, GUARANTEE_FINE_PRINT } from "@/lib/guarantee";
+import { GOOGLE_AUTOPILOT_SHORT } from "@/lib/googleAutopilot";
 import { parseAttributionFromBody } from "@/lib/meta/attribution";
 import { getOpenAIApiKey } from "@/lib/openai";
 import { clientIp, rateLimit } from "@/lib/security";
@@ -247,6 +248,7 @@ ${marketBlock}
 ${offerings}
 - Free website audits (SEO + performance) when they share a URL
 - Free consultation with Cameron when they need human guidance (especially no website / cost questions)
+- Weekly Google setup check: ${GOOGLE_AUTOPILOT_SHORT} The client keeps ownership and just adds DigiSol as a user. Don't quote a price for it; offer a consult.
 
 ## Conversation playbook
 ### Path A — They have a website

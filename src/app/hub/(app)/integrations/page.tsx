@@ -8,6 +8,8 @@ import {
 } from "@/lib/meta/config";
 import { instagramInsightsConfigured } from "@/lib/meta/instagramInsights";
 import { metaPixelConfigured } from "@/lib/metaPixel";
+import { adsApiReady } from "@/lib/google/adsApi";
+import { serviceAccountReady } from "@/lib/google/auth";
 
 function status(ok: boolean) {
   return ok ? "Configured" : "Missing";
@@ -61,6 +63,15 @@ export default function IntegrationsPage() {
           (process.env.GA4_CLIENT_EMAIL?.trim() || process.env.GOOGLE_CLIENT_EMAIL?.trim()) &&
           (process.env.GA4_PRIVATE_KEY?.trim() || process.env.GOOGLE_PRIVATE_KEY?.trim()),
       ),
+    },
+    {
+      name: "Google setup robot (GA4 + Search Console)",
+      ok: serviceAccountReady(),
+    },
+    {
+      name: "Google Ads manager account (API)",
+      ok: adsApiReady(),
+      detail: adsApiReady() ? "Configured" : "Reminder: set up later (see Google setup)",
     },
     {
       name: "Meta Pixel",
