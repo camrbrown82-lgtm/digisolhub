@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { DispatchArchive } from "@/components/sections/DispatchArchive";
+import { shareCardImages } from "@/lib/shareCard";
 import { DIGISOL_SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -17,6 +18,7 @@ export const metadata: Metadata = {
       "Local SEO and growth notes for Alberta companies. Read the latest issue and export it to socials.",
     url: `${DIGISOL_SITE_URL}/dispatch`,
     type: "website",
+    images: shareCardImages("DigiSol Dispatch newsletter"),
   },
 };
 

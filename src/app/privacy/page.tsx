@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
+import { shareCardImages } from "@/lib/shareCard";
 import {
   DIGISOL_ADDRESS_LINE,
   DIGISOL_EMAIL,
@@ -22,6 +23,7 @@ export const metadata: Metadata = {
     siteName: "DigiSol",
     locale: "en_CA",
     type: "website",
+    images: shareCardImages("DigiSol"),
   },
 };
 

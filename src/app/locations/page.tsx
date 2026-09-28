@@ -3,6 +3,7 @@ import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { MarketingHomeStack } from "@/components/sections/MarketingHomeStack";
 import { homeCopyForLocationsHub } from "@/lib/locations";
+import { shareCardImages } from "@/lib/shareCard";
 import { DIGISOL_SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -16,6 +17,7 @@ export const metadata: Metadata = {
       "Full DigiSol homepage experience for Alberta-wide search — design, engineering, marketing, Kaylev, audit video, and contact.",
     url: `${DIGISOL_SITE_URL}/locations`,
     type: "website",
+    images: shareCardImages("DigiSol web design and marketing across Alberta"),
   },
 };
 

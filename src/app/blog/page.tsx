@@ -3,6 +3,7 @@ import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { BlogHighlights } from "@/components/sections/BlogHighlights";
 import { DispatchArchive } from "@/components/sections/DispatchArchive";
+import { shareCardImages } from "@/lib/shareCard";
 import { DIGISOL_SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
       "Practical advice on Google reviews, local search, and websites that bring in customers.",
     url: `${DIGISOL_SITE_URL}/blog`,
     type: "website",
-    images: [{ url: "/logo-badge.png" }],
+    images: shareCardImages("DigiSol guides for Alberta businesses"),
   },
 };
 

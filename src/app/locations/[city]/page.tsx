@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { MarketingHomeStack } from "@/components/sections/MarketingHomeStack";
+import { shareCardImages, shareCardPath } from "@/lib/shareCard";
 import {
   LOCATION_PAGES,
   getLocationPage,
@@ -47,13 +48,13 @@ export function generateMetadata({ params }: PageProps): Metadata {
       type: "website",
       locale: "en_CA",
       siteName: "DigiSol",
-      images: [{ url: "/logo.jpg", alt: `DigiSol — ${page.name}` }],
+      images: shareCardImages(`DigiSol web design and marketing for ${page.name} businesses`, page.slug),
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: ["/logo.jpg"],
+      images: [shareCardPath(page.slug)],
     },
   };
 }

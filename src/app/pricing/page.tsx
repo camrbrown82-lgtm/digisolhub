@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { PricingSection } from "@/components/sections/PricingSection";
+import { shareCardImages } from "@/lib/shareCard";
 import { DIGISOL_SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -15,6 +16,7 @@ export const metadata: Metadata = {
       "Scalable website design, development, local SEO, and paid media packages for Alberta companies.",
     url: `${DIGISOL_SITE_URL}/pricing`,
     type: "website",
+    images: shareCardImages("DigiSol website, SEO, and marketing packages"),
   },
 };
 

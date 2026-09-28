@@ -4,6 +4,7 @@ import { Navbar } from "@/components/Navbar";
 import { TrackedLink } from "@/components/TrackedLink";
 import { WebsiteAuditExport } from "@/components/WebsiteAuditExport";
 import { WebsiteAuditVideo } from "@/components/WebsiteAuditVideo";
+import { shareCardImages, shareCardPath } from "@/lib/shareCard";
 import {
   WEBSITE_AUDIT_DESCRIPTION,
   WEBSITE_AUDIT_PAGE_PATH,
@@ -40,18 +41,13 @@ export const metadata: Metadata = {
         type: "video/mp4",
       },
     ],
-    images: [
-      {
-        url: "/logo.jpg",
-        alt: "DigiSol website audit presentation",
-      },
-    ],
+    images: shareCardImages("DigiSol website audit presentation"),
   },
   twitter: {
     card: "player",
     title: WEBSITE_AUDIT_TITLE,
     description: WEBSITE_AUDIT_DESCRIPTION,
-    images: ["/logo.jpg"],
+    images: [shareCardPath()],
   },
 };
 

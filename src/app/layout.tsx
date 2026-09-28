@@ -9,6 +9,7 @@ import { MobileContactBar } from "@/components/MobileContactBar";
 import { PublicKaylevChat } from "@/components/PublicKaylevChat";
 import { PublicSiteAnalytics } from "@/components/PublicSiteAnalytics";
 import { AttributionCaptureBoundary } from "@/components/AttributionCaptureBoundary";
+import { shareCardImages } from "@/lib/shareCard";
 import {
   WEBSITE_AUDIT_DESCRIPTION,
   WEBSITE_AUDIT_PAGE_URL,
@@ -60,29 +61,14 @@ export const metadata: Metadata = {
     siteName: "DigiSol",
     locale: "en_CA",
     type: "website",
-    images: [
-      {
-        url: `${DIGISOL_SITE_URL}/logo.jpg`,
-        width: 1024,
-        height: 559,
-        alt: "DigiSol — Website Design, Engineering & Growth",
-        type: "image/jpeg",
-      },
-    ],
+    images: shareCardImages("DigiSol: custom websites, SEO, and growth marketing from Airdrie, Alberta"),
   },
   twitter: {
     card: "summary_large_image",
     title: "DigiSol | Airdrie Web Design, Development & Marketing",
     description:
       "Custom websites, SEO, and growth marketing from Airdrie, Alberta — one partner from first look to closed deal.",
-    images: [
-      {
-        url: `${DIGISOL_SITE_URL}/logo.jpg`,
-        width: 1024,
-        height: 559,
-        alt: "DigiSol — Website Design, Engineering & Growth",
-      },
-    ],
+    images: shareCardImages("DigiSol: custom websites, SEO, and growth marketing from Airdrie, Alberta"),
   },
 };
 
