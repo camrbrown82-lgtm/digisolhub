@@ -27,7 +27,13 @@ const planSchema = z.object({
         label: z.string().describe("2-4 word angle name"),
         angle: z.string().describe("What makes this variant different"),
         body: z.string().describe("Ready-to-post social/ad copy. No link; the Hub appends the tracking link."),
-        assetId: z.string().nullable().describe("Id of a provided asset to pair with this variant, or null"),
+        assetId: z
+          .string()
+          .nullable()
+          .describe("Id of a provided asset that matches what is being promoted, or null"),
+        visualIdea: z
+          .string()
+          .describe("The poster/image this variant needs: headline on the visual, layout, and what it shows"),
         emailSubject: z.string().nullable().describe("Subject line if email is a channel, else null"),
       }),
     )
@@ -140,7 +146,8 @@ ${ctx.brandPrompt}
 Rules:
 - A and B must differ in ONE clear variable (hook, offer framing, proof, format, or visual) so the result teaches something.
 - Copy is ready to post: short, platform-aware, max 3 hashtags, one clear call to action, no links (the Hub adds a tracking link per channel), no invented prices, stats, or claims beyond the source material.
-- Only use assetId values from the provided asset list; pair visuals so the test variable stays clean (same visual for both if testing copy).
+- Only use assetId values from the provided asset list, and only when the asset is about the same thing being promoted. Never attach an asset about a different topic, issue, or offer; use null instead.
+- Always write visualIdea for the poster/image each variant should use, based on the source material. If testing copy, both variants use the same visual.
 - Plain, confident Canadian English.`,
     prompt: [
       `Goal: ${goal || "Drive readers to the newsletter issue and convert them to leads."}`,
@@ -151,7 +158,7 @@ Rules:
         : "",
       assets.length
         ? `Assets available (id | name | type | about):\n${assets.map((a) => `${a.id} | ${a.name} | ${a.type} | ${a.about}`).join("\n")}`
-        : "No assets selected; set assetId to null.",
+        : "No assets selected; set assetId to null and describe the visual in visualIdea.",
       templates.length
         ? `Email templates in play: ${templates.map((t) => `${t.name} (subject: ${t.subject || "none"})`).join("; ")}`
         : "",

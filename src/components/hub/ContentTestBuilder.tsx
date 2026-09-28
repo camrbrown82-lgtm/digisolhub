@@ -23,6 +23,7 @@ type PlanExtras = {
   duration: string;
   checklist: string[];
   angles: Partial<Record<TestVariant, string>>;
+  visuals: Partial<Record<TestVariant, string>>;
   subjects: Partial<Record<TestVariant, string>>;
 };
 
@@ -94,8 +95,7 @@ export function ContentTestBuilder({
     setError("");
     setStatus("");
     try {
-      const picked = TEST_VARIANTS.map((v) => variants[v].assetId).filter(Boolean);
-      const assetIds = picked.length ? picked : [...posters, ...images].slice(0, 12).map((a) => a.id);
+      const assetIds = TEST_VARIANTS.map((v) => variants[v].assetId).filter(Boolean);
       const response = await fetch("/api/hub/content-tests/kaylev", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -121,6 +121,7 @@ export function ContentTestBuilder({
             angle: string;
             body: string;
             assetId: string | null;
+            visualIdea: string;
             emailSubject: string | null;
           }[];
           channelTips: { channel: string; tip: string }[];
@@ -151,6 +152,7 @@ export function ContentTestBuilder({
         duration: plan.duration,
         checklist: plan.checklist,
         angles: Object.fromEntries(plan.variants.map((v) => [v.variant, v.angle])),
+        visuals: Object.fromEntries(plan.variants.map((v) => [v.variant, v.visualIdea])),
         subjects: Object.fromEntries(
           plan.variants.filter((v) => v.emailSubject).map((v) => [v.variant, v.emailSubject as string]),
         ),
@@ -383,6 +385,16 @@ export function ContentTestBuilder({
                       )}
                     </select>
                   </label>
+                  {extras?.visuals[variant] && !draft.assetId ? (
+                    <p className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-2 text-xs text-zinc-400">
+                      <span className="text-fuchsia-200/80">Kaylev&apos;s visual idea:</span>{" "}
+                      {extras.visuals[variant]}{" "}
+                      <a href="/hub/ai" target="_blank" rel="noreferrer" className="text-indigo-300 hover:text-indigo-200">
+                        Make it in AI posters
+                      </a>
+                      , then pick it above.
+                    </p>
+                  ) : null}
                   {isImage(asset) ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
