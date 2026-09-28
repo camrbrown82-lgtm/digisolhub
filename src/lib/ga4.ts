@@ -148,6 +148,72 @@ function googleAdsFilter(scope: "session" | "firstUser") {
   };
 }
 
+export type Ga4ContentTestRow = {
+  campaign: string;
+  content: string;
+  source: string;
+  medium: string;
+  sessions: number;
+  engagedSessions: number;
+  keyEvents: number;
+};
+
+/** Sessions per utm_campaign + utm_content + source/medium for A/B test tracking links. */
+export async function fetchGa4ContentTestStats(
+  campaigns: string[],
+  days = 90,
+): Promise<{ configured: boolean; error?: string; rows: Ga4ContentTestRow[] }> {
+  const { propertyId, clientEmail, ready } = ga4ConfigStatus();
+  if (!ready) return { configured: false, rows: [] };
+  if (campaigns.length === 0) return { configured: true, rows: [] };
+  try {
+    const client = new BetaAnalyticsDataClient({
+      credentials: { client_email: clientEmail, private_key: readPrivateKey() },
+    });
+    const [report] = await Promise.race([
+      client.runReport({
+        property: `properties/${propertyId}`,
+        dateRanges: [{ startDate: `${days - 1}daysAgo`, endDate: "today" }],
+        dimensions: [
+          { name: "sessionCampaignName" },
+          { name: "sessionManualAdContent" },
+          { name: "sessionSource" },
+          { name: "sessionMedium" },
+        ],
+        metrics: [{ name: "sessions" }, { name: "engagedSessions" }, { name: "keyEvents" }],
+        dimensionFilter: {
+          filter: {
+            fieldName: "sessionCampaignName",
+            inListFilter: { values: campaigns, caseSensitive: false },
+          },
+        },
+        limit: 500,
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Google Analytics timed out")), 6000),
+      ),
+    ]);
+    return {
+      configured: true,
+      rows: (report.rows ?? []).map((row) => ({
+        campaign: (row.dimensionValues?.[0]?.value || "").toLowerCase(),
+        content: (row.dimensionValues?.[1]?.value || "").toLowerCase(),
+        source: (row.dimensionValues?.[2]?.value || "").toLowerCase(),
+        medium: (row.dimensionValues?.[3]?.value || "").toLowerCase(),
+        sessions: metricInt(row, 0),
+        engagedSessions: metricInt(row, 1),
+        keyEvents: metricInt(row, 2),
+      })),
+    };
+  } catch (error) {
+    return {
+      configured: true,
+      error: error instanceof Error ? error.message : "Could not load Google Analytics",
+      rows: [],
+    };
+  }
+}
+
 /** Who visits wwwdigisol.com: all visitors next to Google Ads visitors, by age, gender, city, device. */
 export async function fetchDigisolGa4Demographics(days = 28): Promise<Ga4Demographics> {
   const { propertyId, clientEmail, ready } = ga4ConfigStatus();

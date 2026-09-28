@@ -20,6 +20,7 @@ import {
   summarizeLeadPerformance,
 } from "@/lib/lead-pipeline";
 import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
+import { loadContentTests, type ContentTestLoad } from "@/lib/contentTestData";
 import { fetchAnalyticsEventsSummary } from "@/lib/analyticsEvents";
 import { reconcileHubEmailStats } from "@/lib/resendStats";
 import {
@@ -120,6 +121,15 @@ export default async function AnalyticsPage() {
       new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
     ]);
 
+  const contentTestsPromise = withTimeout(
+    loadContentTests(supabase, active?.id ?? null, {
+      useGa4: isDigisol && gaStatus.ready,
+      limit: 6,
+    }),
+    8000,
+    { tests: [], gaConfigured: false } as ContentTestLoad,
+  );
+
   const ga4TimeoutFallback: Ga4Summary = {
     ...emptyGa4,
     configured: true,
@@ -209,6 +219,7 @@ export default async function AnalyticsPage() {
         : Promise.resolve(emptyGa4Demographics()),
     ]);
 
+  const contentTests = await contentTestsPromise;
   const website = summarizeSiteEvents(site.data ?? [], active?.domain);
   const maxDaily = Math.max(1, ...website.daily.map((item) => item.count));
   const pipeline = summarizeLeadPerformance((leadsResult.data ?? []) as LeadRecord[]);
@@ -408,6 +419,60 @@ export default async function AnalyticsPage() {
       </section>
 
       {isDigisol ? <DemographicsPanel days={28} data={demographics} /> : null}
+
+      {contentTests.tests.length > 0 ? (
+        <section className="space-y-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-white">
+                Social, ad &amp; poster A/B tests
+              </h2>
+              <p className="mt-1 text-sm text-zinc-400">
+                Visits, conversions, and leads from each variant&apos;s tracking
+                links, plus ad numbers entered in Campaigns.
+              </p>
+            </div>
+            <a href="/hub/campaigns" className="text-sm text-indigo-400 hover:text-indigo-300">
+              Manage in Campaigns
+            </a>
+          </div>
+          <div className="overflow-x-auto rounded-2xl border border-zinc-800">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-zinc-900/60 text-xs uppercase tracking-wide text-zinc-500">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Test</th>
+                  <th className="px-4 py-3 font-medium">Variant A</th>
+                  <th className="px-4 py-3 font-medium">Variant B</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800">
+                {contentTests.tests.map((item) => (
+                  <tr key={item.test.id}>
+                    <td className="px-4 py-3 text-white">{item.test.name}</td>
+                    {item.results.map((result) => {
+                      const label = item.variants.find((v) => v.variant === result.variant)?.label;
+                      return (
+                        <td key={result.variant} className="px-4 py-3 text-zinc-300">
+                          <span className="block text-xs text-zinc-500">{label}</span>
+                          {result.totals.sessions} visits · {result.totals.keyEvents} conv. ·{" "}
+                          {result.totals.leads} leads
+                          {result.totals.clicks ? ` · ${result.totals.clicks} clicks` : ""}
+                        </td>
+                      );
+                    })}
+                    <td className="px-4 py-3 text-zinc-400">
+                      {item.test.winner_variant
+                        ? `Winner: ${item.test.winner_variant}`
+                        : item.leader.note}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
 
       <WebsiteAuditPanel
         companyName={active?.name}

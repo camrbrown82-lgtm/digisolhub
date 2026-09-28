@@ -4,9 +4,17 @@ import { AbAuditVideoCampaignPanel } from "@/components/hub/AbAuditVideoCampaign
 import { AbCampaignBuilder } from "@/components/hub/AbCampaignBuilder";
 import { AbCampaignResults } from "@/components/hub/AbCampaignResults";
 import { AiWorkflowGenerator } from "@/components/hub/AiWorkflowGenerator";
+import { ContentTestBuilder, type TestAssetOption } from "@/components/hub/ContentTestBuilder";
+import { ContentTestCard } from "@/components/hub/ContentTestCard";
 import { NewWorkflowButton } from "@/components/hub/NewWorkflowButton";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
-import { contactIdsForClient, getActiveClient } from "@/lib/workspace";
+import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
+import { loadContentTests } from "@/lib/contentTestData";
+import { DISPATCH_ISSUES, dispatchUrl } from "@/lib/dispatch";
+import { ensureContentTestSchema } from "@/lib/ensureContentTestSchema";
+import { parsePosterMeta } from "@/lib/posterSocial";
+import { socialProviderConfigured } from "@/lib/social/providers";
+import { contactIdsForClient, getActiveClient, getWorkspaceClient } from "@/lib/workspace";
 import { createClient } from "@/lib/supabase/server";
 
 function pct(part: number, whole: number) {
@@ -15,8 +23,14 @@ function pct(part: number, whole: number) {
 }
 
 export default async function CampaignsPage() {
+  await Promise.race([
+    ensureContentTestSchema().catch(() => null),
+    new Promise((resolve) => setTimeout(resolve, 3000)),
+  ]);
   const supabase = await createClient();
   const active = await getActiveClient(supabase);
+  const workspace = active ?? (await getWorkspaceClient(supabase));
+  const isDigisol = (workspace?.name || "").toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase();
   const scopedIds = active ? await contactIdsForClient(supabase, active.id) : null;
   const emptySends = Boolean(active && scopedIds && scopedIds.length === 0);
 
@@ -60,14 +74,52 @@ export default async function CampaignsPage() {
     .limit(40);
   if (active) templatesQuery = templatesQuery.eq("client_id", active.id);
 
-  const [workflowsResult, campaignsPrimary, sendsPrimary, runsResult, templatesResult] =
-    await Promise.all([
-      workflowsQuery,
-      campaignsQuery,
-      emptySends ? Promise.resolve({ data: [] as never[], error: null }) : sendsQuery,
-      runsQuery,
-      templatesQuery,
-    ]);
+  let assetsQuery = supabase
+    .from("assets")
+    .select("id, filename, public_url, mime_type, notes")
+    .order("created_at", { ascending: false })
+    .limit(80);
+  if (workspace) assetsQuery = assetsQuery.eq("client_id", workspace.id);
+
+  const [
+    workflowsResult,
+    campaignsPrimary,
+    sendsPrimary,
+    runsResult,
+    templatesResult,
+    assetsResult,
+    contentTests,
+  ] = await Promise.all([
+    workflowsQuery,
+    campaignsQuery,
+    emptySends ? Promise.resolve({ data: [] as never[], error: null }) : sendsQuery,
+    runsQuery,
+    templatesQuery,
+    assetsQuery,
+    loadContentTests(supabase, workspace?.id ?? null, { useGa4: isDigisol }),
+  ]);
+
+  const testAssets: TestAssetOption[] = (assetsResult.data ?? []).map((row) => ({
+    id: row.id as string,
+    filename: (row.filename as string | null) ?? null,
+    public_url: (row.public_url as string | null) ?? null,
+    mime_type: (row.mime_type as string | null) ?? null,
+    isPoster: Boolean(parsePosterMeta(row.notes as string | null)),
+  }));
+  const dispatchIssues = isDigisol
+    ? [...DISPATCH_ISSUES]
+        .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
+        .map((issue) => ({ slug: issue.slug, title: issue.title, url: dispatchUrl(issue.slug) }))
+    : [];
+  const workspaceDomain = (workspace as { domain?: string | null } | null)?.domain?.trim() || "";
+  const defaultLandingUrl = workspaceDomain
+    ? workspaceDomain.startsWith("http")
+      ? workspaceDomain
+      : `https://${workspaceDomain}`
+    : "";
+  const connectedSocial = isDigisol
+    ? (["facebook", "instagram", "linkedin"] as const).filter((channel) => socialProviderConfigured(channel))
+    : [];
 
   let campaigns =
     campaignsPrimary.data?.map((row) => ({
@@ -198,8 +250,9 @@ export default async function CampaignsPage() {
           <h1 className="text-3xl font-semibold text-white">Campaigns</h1>
           <WorkspaceScope companyName={active?.name} noun="campaigns & workflows" />
           <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-            Email campaigns with A/B testing, automation workflows, AI
-            generation, and live monitoring — scoped to the company you are
+            A/B test social posts, ads, posters, files, and emails with
+            tracked links, plus automation workflows, AI generation, and live
+            monitoring. Everything here is scoped to the company you are
             Working on.
           </p>
         </div>
@@ -230,6 +283,43 @@ export default async function CampaignsPage() {
           </div>
         ))}
       </section>
+
+      <ContentTestBuilder
+        companyName={workspace?.name || "this company"}
+        assets={testAssets}
+        templates={templates}
+        issues={dispatchIssues}
+        defaultLandingUrl={defaultLandingUrl}
+      />
+
+      {contentTests.error ? (
+        <p className="rounded-xl border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          Content A/B tests aren&apos;t set up in the database yet ({contentTests.error}). Run the
+          content_tests migration, then refresh.
+        </p>
+      ) : contentTests.tests.length > 0 ? (
+        <section className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <FlaskConical className="h-4 w-4 text-fuchsia-300" aria-hidden="true" />
+              <h2 className="text-lg font-semibold text-white">Social, ad &amp; poster A/B tests</h2>
+            </div>
+            {contentTests.gaError ? (
+              <p className="text-xs text-amber-200/80">Google Analytics: {contentTests.gaError}</p>
+            ) : null}
+          </div>
+          <div className="space-y-4">
+            {contentTests.tests.map((item) => (
+              <ContentTestCard
+                key={item.test.id}
+                item={item}
+                connected={[...connectedSocial]}
+                gaTracked={contentTests.gaConfigured}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <AbAuditVideoCampaignPanel />
 

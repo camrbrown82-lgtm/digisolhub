@@ -60,6 +60,12 @@ export function fbcFromFbclid(fbclid: string | null | undefined, now = Date.now(
   return `fb.1.${now}.${id}`;
 }
 
+/** contacts.ab_variant only accepts A or B; any other utm_content stays in utm_content. */
+export function normalizeAbVariant(value: string | null | undefined): "A" | "B" | null {
+  const match = value?.trim().match(/^(?:variant[\s_-]?)?([ab])$/i);
+  return match ? (match[1].toUpperCase() as "A" | "B") : null;
+}
+
 export function parseAttributionFromBody(
   body: Record<string, unknown>,
 ): AttributionPayload {
@@ -103,8 +109,8 @@ export function parseAttributionFromBody(
     }
   }
 
-  const ab_variant = pick(
-    nested.ab_variant ?? nested.abVariant ?? nested.utm_content ?? utm_content,
+  const ab_variant = normalizeAbVariant(
+    pick(nested.ab_variant ?? nested.abVariant) ?? utm_content,
   );
 
   return {
