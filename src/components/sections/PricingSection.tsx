@@ -4,10 +4,12 @@ import { stripeConfigured } from "@/lib/stripe";
 export function PricingSection({
   cityHint,
   view = "default",
+  promo,
 }: {
   cityHint?: string;
   /** strong = high-score audit email: Hub, retainers, and growth add-ons first. */
   view?: "default" | "strong";
+  promo?: string;
 }) {
   const stripeReady = stripeConfigured();
   return (
@@ -21,6 +23,7 @@ export function PricingSection({
           stripeReady={stripeReady}
           cityHint={cityHint}
           view={view}
+          initialPromo={promo}
         />
       </div>
     </section>

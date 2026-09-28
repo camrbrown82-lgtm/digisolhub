@@ -1,30 +1,75 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import { Check, Loader2, Sparkles } from "lucide-react";
+import { Check, Loader2, Sparkles, Tag } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 import {
   ALBERTA_GST_PERCENT,
+  LAUNCH_PROMO,
   PRICING_ADDONS,
   PRICING_HUB,
   PRICING_PACKAGES,
   PRICING_RETAINERS,
   formatCad,
+  normalizePromoCode,
+  promoDiscountCents,
+  promoPercentFor,
   summarizeSelection,
   type PricingItem,
 } from "@/lib/pricing";
+
+function LaunchBanner({
+  applied,
+  onApply,
+}: {
+  applied: boolean;
+  onApply: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-400/30 bg-emerald-500/10 p-5 text-left">
+      <div>
+        <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-emerald-300">
+          <Tag className="h-4 w-4" aria-hidden="true" />
+          Launch offer · code {LAUNCH_PROMO.code}
+        </p>
+        <p className="mt-1.5 text-sm text-zinc-200">
+          {LAUNCH_PROMO.buildPercent}% off website build and design (Foundation,
+          Growth Engine, Full Funnel) and {LAUNCH_PROMO.otherPercent}% off
+          everything else: the Hub, add-ons, and the first month of any retainer.
+        </p>
+      </div>
+      {applied ? (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-200">
+          <Check className="h-4 w-4" aria-hidden="true" />
+          {LAUNCH_PROMO.code} applied
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={onApply}
+          className="rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-400"
+        >
+          Apply {LAUNCH_PROMO.code}
+        </button>
+      )}
+    </div>
+  );
+}
 
 function ItemCard({
   item,
   selected,
   onToggle,
   mode,
+  promo = null,
 }: {
   item: PricingItem;
   selected: boolean;
   onToggle: () => void;
   mode: "radio" | "check";
+  promo?: ReturnType<typeof normalizePromoCode>;
 }) {
+  const off = promoDiscountCents(item, promo);
   return (
     <button
       type="button"
@@ -57,13 +102,28 @@ function ItemCard({
         </span>
       </div>
       <p className="mt-2 text-2xl font-semibold text-white">
-        {formatCad(item.amount)}
+        {off ? (
+          <>
+            <span className="mr-2 text-base font-normal text-zinc-500 line-through">
+              {formatCad(item.amount)}
+            </span>
+            <span className="text-emerald-300">{formatCad(item.amount - off)}</span>
+          </>
+        ) : (
+          formatCad(item.amount)
+        )}
         {item.kind === "recurring" ? (
           <span className="text-sm font-normal text-zinc-400"> / month</span>
         ) : (
           <span className="text-sm font-normal text-zinc-400"> one-time</span>
         )}
       </p>
+      {off ? (
+        <p className="mt-1 text-xs font-medium text-emerald-300/90">
+          {promoPercentFor(item, promo)}% off with {promo}
+          {item.kind === "recurring" ? " (first month)" : ""}
+        </p>
+      ) : null}
       <p className="mt-2 text-sm leading-relaxed text-zinc-400">{item.blurb}</p>
       <ul className="mt-4 space-y-1.5">
         {item.includes.map((line) => (
@@ -86,12 +146,17 @@ export function PricingBuilder({
   stripeReady = false,
   cityHint,
   view = "default",
+  initialPromo,
 }: {
   stripeReady?: boolean;
   cityHint?: string;
   view?: "default" | "strong";
+  initialPromo?: string;
 }) {
   const strong = view === "strong";
+  const [promoInput, setPromoInput] = useState(normalizePromoCode(initialPromo) ?? "");
+  const [appliedPromo, setAppliedPromo] = useState(normalizePromoCode(initialPromo));
+  const [promoError, setPromoError] = useState("");
   const [packageId, setPackageId] = useState(strong ? "" : "growth");
   const [retainerId, setRetainerId] = useState<string>("");
   const [hubSelected, setHubSelected] = useState(true);
@@ -126,7 +191,35 @@ export function PricingBuilder({
     return ids;
   }, [strong, hubSelected, packageId, addonIds, retainerId]);
 
-  const totals = useMemo(() => summarizeSelection(selectedIds), [selectedIds]);
+  const totals = useMemo(
+    () => summarizeSelection(selectedIds, appliedPromo),
+    [selectedIds, appliedPromo],
+  );
+
+  function applyPromo(raw: string) {
+    const code = normalizePromoCode(raw);
+    if (!raw.trim()) {
+      setAppliedPromo(null);
+      setPromoError("");
+      return;
+    }
+    if (!code) {
+      setAppliedPromo(null);
+      setPromoError(`"${raw.trim()}" isn't a valid promo code.`);
+      return;
+    }
+    setPromoInput(code);
+    setAppliedPromo(code);
+    setPromoError("");
+    trackEvent("pricing_promo_applied", { code, view });
+  }
+
+  const launchBanner = (
+    <LaunchBanner
+      applied={appliedPromo === LAUNCH_PROMO.code}
+      onApply={() => applyPromo(LAUNCH_PROMO.code)}
+    />
+  );
 
   function toggleAddon(id: string) {
     setAddonIds((current) =>
@@ -160,6 +253,7 @@ export function PricingBuilder({
           company,
           industry,
           notes,
+          promoCode: appliedPromo ?? "",
         }),
       });
       const result = (await response.json()) as { url?: string; error?: string };
@@ -190,18 +284,78 @@ export function PricingBuilder({
             </p>
           ) : (
             <ul className="mt-3 space-y-1 text-sm text-zinc-300">
-              {totals.items.map((item) => (
-                <li key={item.id}>
-                  {item.name} · {formatCad(item.amount)}
-                  {item.kind === "recurring" ? "/mo" : ""}
-                </li>
-              ))}
+              {totals.items.map((item) => {
+                const off = promoDiscountCents(item, totals.promo);
+                return (
+                  <li key={item.id}>
+                    {item.name} ·{" "}
+                    {off ? (
+                      <>
+                        <span className="text-zinc-500 line-through">
+                          {formatCad(item.amount)}
+                        </span>{" "}
+                        <span className="text-emerald-300">
+                          {formatCad(item.amount - off)}
+                        </span>
+                      </>
+                    ) : (
+                      formatCad(item.amount)
+                    )}
+                    {item.kind === "recurring" ? "/mo" : ""}
+                    {off ? (
+                      <span className="ml-1.5 text-xs text-emerald-300/80">
+                        {promoPercentFor(item, totals.promo)}% off
+                        {item.kind === "recurring" ? " first month" : ""}
+                      </span>
+                    ) : null}
+                  </li>
+                );
+              })}
             </ul>
           )}
+          <div className="mt-4">
+            <label htmlFor="pricing-promo" className="text-xs text-zinc-400">
+              Promo code
+            </label>
+            <div className="mt-1 flex gap-2">
+              <input
+                id="pricing-promo"
+                value={promoInput}
+                onChange={(event) => setPromoInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    applyPromo(promoInput);
+                  }
+                }}
+                className="hub-field w-36 border-indigo-400/20 bg-zinc-950/70 uppercase"
+                placeholder={LAUNCH_PROMO.code}
+                autoComplete="off"
+              />
+              <button
+                type="button"
+                onClick={() => applyPromo(promoInput)}
+                className="rounded-full border border-white/15 px-4 text-sm font-medium text-zinc-200 transition hover:bg-white/5"
+              >
+                Apply
+              </button>
+            </div>
+            {promoError ? (
+              <p className="mt-1.5 text-xs text-rose-300">{promoError}</p>
+            ) : totals.promo ? (
+              <p className="mt-1.5 text-xs text-emerald-300">
+                {totals.promo} saves{" "}
+                {formatCad(totals.oneTimeDiscount + totals.firstMonthDiscount)}
+              </p>
+            ) : null}
+          </div>
         </div>
         <div className="min-w-[12rem] space-y-3 text-right text-sm">
           <div>
             <p className="text-zinc-400">One-time subtotal</p>
+            {totals.oneTimeDiscount ? (
+              <p className="text-zinc-500 line-through">{formatCad(totals.oneTimeBase)}</p>
+            ) : null}
             <p className="text-lg font-semibold text-white">
               {formatCad(totals.oneTime)}
             </p>
@@ -213,19 +367,29 @@ export function PricingBuilder({
             </p>
           </div>
           <div>
-            <p className="text-zinc-400">Monthly subtotal</p>
+            <p className="text-zinc-400">
+              {totals.firstMonthDiscount ? "First month" : "Monthly subtotal"}
+            </p>
+            {totals.firstMonthDiscount ? (
+              <p className="text-zinc-500 line-through">{formatCad(totals.monthly)}</p>
+            ) : null}
             <p className="text-lg font-semibold text-white">
-              {formatCad(totals.monthly)}
+              {formatCad(totals.firstMonth)}
               <span className="text-sm font-normal text-zinc-400"> /mo</span>
             </p>
             <p className="text-zinc-500">
-              GST ({ALBERTA_GST_PERCENT}%) {formatCad(totals.monthlyGst, 2)}
+              GST ({ALBERTA_GST_PERCENT}%) {formatCad(totals.firstMonthGst, 2)}
               /mo
             </p>
             <p className="mt-1 text-xl font-semibold text-white">
-              {formatCad(totals.monthlyTotal, 2)}
+              {formatCad(totals.firstMonthTotal, 2)}
               <span className="text-sm font-normal text-zinc-400"> /mo</span>
             </p>
+            {totals.firstMonthDiscount ? (
+              <p className="text-xs text-zinc-500">
+                Then {formatCad(totals.monthlyTotal, 2)}/mo incl. GST
+              </p>
+            ) : null}
           </div>
         </div>
       </div>
@@ -308,6 +472,7 @@ export function PricingBuilder({
   if (strong) {
     return (
       <div className="space-y-10" id="growth">
+        {launchBanner}
         <div>
           <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
             Your site scored well
@@ -334,6 +499,7 @@ export function PricingBuilder({
               <ItemCard
                 key={item.id}
                 item={item}
+                promo={appliedPromo}
                 selected={hubSelected}
                 mode="check"
                 onToggle={() => setHubSelected((current) => !current)}
@@ -370,6 +536,7 @@ export function PricingBuilder({
               <ItemCard
                 key={item.id}
                 item={item}
+                promo={appliedPromo}
                 selected={retainerId === item.id}
                 mode="radio"
                 onToggle={() => setRetainerId(item.id)}
@@ -391,6 +558,7 @@ export function PricingBuilder({
               <ItemCard
                 key={item.id}
                 item={item}
+                promo={appliedPromo}
                 selected={addonIds.includes(item.id)}
                 mode="check"
                 onToggle={() => toggleAddon(item.id)}
@@ -426,6 +594,7 @@ export function PricingBuilder({
               <ItemCard
                 key={item.id}
                 item={item}
+                promo={appliedPromo}
                 selected={packageId === item.id}
                 mode="radio"
                 onToggle={() => setPackageId(item.id)}
@@ -441,6 +610,7 @@ export function PricingBuilder({
 
   return (
     <div className="space-y-10">
+      {launchBanner}
       <div>
         <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
           Scalable pricing
@@ -469,6 +639,7 @@ export function PricingBuilder({
             <ItemCard
               key={item.id}
               item={item}
+              promo={appliedPromo}
               selected={packageId === item.id}
               mode="radio"
               onToggle={() => setPackageId(item.id)}
@@ -501,6 +672,7 @@ export function PricingBuilder({
             <ItemCard
               key={item.id}
               item={item}
+              promo={appliedPromo}
               selected={retainerId === item.id}
               mode="radio"
               onToggle={() => setRetainerId(item.id)}
@@ -518,6 +690,7 @@ export function PricingBuilder({
             <ItemCard
               key={item.id}
               item={item}
+              promo={appliedPromo}
               selected={addonIds.includes(item.id)}
               mode="check"
               onToggle={() => toggleAddon(item.id)}

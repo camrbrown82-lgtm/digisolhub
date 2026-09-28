@@ -45,7 +45,7 @@ export const DISPATCH_ISSUES: DispatchIssue[] = [
     year: 2026,
     title: "DigiSol Officially Launches: The All-in-One Growth Platform for Alberta Businesses",
     excerpt:
-      "DigiSol is officially open. A custom website, the DigiSol Hub, and Kaylev, your AI assistant, work together to bring in leads, follow up automatically, and show you exactly what’s working. Here’s everything the platform does for your business, and the launch packages to get started.",
+      "DigiSol is officially open. A custom website, the DigiSol Hub, and Kaylev, your AI assistant, work together to bring in leads, follow up automatically, and show you exactly what’s working. Here’s everything the platform does for your business, plus a launch offer: use code LAUNCH for 20% off your website build and design.",
     publishedAt: "2026-09-28",
     readingMinutes: 8,
     keywords: [
@@ -63,15 +63,15 @@ export const DISPATCH_ISSUES: DispatchIssue[] = [
       "Alberta web design and development",
     ],
     socialBlurb:
-      "DigiSol is officially launched: one platform for Alberta businesses that combines a custom website, a CRM with automated follow-ups, AI lead capture, and analytics that show what’s working. Launch packages start at $750.",
+      "DigiSol is officially launched: one platform for Alberta businesses that combines a custom website, a CRM with automated follow-ups, AI lead capture, and analytics that show what’s working. Launch offer: code LAUNCH takes 20% off website build and design and 10% off everything else.",
     emailSubject: "It’s official: DigiSol has launched (Dispatch Vol. 2)",
     emailIntro:
-      "It’s official: DigiSol has launched. This is our biggest issue yet, a full breakdown of what the platform can do for your business, plus the launch packages.",
+      "It’s official: DigiSol has launched. This is our biggest issue yet, a full breakdown of what the platform can do for your business, plus a launch offer. Use code LAUNCH for 20% off website build and design and 10% off everything else.",
     cta: {
-      heading: "Launch packages are live",
-      body: "Start with the DigiSol Hub for $750, or choose a website package and add a monthly retainer. Prices in CAD before GST, with secure checkout.",
-      href: "/pricing",
-      label: "See launch pricing",
+      heading: "Launch offer: code LAUNCH",
+      body: "20% off website build and design (Foundation, Growth Engine, Full Funnel) and 10% off the DigiSol Hub, add-ons, and the first month of any retainer. The code is applied for you at checkout.",
+      href: "/pricing?promo=LAUNCH",
+      label: "Claim the launch offer",
     },
     sections: [
       {
@@ -79,6 +79,19 @@ export const DISPATCH_ISSUES: DispatchIssue[] = [
         body: [
           "For months, every part of DigiSol ran on our own business first: the website, the lead capture, the automated follow-ups, the analytics, and Kaylev. It works, and today it’s available to companies across Airdrie, Calgary, Edmonton, Red Deer, and the rest of Alberta.",
           "DigiSol is not just a web design shop. It’s a growth platform: the software that brings customers in, follows up with them automatically, and shows you which marketing is paying off. Every company gets its own private workspace, its own brand kit, and its own data. Nothing is shared between companies.",
+        ],
+      },
+      {
+        heading: "Launch offer: use code LAUNCH",
+        body: [
+          "To celebrate the launch, the first businesses to sign up get a head start:",
+        ],
+        bullets: [
+          "20% off website build and design: Foundation, Growth Engine, or Full Funnel. That’s $900 off Foundation, $1,500 off Growth Engine, and $2,400 off Full Funnel.",
+          "10% off everything else: the DigiSol Hub, add-ons, and the first month of any monthly retainer.",
+        ],
+        after: [
+          "Enter LAUNCH at https://wwwdigisol.com/pricing?promo=LAUNCH (that link applies it for you), pick your package, and check out securely. Prefer to talk it through first? Mention LAUNCH when you book your free consultation.",
         ],
       },
       {
@@ -147,7 +160,7 @@ export const DISPATCH_ISSUES: DispatchIssue[] = [
           "Add-ons: extra pages, city landing packs, e-commerce, custom web apps, and brand kit refreshes.",
         ],
         after: [
-          "All prices are in Canadian dollars before GST. Build your own package and check out securely at https://wwwdigisol.com/pricing, or book a free consultation and we’ll recommend the right fit.",
+          "These are regular prices; code LAUNCH takes 20% off the website packages and 10% off the rest. All prices are in Canadian dollars before GST. Build your own package and check out securely at https://wwwdigisol.com/pricing?promo=LAUNCH, or book a free consultation and we’ll recommend the right fit.",
         ],
       },
       {
@@ -158,7 +171,7 @@ export const DISPATCH_ISSUES: DispatchIssue[] = [
         bullets: [
           "Get a free website audit: drop your URL into Kaylev’s chat at https://wwwdigisol.com.",
           "Book a free consultation at https://wwwdigisol.com/#contact.",
-          "Choose your package at https://wwwdigisol.com/pricing.",
+          "Choose your package with code LAUNCH at https://wwwdigisol.com/pricing?promo=LAUNCH.",
         ],
         after: [
           "Know a business owner juggling five tools to do one job? Forward them this issue.",

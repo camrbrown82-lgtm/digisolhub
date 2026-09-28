@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
-import { getPricingItem, summarizeSelection } from "@/lib/pricing";
+import {
+  LAUNCH_PROMO,
+  getPricingItem,
+  normalizePromoCode,
+  promoDiscountCents,
+  promoPercentFor,
+  summarizeSelection,
+} from "@/lib/pricing";
 import {
   createStripeClient,
   getAlbertaGstTaxRateId,
@@ -27,7 +34,17 @@ export async function POST(request: Request) {
     company?: string;
     industry?: string;
     notes?: string;
+    promoCode?: string;
   } | null;
+
+  const rawPromo = body?.promoCode?.trim() || "";
+  const promo = normalizePromoCode(rawPromo);
+  if (rawPromo && !promo) {
+    return NextResponse.json(
+      { error: `"${rawPromo.slice(0, 40)}" isn't a valid promo code.` },
+      { status: 400 },
+    );
+  }
 
   const ids = Array.isArray(body?.itemIds)
     ? body!.itemIds.filter((id) => typeof id === "string")
@@ -40,7 +57,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { items } = summarizeSelection(unique);
+  const { items, firstMonthDiscount } = summarizeSelection(unique, promo);
   if (items.length === 0) {
     return NextResponse.json({ error: "Unknown pricing selection." }, { status: 400 });
   }
@@ -60,31 +77,54 @@ export async function POST(request: Request) {
   const stripe = createStripeClient();
   const origin = siteOrigin();
   const gstTaxRateId = await getAlbertaGstTaxRateId(stripe);
-  const line_items = items.map((item) => ({
-    quantity: 1,
-    tax_rates: [gstTaxRateId],
-    price_data: {
-      currency: "cad",
-      tax_behavior: "exclusive" as const,
-      product_data: {
-        name: item.name,
-        description: item.blurb.slice(0, 450),
-        metadata: { digisol_id: item.id },
+  const line_items = items.map((item) => {
+    const oneTimePromo = item.kind === "one_time" ? promoPercentFor(item, promo) : 0;
+    return {
+      quantity: 1,
+      tax_rates: [gstTaxRateId],
+      price_data: {
+        currency: "cad",
+        tax_behavior: "exclusive" as const,
+        product_data: {
+          name: oneTimePromo ? `${item.name} (${promo} ${oneTimePromo}% off)` : item.name,
+          description: item.blurb.slice(0, 450),
+          metadata: { digisol_id: item.id },
+        },
+        unit_amount:
+          item.kind === "one_time" ? item.amount - promoDiscountCents(item, promo) : item.amount,
+        ...(item.kind === "recurring"
+          ? { recurring: { interval: "month" as const } }
+          : {}),
       },
-      unit_amount: item.amount,
-      ...(item.kind === "recurring"
-        ? { recurring: { interval: "month" as const } }
-        : {}),
-    },
-  }));
+    };
+  });
+
+  // Checkout allows one discount per session, so retainers' first-month promo
+  // is a single-use fixed-amount coupon; one-time items are discounted above.
+  const firstMonthCoupon =
+    promo && firstMonthDiscount > 0
+      ? await stripe.coupons.create({
+          name: `${promo}: ${LAUNCH_PROMO.otherPercent}% off first month`,
+          amount_off: firstMonthDiscount,
+          currency: "cad",
+          duration: "once",
+          max_redemptions: 1,
+          redeem_by: Math.floor(Date.now() / 1000) + 2 * 24 * 60 * 60,
+          metadata: { promo_code: promo, digisol_items: unique.join(",") },
+        })
+      : null;
 
   const session = await stripe.checkout.sessions.create({
     mode: items.some((item) => item.kind === "recurring") ? "subscription" : "payment",
     line_items,
     success_url: `${origin}/pricing/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/pricing?cancelled=1`,
+    cancel_url: `${origin}/pricing?cancelled=1${promo ? `&promo=${promo}` : ""}`,
     customer_email: body?.email?.trim() || undefined,
-    allow_promotion_codes: true,
+    ...(firstMonthCoupon
+      ? { discounts: [{ coupon: firstMonthCoupon.id }] }
+      : promo
+        ? {}
+        : { allow_promotion_codes: true }),
     billing_address_collection: "required",
     phone_number_collection: { enabled: true },
     metadata: {
@@ -94,6 +134,7 @@ export async function POST(request: Request) {
       notes: (body?.notes || "").slice(0, 400),
       source: "wwwdigisol.com",
       tax: "alberta_gst_5",
+      promo_code: promo || "",
     },
     custom_text: {
       submit: {

@@ -218,25 +218,68 @@ export function formatCad(cents: number, fractionDigits = 0) {
   }).format(cents / 100);
 }
 
-export function summarizeSelection(ids: string[]) {
+export const LAUNCH_PROMO = {
+  code: "LAUNCH",
+  /** Website build + design packages. */
+  buildPercent: 20,
+  /** Hub, add-ons, and the first month of any retainer. */
+  otherPercent: 10,
+} as const;
+
+export type PromoCode = typeof LAUNCH_PROMO.code;
+
+export function normalizePromoCode(raw?: string | null): PromoCode | null {
+  return raw?.trim().toUpperCase() === LAUNCH_PROMO.code ? LAUNCH_PROMO.code : null;
+}
+
+/** Percent off for one item under a promo; retainers get it on the first month only. */
+export function promoPercentFor(item: PricingItem, promo: PromoCode | null) {
+  if (!promo) return 0;
+  return CORE_PACKAGE_IDS.includes(item.id)
+    ? LAUNCH_PROMO.buildPercent
+    : LAUNCH_PROMO.otherPercent;
+}
+
+export function promoDiscountCents(item: PricingItem, promo: PromoCode | null) {
+  return Math.round((item.amount * promoPercentFor(item, promo)) / 100);
+}
+
+export function summarizeSelection(ids: string[], promoCode?: string | null) {
+  const promo = normalizePromoCode(promoCode);
   const items = ids
     .map((id) => getPricingItem(id))
     .filter((item): item is PricingItem => Boolean(item));
-  const oneTime = items
-    .filter((item) => item.kind === "one_time")
-    .reduce((sum, item) => sum + item.amount, 0);
-  const monthly = items
-    .filter((item) => item.kind === "recurring")
-    .reduce((sum, item) => sum + item.amount, 0);
+  const oneTimeItems = items.filter((item) => item.kind === "one_time");
+  const recurringItems = items.filter((item) => item.kind === "recurring");
+  const oneTimeBase = oneTimeItems.reduce((sum, item) => sum + item.amount, 0);
+  const oneTimeDiscount = oneTimeItems.reduce(
+    (sum, item) => sum + promoDiscountCents(item, promo),
+    0,
+  );
+  const oneTime = oneTimeBase - oneTimeDiscount;
+  const monthly = recurringItems.reduce((sum, item) => sum + item.amount, 0);
+  const firstMonthDiscount = recurringItems.reduce(
+    (sum, item) => sum + promoDiscountCents(item, promo),
+    0,
+  );
+  const firstMonth = monthly - firstMonthDiscount;
   const oneTimeGst = gstCents(oneTime);
   const monthlyGst = gstCents(monthly);
+  const firstMonthGst = gstCents(firstMonth);
   return {
     items,
+    promo,
+    oneTimeBase,
+    oneTimeDiscount,
     oneTime,
     monthly,
+    firstMonthDiscount,
+    firstMonth,
     oneTimeGst,
     monthlyGst,
+    firstMonthGst,
     oneTimeTotal: oneTime + oneTimeGst,
     monthlyTotal: monthly + monthlyGst,
+    firstMonthTotal: firstMonth + firstMonthGst,
   };
 }
