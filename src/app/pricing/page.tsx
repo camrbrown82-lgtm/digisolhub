@@ -3,6 +3,7 @@ import { ContactOptions } from "@/components/ContactOptions";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { QuickQuote } from "@/components/QuickQuote";
+import { Guarantee } from "@/components/sections/Guarantee";
 import {
   LocalPriceComparison,
   PackageComparison,
@@ -58,6 +59,7 @@ export default function PricingPage({
           </>
         ) : null}
         <PricingSection view={view} promo={searchParams.promo} />
+        <Guarantee />
         {view === "default" ? <LocalPriceComparison /> : null}
         <PricingFaq />
         <section className="border-t border-white/10 px-4 py-16 sm:px-6 lg:px-8">

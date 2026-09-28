@@ -6,6 +6,7 @@ import {
   formatCad,
   getPricingItem,
 } from "@/lib/pricing";
+import { DIGISOL_GUARANTEES, GUARANTEE_FINE_PRINT } from "@/lib/guarantee";
 
 const price = (id: string) => formatCad(getPricingItem(id)?.amount ?? 0);
 const timeline = (id: string) => getPricingItem(id)?.timeline ?? "";
@@ -96,6 +97,10 @@ export const PRICING_FAQ: { q: string; a: string }[] = [
   {
     q: "How long does a website take?",
     a: `Typical launch times are ${timeline("foundation")} for Foundation, ${timeline("growth")} for Growth Engine and ${timeline("full_funnel")} for Full Funnel. The clock starts at kickoff, once we have your content, logo and logins, and your timeline is confirmed in writing before we start.`,
+  },
+  {
+    q: "Do you guarantee your work?",
+    a: `Yes, in writing. ${DIGISOL_GUARANTEES.map((g) => `${g.title}: ${g.body}`).join(" ")} ${GUARANTEE_FINE_PRINT}`,
   },
   {
     q: "How do I pay?",

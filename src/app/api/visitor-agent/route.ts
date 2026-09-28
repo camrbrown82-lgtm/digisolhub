@@ -8,6 +8,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { NextResponse } from "next/server";
 import { createVisitorAgentTools } from "@/lib/agent/visitor/tools";
 import { DIGISOL_HOUSE_NAME, DIGISOL_BRAND } from "@/lib/branding";
+import { DIGISOL_GUARANTEES, GUARANTEE_FINE_PRINT } from "@/lib/guarantee";
 import { parseAttributionFromBody } from "@/lib/meta/attribution";
 import { getOpenAIApiKey } from "@/lib/openai";
 import { clientIp, rateLimit } from "@/lib/security";
@@ -234,6 +235,10 @@ Avoid: ${DIGISOL_BRAND.dontSay}
 - YouTube: ${DIGISOL_YOUTUBE_URL} (featured video: ${DIGISOL_YOUTUBE_FEATURED_URL})
 - TikTok: @${DIGISOL_TIKTOK_HANDLE} (${DIGISOL_TIKTOK_URL})
 - Google Business Profile: ${DIGISOL_GOOGLE_LISTING_URL}
+## DigiSol guarantee (quote exactly; never promise more, such as refunds)
+${DIGISOL_GUARANTEES.map((g) => `- ${g.title}: ${g.body}`).join("\n")}
+- Fine print: ${GUARANTEE_FINE_PRINT}
+
 If a visitor asks how to reach DigiSol, share the email/phone above. DigiSol's Facebook presence is a **Page** (not a personal profile).
 
 ${marketBlock}

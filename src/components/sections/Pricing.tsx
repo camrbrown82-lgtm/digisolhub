@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { Check, Loader2, Sparkles, Tag } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
+import { GUARANTEE_SHORT } from "@/lib/guarantee";
 import {
   ALBERTA_GST_PERCENT,
   LAUNCH_PROMO,
@@ -490,6 +491,12 @@ export function PricingBuilder({
         invoice.{" "}
         <a href="#quote" className="font-medium text-indigo-300 hover:text-indigo-200">
           Request an invoice
+        </a>
+      </p>
+      <p className="mt-1.5 text-xs text-zinc-400">
+        {GUARANTEE_SHORT}{" "}
+        <a href="#guarantee" className="font-medium text-indigo-300 hover:text-indigo-200">
+          See the guarantee
         </a>
       </p>
       {error ? <p className="mt-3 text-sm text-rose-300">{error}</p> : null}
