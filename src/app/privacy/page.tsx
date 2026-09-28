@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Privacy Policy | DigiSol",
     description:
-      "DigiSol’s privacy practices for our website, chat, email, analytics, and client services.",
+      "DigiSolâ€™s privacy practices for our website, chat, email, analytics, and client services.",
     url: `${DIGISOL_SITE_URL}/privacy`,
     siteName: "DigiSol",
     locale: "en_CA",
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   },
 };
 
-const EFFECTIVE_DATE = "September 23, 2026";
+const EFFECTIVE_DATE = "September 28, 2026";
 
 const PRIVACY_EMAIL = DIGISOL_EMAIL;
 
@@ -51,7 +51,7 @@ export default function PrivacyPolicyPage() {
             Effective date: {EFFECTIVE_DATE}
           </p>
           <p className="mt-6 text-base leading-relaxed text-zinc-300">
-            DigiSol (“DigiSol,” “we,” “us,” or “our”) operates{" "}
+            DigiSol (â€œDigiSol,â€ â€œwe,â€ â€œus,â€ or â€œourâ€) operates{" "}
             <a
               href={DIGISOL_SITE_URL}
               className="text-sky-300 underline-offset-2 hover:underline"
@@ -91,30 +91,30 @@ export default function PrivacyPolicyPage() {
               <ul className="mt-3 list-disc space-y-2 pl-5 text-zinc-400">
                 <li>
                   <span className="text-zinc-200">Contact and inquiry data</span>{" "}
-                  — name, email, business name, service interest, and message
+                  â€” name, email, business name, service interest, and message
                   details you submit through our contact form, email, phone, or
                   LinkedIn.
                 </li>
                 <li>
-                  <span className="text-zinc-200">Chat data</span> — messages
+                  <span className="text-zinc-200">Chat data</span> â€” messages
                   you send to Kaylev (our on-site visitor assistant), plus
                   related context needed to answer and follow up (for example,
                   contact details you choose to share for a consultation).
                 </li>
                 <li>
                   <span className="text-zinc-200">Marketing &amp; CRM data</span>{" "}
-                  — business contact details we use for outreach that complies
-                  with Canada’s Anti-Spam Legislation (CASL), including
+                  â€” business contact details we use for outreach that complies
+                  with Canadaâ€™s Anti-Spam Legislation (CASL), including
                   unsubscribe preferences.
                 </li>
                 <li>
                   <span className="text-zinc-200">Account &amp; client data</span>{" "}
-                  — information needed to deliver contracted work and Hub access
+                  â€” information needed to deliver contracted work and Hub access
                   (for example, company details, project notes, brand assets you
                   provide, and campaign contacts you upload or authorize).
                 </li>
                 <li>
-                  <span className="text-zinc-200">Payment data</span> — billing
+                  <span className="text-zinc-200">Payment data</span> â€” billing
                   details processed by Stripe when you purchase services. We do
                   not store full payment card numbers on DigiSol servers.
                 </li>
@@ -122,12 +122,12 @@ export default function PrivacyPolicyPage() {
                   <span className="text-zinc-200">
                     Usage, device, and analytics data
                   </span>{" "}
-                  — pages viewed, approximate location derived from IP, device
+                  â€” pages viewed, approximate location derived from IP, device
                   and browser type, referral source, and interaction events used
                   to understand site performance and advertising results.
                 </li>
                 <li>
-                  <span className="text-zinc-200">Email engagement data</span> —
+                  <span className="text-zinc-200">Email engagement data</span> â€”
                   delivery, open, and click signals for emails we send (when
                   tracking is enabled), so we can improve relevance and
                   reporting.
@@ -170,7 +170,49 @@ export default function PrivacyPolicyPage() {
               </p>
             </Section>
 
-            <Section title="5. AI-assisted features">
+            <Section title="5. Advertising (Google AdSense)">
+              <p>
+                Some pages on our public website display ads served by Google
+                AdSense. Third-party vendors, including Google, use cookies to
+                serve ads based on your prior visits to this website or other
+                websites. Googleâ€™s use of advertising cookies enables it and its
+                partners to serve ads to you based on your visits to this site
+                and/or other sites on the Internet.
+              </p>
+              <p>
+                You may opt out of personalized advertising by visiting{" "}
+                <a
+                  href="https://adssettings.google.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sky-300 underline-offset-2 hover:underline"
+                >
+                  Google Ads Settings
+                </a>
+                . You can also opt out of some third-party vendorsâ€™ use of
+                cookies for personalized advertising at{" "}
+                <a
+                  href="https://www.aboutads.info/choices"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sky-300 underline-offset-2 hover:underline"
+                >
+                  aboutads.info
+                </a>
+                . To learn more, see{" "}
+                <a
+                  href="https://policies.google.com/technologies/partner-sites"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sky-300 underline-offset-2 hover:underline"
+                >
+                  how Google uses information from sites that use its services
+                </a>
+                .
+              </p>
+            </Section>
+
+            <Section title="6. AI-assisted features">
               <p>
                 Kaylev and certain Hub tools use artificial intelligence (for
                 example, OpenAI) to generate responses, drafts, summaries, or
@@ -181,7 +223,7 @@ export default function PrivacyPolicyPage() {
               </p>
             </Section>
 
-            <Section title="6. Who we share information with">
+            <Section title="7. Who we share information with">
               <p>
                 We do not sell your personal information. We share it only as
                 needed with service providers who help us operate DigiSol, under
@@ -192,7 +234,7 @@ export default function PrivacyPolicyPage() {
                 <li>Databases and authentication (for example, Supabase)</li>
                 <li>Email delivery and tracking (for example, Resend)</li>
                 <li>Payments (Stripe)</li>
-                <li>Analytics and ads measurement (Google)</li>
+                <li>Analytics, ads measurement, and advertising (Google, including AdSense)</li>
                 <li>AI processing for chat and Hub features (for example, OpenAI)</li>
               </ul>
               <p className="mt-3">
@@ -201,7 +243,7 @@ export default function PrivacyPolicyPage() {
               </p>
             </Section>
 
-            <Section title="7. Email and CASL">
+            <Section title="8. Email and CASL">
               <p>
                 Commercial emails from DigiSol include identification and an
                 unsubscribe mechanism where required under CASL. You can also
@@ -218,7 +260,7 @@ export default function PrivacyPolicyPage() {
               </p>
             </Section>
 
-            <Section title="8. Retention">
+            <Section title="9. Retention">
               <p>
                 We keep personal information only as long as needed for the
                 purposes described above, including to maintain business records,
@@ -229,7 +271,7 @@ export default function PrivacyPolicyPage() {
               </p>
             </Section>
 
-            <Section title="9. Security">
+            <Section title="10. Security">
               <p>
                 We use reasonable administrative and technical safeguards
                 appropriate to the nature of the information (including encrypted
@@ -239,10 +281,10 @@ export default function PrivacyPolicyPage() {
               </p>
             </Section>
 
-            <Section title="10. Your rights and choices">
+            <Section title="11. Your rights and choices">
               <p>
                 Depending on applicable Canadian privacy law (including PIPEDA
-                and Alberta’s PIPA where it applies), you may request access to,
+                and Albertaâ€™s PIPA where it applies), you may request access to,
                 correction of, or deletion of personal information we hold about
                 you, subject to legal exceptions. You may also withdraw consent
                 for optional processing (such as marketing email) without
@@ -261,7 +303,7 @@ export default function PrivacyPolicyPage() {
               </p>
             </Section>
 
-            <Section title="11. Children">
+            <Section title="12. Children">
               <p>
                 DigiSol services are directed to businesses and adults. We do not
                 knowingly collect personal information from children under 13. If
@@ -270,7 +312,7 @@ export default function PrivacyPolicyPage() {
               </p>
             </Section>
 
-            <Section title="12. International transfers">
+            <Section title="13. International transfers">
               <p>
                 DigiSol is based in Canada. Some service providers may process
                 data in other countries (including the United States). When that
@@ -279,7 +321,7 @@ export default function PrivacyPolicyPage() {
               </p>
             </Section>
 
-            <Section title="13. Changes to this policy">
+            <Section title="14. Changes to this policy">
               <p>
                 We may update this Privacy Policy from time to time. The
                 effective date at the top of this page will change when we do.
@@ -288,9 +330,9 @@ export default function PrivacyPolicyPage() {
               </p>
             </Section>
 
-            <Section title="14. Contact">
+            <Section title="15. Contact">
               <p>
-                Questions about this policy or DigiSol’s privacy practices:
+                Questions about this policy or DigiSolâ€™s privacy practices:
               </p>
               <ul className="mt-3 list-none space-y-1 text-zinc-400">
                 <li>
