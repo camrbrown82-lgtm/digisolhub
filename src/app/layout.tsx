@@ -48,6 +48,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  ...(process.env.NEXT_PUBLIC_META_APP_ID?.trim()
+    ? { facebook: { appId: process.env.NEXT_PUBLIC_META_APP_ID.trim() } }
+    : {}),
   icons: {
     icon: [{ url: "/logo.jpg", type: "image/jpeg" }],
     shortcut: "/logo.jpg",
