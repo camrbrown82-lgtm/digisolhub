@@ -617,6 +617,12 @@ Got a website? Share the URL and I'll run a free audit. No site yet, or curious 
     inputLabel: (name: string) => `Message ${name}`,
     placeholder: "Type or use the mic…",
     mic: "Mic",
+    micStrings: {
+      stop: "Stop",
+      unsupported: "Microphone dictation needs Chrome or Edge.",
+      blocked: "Allow the microphone, then try again.",
+      failed: "Microphone didn't start.",
+    },
     send: "Send message",
     hide: "Hide",
     hideAria: (name: string) => `Hide ${name}`,

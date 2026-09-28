@@ -189,11 +189,8 @@ function buildVisitorSystemPrompt(
 ) {
   const languageBlock = `## Language
 The visitor is on the ${siteLanguage === "fr" ? "French" : "English"} version of the site.
-- ${
-    siteLanguage === "fr"
-      ? "Reply in Canadian French (use \"vous\"). If they write to you in English, switch to English."
-      : "Reply in English. If they write to you in French, reply in Canadian French (use \"vous\")."
-  }
+- Always reply in the language of the visitor's most recent message (English or French). Only when a message is too short to tell (a URL, an email, "ok"), use ${siteLanguage === "fr" ? "French" : "English"}, the site language.
+- In French, write Canadian French: use "vous", say "courriel" (never "e-mail" or "mail"), and format prices like "4 500 $".
 - Canada is bilingual: treat French and English visitors the same. Quoted guarantee text may be translated faithfully, never embellished.
 - When you call captureVisitorLead, emailVisitorConsultationInvite or emailVisitorAuditBreakdown, set language to "fr" if you are chatting in French and "en" if in English, so the email matches. Write the requirements note in that same language.`;
 

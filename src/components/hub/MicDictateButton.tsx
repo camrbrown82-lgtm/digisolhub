@@ -41,15 +41,34 @@ export function appendDictation(current: string, chunk: string) {
   return `${current}${spacer}${next}`;
 }
 
+export type MicStrings = {
+  stop: string;
+  unsupported: string;
+  blocked: string;
+  failed: string;
+};
+
+const EN_MIC_STRINGS: MicStrings = {
+  stop: "Stop",
+  unsupported: "Microphone dictation needs Chrome or Edge.",
+  blocked: "Allow the microphone, then try again.",
+  failed: "Microphone didn't start.",
+};
+
 /** Browser speech-to-text. Appends finished phrases into the field you pass. */
 export function MicDictateButton({
   onText,
   disabled,
   label = "Mic",
+  lang = "en-CA",
+  strings = EN_MIC_STRINGS,
 }: {
   onText: (chunk: string) => void;
   disabled?: boolean;
   label?: string;
+  /** BCP 47 speech language, e.g. `fr-CA`. */
+  lang?: string;
+  strings?: MicStrings;
 }) {
   const recRef = useRef<SpeechRec | null>(null);
   const [listening, setListening] = useState(false);
@@ -69,11 +88,11 @@ export function MicDictateButton({
     }
     const Ctor = recognitionCtor();
     if (!Ctor) {
-      setHint("Microphone dictation needs Chrome or Edge.");
+      setHint(strings.unsupported);
       return;
     }
     const rec = new Ctor();
-    rec.lang = "en-CA";
+    rec.lang = lang;
     rec.continuous = true;
     rec.interimResults = false;
     rec.onresult = (event) => {
@@ -86,7 +105,7 @@ export function MicDictateButton({
     };
     rec.onerror = () => {
       setListening(false);
-      setHint("Allow the microphone, then try again.");
+      setHint(strings.blocked);
     };
     rec.onend = () => setListening(false);
     recRef.current = rec;
@@ -96,7 +115,7 @@ export function MicDictateButton({
       setListening(true);
     } catch {
       setListening(false);
-      setHint("Microphone didn't start.");
+      setHint(strings.failed);
     }
   }
 
@@ -118,7 +137,7 @@ export function MicDictateButton({
         ) : (
           <Mic className="h-3.5 w-3.5" aria-hidden="true" />
         )}
-        {listening ? "Stop" : label}
+        {listening ? strings.stop : label}
       </button>
       {hint ? <span className="text-xs text-amber-200/90">{hint}</span> : null}
     </span>

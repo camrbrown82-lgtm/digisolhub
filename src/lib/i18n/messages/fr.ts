@@ -890,6 +890,12 @@ Vous avez un site Web? Donnez-moi l’adresse et je ferai un audit gratuit. Pas 
     inputLabel: (name) => `Message à ${name}`,
     placeholder: "Écrivez ou utilisez le micro…",
     mic: "Micro",
+    micStrings: {
+      stop: "Arrêter",
+      unsupported: "La dictée vocale fonctionne avec Chrome ou Edge.",
+      blocked: "Autorisez le micro, puis réessayez.",
+      failed: "Le micro n’a pas démarré.",
+    },
     send: "Envoyer le message",
     hide: "Masquer",
     hideAria: (name) => `Masquer ${name}`,

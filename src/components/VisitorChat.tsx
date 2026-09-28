@@ -9,6 +9,7 @@ import { MicDictateButton, appendDictation } from "@/components/hub/MicDictateBu
 import { fireAdsConversion } from "@/lib/ads";
 import { trackEvent } from "@/lib/analytics";
 import { readStoredAttribution } from "@/lib/attributionClient";
+import { LOCALE_META } from "@/lib/i18n/config";
 import { useLocale, useMessages } from "@/lib/i18n/client";
 import type { Messages } from "@/lib/i18n/messages";
 import {
@@ -235,6 +236,8 @@ export function VisitorChat() {
             <MicDictateButton
               disabled={busy}
               label={t.mic}
+              lang={LOCALE_META[locale].intl}
+              strings={t.micStrings}
               onText={(chunk) => setInput((current) => appendDictation(current, chunk))}
             />
             <button
