@@ -29,10 +29,12 @@ export function Contact({
   const router = useRouter();
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+    setNotice("");
     setSending(true);
 
     const form = event.currentTarget;
@@ -60,11 +62,18 @@ export function Contact({
       });
       const result = (await response.json()) as {
         ok?: boolean;
+        spam?: boolean;
         error?: string;
         eventId?: string;
       };
       if (!response.ok) {
         throw new Error(result.error || "Could not send the request.");
+      }
+      // Flagged pitches skip /confirmation so they never count as an ad conversion.
+      if (result.spam) {
+        form.reset();
+        setNotice("Thanks, your message was received.");
+        return;
       }
       const dedupeId = result.eventId || eventId;
       try {
@@ -268,6 +277,11 @@ export function Contact({
               {error ? (
                 <p className="text-sm text-red-400" role="alert">
                   {error}
+                </p>
+              ) : null}
+              {notice ? (
+                <p className="text-sm text-zinc-300" role="status">
+                  {notice}
                 </p>
               ) : null}
               <button

@@ -27,6 +27,8 @@ export type LeadPayload = {
   metaEventId?: string | null;
   /** Public website/chat leads must stay on DigiSol house workspace. */
   pinHouseClient?: boolean;
+  /** Save the contact only: no pipeline lead and no workflows (used for form spam). */
+  quiet?: boolean;
 };
 
 function parseCompanyDomain(raw?: string | null) {
@@ -235,11 +237,11 @@ export async function upsertLead(payload: LeadPayload) {
     });
   }
 
-  if (contactId && !existing) {
+  if (contactId && !existing && !payload.quiet) {
     await emitHubEvent("hub/lead.created", { contactId });
   }
 
-  if (contactId) {
+  if (contactId && !payload.quiet) {
     try {
       const { data: existingLead } = await admin
         .from("leads")

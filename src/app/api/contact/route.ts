@@ -7,6 +7,7 @@ import { sendMetaLeadEvent } from "@/lib/meta/capi";
 import { parseAttributionFromBody } from "@/lib/meta/attribution";
 import { DIGISOL_EMAIL, DIGISOL_SITE_URL } from "@/lib/site";
 import { ensureMetaSchema } from "@/lib/ensureMetaSchema";
+import { formSpamReasons } from "@/lib/formSpam";
 import { clientIp, rateLimit } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
@@ -113,6 +114,29 @@ export async function POST(request: Request) {
       { error: "Name and a valid email are required." },
       { status: 400 },
     );
+  }
+
+  // Sales pitches are kept for review but never alert, convert, or enter nurture.
+  const spamReasons = formSpamReasons(fields);
+  if (spamReasons) {
+    if (hasAdminClient()) {
+      try {
+        await upsertLead({
+          ...normalizeLead({
+            ...body,
+            ...fields,
+            message: `[Flagged as spam: ${spamReasons.join(", ")}]\n\n${fields.message}`,
+            source: "form_spam",
+            tags: ["spam"],
+            pin_house_client: true,
+          }),
+          quiet: true,
+        });
+      } catch (error) {
+        console.error("Spam contact save failed", error);
+      }
+    }
+    return NextResponse.json({ ok: true, spam: true });
   }
 
   const deliveryErrors: string[] = [];
