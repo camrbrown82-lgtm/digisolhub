@@ -101,6 +101,134 @@ function metricInt(
   return Number(row?.metricValues?.[index]?.value ?? 0) || 0;
 }
 
+export type DemographicRow = { label: string; users: number; adsUsers: number };
+
+export type Ga4Demographics = {
+  configured: boolean;
+  error?: string;
+  age: DemographicRow[];
+  gender: DemographicRow[];
+  cities: DemographicRow[];
+  devices: DemographicRow[];
+  /** Google withholds age and gender until enough people visit. */
+  ageGenderWithheld: boolean;
+};
+
+export function emptyGa4Demographics(partial?: Partial<Ga4Demographics>): Ga4Demographics {
+  return {
+    configured: false,
+    age: [],
+    gender: [],
+    cities: [],
+    devices: [],
+    ageGenderWithheld: false,
+    ...partial,
+  };
+}
+
+/** Age and gender only combine with user-scoped fields, so they filter on first source. */
+function googleAdsFilter(scope: "session" | "firstUser") {
+  return {
+    andGroup: {
+      expressions: [
+        {
+          filter: {
+            fieldName: `${scope}Source`,
+            stringFilter: { matchType: "EXACT" as const, value: "google", caseSensitive: false },
+          },
+        },
+        {
+          filter: {
+            fieldName: `${scope}Medium`,
+            stringFilter: { matchType: "EXACT" as const, value: "cpc", caseSensitive: false },
+          },
+        },
+      ],
+    },
+  };
+}
+
+/** Who visits wwwdigisol.com: all visitors next to Google Ads visitors, by age, gender, city, device. */
+export async function fetchDigisolGa4Demographics(days = 28): Promise<Ga4Demographics> {
+  const { propertyId, clientEmail, ready } = ga4ConfigStatus();
+  if (!ready) return emptyGa4Demographics();
+  try {
+    const client = new BetaAnalyticsDataClient({
+      credentials: { client_email: clientEmail, private_key: readPrivateKey() },
+    });
+    const property = `properties/${propertyId}`;
+    const dateRanges = [{ startDate: `${days - 1}daysAgo`, endDate: "today" }];
+    const dimensions = ["userAgeBracket", "userGender", "city", "deviceCategory"];
+    const userScoped = new Set(["userAgeBracket", "userGender"]);
+
+    const reports = await Promise.allSettled(
+      dimensions.flatMap((name) =>
+        [false, true].map((adsOnly) =>
+          client.runReport({
+            property,
+            dateRanges,
+            dimensions: [{ name }],
+            metrics: [{ name: "activeUsers" }],
+            ...(adsOnly
+              ? { dimensionFilter: googleAdsFilter(userScoped.has(name) ? "firstUser" : "session") }
+              : {}),
+            orderBys: [{ metric: { metricName: "activeUsers" }, desc: true }],
+            limit: name === "city" ? 10 : 12,
+          }),
+        ),
+      ),
+    );
+    const failed = reports.find(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
+    );
+    if (failed && reports.every((result) => result.status === "rejected")) {
+      throw failed.reason;
+    }
+    const rowsOf = (index: number) => {
+      const result = reports[index];
+      return result.status === "fulfilled" ? result.value[0]?.rows ?? [] : [];
+    };
+
+    const merge = (index: number): DemographicRow[] => {
+      const rows = new Map<string, DemographicRow>();
+      for (const row of rowsOf(index * 2)) {
+        const label = row.dimensionValues?.[0]?.value || "unknown";
+        rows.set(label, { label, users: metricInt(row), adsUsers: 0 });
+      }
+      for (const row of rowsOf(index * 2 + 1)) {
+        const label = row.dimensionValues?.[0]?.value || "unknown";
+        const current = rows.get(label) ?? { label, users: 0, adsUsers: 0 };
+        current.adsUsers = metricInt(row);
+        rows.set(label, current);
+      }
+      return Array.from(rows.values()).sort((a, b) => b.users - a.users);
+    };
+
+    const withheld = (index: number) => {
+      const result = reports[index];
+      return (
+        result.status === "fulfilled" &&
+        (result.value[0]?.rows ?? []).length === 0 &&
+        Boolean(result.value[0]?.metadata?.subjectToThresholding)
+      );
+    };
+
+    return {
+      configured: true,
+      age: merge(0),
+      gender: merge(1),
+      cities: merge(2),
+      devices: merge(3),
+      ageGenderWithheld: withheld(0) || withheld(2),
+    };
+  } catch (error) {
+    return emptyGa4Demographics({
+      configured: true,
+      error: error instanceof Error ? error.message : "Could not load demographics",
+    });
+  }
+}
+
 export async function fetchDigisolGa4Summary(days = 14): Promise<Ga4Summary> {
   const { propertyId, clientEmail, ready } = ga4ConfigStatus();
   if (!ready) {

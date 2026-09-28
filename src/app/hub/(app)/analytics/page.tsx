@@ -6,7 +6,14 @@ import { MetaAdsPanel } from "@/components/hub/MetaAdsPanel";
 import { InstagramInsightsPanel } from "@/components/hub/InstagramInsightsPanel";
 import { WebsiteAuditPanel } from "@/components/hub/WebsiteAuditPanel";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
-import { fetchDigisolGa4Summary, ga4ConfigStatus, type Ga4Summary } from "@/lib/ga4";
+import { DemographicsPanel } from "@/components/hub/DemographicsPanel";
+import {
+  emptyGa4Demographics,
+  fetchDigisolGa4Demographics,
+  fetchDigisolGa4Summary,
+  ga4ConfigStatus,
+  type Ga4Summary,
+} from "@/lib/ga4";
 import {
   LEAD_STAGES,
   type LeadRecord,
@@ -122,7 +129,7 @@ export default async function AnalyticsPage() {
 
   // One reconciler for Performance + Hub cards (light sync + Resend fallback).
   // Time-box slow external calls so the page always paints first-party data.
-  const [contacts, unsubscribed, site, leadsResult, ga4, latestAudit, email, agentEvents, metaAds, instagram] =
+  const [contacts, unsubscribed, site, leadsResult, ga4, latestAudit, email, agentEvents, metaAds, instagram, demographics] =
     await Promise.all([
       contactsQuery,
       unsubQuery,
@@ -190,6 +197,16 @@ export default async function AnalyticsPage() {
       ),
       withTimeout(fetchMetaAdsSummary(14), 8000, emptyMetaAdsSummary(14)),
       withTimeout(fetchInstagramInsights(), 8000, emptyInstagramInsights()),
+      isDigisol && gaStatus.ready
+        ? withTimeout(
+            fetchDigisolGa4Demographics(28),
+            7000,
+            emptyGa4Demographics({
+              configured: true,
+              error: "Timed out loading Google data. Refresh to retry.",
+            }),
+          )
+        : Promise.resolve(emptyGa4Demographics()),
     ]);
 
   const website = summarizeSiteEvents(site.data ?? [], active?.domain);
@@ -389,6 +406,8 @@ export default async function AnalyticsPage() {
           </ul>
         </div>
       </section>
+
+      {isDigisol ? <DemographicsPanel days={28} data={demographics} /> : null}
 
       <WebsiteAuditPanel
         companyName={active?.name}
