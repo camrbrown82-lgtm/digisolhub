@@ -140,12 +140,13 @@ export function GoogleAdsPanel({
       ) : (
         <p className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm text-amber-100/90">
           {visits > 0
-            ? `${visits.toLocaleString("en-CA")} paid visit${visits === 1 ? "" : "s"} landed, and the campaign name is still blank.`
+            ? `${visits.toLocaleString("en-CA")} paid visit${visits === 1 ? "" : "s"} landed. Google Analytics hasn't attached a campaign name to them yet.`
             : "No paid visits are in this window yet."}{" "}
-          Campaign names show up after you link the Google Ads account to
-          Analytics property G-4ZBG4VPC9C: Google Analytics → Admin → Product
-          links → Google Ads links. Clicks in the Ads account stay higher than
-          this number when someone leaves before the page tag runs, or declines
+          Names need Google Ads linked to Analytics property G-4ZBG4VPC9C
+          (Google Analytics → Admin → Product links → Google Ads links) with
+          auto-tagging on. Once linked, they usually fill in 24–48 hours after
+          the first clicks. Clicks in the Ads account stay higher than this
+          number when someone leaves before the page tag runs, or declines
           cookies.
         </p>
       )}

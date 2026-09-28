@@ -49,9 +49,9 @@ export default async function CampaignsPage() {
 
   let runsQuery = supabase
     .from("workflow_runs")
-    .select("id, workflow_id, status, started_at, finished_at, log")
+    .select("id, workflow_id, status, started_at, finished_at, log, contacts(email, name, company)")
     .order("started_at", { ascending: false })
-    .limit(20);
+    .limit(30);
 
   let templatesQuery = supabase
     .from("email_templates")
@@ -396,6 +396,9 @@ export default async function CampaignsPage() {
               ) : (
                 scopedRuns.map((run) => {
                   const log = Array.isArray(run.log) ? run.log : [];
+                  const person = (Array.isArray(run.contacts) ? run.contacts[0] : run.contacts) as
+                    | { email: string | null; name: string | null; company: string | null }
+                    | null;
                   return (
                     <li
                       key={run.id}
@@ -408,11 +411,16 @@ export default async function CampaignsPage() {
                         >
                           {workflowNameById.get(run.workflow_id) || "Workflow"}
                         </Link>
-                        <span className="shrink-0 text-zinc-500">{run.status}</span>
+                        <span className="shrink-0 text-zinc-500">
+                          {run.status === "running" ? "in progress" : run.status}
+                        </span>
                       </div>
-                      <p className="mt-1 text-xs text-zinc-500">
+                      <p className="mt-1 truncate text-xs text-zinc-400">
+                        {person?.company || person?.name || person?.email || "Removed contact"}
+                      </p>
+                      <p className="mt-0.5 truncate text-xs text-zinc-500">
                         {new Date(run.started_at).toLocaleString("en-CA")}
-                        {log.length ? ` · ${log.length} log steps` : ""}
+                        {log.length ? ` · ${String(log[log.length - 1])}` : ""}
                       </p>
                     </li>
                   );
