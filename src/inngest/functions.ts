@@ -329,11 +329,27 @@ export const runSingleWorkflow = inngest.createFunction(
       .eq("id", event.data.workflowId)
       .single();
     if (!workflow) return;
+    const contactId = event.data.contactId as string;
+    // Backfills enroll existing contacts as if a trigger had fired: spacing, pipeline stops, once only.
+    const automatic = event.data.automatic === true;
+    if (automatic) {
+      const enrolled = await step.run("already-enrolled", async () => {
+        const { count } = await admin
+          .from("workflow_runs")
+          .select("id", { count: "exact", head: true })
+          .eq("workflow_id", workflow.id)
+          .eq("contact_id", contactId)
+          .in("status", ["running", "completed"]);
+        return (count ?? 0) > 0;
+      });
+      if (enrolled) return { skipped: "already_enrolled" };
+    }
     await runGraph({
       workflowId: workflow.id,
-      contactId: event.data.contactId as string,
+      contactId,
       graph: (workflow.graph ?? {}) as Graph,
       step,
+      automatic,
       templateOverrides:
         event.data.templateOverrides && typeof event.data.templateOverrides === "object"
           ? (event.data.templateOverrides as Record<string, string>)
