@@ -3,10 +3,18 @@ import type { DispatchIssue } from "@/lib/dispatch";
 
 export const DISPATCH_CARD_SIZE = { width: 1200, height: 630 };
 
-/** Newsletter preview card layout (rendered with next/og). */
-export function dispatchCardElement(issue: DispatchIssue, logo: string | null) {
+type ArticleCard = {
+  kicker: string;
+  subline: string;
+  title: string;
+  pill?: string;
+  footer: string;
+};
+
+/** DigiSol article preview card (Dispatch issues and blog guides), rendered with next/og. */
+export function articleCardElement(card: ArticleCard, logo: string | null) {
   const brand = DIGISOL_BRAND;
-  const titleSize = issue.title.length > 70 ? 54 : 64;
+  const titleSize = card.title.length > 70 ? 54 : 64;
   return (
     <div
       style={{
@@ -27,19 +35,17 @@ export function dispatchCardElement(issue: DispatchIssue, logo: string | null) {
           <img src={logo} width={84} height={84} alt="" style={{ borderRadius: 42, marginRight: 20 }} />
         ) : null}
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <span style={{ fontSize: 30, fontWeight: 700 }}>DigiSol Dispatch</span>
-          <span style={{ fontSize: 22, color: brand.highlightColor }}>
-            {`Vol. ${issue.volume} · ${issue.month} ${issue.year}`}
-          </span>
+          <span style={{ fontSize: 30, fontWeight: 700 }}>{card.kicker}</span>
+          <span style={{ fontSize: 22, color: brand.highlightColor }}>{card.subline}</span>
         </div>
       </div>
 
       <div style={{ display: "flex", fontSize: titleSize, fontWeight: 700, lineHeight: 1.1, maxWidth: 1040 }}>
-        {issue.title}
+        {card.title}
       </div>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        {issue.cta ? (
+        {card.pill ? (
           <div
             style={{
               display: "flex",
@@ -50,13 +56,27 @@ export function dispatchCardElement(issue: DispatchIssue, logo: string | null) {
               fontWeight: 700,
             }}
           >
-            {issue.cta.heading}
+            {card.pill}
           </div>
         ) : (
           <div style={{ display: "flex" }} />
         )}
-        <span style={{ fontSize: 22, color: "#a1a1aa" }}>wwwdigisol.com/dispatch</span>
+        <span style={{ fontSize: 22, color: "#a1a1aa" }}>{card.footer}</span>
       </div>
     </div>
+  );
+}
+
+/** Newsletter preview card layout (rendered with next/og). */
+export function dispatchCardElement(issue: DispatchIssue, logo: string | null) {
+  return articleCardElement(
+    {
+      kicker: "DigiSol Dispatch",
+      subline: `Vol. ${issue.volume} · ${issue.month} ${issue.year}`,
+      title: issue.title,
+      pill: issue.cta?.heading,
+      footer: "wwwdigisol.com/dispatch",
+    },
+    logo,
   );
 }

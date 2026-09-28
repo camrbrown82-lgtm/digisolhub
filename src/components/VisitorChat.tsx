@@ -4,6 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { MessageCircle, Send, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { OPEN_KAYLEV_EVENT } from "@/components/ContactOptions";
 import { MicDictateButton, appendDictation } from "@/components/hub/MicDictateButton";
 import { fireAdsConversion } from "@/lib/ads";
 import { trackEvent } from "@/lib/analytics";
@@ -79,6 +80,12 @@ export function VisitorChat() {
     return () => mq.removeEventListener("change", sync);
   }, []);
 
+  useEffect(() => {
+    const openChat = () => setOpen(true);
+    window.addEventListener(OPEN_KAYLEV_EVENT, openChat);
+    return () => window.removeEventListener(OPEN_KAYLEV_EVENT, openChat);
+  }, []);
+
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
@@ -136,7 +143,7 @@ export function VisitorChat() {
   }
 
   return (
-    <div className="pointer-events-none fixed bottom-3 right-3 z-40 flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-2 sm:bottom-4 sm:right-4">
+    <div className="pointer-events-none fixed bottom-[4.75rem] right-3 z-40 flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-2 sm:bottom-4 sm:right-4">
       {open ? (
         <section
           className="pointer-events-auto flex h-[min(17.5rem,42vh)] w-[min(17.5rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-xl border border-indigo-400/25 bg-zinc-950/95 shadow-xl shadow-indigo-950/30 backdrop-blur"

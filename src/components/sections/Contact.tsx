@@ -4,13 +4,10 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Send } from "lucide-react";
 import { BrandCard } from "@/components/BrandCard";
+import { ContactOptions } from "@/components/ContactOptions";
 import { GoogleRating } from "@/components/LocalListings";
-import { trackMetaEvent } from "@/components/MetaPixel";
 import { trackEvent } from "@/lib/analytics";
-import {
-  getAttributionForSubmit,
-  newMetaEventId,
-} from "@/lib/attributionClient";
+import { submitLead } from "@/lib/leadSubmit";
 import { DIGISOL_EMAIL, DIGISOL_PHONE } from "@/lib/site";
 
 const fieldClass =
@@ -40,59 +37,26 @@ export function Contact({
     const form = event.currentTarget;
     const data = new FormData(form);
 
+    const value = (key: string) => String(data.get(key) ?? "");
     try {
-      const eventId = newMetaEventId();
-      const attribution = getAttributionForSubmit();
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: data.get("fullName"),
-          email: data.get("email"),
-          phone: data.get("phone"),
-          company: data.get("business"),
-          service: data.get("service"),
-          message: data.get("details"),
-          website_url: data.get("website_url"),
-          event_id: eventId,
-          event_source_url:
-            typeof window !== "undefined" ? window.location.href : undefined,
-          attribution,
-        }),
-      });
-      const result = (await response.json()) as {
-        ok?: boolean;
-        spam?: boolean;
-        error?: string;
-        eventId?: string;
-      };
-      if (!response.ok) {
-        throw new Error(result.error || "Could not send the request.");
-      }
+      const outcome = await submitLead(
+        {
+          name: value("fullName"),
+          email: value("email"),
+          phone: value("phone"),
+          company: value("business"),
+          service: value("service"),
+          message: value("details"),
+          website_url: value("website_url"),
+        },
+        "contact_form",
+      );
       // Flagged pitches skip /confirmation so they never count as an ad conversion.
-      if (result.spam) {
+      if (outcome === "spam") {
         form.reset();
         setNotice("Thanks, your message was received.");
         return;
       }
-      const dedupeId = result.eventId || eventId;
-      try {
-        sessionStorage.setItem("ds_meta_lead_event_id", dedupeId);
-      } catch {
-        // ignore
-      }
-      trackEvent("generate_lead", {
-        method: "contact_form",
-        service: String(data.get("service") ?? ""),
-      });
-      trackMetaEvent(
-        "Lead",
-        {
-          content_name: "consultation_request",
-          content_category: String(data.get("service") ?? ""),
-        },
-        { eventID: dedupeId },
-      );
       router.push("/confirmation");
     } catch (err) {
       const detail = err instanceof Error ? err.message : "";
@@ -112,8 +76,8 @@ export function Contact({
       className="border-t border-white/10 px-4 py-20 sm:px-6 lg:px-8"
       aria-labelledby="contact-heading"
     >
-      <div className="mx-auto max-w-xl">
-        <div className="text-center">
+      <div className="mx-auto max-w-5xl">
+        <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-wider text-indigo-400">
             Contact
           </p>
@@ -141,11 +105,39 @@ export function Contact({
             .
           </p>
         </div>
+        <div className="mt-10 grid gap-8 lg:grid-cols-5">
+        <aside className="space-y-6 lg:col-span-2" aria-label="Other ways to reach DigiSol">
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
+              Rather talk now?
+            </h3>
+            <ContactOptions location="contact" layout="stack" className="mt-3" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
+              What happens next
+            </h3>
+            <ol className="mt-3 space-y-3 text-sm text-zinc-300">
+              {[
+                "Send the form, call, or text. You reach Cameron, the founder, not a call centre.",
+                "Free consultation to understand your goals, customers, and budget.",
+                "A clear written quote with fixed package pricing. No obligation.",
+              ].map((step, index) => (
+                <li key={step} className="flex gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500/20 text-xs font-semibold text-indigo-200">
+                    {index + 1}
+                  </span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </aside>
         <BrandCard
           as="div"
           accent="indigo"
           innerClassName="p-6 sm:p-8"
-          className="mt-8"
+          className="lg:col-span-3"
         >
           <form onSubmit={onSubmit} className="relative space-y-4">
               {/* Honeypot — leave empty. Text field (not checkbox) so FB autofill tools do not trip spam. */}
@@ -294,6 +286,7 @@ export function Contact({
               </button>
             </form>
         </BrandCard>
+        </div>
         <div className="mt-6 flex justify-center">
           <GoogleRating location="contact" />
         </div>

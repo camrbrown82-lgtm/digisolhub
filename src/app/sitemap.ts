@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { blogUrl, publishedBlogPosts } from "@/lib/blog";
 import { DISPATCH_ISSUES, dispatchUrl } from "@/lib/dispatch";
 import { LOCATION_PAGES, locationUrl } from "@/lib/locations";
 import { DIGISOL_SITE_URL } from "@/lib/site";
@@ -60,6 +61,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
       changeFrequency: "weekly" as const,
       priority: 0.85,
+    })),
+    {
+      url: `${DIGISOL_SITE_URL}/blog`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    ...publishedBlogPosts().map((post) => ({
+      url: blogUrl(post.slug),
+      lastModified: new Date(post.updatedAt ?? post.publishedAt),
+      changeFrequency: "monthly" as const,
+      priority: 0.75,
     })),
     ...DISPATCH_ISSUES.map((issue) => ({
       url: dispatchUrl(issue.slug),

@@ -1,5 +1,7 @@
 import { ArrowRight, Sparkles } from "lucide-react";
+import { ContactOptions } from "@/components/ContactOptions";
 import { GoogleRating, ListingLinks } from "@/components/LocalListings";
+import { QuickQuote } from "@/components/QuickQuote";
 import { TrackedLink } from "@/components/TrackedLink";
 import type { HomeCopy } from "@/lib/visitorRegion";
 
@@ -71,6 +73,10 @@ export function Hero({ copy }: { copy: HomeCopy }) {
           >
             Explore Services
           </TrackedLink>
+        </div>
+        <div className="mx-auto mt-10 max-w-4xl">
+          <QuickQuote location="hero" />
+          <ContactOptions location="hero" className="mt-4" />
         </div>
         <ListingLinks location="hero" />
         <div className="mt-5 flex justify-center">

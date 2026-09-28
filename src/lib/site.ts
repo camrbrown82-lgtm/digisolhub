@@ -37,6 +37,12 @@ export const DIGISOL_SAME_AS: readonly string[] = [
   DIGISOL_GOOGLE_LISTING_URL,
 ];
 export const DIGISOL_PHONE = "+1-587-577-0782";
+export const DIGISOL_PHONE_DISPLAY = "587-577-0782";
+export const DIGISOL_TEL_HREF = "tel:+15875770782";
+export const DIGISOL_SMS_HREF = "sms:+15875770782";
+/** Online booking page (Google Calendar appointment schedule, Cal.com, etc.). Empty hides "Book a call". */
+export const DIGISOL_BOOKING_URL =
+  process.env.NEXT_PUBLIC_DIGISOL_BOOKING_URL?.trim() || "";
 export const DIGISOL_REGION = "Alberta, Canada";
 export const DIGISOL_STREET_ADDRESS = "969 Channelside Rd SW";
 export const DIGISOL_CITY = "Airdrie";

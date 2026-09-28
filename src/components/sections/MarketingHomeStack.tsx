@@ -1,4 +1,5 @@
 import { Audience } from "@/components/sections/Audience";
+import { BlogHighlights } from "@/components/sections/BlogHighlights";
 import { Contact } from "@/components/sections/Contact";
 import { DispatchArchive } from "@/components/sections/DispatchArchive";
 import { DualThreat } from "@/components/sections/DualThreat";
@@ -49,6 +50,7 @@ export function MarketingHomeStack({
       <TechStackSection />
       <WebsiteAudit copy={copy} />
       <Audience copy={copy} />
+      <BlogHighlights />
       <DispatchArchive market={market} />
       <Contact title={copy.contactTitle} body={copy.contactBody} />
     </>

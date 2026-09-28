@@ -12,6 +12,7 @@ const links = [
   { href: "/#services", label: "Services" },
   { href: "/pricing", label: "Pricing" },
   { href: "/#why-us", label: "Why Us" },
+  { href: "/blog", label: "Guides" },
   { href: "/#dispatch", label: "Dispatch" },
   { href: "/media/website-audit", label: "Media" },
   { href: "/locations/airdrie", label: "Airdrie" },

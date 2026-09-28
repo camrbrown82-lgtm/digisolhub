@@ -5,6 +5,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/react";
 import { DigiSolSiteBeacon } from "@/components/DigiSolSiteBeacon";
 import { MetaPixel } from "@/components/MetaPixel";
+import { MobileContactBar } from "@/components/MobileContactBar";
 import { PublicKaylevChat } from "@/components/PublicKaylevChat";
 import { PublicSiteAnalytics } from "@/components/PublicSiteAnalytics";
 import { AttributionCaptureBoundary } from "@/components/AttributionCaptureBoundary";
@@ -201,6 +202,7 @@ export default function RootLayout({
           }}
         />
         {children}
+        <MobileContactBar />
         <PublicKaylevChat />
         <PublicSiteAnalytics>
           <DigiSolSiteBeacon />

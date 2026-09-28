@@ -11,6 +11,7 @@ const jumps = [
   { href: "/#services", label: "Services" },
   { href: "/pricing", label: "Pricing" },
   { href: "/#audience", label: "Who We Help" },
+  { href: "/blog", label: "Guides" },
   { href: "/#dispatch", label: "Dispatch" },
   { href: "/media/website-audit", label: "Media" },
   { href: "/about", label: "About" },
