@@ -90,7 +90,7 @@ export default function DispatchIssuePage({ params }: PageProps) {
       },
       sameAs: [...DIGISOL_SAME_AS],
     },
-    about: [
+    about: issue.about ?? [
       "Off-page SEO",
       "Local SEO in Alberta",
       "Airdrie web development",

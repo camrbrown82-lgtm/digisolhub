@@ -29,7 +29,7 @@ function firstName(name?: string | null) {
 }
 
 function campaignNameFor(issue: DispatchIssue) {
-  return `DigiSol Dispatch · ${issue.month} ${issue.year}`;
+  return `DigiSol Dispatch · Vol. ${issue.volume} · ${issue.month} ${issue.year}`;
 }
 
 function dispatchAccent(brand?: { primaryColor?: string; highlightColor?: string }) {
@@ -45,11 +45,11 @@ export function dispatchIssueEmailBody(
   const consult = `${DIGISOL_SITE_URL}/#contact`;
   const accent = dispatchAccent(brand);
   const who = escapeHtml(firstName(name));
-  return `<p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:${escapeHtml(accent)};">DigiSol Dispatch · ${escapeHtml(issue.month)} ${issue.year}</p>
+  return `<p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:${escapeHtml(accent)};">DigiSol Dispatch · Vol. ${issue.volume} · ${escapeHtml(issue.month)} ${issue.year}</p>
 <p style="margin:0 0 16px;font-size:22px;font-weight:700;line-height:1.3;color:#4f46e5;">${escapeHtml(issue.title)}</p>
 <p style="margin:0 0 12px;">Hey ${who},</p>
-<p style="margin:0 0 12px;">The ${escapeHtml(issue.month)} issue is live. ${escapeHtml(issue.excerpt)}</p>
-${emailCtaButton(url, "Read this month's Dispatch", accent)}
+<p style="margin:0 0 12px;">A new issue is live. ${escapeHtml(issue.excerpt)}</p>
+${emailCtaButton(url, "Read the new Dispatch", accent)}
 <p style="margin:16px 0 8px;font-size:14px;color:#52525b;">Want this applied to your Alberta company?</p>
 <p style="margin:0 0 20px;"><a href="${escapeHtml(consult)}" style="color:${escapeHtml(accent)};font-weight:600;text-decoration:none;">Book a free consultation →</a></p>
 <p style="margin:0;">Cameron<br/><span style="color:#71717a;">DigiSol · Airdrie, Alberta</span></p>`;
@@ -66,7 +66,7 @@ export function dispatchWelcomeEmailBody(
   return `<p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:${escapeHtml(accent)};">You're on the list</p>
 <p style="margin:0 0 16px;font-size:22px;font-weight:700;line-height:1.3;color:#4f46e5;">Welcome to DigiSol Dispatch</p>
 <p style="margin:0 0 12px;">Hey ${who},</p>
-<p style="margin:0 0 12px;">Each month, when a new issue goes live, we email you the link — local SEO, website design, and the engineering that makes the traffic convert. No filler.</p>
+<p style="margin:0 0 12px;">Two to four times a month, when a new issue goes live, we email you the link — local SEO, website design, and the engineering that makes the traffic convert. No filler.</p>
 ${emailCtaButton(archive, "Browse the Dispatch archive", accent)}
 <p style="margin:16px 0 8px;font-size:14px;color:#52525b;">Building or growing an Alberta company?</p>
 <p style="margin:0 0 20px;"><a href="${escapeHtml(consult)}" style="color:${escapeHtml(accent)};font-weight:600;text-decoration:none;">Book a free consultation →</a></p>
@@ -99,7 +99,9 @@ async function ensureCampaign(db: SupabaseClient, issue: DispatchIssue, clientId
   const { data: existing } = await db
     .from("campaigns")
     .select("id")
-    .eq("name", name)
+    .eq("segment->>kind", "dispatch")
+    .eq("segment->>slug", issue.slug)
+    .limit(1)
     .maybeSingle();
   if (existing?.id) return existing.id as string;
 
@@ -141,7 +143,7 @@ export async function sendDispatchIssueToContact(
       companyName: opts.companyName,
       logoSrc: opts.logoSrc,
       brand: opts.brand,
-      subject: `${issue.month} Dispatch: ${issue.title}`,
+      subject: `DigiSol Dispatch Vol. ${issue.volume}: ${issue.title}`,
       html: dispatchIssueEmailBody(issue, contact.name, opts.brand),
     });
     await db.from("dispatch_sends").update({ status: "sent" }).eq("id", claimId);

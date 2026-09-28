@@ -7,7 +7,7 @@ import {
 } from "@/components/DispatchHeadings";
 import { DispatchSubscribe } from "@/components/DispatchSubscribe";
 import { TrackedLink } from "@/components/TrackedLink";
-import { DISPATCH_ISSUES, dispatchPath } from "@/lib/dispatch";
+import { dispatchArchiveIssues, dispatchPath } from "@/lib/dispatch";
 
 type DispatchArchiveProps = {
   /** Alberta landers keep local SEO framing; everywhere else stays general. */
@@ -28,8 +28,8 @@ export function DispatchArchive({ market = "general" }: DispatchArchiveProps) {
           <DispatchEyebrow>DigiSol Dispatch</DispatchEyebrow>
           <DispatchTitle as="h2" id="dispatch-heading" className="mt-3">
             {isAlberta
-              ? "Monthly off-page SEO for Alberta companies"
-              : "Monthly SEO & growth notes for growing companies"}
+              ? "Local SEO & growth notes for Alberta companies"
+              : "SEO & growth notes for growing companies"}
           </DispatchTitle>
           <p className="mt-4 text-zinc-400">
             {isAlberta
@@ -38,7 +38,7 @@ export function DispatchArchive({ market = "general" }: DispatchArchiveProps) {
           </p>
         </div>
         <ul className="mt-12 grid gap-6 lg:grid-cols-1">
-          {DISPATCH_ISSUES.map((issue, index) => (
+          {dispatchArchiveIssues().map((issue, index) => (
             <li key={issue.slug}>
               <BrandCard accent={index % 2 === 0 ? "indigo" : "blue"}>
                 <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">

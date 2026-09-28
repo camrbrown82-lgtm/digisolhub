@@ -16,9 +16,84 @@ export type DispatchIssue = {
   readingMinutes: number;
   keywords: string[];
   sections: DispatchSection[];
+  /** Schema.org `about` topics for the article. */
+  about?: string[];
+  /** One line for LinkedIn describing what this issue covers. */
+  socialBlurb?: string;
 };
 
 export const DISPATCH_ISSUES: DispatchIssue[] = [
+  {
+    slug: "whats-new-at-digisol-september-2026",
+    volume: 2,
+    month: "September",
+    year: 2026,
+    title: "What’s New at DigiSol: Kaylev, Smarter Follow-Ups, and Cleaner Lead Data",
+    excerpt:
+      "Kaylev now answers visitors 24/7 and audits more Alberta industries, follow-ups pace themselves, spam and email scanners stay out of your lead list, and Analytics shows who is actually visiting.",
+    publishedAt: "2026-09-28",
+    readingMinutes: 5,
+    keywords: [
+      "website design Airdrie",
+      "web developer Airdrie",
+      "local SEO Airdrie",
+      "AI lead capture Alberta",
+      "small business CRM Alberta",
+      "marketing automation Calgary",
+    ],
+    about: [
+      "AI lead capture",
+      "Marketing automation for Alberta businesses",
+      "Airdrie web development",
+    ],
+    socialBlurb:
+      "This DigiSol Dispatch covers what’s new: Kaylev’s 24/7 lead capture and audits, follow-ups that pace themselves, spam-free lead lists, and visitor demographics for Alberta companies.",
+    sections: [
+      {
+        heading: "Why a “what’s new” issue",
+        body: [
+          "Most of what DigiSol ships lives behind the scenes: the website you see, plus the Hub and Kaylev working after hours. This issue is a quick tour of what changed this month, and what it means if you run a business in Airdrie, Calgary, Edmonton, or Red Deer.",
+          "Dispatch is also moving from once a month to two to four issues a month: shorter notes on local SEO, website design, and the follow-up systems that turn visits into booked work.",
+        ],
+      },
+      {
+        heading: "Kaylev answers your website around the clock",
+        body: [
+          "Kaylev is DigiSol’s AI assistant. On wwwdigisol.com it answers questions, captures the lead, and can walk a visitor through a free audit of their own site on the spot. Drop a URL in the chat and it checks speed, titles, descriptions, and the basics Google looks for.",
+          "The same assistant is part of every DigiSol build, so your site keeps catching leads at midnight instead of waiting for Monday morning.",
+        ],
+      },
+      {
+        heading: "Free audits for more Alberta industries",
+        body: [
+          "Kaylev started with trades: HVAC, plumbing, and electrical companies around Calgary and Edmonton. It now finds and audits local businesses across more sectors: roofing, landscaping, renovation, cleaning, auto repair, and then dental, legal, accounting, salons, fitness, real estate, and clinics.",
+          "Each audit scores the site and lists the fixes that matter most. Audits only go to businesses that publish a contact email on their own website, which keeps outreach within Canada’s anti-spam rules (CASL).",
+        ],
+      },
+      {
+        heading: "Follow-ups that pace themselves",
+        body: [
+          "The DigiSol Hub now runs follow-up sequences with guardrails built in. Nobody gets two automatic emails within 24 hours. Sequences stop the moment someone unsubscribes, and they step aside when you move a lead forward in the pipeline, so you are never double-messaging someone you are already talking to.",
+          "Each workflow now shows everyone in it, where they are, and what was sent last, so you can see the whole nurture at a glance.",
+        ],
+      },
+      {
+        heading: "Real people in, spam and scanners out",
+        body: [
+          "Two things quietly inflate lead lists: form spam and email security scanners. The contact form now recognises the usual pitches (review removal, pay-after-results SEO, move-to-WhatsApp offers) and files them away without alerts, ad conversions, or follow-up emails.",
+          "Many offices run scanners that open and click every link in a new email within seconds. The Hub now ignores anything under 20 seconds after delivery, waits a day to see if a real person follows up, and only then stops emailing that address. Your “engaged” list stays people, not software.",
+        ],
+      },
+      {
+        heading: "See who is visiting, and brand it your way",
+        body: [
+          "Analytics has a new Demographics section: cities, devices, and (once traffic is large enough) age and gender, with your Google Ads visitors shown next to everyone else. It also flags data-center towns, so bot traffic does not steer your targeting.",
+          "Every company in the Hub keeps its own brand kit: colours, logo, and voice for posters, emails, and exports. Nothing from DigiSol’s brand bleeds into yours.",
+          "Want any of this set up for your company? Book a free consultation at https://wwwdigisol.com/#contact, or ask Kaylev for a free audit on the homepage.",
+        ],
+      },
+    ],
+  },
   {
     slug: "september-2026",
     volume: 1,
@@ -95,6 +170,11 @@ export function latestDispatchIssue() {
   )[0];
 }
 
+/** Published issues, newest first, for the archive. */
+export function dispatchArchiveIssues(asOf = new Date()) {
+  return publishedDispatchIssues(asOf).reverse();
+}
+
 export function publishedDispatchIssues(asOf = new Date()) {
   const today = asOf.toISOString().slice(0, 10);
   return DISPATCH_ISSUES.filter((issue) => issue.publishedAt <= today).sort(
@@ -131,7 +211,8 @@ export function dispatchSocialPack(issue: DispatchIssue) {
     "",
     issue.excerpt,
     "",
-    "This month’s DigiSol Dispatch covers off-page SEO for Alberta companies: citations, Google Business, reviews, and a site that can convert the traffic.",
+    issue.socialBlurb ||
+      "This DigiSol Dispatch covers off-page SEO for Alberta companies: citations, Google Business, reviews, and a site that can convert the traffic.",
     "",
     `Full issue: ${url}`,
     `Work with DigiSol: ${DIGISOL_SITE_URL}/#contact`,

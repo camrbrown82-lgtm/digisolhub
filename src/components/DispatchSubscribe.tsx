@@ -60,7 +60,7 @@ export function DispatchSubscribe({
             Get the next Dispatch by email
           </h2>
           <p className="mt-1 text-sm text-zinc-400">
-            Monthly, when a new issue goes live. Unsubscribe any time. We
+            Two to four issues a month, emailed when each goes live. Unsubscribe any time. We
             won&apos;t send the issue you just read.
           </p>
         </div>
