@@ -149,8 +149,8 @@ const organizationJsonLd = {
     "@type": "Person",
     name: "Cameron Brown",
     jobTitle: "Founder & CEO",
-    url: DIGISOL_LINKEDIN_URL,
-    sameAs: [DIGISOL_LINKEDIN_URL],
+    url: DIGISOL_LINKEDIN_URL || DIGISOL_SITE_URL,
+    ...(DIGISOL_LINKEDIN_URL ? { sameAs: [DIGISOL_LINKEDIN_URL] } : {}),
     description:
       "Certified Full Stack Developer and Digital Marketing and Social Media Specialist",
   },

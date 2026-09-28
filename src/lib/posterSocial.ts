@@ -1,4 +1,9 @@
-import { DIGISOL_INSTAGRAM_HANDLE, DIGISOL_INSTAGRAM_URL, DIGISOL_SITE_URL } from "@/lib/site";
+import {
+  DIGISOL_INSTAGRAM_HANDLE,
+  DIGISOL_INSTAGRAM_URL,
+  DIGISOL_SITE_URL,
+  LINKEDIN_ENABLED,
+} from "@/lib/site";
 import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
 import { type PosterSlide, shortPosterCaption } from "@/lib/posterBrief";
 
@@ -92,9 +97,7 @@ export function posterSocialPack(input: {
     "FACEBOOK",
     facebook,
     "",
-    "LINKEDIN",
-    linkedin,
-    "",
+    ...(LINKEDIN_ENABLED ? ["LINKEDIN", linkedin, ""] : []),
     "INSTAGRAM CAROUSEL",
     instagram,
     "",

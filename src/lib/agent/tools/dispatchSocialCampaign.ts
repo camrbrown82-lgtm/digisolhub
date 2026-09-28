@@ -1,5 +1,5 @@
 import { brandKitPrompt } from "@/lib/branding";
-import { isSocialCampaignChannel } from "@/lib/campaignChannels";
+import { ACTIVE_SOCIAL_CHANNELS, isSocialCampaignChannel } from "@/lib/campaignChannels";
 import { ensureAnalyticsSocialSchema } from "@/lib/ensureAnalyticsSocialSchema";
 import { dispatchSocialCampaign } from "@/lib/social/dispatchSocialCampaign";
 import type { AgentToolDefinition } from "@/lib/agent/types";
@@ -7,14 +7,14 @@ import type { AgentToolDefinition } from "@/lib/agent/types";
 export const dispatchSocialCampaignTool: AgentToolDefinition = {
   name: "dispatchSocialCampaign",
   description:
-    "Create Variant A/B social copy for Facebook, Instagram, or LinkedIn, attach an optional poster/media URL from Supabase Storage, and queue (or publish) via Meta Graph / LinkedIn. Dry-run publish unless confirmPost=true.",
+    `Create Variant A/B social copy for ${ACTIVE_SOCIAL_CHANNELS.join(", ")}, attach an optional poster/media URL from Supabase Storage, and queue (or publish) via the connected account. Dry-run publish unless confirmPost=true.`,
   tasks: ["campaign_strategy", "site_workflow", "general"],
   parameters: {
     type: "object",
     properties: {
       channel: {
         type: "string",
-        enum: ["facebook", "instagram", "linkedin"],
+        enum: [...ACTIVE_SOCIAL_CHANNELS],
         description: "Social network to post on.",
       },
       goal: {
@@ -51,7 +51,7 @@ export const dispatchSocialCampaignTool: AgentToolDefinition = {
       confirmPost: {
         type: "boolean",
         description:
-          "Required true with mode=publish to call Meta/LinkedIn. Default false.",
+          "Required true with mode=publish to post on the connected account. Default false.",
       },
     },
     required: ["channel", "goal"],
@@ -60,8 +60,11 @@ export const dispatchSocialCampaignTool: AgentToolDefinition = {
   execute: async (args, ctx) => {
     const channelRaw =
       typeof args.channel === "string" ? args.channel.trim().toLowerCase() : "";
-    if (!isSocialCampaignChannel(channelRaw)) {
-      throw new Error("channel must be facebook, instagram, or linkedin");
+    if (
+      !isSocialCampaignChannel(channelRaw) ||
+      !ACTIVE_SOCIAL_CHANNELS.includes(channelRaw)
+    ) {
+      throw new Error(`channel must be ${ACTIVE_SOCIAL_CHANNELS.join(" or ")}`);
     }
     const goal = typeof args.goal === "string" ? args.goal.trim() : "";
     if (!goal) throw new Error("goal is required");

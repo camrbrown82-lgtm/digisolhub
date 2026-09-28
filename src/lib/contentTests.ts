@@ -1,6 +1,7 @@
 import type { SocialCampaignChannel } from "@/lib/campaignChannels";
+import { LINKEDIN_ENABLED } from "@/lib/site";
 
-export const CONTENT_TEST_CHANNELS = [
+const ALL_CONTENT_TEST_CHANNELS = [
   { id: "facebook", label: "Facebook post", source: "facebook", medium: "social", publish: "facebook" },
   { id: "instagram", label: "Instagram post", source: "instagram", medium: "social", publish: "instagram" },
   { id: "linkedin", label: "LinkedIn post", source: "linkedin", medium: "social", publish: "linkedin" },
@@ -17,7 +18,11 @@ export const CONTENT_TEST_CHANNELS = [
   publish: SocialCampaignChannel | null;
 }>;
 
-export type ContentTestChannel = (typeof CONTENT_TEST_CHANNELS)[number]["id"];
+export type ContentTestChannel = (typeof ALL_CONTENT_TEST_CHANNELS)[number]["id"];
+
+export const CONTENT_TEST_CHANNELS = ALL_CONTENT_TEST_CHANNELS.filter(
+  (channel) => channel.id !== "linkedin" || LINKEDIN_ENABLED,
+);
 export type TestVariant = "A" | "B";
 export const TEST_VARIANTS: TestVariant[] = ["A", "B"];
 

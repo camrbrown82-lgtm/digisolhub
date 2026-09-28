@@ -5,7 +5,7 @@ import { MetaLeadConversion } from "@/components/MetaLeadConversion";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { TrackedLink } from "@/components/TrackedLink";
-import { DIGISOL_EMAIL, DIGISOL_LINKEDIN_URL } from "@/lib/site";
+import { DIGISOL_EMAIL, DIGISOL_LINKEDIN_URL, LINKEDIN_ENABLED } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Confirmation | DigiSol",
@@ -61,17 +61,19 @@ export default function ConfirmationPage() {
               <Mail className="h-4 w-4 text-indigo-400" aria-hidden="true" />
               {DIGISOL_EMAIL}
             </TrackedLink>
-            <TrackedLink
-              href={DIGISOL_LINKEDIN_URL}
-              eventName="contact_click"
-              eventParams={{ method: "linkedin", location: "confirmation" }}
-              target="_blank"
-              rel="noopener noreferrer me"
-              className="inline-flex items-center gap-2 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
-            >
-              <Linkedin className="h-4 w-4 text-indigo-400" aria-hidden="true" />
-              LinkedIn
-            </TrackedLink>
+            {LINKEDIN_ENABLED ? (
+              <TrackedLink
+                href={DIGISOL_LINKEDIN_URL}
+                eventName="contact_click"
+                eventParams={{ method: "linkedin", location: "confirmation" }}
+                target="_blank"
+                rel="noopener noreferrer me"
+                className="inline-flex items-center gap-2 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+              >
+                <Linkedin className="h-4 w-4 text-indigo-400" aria-hidden="true" />
+                LinkedIn
+              </TrackedLink>
+            ) : null}
           </div>
           <TrackedLink
             href="/"

@@ -1,8 +1,8 @@
 import { Linkedin, Mail, Phone } from "lucide-react";
 import { TrackedLink } from "@/components/TrackedLink";
-import { DIGISOL_EMAIL, DIGISOL_LINKEDIN_URL } from "@/lib/site";
+import { DIGISOL_EMAIL, DIGISOL_LINKEDIN_URL, LINKEDIN_ENABLED } from "@/lib/site";
 
-const contacts = [
+const allContacts = [
   {
     href: "tel:+15875770782",
     method: "phone",
@@ -22,6 +22,8 @@ const contacts = [
     icon: Linkedin,
   },
 ] as const;
+
+const contacts = allContacts.filter((contact) => contact.method !== "linkedin" || LINKEDIN_ENABLED);
 
 const linkClass = {
   hero: "inline-flex items-center gap-1.5 text-xs text-indigo-200 transition hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400",

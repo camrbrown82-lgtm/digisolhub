@@ -1,4 +1,4 @@
-import { DIGISOL_SITE_URL } from "@/lib/site";
+import { DIGISOL_SITE_URL, SOCIAL_NETWORKS_LABEL } from "@/lib/site";
 import { homeCopyAlberta, type HomeCopy } from "@/lib/visitorRegion";
 
 export type LocationPage = {
@@ -34,7 +34,7 @@ export function homeCopyForLocation(page: LocationPage): HomeCopy {
     mktSeo: `Local SEO that wins the ${page.name} map pack and nearby searches`,
     servicesPaid: `Google Ads, Meta Ads, and local SEO for ${page.name} and nearby markets — so local searches turn into customers.`,
     servicesCommerce: `Online stores and custom auction/web platforms for ${page.name} retailers and service businesses that need to sell, list, and grow.`,
-    auditBody: `A short presentation on what ${page.name} businesses should fix first — design, speed, local SEO, and the path from visit to booked work. Export ready captions for Facebook, LinkedIn, and Instagram below.`,
+    auditBody: `A short presentation on what ${page.name} businesses should fix first — design, speed, local SEO, and the path from visit to booked work. Export ready captions for ${SOCIAL_NETWORKS_LABEL} below.`,
     contactTitle: `Ready to Grow Your ${page.name} Business?`,
     contactBody: `Get a project quote or free strategy consult for website design, custom development, local SEO, and campaigns in ${page.name} and nearby — Alberta-rooted, open to companies wherever you sell.`,
     chatGreetingAudience: `${page.name} businesses`,

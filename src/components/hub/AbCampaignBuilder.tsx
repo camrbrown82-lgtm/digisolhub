@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { FlaskConical, Loader2 } from "lucide-react";
 import { MicDictateButton, appendDictation } from "@/components/hub/MicDictateButton";
 import {
-  CAMPAIGN_CHANNELS,
+  PICKABLE_CAMPAIGN_CHANNELS,
   CAMPAIGN_CHANNEL_LABELS,
   type CampaignChannel,
 } from "@/lib/campaignChannels";
@@ -212,7 +212,7 @@ export function AbCampaignBuilder({
             disabled={Boolean(to.trim())}
           >
             <option value="">Any channel</option>
-            {CAMPAIGN_CHANNELS.map((channel) => (
+            {PICKABLE_CAMPAIGN_CHANNELS.map((channel) => (
               <option key={channel} value={channel}>
                 {CAMPAIGN_CHANNEL_LABELS[channel as CampaignChannel]}
               </option>

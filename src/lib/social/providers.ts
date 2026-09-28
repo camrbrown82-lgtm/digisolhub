@@ -1,4 +1,5 @@
 import type { SocialCampaignChannel } from "@/lib/campaignChannels";
+import { LINKEDIN_ENABLED } from "@/lib/site";
 
 export type SocialPublishResult = {
   ok: boolean;
@@ -35,7 +36,7 @@ function linkedInAuthorUrn() {
 
 export function socialProviderConfigured(channel: SocialCampaignChannel) {
   if (channel === "linkedin") {
-    return Boolean(linkedInToken() && linkedInAuthorUrn());
+    return Boolean(LINKEDIN_ENABLED && linkedInToken() && linkedInAuthorUrn());
   }
   // Facebook + Instagram (Business) both post via Meta Graph page token
   return Boolean(metaPageId() && metaPageToken());
@@ -60,6 +61,14 @@ export async function publishSocialPost(input: {
   }
 
   if (input.channel === "linkedin") {
+    if (!LINKEDIN_ENABLED) {
+      return {
+        ok: false,
+        skipped: true,
+        provider: "linkedin",
+        error: "LinkedIn is paused until the DigiSol business page is set up.",
+      };
+    }
     return publishLinkedIn({ body, mediaUrl: input.mediaUrl });
   }
   if (input.channel === "instagram") {

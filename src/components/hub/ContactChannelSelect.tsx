@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  CAMPAIGN_CHANNELS,
+  PICKABLE_CAMPAIGN_CHANNELS,
   CAMPAIGN_CHANNEL_LABELS,
   type CampaignChannel,
   campaignChannelLabel,
@@ -70,7 +70,7 @@ export function ContactChannelSelect({
         title="Marketing campaign type"
       >
         <option value="">Unset</option>
-        {CAMPAIGN_CHANNELS.map((item) => (
+        {PICKABLE_CAMPAIGN_CHANNELS.map((item) => (
           <option key={item} value={item}>
             {CAMPAIGN_CHANNEL_LABELS[item as CampaignChannel]}
           </option>

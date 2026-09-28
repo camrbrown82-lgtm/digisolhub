@@ -8,6 +8,7 @@ import {
   DIGISOL_GOOGLE_REVIEW_URL,
   DIGISOL_INSTAGRAM_URL,
   DIGISOL_LINKEDIN_URL,
+  LINKEDIN_ENABLED,
 } from "@/lib/site";
 
 type ListingLocation = "hero" | "footer" | "contact";
@@ -63,17 +64,19 @@ export function ListingLinks({ location }: { location: ListingLocation }) {
         <Facebook className="h-4 w-4 shrink-0 text-sky-400" aria-hidden="true" />
         Facebook
       </TrackedLink>
-      <TrackedLink
-        href={DIGISOL_LINKEDIN_URL}
-        eventName="social_click"
-        eventParams={{ network: "linkedin", location }}
-        target="_blank"
-        rel="noopener noreferrer me"
-        className={className}
-      >
-        <Linkedin className="h-4 w-4 shrink-0 text-sky-400" aria-hidden="true" />
-        LinkedIn
-      </TrackedLink>
+      {LINKEDIN_ENABLED ? (
+        <TrackedLink
+          href={DIGISOL_LINKEDIN_URL}
+          eventName="social_click"
+          eventParams={{ network: "linkedin", location }}
+          target="_blank"
+          rel="noopener noreferrer me"
+          className={className}
+        >
+          <Linkedin className="h-4 w-4 shrink-0 text-sky-400" aria-hidden="true" />
+          LinkedIn
+        </TrackedLink>
+      ) : null}
       <TrackedLink
         href={DIGISOL_INSTAGRAM_URL}
         eventName="social_click"

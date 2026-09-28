@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  CAMPAIGN_CHANNELS,
+  PICKABLE_CAMPAIGN_CHANNELS,
   CAMPAIGN_CHANNEL_LABELS,
   type CampaignChannel,
 } from "@/lib/campaignChannels";
@@ -170,7 +170,7 @@ export function ContactForm({
           className={field}
         >
           <option value="">Unset</option>
-          {CAMPAIGN_CHANNELS.map((channel) => (
+          {PICKABLE_CAMPAIGN_CHANNELS.map((channel) => (
             <option key={channel} value={channel}>
               {CAMPAIGN_CHANNEL_LABELS[channel as CampaignChannel]}
             </option>

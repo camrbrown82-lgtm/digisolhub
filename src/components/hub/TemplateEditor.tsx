@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { type CompanyBrand } from "@/lib/branding";
 import { MergeFieldBar } from "@/components/hub/MergeFieldBar";
 import {
-  CAMPAIGN_CHANNELS,
+  PICKABLE_CAMPAIGN_CHANNELS,
   CAMPAIGN_CHANNEL_LABELS,
   type CampaignChannel,
 } from "@/lib/campaignChannels";
@@ -206,7 +206,7 @@ export function TemplateEditor({
               className="hub-field"
             >
               <option value="">Any channel</option>
-              {CAMPAIGN_CHANNELS.map((channel) => (
+              {PICKABLE_CAMPAIGN_CHANNELS.map((channel) => (
                 <option key={channel} value={channel}>
                   {CAMPAIGN_CHANNEL_LABELS[channel as CampaignChannel]}
                 </option>

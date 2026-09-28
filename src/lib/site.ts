@@ -10,8 +10,16 @@ export const DIGISOL_EMAIL = "digisol2026@yahoo.com";
 export const DIGISOL_FACEBOOK_URL =
   process.env.NEXT_PUBLIC_DIGISOL_FACEBOOK_URL?.trim() ||
   "https://www.facebook.com/profile.php?id=61594718912547";
+/**
+ * LinkedIn company page. Empty hides LinkedIn everywhere (site links, share
+ * buttons, Campaigns channels, Hub publishing) until the business page is live.
+ */
 export const DIGISOL_LINKEDIN_URL =
-  "https://www.linkedin.com/in/cameron-brown-digisol";
+  process.env.NEXT_PUBLIC_DIGISOL_LINKEDIN_URL?.trim() || "";
+export const LINKEDIN_ENABLED = Boolean(DIGISOL_LINKEDIN_URL);
+export const SOCIAL_NETWORKS_LABEL = LINKEDIN_ENABLED
+  ? "Facebook, LinkedIn, and Instagram"
+  : "Facebook and Instagram";
 export const DIGISOL_INSTAGRAM_HANDLE =
   process.env.NEXT_PUBLIC_DIGISOL_INSTAGRAM_HANDLE?.trim() || "digi.sol20269";
 export const DIGISOL_INSTAGRAM_URL =
@@ -22,12 +30,12 @@ export const DIGISOL_GOOGLE_LISTING_URL =
 export const DIGISOL_GOOGLE_REVIEW_URL =
   "https://g.page/r/CcL2FJtD6brkECE/review";
 /** Profiles Google / schema can associate with DigiSol (NAP + sameAs). */
-export const DIGISOL_SAME_AS = [
+export const DIGISOL_SAME_AS: readonly string[] = [
   DIGISOL_FACEBOOK_URL,
-  DIGISOL_LINKEDIN_URL,
+  ...(LINKEDIN_ENABLED ? [DIGISOL_LINKEDIN_URL] : []),
   DIGISOL_INSTAGRAM_URL,
   DIGISOL_GOOGLE_LISTING_URL,
-] as const;
+];
 export const DIGISOL_PHONE = "+1-587-577-0782";
 export const DIGISOL_REGION = "Alberta, Canada";
 export const DIGISOL_STREET_ADDRESS = "969 Channelside Rd SW";

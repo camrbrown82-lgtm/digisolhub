@@ -9,6 +9,7 @@ import { ContentTestCard } from "@/components/hub/ContentTestCard";
 import { NewWorkflowButton } from "@/components/hub/NewWorkflowButton";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
+import { ACTIVE_SOCIAL_CHANNELS } from "@/lib/campaignChannels";
 import { loadContentTests } from "@/lib/contentTestData";
 import { DISPATCH_ISSUES, dispatchCardUrl, dispatchUrl } from "@/lib/dispatch";
 import { ensureContentTestSchema } from "@/lib/ensureContentTestSchema";
@@ -123,7 +124,7 @@ export default async function CampaignsPage() {
       : `https://${workspaceDomain}`
     : "";
   const connectedSocial = isDigisol
-    ? (["facebook", "instagram", "linkedin"] as const).filter((channel) => socialProviderConfigured(channel))
+    ? ACTIVE_SOCIAL_CHANNELS.filter((channel) => socialProviderConfigured(channel))
     : [];
 
   let campaigns =

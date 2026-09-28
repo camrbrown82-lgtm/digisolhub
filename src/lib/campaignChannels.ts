@@ -1,3 +1,5 @@
+import { LINKEDIN_ENABLED } from "@/lib/site";
+
 export const CAMPAIGN_CHANNELS = [
   "email",
   "cold_call",
@@ -9,6 +11,11 @@ export const CAMPAIGN_CHANNELS = [
 
 export type CampaignChannel = (typeof CAMPAIGN_CHANNELS)[number];
 
+/** Channels offered in pickers. LinkedIn stays valid for old records but is hidden while paused. */
+export const PICKABLE_CAMPAIGN_CHANNELS: readonly CampaignChannel[] = CAMPAIGN_CHANNELS.filter(
+  (channel) => channel !== "linkedin" || LINKEDIN_ENABLED,
+);
+
 export const SOCIAL_CAMPAIGN_CHANNELS = [
   "facebook",
   "instagram",
@@ -16,6 +23,10 @@ export const SOCIAL_CAMPAIGN_CHANNELS = [
 ] as const;
 
 export type SocialCampaignChannel = (typeof SOCIAL_CAMPAIGN_CHANNELS)[number];
+
+export const ACTIVE_SOCIAL_CHANNELS: readonly SocialCampaignChannel[] = SOCIAL_CAMPAIGN_CHANNELS.filter(
+  (channel) => channel !== "linkedin" || LINKEDIN_ENABLED,
+);
 
 export const CAMPAIGN_CHANNEL_LABELS: Record<CampaignChannel, string> = {
   email: "Email marketing",

@@ -60,7 +60,7 @@ export function ContentTestBuilder({
   const [sourceKind, setSourceKind] = useState<"dispatch" | "url">(issues.length ? "dispatch" : "url");
   const [dispatchSlug, setDispatchSlug] = useState(issues[0]?.slug ?? "");
   const [landingUrl, setLandingUrl] = useState(defaultLandingUrl);
-  const [channels, setChannels] = useState<string[]>(["facebook", "instagram", "linkedin"]);
+  const [channels, setChannels] = useState<string[]>(["facebook", "instagram"]);
   const [variants, setVariants] = useState<Record<TestVariant, VariantDraft>>({
     A: emptyVariant("A"),
     B: emptyVariant("B"),

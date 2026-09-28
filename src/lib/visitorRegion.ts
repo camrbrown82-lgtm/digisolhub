@@ -1,3 +1,5 @@
+import { SOCIAL_NETWORKS_LABEL } from "@/lib/site";
+
 /**
  * Visitor geo → marketing audience.
  * Alberta / Canada keep the local primary layout.
@@ -152,7 +154,7 @@ export function homeCopyGeneral(): HomeCopy {
     servicesCommerce:
       "Online stores and custom auction/web platforms for retailers and service businesses that need to sell, list, and grow.",
     auditBody:
-      "A short presentation on what businesses should fix first — design, speed, SEO, and the path from visit to booked work. Export ready captions for Facebook, LinkedIn, and Instagram below.",
+      `A short presentation on what businesses should fix first — design, speed, SEO, and the path from visit to booked work. Export ready captions for ${SOCIAL_NETWORKS_LABEL} below.`,
     contactTitle: "Ready to Grow Your Business Online?",
     contactBody:
       "Get a project quote or free strategy consult for website design, custom development, SEO, and campaigns — built for companies that sell locally or across borders.",
@@ -194,7 +196,7 @@ export function homeCopyAlberta(): HomeCopy {
     servicesCommerce:
       "Online stores and custom auction/web platforms for retailers and service businesses that need to sell, list, and grow.",
     auditBody:
-      "A short presentation on what businesses should fix first — design, speed, SEO, and the path from visit to booked work. Export ready captions for Facebook, LinkedIn, and Instagram below.",
+      `A short presentation on what businesses should fix first — design, speed, SEO, and the path from visit to booked work. Export ready captions for ${SOCIAL_NETWORKS_LABEL} below.`,
     contactTitle: "Ready to Grow Your Business Online?",
     contactBody:
       "Get a project quote or free strategy consult for website design, custom development, SEO, and campaigns. Alberta-rooted, happy to work with companies wherever you sell.",

@@ -5,7 +5,7 @@ import { ContactDeleteButton } from "@/components/hub/ContactDeleteButton";
 import { ContactImportExport } from "@/components/hub/ContactImportExport";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import {
-  CAMPAIGN_CHANNELS,
+  PICKABLE_CAMPAIGN_CHANNELS,
   CAMPAIGN_CHANNEL_LABELS,
   type CampaignChannel,
   normalizeCampaignChannel,
@@ -266,7 +266,7 @@ export default async function ContactsPage({
         >
           All
         </Link>
-        {CAMPAIGN_CHANNELS.map((channel) => (
+        {PICKABLE_CAMPAIGN_CHANNELS.map((channel) => (
           <Link
             key={channel}
             href={hrefFor({ channel })}

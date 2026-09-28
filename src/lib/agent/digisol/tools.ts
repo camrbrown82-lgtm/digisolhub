@@ -1,6 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { assignAbVariants } from "@/lib/campaignAb";
+import { PICKABLE_CAMPAIGN_CHANNELS, type CampaignChannel } from "@/lib/campaignChannels";
 import {
   findOrCreateContactForSend,
   getResendFrom,
@@ -326,7 +327,7 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
 
     generateCampaignWorkflow: tool({
       description:
-        "Read DigiSol brand rules and DigiSol contact segments, then build an A/B campaign structure (Variant A/B), channel config (email / cold_call / door_to_door / facebook / instagram / linkedin), and audience percentages. DigiSol CRM only.",
+        `Read DigiSol brand rules and DigiSol contact segments, then build an A/B campaign structure (Variant A/B), channel config (${PICKABLE_CAMPAIGN_CHANNELS.join(" / ")}), and audience percentages. DigiSol CRM only.`,
       inputSchema: z.object({
         campaignGoal: z
           .string()
@@ -342,14 +343,9 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
           .describe("Optional DigiSol CRM tag to sample contacts from."),
         channels: z
           .array(
-            z.enum([
-              "email",
-              "cold_call",
-              "door_to_door",
-              "facebook",
-              "instagram",
-              "linkedin",
-            ]),
+            z.enum(
+              PICKABLE_CAMPAIGN_CHANNELS as unknown as [CampaignChannel, ...CampaignChannel[]],
+            ),
           )
           .optional()
           .describe(

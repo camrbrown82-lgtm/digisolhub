@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Check, Copy, Download, Facebook, Instagram, Linkedin, Share2 } from "lucide-react";
 import { shareToInstagram } from "@/lib/instagramShare";
 import { type PosterSocialPack } from "@/lib/posterSocial";
-import { DIGISOL_INSTAGRAM_HANDLE } from "@/lib/site";
+import { DIGISOL_INSTAGRAM_HANDLE, LINKEDIN_ENABLED } from "@/lib/site";
 
 export function PosterExport({
   pack,
@@ -66,7 +66,7 @@ export function PosterExport({
         Export to socials
       </p>
       <p className="mt-1 text-xs text-zinc-400">
-        LinkedIn, X, Facebook, and Instagram for @{instagramHandle}. On phone,
+        {LINKEDIN_ENABLED ? "LinkedIn, " : ""}X, Facebook, and Instagram for @{instagramHandle}. On phone,
         Share to Instagram opens the system share sheet with your caption and
         slides.
       </p>
@@ -79,14 +79,16 @@ export function PosterExport({
           {copied === "facebook" ? <Check className="h-3.5 w-3.5" /> : <Facebook className="h-3.5 w-3.5" />}
           Copy Facebook post
         </button>
-        <button
-          type="button"
-          onClick={() => void copy("linkedin", pack.linkedin)}
-          className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs font-medium text-zinc-100 hover:bg-white/10"
-        >
-          {copied === "linkedin" ? <Check className="h-3.5 w-3.5" /> : <Linkedin className="h-3.5 w-3.5" />}
-          Copy LinkedIn post
-        </button>
+        {LINKEDIN_ENABLED ? (
+          <button
+            type="button"
+            onClick={() => void copy("linkedin", pack.linkedin)}
+            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs font-medium text-zinc-100 hover:bg-white/10"
+          >
+            {copied === "linkedin" ? <Check className="h-3.5 w-3.5" /> : <Linkedin className="h-3.5 w-3.5" />}
+            Copy LinkedIn post
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={() => void copy("instagram", pack.instagram)}
@@ -114,15 +116,17 @@ export function PosterExport({
           <Facebook className="h-3.5 w-3.5" aria-hidden="true" />
           Share on Facebook
         </a>
-        <a
-          href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(pack.url)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 rounded-full border border-indigo-400/40 px-3 py-2 text-xs font-semibold text-indigo-200 hover:bg-indigo-500/15"
-        >
-          <Linkedin className="h-3.5 w-3.5" aria-hidden="true" />
-          Share on LinkedIn
-        </a>
+        {LINKEDIN_ENABLED ? (
+          <a
+            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(pack.url)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-full border border-indigo-400/40 px-3 py-2 text-xs font-semibold text-indigo-200 hover:bg-indigo-500/15"
+          >
+            <Linkedin className="h-3.5 w-3.5" aria-hidden="true" />
+            Share on LinkedIn
+          </a>
+        ) : null}
         <button
           type="button"
           onClick={() => void shareInstagram()}

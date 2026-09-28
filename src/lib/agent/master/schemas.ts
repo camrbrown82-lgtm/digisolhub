@@ -1,4 +1,5 @@
 import type { ChatCompletionTool } from "openai/resources/chat/completions";
+import { PICKABLE_CAMPAIGN_CHANNELS } from "@/lib/campaignChannels";
 
 /**
  * OpenAI function-calling schemas for the Master Agent.
@@ -87,15 +88,7 @@ export const MASTER_TOOL_SCHEMAS: ChatCompletionTool[] = [
           },
           channel: {
             type: "string",
-            enum: [
-              "email",
-              "cold_call",
-              "door_to_door",
-              "facebook",
-              "instagram",
-              "linkedin",
-              "mixed",
-            ],
+            enum: [...PICKABLE_CAMPAIGN_CHANNELS, "mixed"],
             description: "Primary outreach channel. Default email.",
           },
           audiencePercentA: {

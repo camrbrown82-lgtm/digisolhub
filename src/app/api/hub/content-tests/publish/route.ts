@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   const info = channelInfo(body?.channel || "");
   if (!variant || !info?.publish) {
     return NextResponse.json(
-      { error: "Only Facebook, Instagram, and LinkedIn posts publish from the Hub." },
+      { error: "Only Facebook and Instagram posts publish from the Hub." },
       { status: 400 },
     );
   }

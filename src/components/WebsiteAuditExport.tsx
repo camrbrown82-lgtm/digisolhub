@@ -5,7 +5,7 @@ import { Check, Copy, Download, Facebook, Instagram, Linkedin, Share2 } from "lu
 import { trackEvent } from "@/lib/analytics";
 import { shareToInstagram } from "@/lib/instagramShare";
 import { websiteAuditSocialPack } from "@/lib/media";
-import { DIGISOL_INSTAGRAM_HANDLE } from "@/lib/site";
+import { DIGISOL_INSTAGRAM_HANDLE, LINKEDIN_ENABLED } from "@/lib/site";
 
 type PackKey = "facebook" | "linkedin" | "instagram" | "twitter";
 
@@ -58,8 +58,8 @@ export function WebsiteAuditExport({
         Export to socials
       </p>
       <p className="mt-1 text-xs text-indigo-200/70">
-        Ready captions for this website audit video — Facebook, LinkedIn,
-        Instagram (@{DIGISOL_INSTAGRAM_HANDLE}), or download the full social
+        Ready captions for this website audit video — Facebook,{" "}
+        {LINKEDIN_ENABLED ? "LinkedIn, " : ""}Instagram (@{DIGISOL_INSTAGRAM_HANDLE}), or download the full social
         pack. Links point to wwwdigisol.com.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
@@ -75,18 +75,20 @@ export function WebsiteAuditExport({
           )}
           Copy Facebook post
         </button>
-        <button
-          type="button"
-          onClick={() => copy("linkedin", pack.linkedin)}
-          className="inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-2 text-xs font-medium text-indigo-100 hover:bg-indigo-500/20 hover:text-sky-200"
-        >
-          {copied === "linkedin" ? (
-            <Check className="h-3.5 w-3.5" />
-          ) : (
-            <Linkedin className="h-3.5 w-3.5" />
-          )}
-          Copy LinkedIn post
-        </button>
+        {LINKEDIN_ENABLED ? (
+          <button
+            type="button"
+            onClick={() => copy("linkedin", pack.linkedin)}
+            className="inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-2 text-xs font-medium text-indigo-100 hover:bg-indigo-500/20 hover:text-sky-200"
+          >
+            {copied === "linkedin" ? (
+              <Check className="h-3.5 w-3.5" />
+            ) : (
+              <Linkedin className="h-3.5 w-3.5" />
+            )}
+            Copy LinkedIn post
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={() => copy("instagram", pack.instagram)}
@@ -111,18 +113,20 @@ export function WebsiteAuditExport({
           <Facebook className="h-3.5 w-3.5" aria-hidden="true" />
           Share on Facebook
         </a>
-        <a
-          href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(pack.url)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() =>
-            trackEvent("media_export", { format: "linkedin_share", location })
-          }
-          className="inline-flex items-center gap-2 rounded-full border border-sky-400/40 px-3 py-2 text-xs font-semibold text-sky-200 hover:bg-indigo-500/15"
-        >
-          <Linkedin className="h-3.5 w-3.5" aria-hidden="true" />
-          Share on LinkedIn
-        </a>
+        {LINKEDIN_ENABLED ? (
+          <a
+            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(pack.url)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() =>
+              trackEvent("media_export", { format: "linkedin_share", location })
+            }
+            className="inline-flex items-center gap-2 rounded-full border border-sky-400/40 px-3 py-2 text-xs font-semibold text-sky-200 hover:bg-indigo-500/15"
+          >
+            <Linkedin className="h-3.5 w-3.5" aria-hidden="true" />
+            Share on LinkedIn
+          </a>
+        ) : null}
         <button
           type="button"
           onClick={() => void shareInstagram()}

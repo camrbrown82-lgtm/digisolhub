@@ -2,6 +2,7 @@ import {
   DIGISOL_INSTAGRAM_HANDLE,
   DIGISOL_INSTAGRAM_URL,
   DIGISOL_SITE_URL,
+  LINKEDIN_ENABLED,
 } from "@/lib/site";
 
 /** Stable public path for the DigiSol website-audit presentation (emails / Hub / GBP). */
@@ -95,9 +96,7 @@ export function websiteAuditSocialPack() {
     "FACEBOOK / THREADS",
     facebook,
     "",
-    "LINKEDIN",
-    linkedin,
-    "",
+    ...(LINKEDIN_ENABLED ? ["LINKEDIN", linkedin, ""] : []),
     "INSTAGRAM / SHORT CAPTION",
     instagram,
     "",

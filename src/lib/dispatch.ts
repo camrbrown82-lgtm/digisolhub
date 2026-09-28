@@ -1,4 +1,9 @@
-import { DIGISOL_INSTAGRAM_HANDLE, DIGISOL_INSTAGRAM_URL, DIGISOL_SITE_URL } from "@/lib/site";
+import {
+  DIGISOL_INSTAGRAM_HANDLE,
+  DIGISOL_INSTAGRAM_URL,
+  DIGISOL_SITE_URL,
+  LINKEDIN_ENABLED,
+} from "@/lib/site";
 
 export type DispatchSection = {
   heading: string;
@@ -331,9 +336,7 @@ export function dispatchSocialPack(issue: DispatchIssue) {
     "FACEBOOK / THREADS",
     facebook,
     "",
-    "LINKEDIN",
-    linkedin,
-    "",
+    ...(LINKEDIN_ENABLED ? ["LINKEDIN", linkedin, ""] : []),
     "INSTAGRAM / SHORT CAPTION",
     instagram,
     "",

@@ -151,7 +151,7 @@ Rules:
 - Plain, confident Canadian English.`,
     prompt: [
       `Goal: ${goal || "Drive readers to the newsletter issue and convert them to leads."}`,
-      `Channels: ${channels.map((c) => channelInfo(c)?.label || c).join(", ") || "Facebook, Instagram, LinkedIn"}`,
+      `Channels: ${channels.map((c) => channelInfo(c)?.label || c).join(", ") || "Facebook, Instagram"}`,
       landingUrl ? `Landing page: ${landingUrl}` : "",
       issue
         ? `Newsletter issue to promote: "${issue.title}"\nSummary: ${issue.excerpt}\nSections: ${issue.sections.map((s) => s.heading).join("; ")}${issue.cta ? `\nOffer: ${issue.cta.heading}. ${issue.cta.body}` : ""}\nThis is a newsletter test: both variants share the newsletter's own preview card as the visual (issue title, volume, and offer), so the ONLY variable is the post copy. Get people to read this issue. Set assetId to null unless an asset is provided, and set visualIdea to "Newsletter preview card".`
