@@ -46,7 +46,6 @@ export function PublicSiteAnalytics({ children }: { children?: ReactNode }) {
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
           gtag('config', 'G-4ZBG4VPC9C', { send_page_view: true });
-          gtag('config', 'G-DCKSJLNE4T', { send_page_view: true });
           ${GOOGLE_ADS_ID ? `gtag('config', '${GOOGLE_ADS_ID}');` : ""}
         `}
       </Script>
