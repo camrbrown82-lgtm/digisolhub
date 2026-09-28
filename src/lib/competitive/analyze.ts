@@ -4,6 +4,7 @@ import { z } from "zod";
 import { runWebsiteAudit } from "@/lib/agent/websiteAudit";
 import { findPlaceForSite, placesConfigured } from "@/lib/googleReviews";
 import { getOpenAIApiKey } from "@/lib/openai";
+import { crawlSiteContent } from "@/lib/competitive/siteContent";
 import { htmlToPlainExcerpt } from "@/lib/prospectAudit/casl";
 import { BLOCKED_DOMAINS } from "@/lib/prospectAudit/discover";
 import { normalizeProspectUrl, prospectHostKey } from "@/lib/prospectAudit/seedCatalog";
@@ -53,9 +54,16 @@ function parseJsonBlock<T>(text: string): T | null {
   }
 }
 
-export async function snapshotSite(name: string, url: string): Promise<SiteSnapshot> {
+export async function snapshotSite(
+  name: string,
+  url: string,
+  depth: "full" | "light" = "light",
+): Promise<SiteSnapshot> {
   try {
     const audit = await runWebsiteAudit(url, { includeHtml: true });
+    const content = audit.html
+      ? await crawlSiteContent({ url: audit.finalUrl || url, html: audit.html }, depth).catch(() => null)
+      : null;
     return {
       name,
       url: audit.finalUrl || url,
@@ -69,6 +77,8 @@ export async function snapshotSite(name: string, url: string): Promise<SiteSnaps
       hasJsonLd: audit.seo.hasJsonLd,
       issues: audit.issues.slice(0, 10).map((i) => `${i.severity}: ${i.message}`),
       excerpt: htmlToPlainExcerpt(audit.html || "", 2500),
+      pages: content?.pages,
+      features: content?.features,
       error: audit.error,
     };
   } catch (err) {
@@ -241,7 +251,20 @@ Google rating: ${p?.googleRating ?? "unknown"} · Google reviews: ${p?.reviewCou
 Other listings: ${p?.listings.join("; ") || "none found"}
 Social: ${p?.social.join(", ") || "none found"}
 Notes: ${p?.notes || "-"}
-Homepage text: ${s.excerpt.slice(0, 1800) || "(unavailable)"}`;
+${siteContentBlock(s)}`;
+}
+
+function siteContentBlock(s: SiteSnapshot) {
+  const features = s.features?.length
+    ? `Already on the site:\n${s.features.map((f) => `- ${f}`).join("\n")}`
+    : "Already on the site: (not detected)";
+  if (!s.pages?.length) {
+    return `${features}\nHomepage text: ${s.excerpt.slice(0, 1800) || "(unavailable)"}`;
+  }
+  const pages = s.pages
+    .map((page) => `#### Page: ${page.url}${page.title ? ` — ${page.title}` : ""}\n${page.text}`)
+    .join("\n\n");
+  return `${features}\nPages read (${s.pages.length}), exact on-page copy:\n${pages}`;
 }
 
 export async function synthesizeReport(input: {
@@ -263,6 +286,12 @@ export async function synthesizeReport(input: {
     prompt: `You are Kaylev, DigiSol's growth analyst. Write a comprehensive competitive analysis for ${input.companyName}, a ${input.inputs.industry} business serving ${input.inputs.location}.
 
 Use only the data below. Be specific and evidence-based: cite scores, ratings, review counts, titles, and what each site actually says. Where data is "unknown", say so and add it to dataGaps rather than inventing it.
+
+${input.companyName}'s own website is given in full below: the exact copy of its homepage and key pages, plus a list of what is already on the site. Treat it as the source of truth about what ${input.companyName} already does.
+- Before recommending anything, check that copy and the "Already on the site" list. Never recommend adding something the company already has (for example a pricing page, quote form, FAQ, blog, click-to-call, booking, city pages or structured data).
+- If something exists but is weaker than a competitor's, recommend a specific improvement: say where it is now (page URL), quote the current wording, and say what to change.
+- Score the company from its actual pages, not from its homepage alone.
+- Competitor pages are shorter samples, so only claim a competitor lacks something when it's clearly absent from what was read.
 
 Score every dimension 0-100 for the company and as an average across competitors, in this order:
 ${COMPETITIVE_DIMENSIONS.map((d) => `- ${d.key}: ${d.label}`).join("\n")}

@@ -108,8 +108,14 @@ export type SiteSnapshot = {
   hasJsonLd: boolean;
   issues: string[];
   excerpt: string;
+  /** Homepage plus key pages (pricing, services, contact…), as readable text. */
+  pages?: SitePage[];
+  /** Features found on the site, e.g. "Click-to-call phone link". */
+  features?: string[];
   error?: string;
 };
+
+export type SitePage = { url: string; title: string; text: string };
 
 export type MarketPresence = {
   name: string;

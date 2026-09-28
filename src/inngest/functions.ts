@@ -523,7 +523,7 @@ export const runCompetitiveAnalysis = inngest.createFunction(
     });
 
     const company = await step.run("snapshot-company", () =>
-      snapshotSite(row.companyName, row.inputs.url),
+      snapshotSite(row.companyName, row.inputs.url, "full"),
     );
 
     const profile = await step.run("profile", async () => {
