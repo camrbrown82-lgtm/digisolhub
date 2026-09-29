@@ -175,7 +175,18 @@ function stripTags(value: string) {
   return value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
-function analyzeHtml(html: string, finalUrl: string): Pick<WebsiteAuditResult, "seo" | "issues"> {
+function mentionsPlace(text: string | null, city: string) {
+  if (!text) return false;
+  const needle = city.trim().toLowerCase().replace(/\./g, "").replace(/\s+/g, " ");
+  if (needle.length < 3) return false;
+  return text.toLowerCase().replace(/\./g, "").replace(/\s+/g, " ").includes(needle);
+}
+
+function analyzeHtml(
+  html: string,
+  finalUrl: string,
+  city?: string,
+): Pick<WebsiteAuditResult, "seo" | "issues"> {
   const issues: WebsiteAuditIssue[] = [];
   const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
   const title = titleMatch ? stripTags(titleMatch[1]) : null;
@@ -225,6 +236,21 @@ function analyzeHtml(html: string, finalUrl: string): Pick<WebsiteAuditResult, "
       severity: "warn",
       code: "meta_description_length",
       message: `Meta description is ${metaDescription.length} chars (aim ~120–160).`,
+    });
+  }
+
+  const serviceCity = city?.trim();
+  if (serviceCity && (!mentionsPlace(title, serviceCity) || !mentionsPlace(h1Text, serviceCity))) {
+    const missing = [
+      !mentionsPlace(title, serviceCity) ? "title" : null,
+      !mentionsPlace(h1Text, serviceCity) ? "H1" : null,
+    ]
+      .filter(Boolean)
+      .join(" and ");
+    issues.push({
+      severity: "warn",
+      code: "missing_service_city",
+      message: `Service city “${serviceCity}” is not in the ${missing} — missing a key local SEO signal.`,
     });
   }
 
@@ -337,7 +363,7 @@ function withReport(audit: Omit<WebsiteAuditResult, "report">): WebsiteAuditResu
  */
 export async function runWebsiteAudit(
   targetUrl: string,
-  opts?: { includeHtml?: boolean },
+  opts?: { includeHtml?: boolean; city?: string },
 ): Promise<WebsiteAuditResult & { html?: string }> {
   let url: URL;
   try {
@@ -400,7 +426,7 @@ export async function runWebsiteAudit(
     const html = (await response.text()).slice(0, 500_000);
     const totalMs = Date.now() - started;
     const finalUrl = response.url || url.toString();
-    const { seo, issues } = analyzeHtml(html, finalUrl);
+    const { seo, issues } = analyzeHtml(html, finalUrl, opts?.city);
 
     if (ttfbMs > 2500) {
       issues.push({

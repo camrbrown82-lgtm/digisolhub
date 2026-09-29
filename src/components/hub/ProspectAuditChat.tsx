@@ -14,7 +14,7 @@ export function ProspectAuditChat() {
     {
       role: "assistant",
       content:
-        "Tell me who to audit. Example: “Audit Blaze Heating in Calgary, they’re HVAC” or “3 Edmonton plumbers from the list.” Trades land in Prospect audits — trades. Other companies land in Prospect audits — other. A Facebook or form inquiry lands in New leads.",
+        "Tell me who to audit. Example: “Audit Blaze Heating in Calgary, they’re HVAC”, “3 Edmonton plumbers”, or “5 Calgary med spas”. Also: dentistry, construction, restaurants, electricians, roofing and siding, physio clinics, healthcare, private surgery, home care and senior living, e-commerce, mortgage companies, oil and gas, and small businesses. Trades land in Prospect audits — trades. Other companies land in Prospect audits — other. A Facebook or form inquiry lands in New leads.",
     },
   ]);
   const [busy, setBusy] = useState(false);

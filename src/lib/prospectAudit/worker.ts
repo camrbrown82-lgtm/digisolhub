@@ -516,7 +516,10 @@ async function processOneProspect(input: {
     .eq("id", prospect.id);
 
   try {
-    const audit = await runWebsiteAudit(prospect.url, { includeHtml: true });
+    const audit = await runWebsiteAudit(prospect.url, {
+      includeHtml: true,
+      city: prospect.city || undefined,
+    });
     const html = audit.html || "";
     let casl = evaluateCaslPublishedContact(html, audit.finalUrl || prospect.url);
     if (casl.eligible && casl.email) {

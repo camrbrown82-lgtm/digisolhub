@@ -65,6 +65,14 @@ export const DEFAULT_PROSPECT_TRADES = [
   "photography",
   "healthcare",
   "professional",
+  "medspa",
+  "physio",
+  "surgery",
+  "homecare",
+  "ecommerce",
+  "mortgage",
+  "oilgas",
+  "smb",
 ] as const;
 
 export type ProspectTrade =

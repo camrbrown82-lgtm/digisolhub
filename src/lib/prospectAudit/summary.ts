@@ -57,6 +57,7 @@ Pay attention to the audit score:
 - 80+: site is largely fine — congratulate briefly, then emphasize DigiSol Hub (leads, nurture, workflows) so the audit is not wasted.
 - 60-79: balanced — a few upgrades plus Hub.
 - under 60: lead with concrete site fixes, still mention Hub.
+- If an issue says the service city is missing from the title or H1, make that the first weakness.
 
 Business: ${input.businessName || "Local business"}
 URL: ${input.url}

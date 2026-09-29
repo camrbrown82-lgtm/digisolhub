@@ -10,7 +10,11 @@ import {
   enqueueFromChat,
   type ChatProspectItem,
 } from "@/lib/prospectAudit/enqueueFromChat";
-import { discoverProspects } from "@/lib/prospectAudit/discover";
+import {
+  DISCOVERY_OTHER_SECTORS,
+  DISCOVERY_TRADE_SECTORS,
+  discoverProspects,
+} from "@/lib/prospectAudit/discover";
 import { prospectHostKey } from "@/lib/prospectAudit/seedCatalog";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { resolveClientId } from "@/lib/workspace";
@@ -67,7 +71,7 @@ Return JSON only:
       "businessName": "string",
       "url": "https://... or empty",
       "email": "only if the user stated an email, else empty",
-      "trade": "hvac|plumbing|electrical|roofing|landscaping|construction|cleaning|auto|dental|legal|accounting|salon|fitness|realestate|photography|healthcare|restaurant|retail|professional|general",
+      "trade": "${[...DISCOVERY_TRADE_SECTORS, ...DISCOVERY_OTHER_SECTORS, "general"].join("|")}",
       "city": "Alberta city or empty",
       "source": "facebook|form|website|prospect_audit"
     }
@@ -78,7 +82,8 @@ Rules:
 - kind "audit" when they want a website audited. kind "lead" for organic inquiries (Facebook, a form, just curious) with no audit.
 - Never invent a website or email. Leave url empty if they did not say it.
 - Trades (hvac, plumbing, electrical, roofing, mechanical) are prospect-audit trades. Other industries stay audits but are not trades.
-- catalog is when they ask you to find or search for several businesses by sector and/or city ("3 Calgary HVAC", "find 5 dentists in Red Deer", "search other sectors") and did not name specific sites. Use trade "general" when no sector is given. Limit defaults to 5, max 10.
+- catalog is when they ask you to find or search for several businesses by sector and/or city ("3 Calgary HVAC", "find 5 dentists in Red Deer", "5 Calgary med spas", "search other sectors") and did not name specific sites. Use trade "general" when no sector is given. Limit defaults to 5, max 10.
+- Map plain names to trade slugs: dentistry → dental, plumbers → plumbing, electricians → electrical, roofing and siding → roofing, restaurants → restaurant, med spas → medspa, physio clinics → physio, healthcare → healthcare, private surgery clinics → surgery, home care and senior living → homecare, e-commerce → ecommerce, mortgage companies → mortgage, oil and gas → oilgas, small business and startups → smb, construction → construction.
 - If they only chat with no businesses, return items: [] and catalog: null.`,
       },
       ...messages,
