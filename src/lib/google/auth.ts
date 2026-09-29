@@ -46,12 +46,17 @@ export class GoogleApiError extends Error {
     public status: number,
     public reason: string,
     public helpUrl?: string,
+    public adsCode?: string,
   ) {
     super(message);
   }
 
   get disabledApi() {
-    return this.reason === "SERVICE_DISABLED" || this.reason === "accessNotConfigured";
+    return (
+      this.reason === "SERVICE_DISABLED" ||
+      this.reason === "accessNotConfigured" ||
+      this.adsCode === "PROJECT_DISABLED"
+    );
   }
 
   get noAccess() {
@@ -68,7 +73,10 @@ type GoogleErrorBody = {
       reason?: string;
       metadata?: { activationUrl?: string };
       links?: { url?: string }[];
-      errors?: { message?: string; errorCode?: Record<string, string> }[];
+      errors?: {
+        message?: string;
+        errorCode?: { authorizationError?: string; authenticationError?: string };
+      }[];
     }[];
   };
 };
@@ -76,13 +84,23 @@ type GoogleErrorBody = {
 function parseError(status: number, body: GoogleErrorBody) {
   const err = body.error ?? {};
   const details = err.details ?? [];
+  const adsErrors = details.flatMap((d) => d.errors ?? []);
   const reason =
     details.find((d) => d.reason)?.reason || err.errors?.[0]?.reason || err.status || "ERROR";
   const helpUrl =
     details.find((d) => d.metadata?.activationUrl)?.metadata?.activationUrl ||
     details.flatMap((d) => d.links ?? []).find((l) => l.url)?.url;
-  const adsMessage = details.flatMap((d) => d.errors ?? []).find((e) => e.message)?.message;
-  return new GoogleApiError(adsMessage || err.message || `Google API ${status}`, status, reason, helpUrl);
+  const adsMessage = adsErrors.find((e) => e.message)?.message;
+  const adsCode = adsErrors
+    .map((e) => e.errorCode?.authorizationError || e.errorCode?.authenticationError || "")
+    .find((code) => code);
+  return new GoogleApiError(
+    adsMessage || err.message || `Google API ${status}`,
+    status,
+    reason,
+    helpUrl,
+    adsCode,
+  );
 }
 
 export async function googleFetch<T>(

@@ -142,13 +142,26 @@ function edmontonDay(offsetDays = 0) {
   }).format(new Date(Date.now() + offsetDays * 86_400_000));
 }
 
+function cloudProjectId() {
+  return serviceAccountEmail().match(/@([a-z0-9-]+)\.iam\.gserviceaccount\.com$/i)?.[1] ?? "";
+}
+
 function connectionFailure(product: GoogleProduct, error: unknown): ProductAudit {
   const robot = serviceAccountEmail();
   let message = errorMessage(error);
   let helpUrl: string | undefined;
   if (error instanceof GoogleApiError) {
     helpUrl = error.helpUrl;
-    if (error.disabledApi) {
+    const testAccess =
+      error.adsCode === "CLOUD_PROJECT_NOT_APPROVED_FOR_PRODUCTION" ||
+      error.adsCode === "DEVELOPER_TOKEN_NOT_APPROVED";
+    if (testAccess) {
+      const project = cloudProjectId();
+      message = `The Google Ads API is already on. DigiSol's Cloud project${project ? ` (${project})` : ""} only has Test access, so it cannot read a live Ads account. On that project's Google Ads API page, apply for Explorer access. Google reviews Explorer access automatically.`;
+      if (project) {
+        helpUrl = `https://console.cloud.google.com/apis/api/googleads.googleapis.com/overview?project=${project}`;
+      }
+    } else if (error.disabledApi) {
       message = `The ${PRODUCT_LABELS[product]} API is turned off in DigiSol's Google Cloud project. Turn it on, wait a minute, then run the check again.`;
     } else if (error.noAccess || error.status === 404) {
       message =
@@ -545,6 +558,23 @@ type AdsRow = {
   adGroup?: { name?: string };
 };
 
+/** A client-account 403 is often just "test access" reported more clearly on the manager account. */
+async function adsAccessError(error: unknown) {
+  if (!(error instanceof GoogleApiError) || error.adsCode !== "USER_PERMISSION_DENIED") return error;
+  try {
+    await ads.listManagedAccounts();
+  } catch (managerError) {
+    if (
+      managerError instanceof GoogleApiError &&
+      managerError.adsCode &&
+      managerError.adsCode !== "USER_PERMISSION_DENIED"
+    ) {
+      return managerError;
+    }
+  }
+  return error;
+}
+
 async function auditAds(ids: GoogleSetupIds): Promise<ProductAudit> {
   const cid = ads.cleanCustomerId(ids.adsCustomerId);
   if (!cid) return notLinked("Pick this company's Google Ads account, or leave it empty if they don't run ads.");
@@ -561,7 +591,7 @@ async function auditAds(ids: GoogleSetupIds): Promise<ProductAudit> {
     );
     customer = rows[0]?.customer;
   } catch (error) {
-    return connectionFailure("ads", error);
+    return connectionFailure("ads", await adsAccessError(error));
   }
   const checks: GoogleCheck[] = [];
   const currency = customer?.currencyCode || "CAD";

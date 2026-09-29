@@ -130,10 +130,21 @@ export function GoogleSetupPanel({
 
   useEffect(() => {
     if (autoAudit.current || !robotReady || !adsReady || setup.needsMigration) return;
-    if (!ids.adsCustomerId || setup.audit?.ids.adsCustomerId) return;
+    const adsError = setup.audit?.products.ads.error ?? "";
+    const missingId = Boolean(ids.adsCustomerId) && !setup.audit?.ids.adsCustomerId;
+    const staleOff = adsError.includes("API is turned off");
+    if (!missingId && !staleOff) return;
     autoAudit.current = true;
     void call({ action: "audit" }, "audit");
-  }, [adsReady, call, ids.adsCustomerId, robotReady, setup.audit?.ids.adsCustomerId, setup.needsMigration]);
+  }, [
+    adsReady,
+    call,
+    ids.adsCustomerId,
+    robotReady,
+    setup.audit?.ids.adsCustomerId,
+    setup.audit?.products.ads.error,
+    setup.needsMigration,
+  ]);
 
   function applyFix(check: GoogleCheck) {
     if (!check.fix) return;
