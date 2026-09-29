@@ -230,24 +230,29 @@ async function auditGa4(ids: GoogleSetupIds, origin: string): Promise<ProductAud
     });
   }
 
+  const counts = counts28.status === "fulfilled" ? counts28.value : new Map<string, number>();
+
   if (homepage.status === "fulfilled" && homepage.value !== null && measurementId) {
     const html = homepage.value;
     const tagged = html.includes(measurementId);
     const gtm = /googletagmanager\.com\/gtm\.js|GTM-[A-Z0-9]+/.test(html);
+    // Sites that load the tag from script (after consent or an internal-traffic check) keep it out of the raw HTML.
+    const receiving = (counts.get("page_view") ?? 0) > 0;
     checks.push({
       id: "ga4_tag",
       product: "ga4",
       title: "Tag installed on the homepage",
-      status: tagged ? "pass" : gtm ? "info" : "fail",
+      status: tagged || receiving ? "pass" : gtm ? "info" : "fail",
       detail: tagged
         ? `${measurementId} loads on ${origin}.`
-        : gtm
-          ? `${origin} uses Google Tag Manager, so the tag can't be confirmed from the page. Check that GTM fires ${measurementId}.`
-          : `${measurementId} isn't on ${origin}. Add the Google tag so visits are counted.`,
+        : receiving
+          ? `${measurementId} loads from script on ${origin} (not in the page source), and GA4 is receiving visits.`
+          : gtm
+            ? `${origin} uses Google Tag Manager, so the tag can't be confirmed from the page. Check that GTM fires ${measurementId}.`
+            : `${measurementId} isn't on ${origin}. Add the Google tag so visits are counted.`,
     });
   }
 
-  const counts = counts28.status === "fulfilled" ? counts28.value : new Map<string, number>();
   if (counts28.status === "fulfilled") {
     const pageViews = counts.get("page_view") ?? 0;
     checks.push({
