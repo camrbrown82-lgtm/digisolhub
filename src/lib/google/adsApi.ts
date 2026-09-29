@@ -15,13 +15,15 @@ export function managerCustomerId() {
   return cleanCustomerId(process.env.GOOGLE_ADS_MANAGER_ID || process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID);
 }
 
+/** Manager account number is enough. Google stopped requiring a developer token on 9 Sep 2026. */
 export function adsApiReady() {
-  return Boolean(developerToken() && managerCustomerId());
+  return Boolean(managerCustomerId());
 }
 
 function headers() {
+  const token = developerToken();
   return {
-    "developer-token": developerToken(),
+    ...(token ? { "developer-token": token } : {}),
     "login-customer-id": managerCustomerId(),
   };
 }

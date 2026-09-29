@@ -24,7 +24,7 @@ The page is live. It checks GA4, Search Console and Google Ads every Monday at 7
 - [x] **Google Ads manager account created:** DigiSol **321-535-3750**.
 - [x] **Robot access:** Admin → Access and security → `digisol-hub-analytics@digisol-ai-gemini.iam.gserviceaccount.com` added as **Standard** (Sep 28, 2026).
 - [ ] **Link confirmation:** link request sent from the manager to ad account **311-057-1093**. Accept it on that ad account when Google asks. The Accounts list stays empty until that confirmation lands.
-- [ ] **Google Ads API access (no developer token):** Google sunset developer tokens on Sep 9, 2026. Leave the manager API Center form blank (that form is only for the App Conversion Tracking API). Turn on access for the Hub's Google Cloud project on the Google Ads API page in Cloud Console, then add `GOOGLE_ADS_MANAGER_ID` = `3215353750` in Vercel (Production) and redeploy. `GOOGLE_ADS_CUSTOMER_ID` = `3110571093` is optional.
+- [x] **Google Ads API access:** no developer token (Google retired them on Sep 9, 2026). `GOOGLE_ADS_MANAGER_ID` = `3215353750` and `GOOGLE_ADS_CUSTOMER_ID` = `3110571093` go on Vercel. The Hub calls Ads once the manager number is set.
 - [ ] With Working on set to DigiSol, click **Save and run check**, then **Apply safe fixes**. Review each ad change before clicking it.
 - [ ] For each new client: send them the same three access steps and fill in their accounts on the page.
 

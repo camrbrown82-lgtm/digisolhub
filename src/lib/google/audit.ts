@@ -541,7 +541,7 @@ async function auditAds(ids: GoogleSetupIds): Promise<ProductAudit> {
   if (!cid) return notLinked("Pick this company's Google Ads account, or leave it empty if they don't run ads.");
   if (!ads.adsApiReady()) {
     return notLinked(
-      "Add GOOGLE_ADS_DEVELOPER_TOKEN and GOOGLE_ADS_MANAGER_ID (DigiSol's manager account number) on Vercel, then redeploy.",
+      "Add GOOGLE_ADS_MANAGER_ID (DigiSol's manager account number) on Vercel, then redeploy.",
     );
   }
   let customer: AdsRow["customer"];

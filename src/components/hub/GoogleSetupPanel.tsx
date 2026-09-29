@@ -204,11 +204,9 @@ export function GoogleSetupPanel({
             </li>
             <li>Link DigiSol&apos;s own ad account (and each client&apos;s) under it: Accounts → + → Link existing account.</li>
             <li>Admin → Access and security → add {robotEmail || "the robot email"} as Standard.</li>
-            <li>Admin → API Center → copy the developer token and apply for Basic access.</li>
             <li>
-              In Vercel add <code className="text-amber-50">GOOGLE_ADS_DEVELOPER_TOKEN</code> and{" "}
-              <code className="text-amber-50">GOOGLE_ADS_MANAGER_ID</code>, then redeploy. This reminder
-              disappears once both are set.
+              In Vercel add <code className="text-amber-50">GOOGLE_ADS_MANAGER_ID</code> (digits only),
+              then redeploy. This reminder disappears once that is set.
             </li>
           </ol>
         </section>
