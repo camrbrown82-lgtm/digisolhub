@@ -80,6 +80,13 @@ export function enablePageChangeTracking(streamName: string) {
   );
 }
 
+/** Account-level and read-only by API. `sharingWithOthersEnabled` is "Modeling contributions & business insights", which benchmarking needs. */
+export function getDataSharing(accountId: string) {
+  return googleFetch<{ sharingWithOthersEnabled?: boolean }>(
+    `${ADMIN}/v1beta/accounts/${accountId.replace(/\D/g, "")}/dataSharingSettings`,
+  );
+}
+
 export async function listKeyEvents(propertyId: string) {
   const json = await googleFetch<{ keyEvents?: { eventName: string }[] }>(
     `${ADMIN}/v1beta/${propertyPath(propertyId)}/keyEvents?pageSize=200`,

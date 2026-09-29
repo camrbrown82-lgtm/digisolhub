@@ -178,13 +178,14 @@ async function auditGa4(ids: GoogleSetupIds, origin: string): Promise<ProductAud
   const checks: GoogleCheck[] = [];
   const host = hostOf(origin);
 
-  const [retention, streams, keyEvents, adsLinks, counts28, homepage] = await Promise.allSettled([
+  const [retention, streams, keyEvents, adsLinks, counts28, homepage, sharing] = await Promise.allSettled([
     ga4.getRetention(pid),
     ga4.listStreams(pid),
     ga4.listKeyEvents(pid),
     ids.adsCustomerId ? ga4.listAdsLinks(pid) : Promise.resolve([] as string[]),
     ga4.eventCounts(pid, 28),
     origin ? fetchText(origin) : Promise.resolve(null),
+    account ? ga4.getDataSharing(account) : Promise.reject(new Error("No account")),
   ]);
 
   if (retention.status === "fulfilled") {
@@ -212,6 +213,26 @@ async function auditGa4(ids: GoogleSetupIds, origin: string): Promise<ProductAud
       fix: { kind: "ga4_locale", label: "Use Alberta time and CAD" },
     });
   }
+
+  const industry =
+    property.industryCategory && property.industryCategory !== "INDUSTRY_CATEGORY_UNSPECIFIED"
+      ? property.industryCategory.toLowerCase().replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase())
+      : "";
+  const sharingOn = sharing.status === "fulfilled" ? Boolean(sharing.value.sharingWithOthersEnabled) : null;
+  checks.push({
+    id: "ga4_benchmarking",
+    product: "ga4",
+    title: "Industry benchmarking",
+    status: industry && sharingOn ? "pass" : sharingOn === null && industry ? "info" : "warn",
+    detail: !industry
+      ? "No industry category is set, so GA4 can't compare this site with similar businesses. Pick one in Admin → Property details."
+      : sharingOn === false
+        ? `Industry is "${industry}", but "Modeling contributions & business insights" is off, so benchmarks stay hidden. Turn it on in Admin → Account settings → Data sharing settings.`
+        : sharingOn === null
+          ? `Industry is "${industry}". Couldn't read the account's data sharing settings; benchmarks need "Modeling contributions & business insights" turned on.`
+          : `GA4 compares this site with "${industry}" peers. Benchmarks show in GA4 reports (Benchmarking card and trend charts), where the peer group can be narrowed.`,
+    link: industry && sharingOn ? undefined : { label: "Open GA4 admin", url: adminUrl },
+  });
 
   const webStreams = streams.status === "fulfilled" ? streams.value : [];
   const stream =
