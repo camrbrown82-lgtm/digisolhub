@@ -6,6 +6,7 @@ import { Send } from "lucide-react";
 import { BrandCard } from "@/components/BrandCard";
 import { ContactOptions } from "@/components/ContactOptions";
 import { GoogleRating } from "@/components/LocalListings";
+import { LocationMap } from "@/components/LocationMap";
 import { trackEvent } from "@/lib/analytics";
 import { useLocale, useLocalizedHref, useMessages } from "@/lib/i18n/client";
 import { submitLead } from "@/lib/leadSubmit";
@@ -286,6 +287,14 @@ export function Contact({
             </form>
         </BrandCard>
         </div>
+        <LocationMap
+          heading={t.mapHeading}
+          mapTitle={t.mapTitle}
+          directions={t.directions}
+          openInMaps={t.openInMaps}
+          lang={locale}
+          onLinkClick={(link) => trackEvent("map_click", { link, location: "contact" })}
+        />
         <div className="mt-6 flex justify-center">
           <GoogleRating location="contact" />
         </div>

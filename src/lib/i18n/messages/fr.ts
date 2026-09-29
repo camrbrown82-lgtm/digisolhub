@@ -813,6 +813,10 @@ export const fr: Messages = {
 
   contact: {
     eyebrow: "Contact",
+    mapHeading: "Siège social de DigiSol, Airdrie",
+    mapTitle: "Carte du bureau de DigiSol à Airdrie, en Alberta",
+    directions: "Itinéraire",
+    openInMaps: "Voir sur Google",
     browseFirst: "Vous préférez d’abord voir les forfaits?",
     seePricing: "Voir les tarifs DigiSol",
     otherWaysAria: "Autres façons de joindre DigiSol",

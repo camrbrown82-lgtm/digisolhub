@@ -528,6 +528,10 @@ export const en = {
 
   contact: {
     eyebrow: "Contact",
+    mapHeading: "DigiSol headquarters, Airdrie",
+    mapTitle: "Map of DigiSol's office in Airdrie, Alberta",
+    directions: "Get directions",
+    openInMaps: "View on Google",
     browseFirst: "Prefer to browse packages first?",
     seePricing: "See DigiSol pricing",
     otherWaysAria: "Other ways to reach DigiSol",

@@ -61,6 +61,11 @@ export const DIGISOL_CITY = "Airdrie";
 export const DIGISOL_POSTAL_CODE = "T4B 3J4";
 export const DIGISOL_ADDRESS_LINE =
   "969 Channelside Rd SW, Airdrie, AB T4B 3J4";
+const MAP_QUERY = encodeURIComponent(`DigiSol, ${DIGISOL_ADDRESS_LINE}`);
+/** Keyless Google Maps embed of the HQ pin; `hl` sets the map labels' language. */
+export const digisolMapEmbedUrl = (hl = "en") =>
+  `https://maps.google.com/maps?q=${MAP_QUERY}&z=14&hl=${hl}&output=embed`;
+export const DIGISOL_DIRECTIONS_URL = `https://www.google.com/maps/dir/?api=1&destination=${MAP_QUERY}`;
 /** Approximate HQ coordinates for LocalBusiness schema (Channelside SW, Airdrie). */
 export const DIGISOL_GEO = {
   latitude: 51.2708,
