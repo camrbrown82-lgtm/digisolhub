@@ -32,7 +32,8 @@ async function scope() {
   }
   await ensureGoogleSetupSchema().catch(() => null);
   const isHouse = client.name.toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase();
-  const setup = await loadGoogleSetup(supabase, client.id, isHouse ? houseDefaults() : undefined);
+  const defaults = isHouse ? houseDefaults() : undefined;
+  const setup = await loadGoogleSetup(supabase, client.id, defaults);
   if (setup.needsMigration) {
     return {
       error: NextResponse.json(
@@ -41,7 +42,11 @@ async function scope() {
       ),
     } as const;
   }
-  return { supabase, user, client, setup } as const;
+  return { supabase, user, client, setup, defaults } as const;
+}
+
+function reloadSetup(ctx: { supabase: Parameters<typeof loadGoogleSetup>[0]; client: { id: string }; defaults?: GoogleSetupIds }) {
+  return loadGoogleSetup(ctx.supabase, ctx.client.id, ctx.defaults);
 }
 
 const text = (value: unknown, max = 200) =>
@@ -51,7 +56,12 @@ export async function GET(request: Request) {
   const ctx = await scope();
   if ("error" in ctx) return ctx.error;
   if (new URL(request.url).searchParams.get("discover")) {
-    return NextResponse.json(await discoverGoogleAccess(ctx.client.domain));
+    const discovered = await discoverGoogleAccess(ctx.client.domain);
+    const adsCustomerId = ctx.setup.ids.adsCustomerId;
+    if (adsCustomerId && !discovered.suggested.adsCustomerId) {
+      discovered.suggested.adsCustomerId = adsCustomerId;
+    }
+    return NextResponse.json(discovered);
   }
   return NextResponse.json({
     setup: ctx.setup,
@@ -80,13 +90,13 @@ export async function POST(request: Request) {
       await saveGoogleIds(supabase, client.id, ids);
       const audit = await runGoogleAudit(ids, client.domain);
       await saveGoogleAudit(supabase, client.id, audit);
-      return NextResponse.json({ setup: await loadGoogleSetup(supabase, client.id) });
+      return NextResponse.json({ setup: await reloadSetup(ctx) });
     }
 
     if (body.action === "audit") {
       const audit = await runGoogleAudit(setup.ids, client.domain);
       await saveGoogleAudit(supabase, client.id, audit);
-      return NextResponse.json({ setup: await loadGoogleSetup(supabase, client.id) });
+      return NextResponse.json({ setup: await reloadSetup(ctx) });
     }
 
     if (body.action === "fix") {
@@ -110,7 +120,7 @@ export async function POST(request: Request) {
       await saveGoogleAudit(supabase, client.id, audit, { keepPrevious: true });
       return NextResponse.json({
         message,
-        setup: await loadGoogleSetup(supabase, client.id),
+        setup: await reloadSetup(ctx),
         fixes: await recentGoogleFixes(supabase, client.id),
       });
     }

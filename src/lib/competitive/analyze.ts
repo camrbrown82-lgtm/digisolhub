@@ -296,6 +296,8 @@ Use only the data below. Be specific and evidence-based: cite scores, ratings, r
 
 ${input.companyName}'s own website is given in full below: the exact copy of its homepage and key pages, plus a list of what is already on the site. Treat it as the source of truth about what ${input.companyName} already does.
 - Before recommending anything, check that copy and the "Already on the site" list. Never recommend adding something the company already has (for example a pricing page, quote form, FAQ, blog, click-to-call, booking, city pages or structured data).
+- Every path listed after "city/service-area page link(s)" is a live landing page. Read those pages. Do not tell the company they are missing a city or service landing page that is already listed, and do not recommend creating one. Suggest a change to that specific page instead.
+- An "Online booking link" on that list means booking is already live (including a Google Calendar appointment page). Do not recommend adding booking.
 - If something exists but is weaker than a competitor's, recommend a specific improvement: say where it is now (page URL), quote the current wording, and say what to change.
 - Score the company from its actual pages, not from its homepage alone.
 - Competitor pages are shorter samples, so only claim a competitor lacks something when it's clearly absent from what was read.

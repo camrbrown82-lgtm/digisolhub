@@ -80,8 +80,16 @@ type LinkCandidate = { url: string; score: number; kind: number };
 const PER_KIND_LIMIT = 2;
 /** Pricing, services and quote/contact pages get extra room. */
 const KEY_PAGE_WEIGHT = 8;
+const LOCATION_KIND = PAGE_PRIORITY.findIndex(([pattern]) => pattern.test("/locations/calgary"));
+const BOOKING_HREF =
+  /calendly\.com|cal\.com\/|acuityscheduling|squareup\.com\/appointments|setmore|booksy|janeapp|housecallpro|jobber|calendar\.google\.com\/calendar\/appointments|calendar\.app\.google/i;
+const LOCATION_PATH = /\/(locations?|service-areas?|areas)\/[a-z0-9-]+$/i;
 
-function candidateLinks(html: string, baseUrl: string): LinkCandidate[] {
+function candidateLinks(
+  html: string,
+  baseUrl: string,
+  opts: { locationLimit?: number } = {},
+): LinkCandidate[] {
   const base = new URL(baseUrl);
   const host = base.hostname.replace(/^www\./, "");
   const chrome = (html.match(/<(header|nav)\b[\s\S]*?<\/\1>/gi) ?? []).join(" ");
@@ -103,7 +111,9 @@ function candidateLinks(html: string, baseUrl: string): LinkCandidate[] {
     if (kind < 0) continue;
     let score = PAGE_PRIORITY[kind][1];
     if (chrome.includes(match[1])) score += 3;
-    score -= Math.max(0, path.split("/").filter(Boolean).length - 1) * 3;
+    if (kind !== LOCATION_KIND) {
+      score -= Math.max(0, path.split("/").filter(Boolean).length - 1) * 3;
+    }
     const key = `${url.origin}${path}`;
     const prev = best.get(key);
     if (!prev || score > prev.score) best.set(key, { score, kind });
@@ -115,8 +125,31 @@ function candidateLinks(html: string, baseUrl: string): LinkCandidate[] {
     .filter((c) => {
       const count = perKind.get(c.kind) ?? 0;
       perKind.set(c.kind, count + 1);
-      return count < PER_KIND_LIMIT;
+      const limit = c.kind === LOCATION_KIND ? (opts.locationLimit ?? PER_KIND_LIMIT) : PER_KIND_LIMIT;
+      return count < limit;
     });
+}
+
+/** Every city or service landing page linked from the page, including ones buried in the footer. */
+function locationPageUrls(html: string, baseUrl: string) {
+  const base = new URL(baseUrl);
+  const host = base.hostname.replace(/^www\./, "");
+  const found = new Set<string>();
+  for (const match of Array.from(html.matchAll(/href=["']([^"'#]+)["']/gi))) {
+    let url: URL;
+    try {
+      url = new URL(decodeEntities(match[1]), base);
+    } catch {
+      continue;
+    }
+    if (!/^https?:$/.test(url.protocol) || url.hostname.replace(/^www\./, "") !== host) continue;
+    url.hash = "";
+    url.search = "";
+    const path = url.pathname.replace(/\/+$/, "") || "/";
+    if (!LOCATION_PATH.test(path)) continue;
+    found.add(`${url.origin}${path}`);
+  }
+  return Array.from(found);
 }
 
 async function fetchHtml(url: string) {
@@ -159,7 +192,14 @@ function detectFeatures(pages: Array<{ url: string; html: string }>) {
   add(/href=["']tel:/i.test(html), "Click-to-call phone link");
   add(/href=["']sms:/i.test(html), "Text/SMS link");
   add(/href=["']mailto:/i.test(html), "Email link");
-  add(/calendly\.com|cal\.com\/|acuityscheduling|squareup\.com\/appointments|setmore|booksy|janeapp|housecallpro|jobber/i.test(html), "Online booking link");
+  let bookingUrl = "";
+  for (const match of Array.from(html.matchAll(/href=["']([^"']+)["']/gi))) {
+    const href = decodeEntities(match[1]);
+    if (!BOOKING_HREF.test(href)) continue;
+    bookingUrl = href;
+    break;
+  }
+  add(bookingUrl, `Online booking link (${bookingUrl.slice(0, 180)})`);
   add(/FAQPage|frequently asked|\bFAQs?\b/i.test(html), "FAQ section");
   add(/testimonial|what (our )?(clients|customers) say|client reviews/i.test(text), "Testimonials or client reviews shown on the site");
   add(/search\.google\.com\/local\/writereview|g\.page\/r\/|writereview\?placeid/i.test(html), "Leave-a-Google-review link");
@@ -170,8 +210,17 @@ function detectFeatures(pages: Array<{ url: string; html: string }>) {
   add(/financing/i.test(text), "Financing mentioned");
   const blogPath = paths.find((p) => /blog|guide|news|dispatch|articles|resources/i.test(p));
   add(blogPath || /href=["'][^"']*\/(blog|guides?|news|articles)\b/i.test(html), `Blog/guides section${blogPath ? ` (${blogPath})` : ""}`);
-  const locationLinks = new Set(html.match(/href=["'][^"']*\/(locations?|service-areas?|areas)\/[a-z0-9-]+/gi) ?? []);
-  add(locationLinks.size, `${locationLinks.size} city/service-area page link(s)`);
+  const locationPaths = Array.from(
+    new Set(
+      pages.flatMap((page) =>
+        locationPageUrls(page.html, page.url).map((url) => new URL(url).pathname.replace(/\/+$/, "")),
+      ),
+    ),
+  ).sort();
+  add(
+    locationPaths.length,
+    `${locationPaths.length} city/service-area page link(s)${locationPaths.length ? `: ${locationPaths.join(", ")}` : ""}`,
+  );
 
   const socials = [
     ["Facebook", /facebook\.com\//i],
@@ -204,10 +253,28 @@ export async function crawlSiteContent(
 ): Promise<{ pages: SitePage[]; features: string[] }> {
   const limits =
     depth === "full"
-      ? { extraPages: 10, homeChars: 14000, pageChars: 6000, totalChars: 60000 }
+      ? { extraPages: 10, homeChars: 14000, pageChars: 6000, totalChars: 80000 }
       : { extraPages: 4, homeChars: 3500, pageChars: 1500, totalChars: 9000 };
 
-  const links = candidateLinks(homepage.html, homepage.url).slice(0, limits.extraPages);
+  const ranked = candidateLinks(homepage.html, homepage.url, {
+    locationLimit: depth === "full" ? 24 : PER_KIND_LIMIT,
+  });
+  const seen = new Set<string>();
+  const links = [
+    ...ranked.filter((link) => link.kind !== LOCATION_KIND).slice(0, limits.extraPages),
+    ...ranked.filter((link) => link.kind === LOCATION_KIND),
+    ...(depth === "full"
+      ? locationPageUrls(homepage.html, homepage.url).map((url) => ({
+          url,
+          score: 1,
+          kind: LOCATION_KIND,
+        }))
+      : []),
+  ].filter((link) => {
+    if (seen.has(link.url)) return false;
+    seen.add(link.url);
+    return true;
+  });
   const fetched = await Promise.all(
     links.map(async (link) => {
       const page = await fetchHtml(link.url);
@@ -222,12 +289,27 @@ export async function crawlSiteContent(
       all.findIndex((q) => q?.url === p!.url) === i,
   );
 
+  const isLanding = (url: string) => {
+    try {
+      return LOCATION_PATH.test(new URL(url).pathname.replace(/\/+$/, ""));
+    } catch {
+      return false;
+    }
+  };
+  const landings = extra.filter((page) => isLanding(page.url));
+  const rest = extra.filter((page) => !isLanding(page.url));
+
   let budget = limits.totalChars;
   const pages: SitePage[] = [];
-  const ordered = [{ ...homepage, key: true }, ...extra];
+  const ordered = [{ ...homepage, key: true }, ...landings, ...rest];
   for (let i = 0; i < ordered.length && budget > 0; i++) {
     const page = ordered[i];
-    const pageCap = page.key ? Math.round(limits.pageChars * 1.7) : limits.pageChars;
+    const landing = i > 0 && isLanding(page.url);
+    const pageCap = landing
+      ? Math.min(limits.pageChars, landings.length > 8 ? 2500 : 4000)
+      : page.key
+        ? Math.round(limits.pageChars * 1.7)
+        : limits.pageChars;
     const cap = Math.min(budget, i === 0 ? limits.homeChars : pageCap);
     const text = htmlToReadableText(page.html, { stripChrome: i > 0 }).slice(0, cap);
     if (!text) continue;

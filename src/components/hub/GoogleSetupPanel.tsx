@@ -70,6 +70,7 @@ export function GoogleSetupPanel({
   const [notice, setNotice] = useState("");
   const [copied, setCopied] = useState(false);
   const autoTried = useRef(false);
+  const autoAudit = useRef(false);
 
   const call = useCallback(async (body: Record<string, unknown>, label: string) => {
     setBusy(label);
@@ -126,6 +127,13 @@ export function GoogleSetupPanel({
     autoTried.current = true;
     void discover();
   }, [discover, robotReady, setup.needsMigration]);
+
+  useEffect(() => {
+    if (autoAudit.current || !robotReady || !adsReady || setup.needsMigration) return;
+    if (!ids.adsCustomerId || setup.audit?.ids.adsCustomerId) return;
+    autoAudit.current = true;
+    void call({ action: "audit" }, "audit");
+  }, [adsReady, call, ids.adsCustomerId, robotReady, setup.audit?.ids.adsCustomerId, setup.needsMigration]);
 
   function applyFix(check: GoogleCheck) {
     if (!check.fix) return;

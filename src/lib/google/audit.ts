@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 import { getResendApiKey, getResendFrom } from "@/lib/email";
 import { leadAlertRecipients } from "@/lib/leadAlert";
+import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
 import { DIGISOL_SITE_URL } from "@/lib/site";
 import { GoogleApiError, errorMessage, serviceAccountEmail, serviceAccountReady } from "@/lib/google/auth";
 import * as ga4 from "@/lib/google/ga4Admin";
@@ -437,9 +438,17 @@ async function auditSearchConsole(ids: GoogleSetupIds, origin: string): Promise<
   });
 
   const locs = sitemapXml ? parseSitemapLocs(sitemapXml) : [];
-  const key = [origin ? `${origin}/` : "", ...locs.sort((a, b) => a.length - b.length)]
-    .filter((u, i, all) => u && all.indexOf(u) === i)
-    .slice(0, 10);
+  const unique = [origin ? `${origin}/` : "", ...locs].filter((u, i, all) => u && all.indexOf(u) === i);
+  const isLandingUrl = (url: string) => {
+    try {
+      return /\/locations(\/|$)/i.test(new URL(url).pathname);
+    } catch {
+      return false;
+    }
+  };
+  const landingPages = unique.filter(isLandingUrl);
+  const otherPages = unique.filter((url) => !isLandingUrl(url)).sort((a, b) => a.length - b.length);
+  const key = [...landingPages, ...otherPages].slice(0, Math.max(10, landingPages.length + 6));
   if (key.length) {
     const results: gsc.InspectionResult[] = [];
     for (let i = 0; i < key.length; i += 5) {
@@ -859,6 +868,15 @@ export type GoogleSetupRecord = {
 
 const EMPTY_IDS: GoogleSetupIds = { ga4PropertyId: null, searchConsoleSite: null, adsCustomerId: null };
 
+/** Saved values win. Blank fields fall back so DigiSol's own Ads account is still checked. */
+function mergeIds(saved: GoogleSetupIds, defaults: GoogleSetupIds): GoogleSetupIds {
+  return {
+    ga4PropertyId: saved.ga4PropertyId || defaults.ga4PropertyId,
+    searchConsoleSite: saved.searchConsoleSite || defaults.searchConsoleSite,
+    adsCustomerId: ads.cleanCustomerId(saved.adsCustomerId) || defaults.adsCustomerId,
+  };
+}
+
 const missingSchema = (message?: string) =>
   Boolean(message && /google_setups|google_fix_log|schema cache|does not exist/i.test(message));
 
@@ -888,11 +906,14 @@ export async function loadGoogleSetup(
   return {
     needsMigration: false,
     saved: true,
-    ids: {
-      ga4PropertyId: data.ga4_property_id || null,
-      searchConsoleSite: data.search_console_site || null,
-      adsCustomerId: data.ads_customer_id || null,
-    },
+    ids: mergeIds(
+      {
+        ga4PropertyId: data.ga4_property_id || null,
+        searchConsoleSite: data.search_console_site || null,
+        adsCustomerId: data.ads_customer_id || null,
+      },
+      defaults,
+    ),
     audit: (data.audit as GoogleAudit | null) ?? null,
     previous: (data.previous_audit as GoogleAudit | null) ?? null,
   };
@@ -1070,15 +1091,19 @@ export async function auditAllGoogleSetups(db: SupabaseClient) {
   if (error) return { skipped: error.message };
   const digest: Parameters<typeof sendWeeklyDigest>[0] = [];
   for (const row of data ?? []) {
-    const ids: GoogleSetupIds = {
-      ga4PropertyId: row.ga4_property_id,
-      searchConsoleSite: row.search_console_site,
-      adsCustomerId: row.ads_customer_id,
-    };
-    if (!ids.ga4PropertyId && !ids.searchConsoleSite && !ids.adsCustomerId) continue;
     const client = (Array.isArray(row.clients) ? row.clients[0] : row.clients) as
       | { name?: string; domain?: string | null }
       | null;
+    const house = (client?.name || "").toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase();
+    const ids = mergeIds(
+      {
+        ga4PropertyId: row.ga4_property_id,
+        searchConsoleSite: row.search_console_site,
+        adsCustomerId: row.ads_customer_id,
+      },
+      house ? houseDefaults() : EMPTY_IDS,
+    );
+    if (!ids.ga4PropertyId && !ids.searchConsoleSite && !ids.adsCustomerId) continue;
     try {
       const previous = (row.audit as GoogleAudit | null) ?? null;
       const audit = await runGoogleAudit(ids, client?.domain);

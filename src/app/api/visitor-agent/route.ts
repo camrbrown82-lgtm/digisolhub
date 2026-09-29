@@ -15,9 +15,11 @@ import { parseAttributionFromBody } from "@/lib/meta/attribution";
 import { getOpenAIApiKey } from "@/lib/openai";
 import { clientIp, rateLimit } from "@/lib/security";
 import { hasAdminClient } from "@/lib/supabase/admin";
+import { LOCATION_PAGES, locationPath } from "@/lib/locations";
 import { PUBLIC_PROJECTS } from "@/lib/projects";
 import { TESTIMONIALS } from "@/lib/testimonials";
 import {
+  DIGISOL_BOOKING_URL,
   DIGISOL_EMAIL,
   DIGISOL_FACEBOOK_URL,
   DIGISOL_GOOGLE_LISTING_URL,
@@ -252,6 +254,17 @@ Avoid: ${DIGISOL_BRAND.dontSay}
 - YouTube: ${DIGISOL_YOUTUBE_URL} (featured video: ${DIGISOL_YOUTUBE_FEATURED_URL})
 - TikTok: @${DIGISOL_TIKTOK_HANDLE} (${DIGISOL_TIKTOK_URL})
 - Google Business Profile: ${DIGISOL_GOOGLE_LISTING_URL}
+${
+  DIGISOL_BOOKING_URL
+    ? `- Book a call: ${DIGISOL_BOOKING_URL} (30-minute phone consultation, weekdays 9:00 a.m.–5:00 p.m. Mountain). This link is already live on the site and the Google Business Profile. Never say DigiSol is missing online booking.`
+    : ""
+}
+
+## Landing pages already published (never say these are missing)
+${LOCATION_PAGES.map((page) => `- ${page.name}: ${DIGISOL_SITE_URL}${locationPath(page.slug)} — ${page.headline}`).join("\n")}
+- All cities: ${DIGISOL_SITE_URL}/locations
+When someone asks about a city DigiSol serves, send them that city's page. Do not offer to create a landing page for Airdrie, Calgary, Edmonton, Red Deer, or Cochrane.
+
 ## DigiSol guarantee (quote exactly; never promise more, such as refunds)
 ${DIGISOL_GUARANTEES.map((g) => `- ${g.title}: ${g.body}`).join("\n")}
 - Fine print: ${GUARANTEE_FINE_PRINT}
