@@ -32,14 +32,15 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   const description = award.house
     ? `DigiSol's own website scored ${award.score}/100 on the same audit DigiSol runs for clients: speed, security, and technical SEO.`
     : `${award.companyName}'s website scored ${award.score}/100 on DigiSol's website audit for speed, security, and technical SEO. Only sites scoring ${AWARD_MIN_SCORE}+ earn it.`;
-  const { verify, badgePng } = awardLinks(getOutboundSiteUrl(), award.auditId);
-  const images = [{ url: badgePng, width: 640, height: 240, alt: title }];
+  const { verify } = awardLinks(getOutboundSiteUrl(), award.auditId);
+  const card = `${verify}/card.jpg`;
+  const images = [{ url: card, width: 1200, height: 630, alt: title }];
   return {
     title,
     description,
     robots,
     openGraph: { title, description, url: verify, type: "website", siteName: "DigiSol", images },
-    twitter: { card: "summary_large_image", title, description, images: [badgePng] },
+    twitter: { card: "summary_large_image", title, description, images: [card] },
   };
 }
 

@@ -1,7 +1,8 @@
 import { ImageResponse } from "next/og";
-import { awardTheme, rgba } from "@/lib/awardTheme";
+import { awardBadgeElement } from "@/lib/awardBadgeImage";
+import { awardTheme } from "@/lib/awardTheme";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
-import { awardDate, badgeText, loadAward } from "@/lib/websiteAward";
+import { loadAward } from "@/lib/websiteAward";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -12,79 +13,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     hasAdminClient() ? loadAward(createAdminClient(), params.id) : Promise.resolve({ state: "missing" as const }),
     awardTheme(),
   ]);
-  const valid = award.state === "valid";
-  const words = badgeText(award.state === "missing" ? { companyName: "" } : award);
-  const name = valid ? words.title : "";
-  const long = name.length > 18;
-
-  const image = new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          padding: "0 36px",
-          backgroundColor: theme.background,
-          backgroundImage: `linear-gradient(135deg, ${theme.background} 35%, ${rgba(theme.primary, valid ? 0.28 : 0.08)})`,
-          border: `4px solid ${valid ? theme.primary : rgba(theme.text, 0.25)}`,
-          borderRadius: 28,
-          color: theme.text,
-          fontFamily: "sans-serif",
-        }}
-      >
-        {theme.logoData ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={theme.logoData}
-            width={152}
-            height={152}
-            alt=""
-            style={{
-              borderRadius: 999,
-              border: `3px solid ${rgba(theme.highlight, valid ? 0.7 : 0.25)}`,
-              opacity: valid ? 1 : 0.35,
-            }}
-          />
-        ) : null}
-        <div style={{ display: "flex", flexDirection: "column", marginLeft: theme.logoData ? 32 : 0 }}>
-          <div
-            style={{
-              display: "flex",
-              alignSelf: "flex-start",
-              background: theme.primary,
-              opacity: valid ? 1 : 0.55,
-              fontSize: 17,
-              fontWeight: 700,
-              letterSpacing: 2.4,
-              padding: "6px 20px",
-              borderRadius: 999,
-            }}
-          >
-            {words.pill}
-          </div>
-          {valid ? (
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <div style={{ display: "flex", fontSize: long ? 28 : 34, fontWeight: 800, marginTop: 16, maxWidth: 400 }}>
-                {name.length > 26 ? `${name.slice(0, 25)}…` : name}
-              </div>
-              <div style={{ display: "flex", fontSize: 24, opacity: 0.85, marginTop: 8 }}>
-                <span>{words.scoreLabel}</span>
-                <span style={{ color: theme.highlight, fontWeight: 700, marginLeft: 8 }}>{`${award.score}/100`}</span>
-              </div>
-              <div style={{ display: "flex", fontSize: 18, opacity: 0.6, marginTop: 10 }}>
-                {`Verified ${awardDate(award.auditedAt)} · wwwdigisol.com`}
-              </div>
-            </div>
-          ) : (
-            <div style={{ display: "flex", fontSize: 26, opacity: 0.6, marginTop: 18 }}>Not current</div>
-          )}
-        </div>
-      </div>
-    ),
-    { width: 640, height: 240 },
-  );
+  const image = new ImageResponse(awardBadgeElement(award, theme), { width: 640, height: 240 });
   image.headers.set("Cache-Control", "public, max-age=3600, s-maxage=3600");
   return image;
 }
