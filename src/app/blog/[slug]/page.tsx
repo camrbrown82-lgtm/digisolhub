@@ -10,6 +10,7 @@ import {
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { QuickQuote } from "@/components/QuickQuote";
+import { ShareButtons } from "@/components/ShareButtons";
 import { BLOG_POSTS, blogPath, blogUrl, getBlogPost, publishedBlogPosts } from "@/lib/blog";
 import {
   DIGISOL_FOUNDER,
@@ -168,6 +169,14 @@ export default function BlogPostPage({ params }: PageProps) {
               </section>
             ))}
           </div>
+
+          <ShareButtons
+            className="mt-12"
+            url={url}
+            caption={`${post.title}\n\n${post.excerpt}\n\nRead the guide: ${url}`}
+            analyticsKey={`blog_${post.slug}`}
+            heading="Share this guide"
+          />
 
           {post.furtherReading.length ? (
             <aside className="mt-12 rounded-2xl border border-white/10 bg-white/[0.03] p-6">

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AwardEmbedCode } from "@/components/AwardEmbedCode";
+import { ShareButtons } from "@/components/ShareButtons";
 import WebsiteAwardBadge from "@/components/WebsiteAwardBadge";
 import { markAddPageViewed } from "@/lib/awardRegistry";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
@@ -10,10 +11,23 @@ import { AWARD_MIN_SCORE, awardDate, awardEmbedHtml, awardLinks, loadAward } fro
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Verify a DigiSol Excellence Award",
-  robots: { index: false, follow: true },
-};
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const robots = { index: false, follow: true };
+  if (!hasAdminClient()) return { title: "Verify a DigiSol Excellence Award", robots };
+  const award = await loadAward(createAdminClient(), params.id);
+  if (award.state !== "valid") return { title: "Verify a DigiSol Excellence Award", robots };
+  const title = `${award.companyName} earned the DigiSol Excellence Award`;
+  const description = `${award.companyName}'s website scored ${award.score}/100 on DigiSol's website audit for speed, security, and technical SEO. Only sites scoring ${AWARD_MIN_SCORE}+ earn it.`;
+  const { verify, badgePng } = awardLinks(getOutboundSiteUrl(), award.auditId);
+  const images = [{ url: badgePng, width: 640, height: 240, alt: title }];
+  return {
+    title,
+    description,
+    robots,
+    openGraph: { title, description, url: verify, type: "website", siteName: "DigiSol", images },
+    twitter: { card: "summary_large_image", title, description, images: [badgePng] },
+  };
+}
 
 export default async function AwardPage({
   params,
@@ -69,6 +83,13 @@ export default async function AwardPage({
       {current ? (
         <div className="mt-8">
           <WebsiteAwardBadge companyName={award.companyName} score={award.score} date={date} verifyUrl={verify} />
+          <ShareButtons
+            className="mt-8"
+            url={verify}
+            caption={`${award.companyName}'s website earned the DigiSol Excellence Award, scoring ${award.score}/100 on DigiSol's website audit for speed, security, and technical SEO. Verified: ${verify}`}
+            analyticsKey={`award_${award.auditId}`}
+            heading="Share this award"
+          />
         </div>
       ) : null}
 
@@ -93,6 +114,9 @@ export default async function AwardPage({
       <p className="mt-10 flex gap-6 text-sm">
         <Link href="/awards" className="text-indigo-300 hover:text-indigo-200">
           See award winners
+        </Link>
+        <Link href="/blog/digisol-excellence-award-website-badge" className="text-indigo-300 hover:text-indigo-200">
+          About the award
         </Link>
         <Link href="/" className="text-indigo-300 hover:text-indigo-200">
           About DigiSol

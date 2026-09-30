@@ -24,6 +24,93 @@ export type BlogPost = {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "digisol-excellence-award-website-badge",
+    title: "The DigiSol Excellence Award: What It Takes, and How to Add Your Badge",
+    excerpt:
+      "Websites that score 90 or higher on DigiSol's audit earn a verified badge. Here is what the audit checks, why the badge helps visitors trust you, and how to put it on your site in about two minutes.",
+    category: "Websites",
+    publishedAt: "2026-09-30",
+    readingMinutes: 5,
+    keywords: [
+      "website audit award",
+      "website trust badge",
+      "DigiSol Excellence Award",
+      "website audit Alberta",
+      "technical SEO checklist",
+    ],
+    sections: [
+      {
+        heading: "Why we give an award",
+        body: [
+          "Most website audits are a list of what is broken. That is useful, but some businesses get the fundamentals right, and they deserve a way to show it.",
+          "The DigiSol Excellence Award goes to businesses whose own website scores 90 or higher out of 100 on the DigiSol website audit. It can't be bought or requested. The site either clears the bar or it doesn't.",
+        ],
+      },
+      {
+        heading: "What the audit checks",
+        body: [
+          "The audit looks at the technical basics that decide whether a site loads quickly, can be found in search, and looks right when it is shared. Each check adds to or takes away from the score:",
+        ],
+        bullets: [
+          "Speed: how quickly the server starts sending the page.",
+          "Security: the whole site is served over HTTPS.",
+          "Page title and description: present, the right length, and clear about what you do.",
+          "Headings: one main heading that says what the page is about.",
+          "Mobile: the page is set up to display properly on phones.",
+          "Structured data: code that tells Google what your business is and where it works.",
+          "Search basics: the page can be indexed, has a canonical address, and names the area you serve.",
+          "Sharing: link previews look right on Facebook and other networks.",
+        ],
+        after: [
+          "Scoring 90 means almost all of those are in place.",
+        ],
+      },
+      {
+        heading: "Why a badge on your site helps",
+        body: [
+          "Visitors decide in seconds whether a business looks trustworthy. A badge from an outside company that actually checked your site gives them one more reason to call you instead of the next result.",
+          "It is also verifiable. The badge links to a live page on wwwdigisol.com showing your score and the date of the audit, so anyone who clicks can see it is real.",
+        ],
+      },
+      {
+        heading: "It stays honest",
+        body: [
+          "The award reflects the audit on the date shown. If a later audit of the same site scores below 90, the badge and the verification page both say the award is no longer current. That keeps the badge meaningful for the businesses that hold it.",
+        ],
+      },
+      {
+        heading: "How to add your badge",
+        body: [
+          "Winners get an email with a link to their own add-badge page. The code is ready to copy, and it goes anywhere on the site. The footer works well.",
+        ],
+        bullets: [
+          "WordPress: add a Custom HTML block (the footer widget area works well) and paste the code.",
+          "Wix: Add, then Embed code, then Embed HTML, and paste.",
+          "Squarespace: add a Code block and paste.",
+          "Shopify: Online Store, Themes, Edit code, then paste into the footer section.",
+          "Custom site: send the code to your web developer. It works in any page.",
+        ],
+        links: [{ label: "See the award winners", href: "/awards" }],
+      },
+      {
+        heading: "Find out how your site scores",
+        body: [
+          "Ask for a free website audit. If your site scores 90 or higher, the award and badge are yours. If it doesn't, you get a short list of what to fix first, in plain language.",
+        ],
+        links: [
+          { label: "Request a free website audit", href: "/#contact" },
+          { label: "Watch the website audit walkthrough", href: "/media/website-audit" },
+          { label: "What a small business website costs in Alberta", href: "/blog/small-business-website-cost-alberta-2026" },
+        ],
+      },
+    ],
+    furtherReading: [
+      { label: "Google Search Central: SEO Starter Guide", href: "https://developers.google.com/search/docs/fundamentals/seo-starter-guide" },
+      { label: "Google: Introduction to structured data", href: "https://developers.google.com/search/docs/appearance/structured-data/intro-structured-data" },
+      { label: "PageSpeed Insights", href: "https://pagespeed.web.dev/" },
+    ],
+  },
+  {
     slug: "competitive-analysis-and-weekly-google-checks",
     title: "See Where You Stand Against Local Competitors, and Keep Google Checked Every Week",
     excerpt:

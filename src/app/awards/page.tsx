@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
+import { ShareButtons } from "@/components/ShareButtons";
+import { DIGISOL_SITE_URL } from "@/lib/site";
 import WebsiteAwardBadge from "@/components/WebsiteAwardBadge";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { getOutboundSiteUrl } from "@/lib/supabase/env";
@@ -9,9 +11,22 @@ import { AWARD_MIN_SCORE, awardDate, awardLinks, loadAward } from "@/lib/website
 
 export const dynamic = "force-dynamic";
 
+const DESCRIPTION = `Businesses whose websites scored ${AWARD_MIN_SCORE}+ on DigiSol's website audit for speed, security, and technical SEO.`;
+const ABOUT_POST = "/blog/digisol-excellence-award-website-badge";
+
 export const metadata: Metadata = {
   title: "DigiSol Excellence Award winners | DigiSol",
-  description: `Businesses whose websites scored ${AWARD_MIN_SCORE}+ on DigiSol's website audit for speed, security, and technical SEO.`,
+  description: DESCRIPTION,
+  alternates: { canonical: "/awards" },
+  openGraph: {
+    title: "DigiSol Excellence Award winners",
+    description: DESCRIPTION,
+    url: `${DIGISOL_SITE_URL}/awards`,
+    type: "website",
+    siteName: "DigiSol",
+    images: [{ url: `${ABOUT_POST}/card.jpg`, width: 1200, height: 630, alt: "DigiSol Excellence Award" }],
+  },
+  twitter: { card: "summary_large_image", images: [`${ABOUT_POST}/card.jpg`] },
 };
 
 async function featuredWinners() {
@@ -39,7 +54,10 @@ export default async function AwardWinnersPage() {
         <p className="mt-4 max-w-2xl text-zinc-300">
           The award goes to businesses whose own website scores {AWARD_MIN_SCORE} or higher on DigiSol&apos;s website
           audit. It checks server speed, HTTPS, page titles and descriptions, headings, structured data, and other
-          technical SEO basics. Every badge links to a live verification page.
+          technical SEO basics. Every badge links to a live verification page.{" "}
+          <Link href={ABOUT_POST} className="text-amber-300 hover:text-amber-200">
+            How the award works
+          </Link>
         </p>
 
         {winners.length === 0 ? (
@@ -59,6 +77,14 @@ export default async function AwardWinnersPage() {
             )}
           </div>
         )}
+
+        <ShareButtons
+          className="mt-12"
+          url={`${DIGISOL_SITE_URL}/awards`}
+          caption={`Meet the DigiSol Excellence Award winners: local businesses whose websites scored ${AWARD_MIN_SCORE}+ on our audit for speed, security, and technical SEO. ${DIGISOL_SITE_URL}/awards`}
+          analyticsKey="awards_index"
+          heading="Share the winners"
+        />
 
         <section className="mt-16 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
           <h2 className="text-lg font-semibold text-white">How does your website score?</h2>

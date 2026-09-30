@@ -46,6 +46,16 @@ export function AwardActions({
 
   return (
     <div className="flex min-w-[150px] flex-col items-start gap-1.5 text-xs">
+      <a
+        href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(verifyUrl)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => void copyMention()}
+        title="Copies the mention, then opens Facebook. Paste it into the post box."
+        className="font-semibold text-sky-300 hover:text-sky-200"
+      >
+        Share on Facebook
+      </a>
       <button type="button" onClick={copyMention} className="text-indigo-300 hover:text-indigo-200">
         {copied ? "Mention copied" : "Copy mention"}
       </button>
