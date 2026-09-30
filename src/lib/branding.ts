@@ -197,6 +197,24 @@ export function posterColorHeader(brand: CompanyBrand) {
     .join("\n");
 }
 
+export function isHouseCompany(companyName?: string | null) {
+  return (companyName?.trim().toLowerCase() || "") === DIGISOL_HOUSE_NAME.toLowerCase();
+}
+
+/** How vivid the poster should feel. DigiSol gets its homepage treatment; every other company gets its own kit, saturated. */
+export function posterLook(companyName: string, brand: CompanyBrand) {
+  if (isHouseCompany(companyName)) {
+    return [
+      `LOOK (match the wwwdigisol.com homepage): near-black zinc ${brand.backgroundColor} page with a big indigo ${brand.primaryColor} radial glow pouring down from the top edge, a faint thin grid that fades out toward the edges, and soft ice-blue ${brand.highlightColor} light blooms.`,
+      `Headline in bold ${brand.textColor} type with the 1–3 key words in a luminous gradient from ice blue ${brand.highlightColor} to bright light indigo. Buttons are rounded pills in solid indigo ${brand.primaryColor} with an indigo glow. Supporting cards are dark glass with thin light borders.`,
+      "Vivid, saturated, and glowing like a premium tech launch. Never muted, washed out, gray, or flat.",
+    ].join("\n");
+  }
+  return isDarkBrand(brand)
+    ? `LOOK: vivid and saturated. Rich glowing gradients and light blooms using ${named(brand.highlightColor)} and ${named(brand.primaryColor)} over the ${named(brand.backgroundColor)} page, key headline words lit in ${named(brand.highlightColor)}, bold high-contrast type. Never muted, washed out, gray, or flat.`
+    : `LOOK: vivid and saturated. Bold color blocks, gradients, and shapes in ${named(brand.primaryColor)} and ${named(brand.highlightColor)} on the ${named(brand.backgroundColor)} page, key headline words in ${named(brand.highlightColor)}, crisp high-contrast type. Never muted, washed out, gray, or flat.`;
+}
+
 export function parseBrand(value: unknown, fallback: CompanyBrand = NEUTRAL_BRAND): CompanyBrand {
   const row = asRecord(value);
   const backgroundColor = normalizeHex(text(row.backgroundColor, ""), fallback.backgroundColor);
@@ -411,7 +429,7 @@ export function enforceVisualBrandLock(
   brand: CompanyBrand,
 ) {
   const lock = brandLockRules(companyName, brand, "visual");
-  return `${posterColorHeader(brand)}\n\n${prompt.trim()}\n\n${lock}`.slice(0, 3900);
+  return `${posterColorHeader(brand)}\n${posterLook(companyName, brand)}\n\n${prompt.trim()}\n\n${lock}`.slice(0, 3900);
 }
 
 export function sanitizeVisualNotes(value: string) {
@@ -428,7 +446,7 @@ export function inferVisualStyle(brand: CompanyBrand) {
   const written = sanitizeVisualNotes(brand.visualStyle);
   if (written) return written;
   return isDarkBrand(brand)
-    ? "Premium dark campaign poster. Cinematic lighting, restrained glow, tactile surfaces, generous negative space."
+    ? "Premium dark campaign poster. Cinematic lighting, vivid glow, tactile surfaces, generous negative space."
     : "Premium light editorial poster. Clean paper or studio surface, sharp type, airy negative space, no clutter.";
 }
 

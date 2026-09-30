@@ -1,5 +1,6 @@
 import type { SocialCampaignChannel } from "@/lib/campaignChannels";
-import { LINKEDIN_ENABLED } from "@/lib/site";
+import { isStoredPosterUrl, posterExportUrl } from "@/lib/posterSizes";
+import { DIGISOL_SITE_URL, LINKEDIN_ENABLED } from "@/lib/site";
 
 export type SocialPublishResult = {
   ok: boolean;
@@ -60,6 +61,11 @@ export async function publishSocialPost(input: {
     };
   }
 
+  // Hub posters go out as a JPEG at the platform's size; Instagram rejects PNGs and anything outside 4:5–1.91:1.
+  const mediaUrl = isStoredPosterUrl(input.mediaUrl)
+    ? posterExportUrl(input.mediaUrl!, input.channel === "linkedin" ? "link" : "feed", { base: DIGISOL_SITE_URL })
+    : input.mediaUrl;
+
   if (input.channel === "linkedin") {
     if (!LINKEDIN_ENABLED) {
       return {
@@ -69,12 +75,12 @@ export async function publishSocialPost(input: {
         error: "LinkedIn is paused until the DigiSol business page is set up.",
       };
     }
-    return publishLinkedIn({ body, mediaUrl: input.mediaUrl });
+    return publishLinkedIn({ body, mediaUrl });
   }
   if (input.channel === "instagram") {
-    return publishInstagram({ body, mediaUrl: input.mediaUrl });
+    return publishInstagram({ body, mediaUrl });
   }
-  return publishFacebook({ body, mediaUrl: input.mediaUrl });
+  return publishFacebook({ body, mediaUrl });
 }
 
 async function publishFacebook(input: {

@@ -7,6 +7,7 @@ import {
   enforceVisualBrandLock,
   inferVisualStyle,
   isDarkBrand,
+  posterLook,
   sanitizeVisualNotes,
 } from "@/lib/branding";
 import { jsonSafeText } from "@/lib/jsonSafe";
@@ -160,8 +161,10 @@ ${
 - If the visual idea conflicts with the copy, keep ALL required text readable and adapt the layout.
 - Do not invent extra slogans, stats, phone numbers, cities, or URLs.
 ${brandColorLock(input.brand)}
+${posterLook(input.companyName, input.brand)}
+- Describe that look in the prompt: the lighting, glow, gradients, and texture, not just the copy.
 - ${isDarkBrand(input.brand) ? "DARK MODE poster. The page is the background hex, not a white newsletter or paper mock." : "LIGHT MODE poster. Keep the page on the background hex."}
-- Large high-contrast type in the text color. Highlights only for glow, rules, and buttons.
+- Large high-contrast type in the text color. Highlights for glow, rules, buttons, and the key headline words.
 - Fill the whole canvas with the layout. Do not leave a logo hole and do not draw a logo — a separate brand bar is added after generation so the mark never covers copy.
 - Closing slides: a solid highlight-colored button shape containing the exact URL from the copy.
 - Carousel slides must match each other: same background, same margins, same type style.

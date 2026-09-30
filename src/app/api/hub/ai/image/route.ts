@@ -21,9 +21,9 @@ import {
   type PosterSlide,
 } from "@/lib/posterBrief";
 import { posterSlidesToPdf } from "@/lib/posterPdf";
-import { addBadgeBand, resolvePosterBadge } from "@/lib/posterBadge";
+import { renderBadgePng, resolvePosterBadge } from "@/lib/posterBadge";
 import { posterSocialPack } from "@/lib/posterSocial";
-import { stampOfficialLogo } from "@/lib/stampLogo";
+import { artFormatFor, badgeWidthFor, stampOfficialLogo } from "@/lib/stampLogo";
 import { companySiteUrl, getWorkspaceClient } from "@/lib/workspace";
 
 export const runtime = "nodejs";
@@ -133,6 +133,13 @@ export async function POST(request: Request) {
       badge: null,
       warning: "Could not load the award badge.",
     }));
+    const badgePng = badge
+      ? await renderBadgePng(badge.award, badgeWidthFor(format)).catch((badgeError) => {
+          console.error("Could not render award badge", badgeError);
+          return null;
+        })
+      : null;
+    const artFormat = artFormatFor(format, Boolean(badgePng));
     const seriesId = crypto.randomUUID();
 
     const directedSlides = await Promise.all(
@@ -141,12 +148,12 @@ export async function POST(request: Request) {
           companyName,
           brand,
           brief: prompt,
-          format,
+          format: artFormat,
           slide,
           slideCount: slides.length,
           context: parsed.context,
           siteUrl,
-          badgeFacts: badge?.facts,
+          badgeFacts: badgePng ? badge?.facts : undefined,
         }),
       ),
     );
@@ -154,31 +161,23 @@ export async function POST(request: Request) {
     const images: { buffer: Buffer; directed: string; slide: PosterSlide }[] = [];
     for (let index = 0; index < slides.length; index += 1) {
       const directed = directedSlides[index];
-      const buffer = await generatePosterBuffer(openai, directed, format, preferred);
+      const buffer = await generatePosterBuffer(openai, directed, artFormat, preferred);
       if (!buffer) {
         return NextResponse.json(
           { error: `No image returned for slide ${index + 1}` },
           { status: 502 },
         );
       }
-      let stamped = buffer;
-      if (badge) {
-        try {
-          stamped = await addBadgeBand(stamped, badge.award, brand.backgroundColor);
-        } catch (badgeError) {
-          console.error("Could not add award badge", badgeError);
-        }
-      }
-      if (logo?.buffer.length) {
-        try {
-          stamped = await stampOfficialLogo(stamped, logo.buffer, {
-            backgroundColor: brand.backgroundColor,
-            accentColor: brand.highlightColor || brand.accentColor,
-          });
-        } catch (stampError) {
-          console.error("Could not stamp official logo", stampError);
-        }
-      }
+      const canvas = {
+        format,
+        backgroundColor: brand.backgroundColor,
+        accentColor: brand.highlightColor || brand.accentColor,
+        badge: badgePng,
+      };
+      const stamped = await stampOfficialLogo(buffer, logo?.buffer ?? null, canvas).catch((stampError) => {
+        console.error("Could not stamp official logo", stampError);
+        return stampOfficialLogo(buffer, null, canvas);
+      });
       images.push({ buffer: stamped, directed, slide: slides[index] });
     }
 
@@ -302,7 +301,7 @@ export async function POST(request: Request) {
       prompt: directedSlides.join("\n\n---\n\n"),
       social,
       logoStamped: Boolean(logo?.buffer.length),
-      badgeAdded: Boolean(badge),
+      badgeAdded: Boolean(badgePng),
       warning: [saveWarning, badgeWarning].filter(Boolean).join(" ") || undefined,
     });
   } catch (err) {

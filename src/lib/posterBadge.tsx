@@ -1,5 +1,4 @@
 import { ImageResponse } from "next/og";
-import sharp from "sharp";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { awardBadgeElement } from "@/lib/awardBadgeImage";
 import { awardTheme } from "@/lib/awardTheme";
@@ -80,27 +79,4 @@ export async function renderBadgePng(award: AwardStatus, width: number) {
     height: Math.round(240 * scale),
   });
   return Buffer.from(await image.arrayBuffer());
-}
-
-/** Adds the badge on a band under the artwork, so it never covers the poster copy. */
-export async function addBadgeBand(poster: Buffer, badge: AwardStatus, backgroundColor: string) {
-  const meta = await sharp(poster).metadata();
-  const width = meta.width || 1024;
-  const height = meta.height || 1024;
-  const badgeWidth = Math.round(width * 0.62);
-  const png = await renderBadgePng(badge, badgeWidth);
-  const badgeMeta = await sharp(png).metadata();
-  const badgeHeight = badgeMeta.height || Math.round((badgeWidth * 240) / 640);
-  const pad = Math.round(width * 0.045);
-  const bandHeight = badgeHeight + pad * 2;
-
-  return sharp({
-    create: { width, height: height + bandHeight, channels: 4, background: backgroundColor },
-  })
-    .composite([
-      { input: await sharp(poster).png().toBuffer(), top: 0, left: 0 },
-      { input: png, top: height + pad, left: Math.round((width - (badgeMeta.width || badgeWidth)) / 2) },
-    ])
-    .png()
-    .toBuffer();
 }
