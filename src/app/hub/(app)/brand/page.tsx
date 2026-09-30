@@ -26,6 +26,7 @@ export default async function BrandPage() {
       {active ? (
         <>
           <BrandForm
+          key={active.id}
           clientId={active.id}
           companyName={companyName}
           domain={active.domain}

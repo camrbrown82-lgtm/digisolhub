@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { type CompanyBrand } from "@/lib/branding";
+import { BRAND_WORDING_KEYS, type BrandWording, type CompanyBrand } from "@/lib/branding";
 import { BrandLogoKit } from "@/components/hub/BrandLogoKit";
+import { BrandWordingHelper } from "@/components/hub/BrandWordingHelper";
 import { DictatedField } from "@/components/hub/MicDictateButton";
 
 function ColorField({
@@ -49,8 +50,51 @@ export function BrandForm({
   brand: CompanyBrand;
 }) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState(false);
+  const [words, setWords] = useState<BrandWording>(
+    () => Object.fromEntries(BRAND_WORDING_KEYS.map((key) => [key, brand[key]])) as BrandWording,
+  );
+  // Bumping a field's version remounts it with the new wording.
+  const [versions, setVersions] = useState<Record<string, number>>({});
+  const fieldKey = (name: keyof BrandWording) => `${name}-${versions[name] ?? 0}`;
+
+  function applyWords(next: Partial<BrandWording>) {
+    setWords((current) => ({ ...current, ...next }));
+    setVersions((current) => ({
+      ...current,
+      ...Object.fromEntries(Object.keys(next).map((key) => [key, (current[key] ?? 0) + 1])),
+    }));
+  }
+
+  async function saveWording(next: Partial<BrandWording>) {
+    setSaving(true);
+    setStatus("");
+    const response = await fetch(`/api/hub/clients/${clientId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ branding: next }),
+    });
+    const result = (await response.json().catch(() => ({}))) as { error?: string };
+    setSaving(false);
+    if (!response.ok) {
+      setStatus(result.error || "Could not save the wording");
+      return false;
+    }
+    setStatus(`Wording saved for ${companyName}. Colors, fonts, and logos weren't changed.`);
+    router.refresh();
+    return true;
+  }
+
+  function saveFormWording() {
+    const form = formRef.current;
+    if (!form) return;
+    const data = new FormData(form);
+    void saveWording(
+      Object.fromEntries(BRAND_WORDING_KEYS.map((key) => [key, String(data.get(key) ?? "")])) as BrandWording,
+    );
+  }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -107,7 +151,14 @@ export function BrandForm({
         secondaryLogoUrl={brand.secondaryLogoUrl}
         primaryColor={brand.primaryColor}
       />
-    <form onSubmit={onSubmit} className="space-y-6">
+      <BrandWordingHelper
+        clientId={clientId}
+        companyName={companyName}
+        domain={domain}
+        onApply={applyWords}
+        onSave={saveWording}
+      />
+    <form ref={formRef} onSubmit={onSubmit} className="space-y-6">
       <div
         className="flex items-center gap-4 rounded-2xl border border-zinc-800 p-4"
         style={{ background: brand.secondaryColor }}
@@ -168,25 +219,28 @@ export function BrandForm({
           <input name="domain" defaultValue={domain ?? ""} className="hub-field" placeholder="acme.com" />
         </label>
         <DictatedField
+          key={fieldKey("tagline")}
           className="block text-sm sm:col-span-2"
           label="Tagline"
           name="tagline"
-          defaultValue={brand.tagline}
+          defaultValue={words.tagline}
           disabled={saving}
         />
         <DictatedField
+          key={fieldKey("voice")}
           className="block text-sm sm:col-span-2"
           label="Voice / tone"
           name="voice"
-          defaultValue={brand.voice}
+          defaultValue={words.voice}
           multiline
           disabled={saving}
         />
         <DictatedField
+          key={fieldKey("audience")}
           className="block text-sm sm:col-span-2"
           label="Audience"
           name="audience"
-          defaultValue={brand.audience}
+          defaultValue={words.audience}
           disabled={saving}
         />
         <ColorField label="Primary color" name="primaryColor" value={brand.primaryColor} />
@@ -200,33 +254,37 @@ export function BrandForm({
           <input name="fonts" defaultValue={brand.fonts} className="hub-field" />
         </label>
         <DictatedField
+          key={fieldKey("visualStyle")}
           className="block text-sm sm:col-span-2"
           label="Poster / visual style"
           name="visualStyle"
-          defaultValue={brand.visualStyle}
+          defaultValue={words.visualStyle}
           multiline
           disabled={saving}
           placeholder="Materials, lighting, mood. Example: dark zinc, indigo glow, cinematic, lots of empty space."
         />
         <DictatedField
+          key={fieldKey("doSay")}
           label="Words to lean on"
           name="doSay"
-          defaultValue={brand.doSay}
+          defaultValue={words.doSay}
           multiline
           disabled={saving}
         />
         <DictatedField
+          key={fieldKey("dontSay")}
           label="Words to avoid"
           name="dontSay"
-          defaultValue={brand.dontSay}
+          defaultValue={words.dontSay}
           multiline
           disabled={saving}
         />
         <DictatedField
+          key={fieldKey("extra")}
           className="block text-sm sm:col-span-2"
           label="Other brand notes"
           name="extra"
-          defaultValue={brand.extra}
+          defaultValue={words.extra}
           multiline
           rows={4}
           disabled={saving}
@@ -234,9 +292,15 @@ export function BrandForm({
         />
       </div>
 
-      <button type="submit" disabled={saving} className="hub-btn">
-        {saving ? "Saving…" : "Save brand kit"}
-      </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="submit" disabled={saving} className="hub-btn">
+          {saving ? "Saving…" : "Save brand kit"}
+        </button>
+        <button type="button" onClick={saveFormWording} disabled={saving} className="hub-btn-secondary">
+          Save wording only
+        </button>
+        <span className="text-xs text-zinc-500">Wording only keeps the saved colors, fonts, and logos.</span>
+      </div>
       {status ? <p className="text-sm text-indigo-300">{status}</p> : null}
     </form>
     </div>

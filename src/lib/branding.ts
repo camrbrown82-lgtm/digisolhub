@@ -243,9 +243,27 @@ export function parseBrand(value: unknown, fallback: CompanyBrand = NEUTRAL_BRAN
   };
 }
 
+/** Text fields of the kit: everything except colors, fonts, and logos. */
+export const BRAND_WORDING_KEYS = [
+  "tagline",
+  "voice",
+  "audience",
+  "doSay",
+  "dontSay",
+  "visualStyle",
+  "extra",
+] as const satisfies readonly (keyof CompanyBrand)[];
+
+export type BrandWording = Pick<CompanyBrand, (typeof BRAND_WORDING_KEYS)[number]>;
+
+/** Saves the fields that were sent and keeps every other saved field, so a wording-only save never resets colors. */
 export function mergeBrand(existing: unknown, incoming: unknown, fallback?: CompanyBrand) {
-  const current = parseBrand(existing, fallback);
-  const next = parseBrand(incoming, fallback);
+  const saved = asRecord(existing);
+  const sent = Object.fromEntries(
+    Object.entries(asRecord(incoming)).filter(([, value]) => typeof value === "string"),
+  ) as Record<string, string>;
+  const current = parseBrand(saved, fallback);
+  const next = parseBrand({ ...saved, ...sent }, fallback);
   return {
     ...next,
     logoUrl: next.logoUrl || current.logoUrl,
@@ -253,9 +271,6 @@ export function mergeBrand(existing: unknown, incoming: unknown, fallback?: Comp
     secondaryLogoUrl: next.secondaryLogoUrl || current.secondaryLogoUrl,
     secondaryLogoDescription:
       next.secondaryLogoDescription || current.secondaryLogoDescription,
-    textColor: next.textColor || current.textColor,
-    highlightColor: next.highlightColor || current.highlightColor,
-    backgroundColor: next.backgroundColor || current.backgroundColor,
   };
 }
 
