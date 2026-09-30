@@ -11,7 +11,7 @@ function hostOf(domain: string | null | undefined) {
  * Records a Hub company as a won lead in DigiSol's pipeline, linked to DigiSol's contact for it when
  * one exists. Safe to call repeatedly; one won lead per company. DigiSol itself is never counted.
  */
-export async function recordClientWin(db: SupabaseClient, clientId: string) {
+export async function recordClientWin(db: SupabaseClient, clientId: string, contactId?: string | null) {
   const { data: client } = await db
     .from("clients")
     .select("id, name, domain, created_at")
@@ -29,15 +29,31 @@ export async function recordClientWin(db: SupabaseClient, clientId: string) {
     .eq("stage", "won")
     .ilike("company", client.name)
     .limit(1);
-  if (existing?.length) return existing[0].id as string;
+  const { data: given } = contactId
+    ? await db.from("contacts").select("id, name, email, phone").eq("id", contactId).limit(1)
+    : { data: null };
+
+  if (existing?.length) {
+    const leadId = existing[0].id as string;
+    const linked = given?.[0];
+    if (linked) {
+      await db
+        .from("leads")
+        .update({ contact_id: linked.id, name: linked.name, email: linked.email, phone: linked.phone })
+        .eq("id", leadId);
+    }
+    return leadId;
+  }
 
   const host = hostOf(client.domain);
-  const { data: byCompany } = await db
-    .from("contacts")
-    .select("id, name, email, phone")
-    .eq("client_id", house.id)
-    .ilike("company", client.name)
-    .limit(1);
+  const { data: byCompany } = given?.length
+    ? { data: given }
+    : await db
+        .from("contacts")
+        .select("id, name, email, phone")
+        .eq("client_id", house.id)
+        .ilike("company", client.name)
+        .limit(1);
   let contact = byCompany?.[0] ?? null;
   if (!contact && host) {
     const { data: byEmail } = await db

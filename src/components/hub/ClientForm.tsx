@@ -20,14 +20,18 @@ export function ClientForm() {
         name: data.get("name"),
         domain: data.get("domain"),
         notes: data.get("notes"),
+        contactName: data.get("contactName"),
+        contactEmail: data.get("contactEmail"),
+        startOnboarding: data.get("startOnboarding") === "on",
       }),
     });
-    const result = (await response.json()) as { id?: string; error?: string };
+    const result = (await response.json()) as { id?: string; error?: string; warning?: string };
     setSaving(false);
     if (!response.ok) {
       setError(result.error || "Could not save company");
       return;
     }
+    if (result.warning) window.alert(result.warning);
     await fetch("/api/hub/workspace", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -50,6 +54,26 @@ export function ClientForm() {
       <label className="block text-sm">
         Domain
         <input name="domain" className="hub-field" placeholder="acme.com" />
+      </label>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="block text-sm">
+          Main contact name
+          <input name="contactName" className="hub-field" placeholder="Jane Smith" />
+        </label>
+        <label className="block text-sm">
+          Contact email
+          <input name="contactEmail" type="email" className="hub-field" placeholder="jane@acme.com" />
+        </label>
+      </div>
+      <label className="flex items-start gap-2 text-sm text-zinc-300">
+        <input name="startOnboarding" type="checkbox" defaultChecked className="mt-1" />
+        <span>
+          Start the Client onboarding emails for this contact
+          <span className="block text-xs text-zinc-500">
+            Welcome now, a check-in at day 3, and a feedback and review ask at day 14, sent from DigiSol. Edit
+            them under Workflows. The company also counts as a won lead.
+          </span>
+        </span>
       </label>
       <label className="block text-sm">
         Notes

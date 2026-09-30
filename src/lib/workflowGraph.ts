@@ -28,7 +28,7 @@ export const TRIGGER_LABELS: Record<WorkflowTrigger, string> = {
 };
 
 /** Which new leads a "New lead" workflow accepts. Stored on the trigger node as `audience`. */
-export const LEAD_AUDIENCES = ["all", "inbound", "audited", "google_ads"] as const;
+export const LEAD_AUDIENCES = ["all", "inbound", "audited", "google_ads", "clients"] as const;
 
 export type LeadAudience = (typeof LEAD_AUDIENCES)[number];
 
@@ -37,7 +37,11 @@ export const LEAD_AUDIENCE_LABELS: Record<LeadAudience, string> = {
   inbound: "Inbound leads: forms, Kaylev chat, Google Ads, contacts you add",
   audited: "Audited prospects who click a link in their audit email",
   google_ads: "Google Ads leads only",
+  clients: "Signed-up clients: the contact you add with a company",
 };
+
+/** Tag on a company's sign-up contact. Clients get onboarding, never sales follow-ups. */
+export const CLIENT_TAG = "client";
 
 export function asLeadAudience(value: unknown): LeadAudience {
   return LEAD_AUDIENCES.includes(value as LeadAudience)
@@ -58,8 +62,11 @@ export function contactMatchesAudience(
   contact: { source?: string | null; tags?: string[] | null },
   audience: LeadAudience,
 ) {
-  if (audience === "all") return true;
   const tags = contact.tags ?? [];
+  const client = tags.includes(CLIENT_TAG);
+  if (audience === "clients") return client;
+  if (audience === "all") return true;
+  if (client) return false;
   const source = String(contact.source || "").toLowerCase();
   const audited =
     tags.includes("prospect_audit_engaged") || source.startsWith("prospect_audit");

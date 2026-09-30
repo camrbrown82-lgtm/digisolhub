@@ -50,6 +50,8 @@ async function sendBlockFor(
   admin: ReturnType<typeof createAdminClient>,
   contactId: string,
   automatic: boolean,
+  /** Client onboarding runs because the lead is won, so the won stop can't apply. */
+  clientOnboarding = false,
 ): Promise<SendBlock | null> {
   const { data: contact } = await admin
     .from("contacts")
@@ -61,7 +63,7 @@ async function sendBlockFor(
   if ((await resolveScannerStatus(admin, contactId)).state === "confirmed") {
     return "mail_scanner";
   }
-  if (automatic) {
+  if (automatic && !clientOnboarding) {
     const { count } = await admin
       .from("leads")
       .select("id", { count: "exact", head: true })
@@ -89,6 +91,7 @@ async function runGraph(opts: {
   automatic?: boolean;
 }) {
   const automatic = opts.automatic === true;
+  const clientOnboarding = leadAudienceOf(opts.graph) === "clients";
   const admin = createAdminClient();
   const nodes = opts.graph.nodes ?? [];
   const edges = opts.graph.edges ?? [];
@@ -143,7 +146,7 @@ async function runGraph(opts: {
         } else {
           if (automatic) {
             const gate = await opts.step.run(`gate-${current.id}`, async () => {
-              const block = await sendBlockFor(admin, opts.contactId, true);
+              const block = await sendBlockFor(admin, opts.contactId, true, clientOnboarding);
               if (block) return { block, holdUntil: null, holdReason: "" };
               const { data: last } = await admin
                 .from("sends")
@@ -187,7 +190,7 @@ async function runGraph(opts: {
             }
           }
           const outcome = await opts.step.run(`send-${current.id}`, async () => {
-            const block = await sendBlockFor(admin, opts.contactId, automatic);
+            const block = await sendBlockFor(admin, opts.contactId, automatic, clientOnboarding);
             if (block) return block;
             await sendEmailToContact({
               contactId: opts.contactId,
