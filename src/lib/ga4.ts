@@ -1,6 +1,44 @@
-import { BetaAnalyticsDataClient } from "@google-analytics/data";
+import { BetaAnalyticsDataClient, type protos } from "@google-analytics/data";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { unstable_cache } from "next/cache";
 import { LOCATION_PAGES } from "@/lib/locations";
+
+export const GA_RANGES = [7, 14, 28, 90] as const;
+
+export function gaRange(input?: string | string[] | null) {
+  const n = Number(Array.isArray(input) ? input[0] : input);
+  return (GA_RANGES as readonly number[]).includes(n) ? n : 14;
+}
+
+class UncachedResult<R> extends Error {
+  constructor(readonly result: R) {
+    super("GA4 result not cached");
+  }
+}
+
+/** Caches GA4 reports for 10 minutes. Results with an error are returned but never cached. */
+function cacheGa<A extends (string | number)[], R extends { error?: string }>(
+  key: string,
+  fn: (...args: A) => Promise<R>,
+) {
+  const cached = unstable_cache(
+    async (...args: A) => {
+      const result = await fn(...args);
+      if (result.error) throw new UncachedResult(result);
+      return result;
+    },
+    ["ga4", key],
+    { revalidate: 600, tags: ["ga4"] },
+  );
+  return async (...args: A): Promise<R> => {
+    try {
+      return await cached(...args);
+    } catch (error) {
+      if (error instanceof UncachedResult) return error.result as R;
+      return fn(...args);
+    }
+  };
+}
 
 export type Ga4Summary = {
   configured: boolean;
@@ -249,6 +287,16 @@ export async function fetchGa4Demographics(
 ): Promise<Ga4Demographics> {
   const { propertyId, clientEmail, ready } = ga4StatusFor(propertyIdInput);
   if (!ready) return emptyGa4Demographics();
+  return cachedDemographics(propertyId, clientEmail, days);
+}
+
+const cachedDemographics = cacheGa("demographics", fetchGa4DemographicsInner);
+
+async function fetchGa4DemographicsInner(
+  propertyId: string,
+  clientEmail: string,
+  days: number,
+): Promise<Ga4Demographics> {
   try {
     const client = new BetaAnalyticsDataClient({
       credentials: { client_email: clientEmail, private_key: readPrivateKey() },
@@ -348,7 +396,7 @@ export async function fetchGa4Summary(
 
   try {
     const summary = await Promise.race([
-      fetchDigisolGa4SummaryInner(propertyId, clientEmail, days),
+      cachedSummary(propertyId, clientEmail, days),
       new Promise<Ga4Summary>((resolve) =>
         setTimeout(
           () =>
@@ -373,6 +421,8 @@ export async function fetchGa4Summary(
     });
   }
 }
+
+const cachedSummary = cacheGa("summary", fetchDigisolGa4SummaryInner);
 
 async function fetchDigisolGa4SummaryInner(
   propertyId: string,
@@ -530,6 +580,272 @@ async function fetchDigisolGa4SummaryInner(
     return emptySummary({
       configured: true,
       error: message,
+    });
+  }
+}
+
+/** Site events that count as conversions. Several names can roll into one row. */
+export const GA4_CONVERSION_EVENTS: { label: string; names: string[] }[] = [
+  { label: "Leads", names: ["generate_lead"] },
+  { label: "Purchases", names: ["purchase"] },
+  { label: "Checkout clicks", names: ["pricing_checkout_click"] },
+  { label: "Phone and email clicks", names: ["contact_click"] },
+  { label: "Contact option clicks", names: ["contact_option_click"] },
+  { label: "Call-to-action clicks", names: ["cta_click"] },
+  { label: "Newsletter signups", names: ["dispatch_subscribe"] },
+  { label: "Shares and downloads", names: ["share_export", "media_export", "dispatch_export"] },
+  { label: "Map clicks", names: ["map_click"] },
+  { label: "City page views", names: ["location_page_view"] },
+];
+
+const LEAD_EVENT = "generate_lead";
+
+export type Ga4Change = { current: number; previous: number };
+
+export type Ga4Insights = {
+  configured: boolean;
+  error?: string;
+  days: number;
+  totals: {
+    sessions: Ga4Change;
+    users: Ga4Change;
+    pageviews: Ga4Change;
+    engagementRate: Ga4Change;
+    avgSessionSeconds: Ga4Change;
+    leads: Ga4Change;
+  };
+  conversions: ({ label: string } & Ga4Change)[];
+  /** Null when the `method` custom dimension isn't registered in GA4. */
+  leadMethods: { label: string; count: number }[] | null;
+  landingPages: {
+    page: string;
+    sessions: number;
+    engagementRate: number;
+    avgSessionSeconds: number;
+    leads: number;
+  }[];
+  channels: {
+    label: string;
+    sessions: number;
+    previousSessions: number;
+    engagementRate: number;
+    leads: number;
+  }[];
+};
+
+const zeroChange = (): Ga4Change => ({ current: 0, previous: 0 });
+
+export function emptyGa4Insights(days: number, partial?: Partial<Ga4Insights>): Ga4Insights {
+  return {
+    configured: false,
+    days,
+    totals: {
+      sessions: zeroChange(),
+      users: zeroChange(),
+      pageviews: zeroChange(),
+      engagementRate: zeroChange(),
+      avgSessionSeconds: zeroChange(),
+      leads: zeroChange(),
+    },
+    conversions: [],
+    leadMethods: null,
+    landingPages: [],
+    channels: [],
+    ...partial,
+  };
+}
+
+type Ga4Row = {
+  dimensionValues?: ({ value?: string | null } | null)[] | null;
+  metricValues?: ({ value?: string | null } | null)[] | null;
+};
+type Ga4Report = {
+  dimensionHeaders?: ({ name?: string | null } | null)[] | null;
+  rows?: Ga4Row[] | null;
+};
+
+/** Rows keyed by the requested dimension, split into the current and previous date ranges. */
+function readReport(report: Ga4Report | undefined, dimension?: string) {
+  const headers = (report?.dimensionHeaders ?? []).map((h) => h?.name || "");
+  const rangeAt = headers.indexOf("dateRange");
+  const dimAt = dimension ? headers.indexOf(dimension) : -1;
+  const rows = (report?.rows ?? []).map((row) => ({
+    key: dimAt >= 0 ? row.dimensionValues?.[dimAt]?.value || "(not set)" : "",
+    previous: rangeAt >= 0 && row.dimensionValues?.[rangeAt]?.value === "previous",
+    metric: (index = 0) => Number(row.metricValues?.[index]?.value ?? 0) || 0,
+  }));
+  return {
+    current: rows.filter((row) => !row.previous),
+    previous: rows.filter((row) => row.previous),
+  };
+}
+
+function eventFilter(names: string[]) {
+  return {
+    filter: {
+      fieldName: "eventName",
+      inListFilter: { values: names, caseSensitive: false },
+    },
+  };
+}
+
+/** Conversions, landing pages, and channels for the last `days` days next to the `days` before. */
+export async function fetchGa4Insights(
+  propertyIdInput: string | null | undefined,
+  days = 14,
+): Promise<Ga4Insights> {
+  const { propertyId, clientEmail, ready } = ga4StatusFor(propertyIdInput);
+  if (!ready) return emptyGa4Insights(days);
+  return cachedInsights(propertyId, clientEmail, days);
+}
+
+const cachedInsights = cacheGa("insights", fetchGa4InsightsInner);
+
+async function fetchGa4InsightsInner(
+  propertyId: string,
+  clientEmail: string,
+  days: number,
+): Promise<Ga4Insights> {
+  try {
+    const client = new BetaAnalyticsDataClient({
+      credentials: { client_email: clientEmail, private_key: readPrivateKey() },
+    });
+    const property = `properties/${propertyId}`;
+    const current = { startDate: `${days - 1}daysAgo`, endDate: "today", name: "current" };
+    const previous = {
+      startDate: `${days * 2 - 1}daysAgo`,
+      endDate: `${days}daysAgo`,
+      name: "previous",
+    };
+    const bothRanges = [current, previous];
+    const allEventNames = GA4_CONVERSION_EVENTS.flatMap((row) => row.names);
+
+    const run = (request: Omit<protos.google.analytics.data.v1beta.IRunReportRequest, "property">) =>
+      client.runReport({ property, ...request }).then(([report]) => report as Ga4Report);
+
+    const [totalsRes, eventsRes, landingRes, landingLeadsRes, channelsRes, channelLeadsRes] =
+      await Promise.all([
+        run({
+          dateRanges: bothRanges,
+          metrics: [
+            { name: "sessions" },
+            { name: "totalUsers" },
+            { name: "screenPageViews" },
+            { name: "engagementRate" },
+            { name: "averageSessionDuration" },
+          ],
+        }),
+        run({
+          dateRanges: bothRanges,
+          dimensions: [{ name: "eventName" }],
+          metrics: [{ name: "eventCount" }],
+          dimensionFilter: eventFilter(allEventNames),
+        }),
+        run({
+          dateRanges: [current],
+          dimensions: [{ name: "landingPage" }],
+          metrics: [
+            { name: "sessions" },
+            { name: "engagementRate" },
+            { name: "averageSessionDuration" },
+          ],
+          orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+          limit: 12,
+        }),
+        run({
+          dateRanges: [current],
+          dimensions: [{ name: "landingPage" }],
+          metrics: [{ name: "eventCount" }],
+          dimensionFilter: eventFilter([LEAD_EVENT]),
+          limit: 200,
+        }),
+        run({
+          dateRanges: bothRanges,
+          dimensions: [{ name: "sessionDefaultChannelGroup" }],
+          metrics: [{ name: "sessions" }, { name: "engagementRate" }],
+          orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+        }),
+        run({
+          dateRanges: [current],
+          dimensions: [{ name: "sessionDefaultChannelGroup" }],
+          metrics: [{ name: "eventCount" }],
+          dimensionFilter: eventFilter([LEAD_EVENT]),
+        }),
+      ]);
+
+    const methodsRes = await run({
+      dateRanges: [current],
+      dimensions: [{ name: "customEvent:method" }],
+      metrics: [{ name: "eventCount" }],
+      dimensionFilter: eventFilter([LEAD_EVENT]),
+      orderBys: [{ metric: { metricName: "eventCount" }, desc: true }],
+    }).catch(() => null);
+
+    const totals = readReport(totalsRes);
+    const t = (index: number): Ga4Change => ({
+      current: totals.current[0]?.metric(index) ?? 0,
+      previous: totals.previous[0]?.metric(index) ?? 0,
+    });
+
+    const events = readReport(eventsRes, "eventName");
+    const eventSum = (rows: typeof events.current, names: string[]) =>
+      rows
+        .filter((row) => names.includes(row.key.toLowerCase()))
+        .reduce((sum, row) => sum + row.metric(), 0);
+    const conversions = GA4_CONVERSION_EVENTS.map((row) => ({
+      label: row.label,
+      current: eventSum(events.current, row.names),
+      previous: eventSum(events.previous, row.names),
+    }));
+
+    const leadsBy = (report: Ga4Report, dimension: string) =>
+      new Map(readReport(report, dimension).current.map((row) => [row.key, row.metric()]));
+    const landingLeads = leadsBy(landingLeadsRes, "landingPage");
+    const channelLeads = leadsBy(channelLeadsRes, "sessionDefaultChannelGroup");
+
+    const channels = readReport(channelsRes, "sessionDefaultChannelGroup");
+    const previousByChannel = new Map(channels.previous.map((row) => [row.key, row.metric()]));
+
+    return {
+      configured: true,
+      days,
+      totals: {
+        sessions: t(0),
+        users: t(1),
+        pageviews: t(2),
+        engagementRate: t(3),
+        avgSessionSeconds: t(4),
+        leads: {
+          current: eventSum(events.current, [LEAD_EVENT]),
+          previous: eventSum(events.previous, [LEAD_EVENT]),
+        },
+      },
+      conversions,
+      leadMethods: methodsRes
+        ? readReport(methodsRes, "customEvent:method").current.map((row) => ({
+            label: row.key,
+            count: row.metric(),
+          }))
+        : null,
+      landingPages: readReport(landingRes, "landingPage").current.map((row) => ({
+        page: row.key,
+        sessions: row.metric(0),
+        engagementRate: row.metric(1),
+        avgSessionSeconds: row.metric(2),
+        leads: landingLeads.get(row.key) ?? 0,
+      })),
+      channels: channels.current.map((row) => ({
+        label: row.key,
+        sessions: row.metric(0),
+        previousSessions: previousByChannel.get(row.key) ?? 0,
+        engagementRate: row.metric(1),
+        leads: channelLeads.get(row.key) ?? 0,
+      })),
+    };
+  } catch (error) {
+    return emptyGa4Insights(days, {
+      configured: true,
+      error: error instanceof Error ? error.message : "Could not load Google Analytics",
     });
   }
 }

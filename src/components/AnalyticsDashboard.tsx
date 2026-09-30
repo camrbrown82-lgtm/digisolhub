@@ -14,6 +14,7 @@ export type AnalyticsDashboardProps = {
   companyName?: string | null;
   gaConfigured: boolean;
   gaError?: string | null;
+  gaDays?: number;
   traffic: {
     sessions: number;
     users: number;
@@ -225,6 +226,7 @@ export function AnalyticsDashboard({
   companyName,
   gaConfigured,
   gaError,
+  gaDays = 14,
   traffic,
   firstParty,
   conversion,
@@ -289,7 +291,7 @@ export function AnalyticsDashboard({
           }
           hint={
             gaConfigured && !gaError
-              ? "GA4 sessions (14d)"
+              ? `GA4 sessions (${gaDays}d)`
               : "First-party pageviews (14d)"
           }
           health={trafficTone}

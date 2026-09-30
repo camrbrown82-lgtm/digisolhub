@@ -11,12 +11,16 @@ import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { DemographicsPanel } from "@/components/hub/DemographicsPanel";
 import {
   emptyGa4Demographics,
+  emptyGa4Insights,
   companyGa4PropertyId,
   fetchGa4Demographics,
+  fetchGa4Insights,
   fetchGa4Summary,
   ga4StatusFor,
+  gaRange,
   type Ga4Summary,
 } from "@/lib/ga4";
+import { Ga4InsightsPanel } from "@/components/hub/Ga4InsightsPanel";
 import {
   LEAD_STAGES,
   type LeadRecord,
@@ -47,7 +51,12 @@ function hubOrigin(headerStore: Headers) {
   return `${proto}://${host}`;
 }
 
-export default async function AnalyticsPage() {
+export default async function AnalyticsPage({
+  searchParams,
+}: {
+  searchParams?: { range?: string | string[] };
+}) {
+  const gaDays = gaRange(searchParams?.range);
   const supabase = await createClient();
   const headerStore = await headers();
   const origin = hubOrigin(headerStore);
@@ -149,7 +158,7 @@ export default async function AnalyticsPage() {
 
   // One reconciler for Performance + Hub cards (light sync + Resend fallback).
   // Time-box slow external calls so the page always paints first-party data.
-  const [contacts, unsubscribed, site, leadsResult, ga4, latestAudit, email, agentEvents, metaAds, instagram, demographics] =
+  const [contacts, unsubscribed, site, leadsResult, ga4, gaInsights, latestAudit, email, agentEvents, metaAds, instagram, demographics] =
     await Promise.all([
       contactsQuery,
       unsubQuery,
@@ -157,11 +166,21 @@ export default async function AnalyticsPage() {
       leadsQuery,
       withTimeout(
         gaStatus.ready
-          ? fetchGa4Summary(ga4PropertyId, 14)
+          ? fetchGa4Summary(ga4PropertyId, gaDays)
           : Promise.resolve(emptyGa4),
         7000,
         ga4TimeoutFallback,
       ),
+      gaStatus.ready
+        ? withTimeout(
+            fetchGa4Insights(ga4PropertyId, gaDays),
+            8000,
+            emptyGa4Insights(gaDays, {
+              configured: true,
+              error: "Timed out loading Google data. Refresh to retry.",
+            }),
+          )
+        : Promise.resolve(emptyGa4Insights(gaDays)),
       active
         ? withTimeout(
             (async () => {
@@ -292,7 +311,7 @@ export default async function AnalyticsPage() {
                 DigiSol Google Analytics
               </h2>
               <p className="mt-1 text-sm text-zinc-400">
-                Live GA4 numbers for wwwdigisol.com (last 14 days) — on-page SEO,
+                Live GA4 numbers for wwwdigisol.com (last {gaDays} days) — on-page SEO,
                 city landers, Dispatch, and CRO traffic in one place.
               </p>
             </div>
@@ -310,7 +329,7 @@ export default async function AnalyticsPage() {
             <div>
               <h2 className="text-lg font-semibold text-white">Performance</h2>
               <p className="mt-1 text-sm text-zinc-400">
-                {active?.name || "This company"}&apos;s numbers for the last 14 days:
+                {active?.name || "This company"}&apos;s numbers for the last {gaStatus.ready ? gaDays : 14} days:
                 {gaStatus.ready ? " its Google Analytics," : ""} visits from the Hub
                 tracker, email, leads, and Kaylev. Only this company&apos;s data shows here.
                 {gaStatus.ready ? null : " Connect its GA4 property in Google setup to add Google Analytics."}
@@ -358,9 +377,11 @@ export default async function AnalyticsPage() {
           </div>
         ) : null}
 
+        {gaStatus.ready ? <Ga4InsightsPanel data={gaInsights} basePath="/hub/analytics" /> : null}
+
         {isDigisol ? (
         <GoogleAdsPanel
-          days={14}
+          days={gaDays}
           configured={gaStatus.ready && !ga4.error}
           sessions={ga4.googleAds.sessions}
           landings={isDigisol ? website.googleAdsPageviews : 0}
@@ -390,6 +411,7 @@ export default async function AnalyticsPage() {
           companyName={active?.name}
           gaConfigured={gaStatus.ready}
           gaError={ga4.error}
+          gaDays={gaDays}
           traffic={{
             sessions: ga4.sessions,
             users: ga4.users,
