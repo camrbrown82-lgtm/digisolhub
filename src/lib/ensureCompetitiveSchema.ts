@@ -17,6 +17,10 @@ create table if not exists public.competitive_analyses (
   completed_at timestamptz
 );
 
+alter table public.competitive_analyses
+  add column if not exists emailed_to text,
+  add column if not exists emailed_at timestamptz;
+
 create index if not exists competitive_analyses_client_created_idx
   on public.competitive_analyses (client_id, created_at desc);
 
@@ -32,6 +36,8 @@ create policy "hub competitive_analyses" on public.competitive_analyses
   for all to authenticated
   using (public.is_hub_user())
   with check (public.is_hub_user());
+
+notify pgrst, 'reload schema';
 `;
 
 let applied = false;

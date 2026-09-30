@@ -7,6 +7,23 @@ function hostOf(domain: string | null | undefined) {
   return (domain || "").trim().replace(/^https?:\/\//i, "").replace(/^www\./i, "").split("/")[0].toLowerCase();
 }
 
+/** The company's sign-up contact: the person on its won lead in DigiSol's pipeline. */
+export async function clientSignUpContact(db: SupabaseClient, companyName: string) {
+  if (!companyName.trim() || companyName.trim().toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase()) return null;
+  const { data: house } = await db.from("clients").select("id").ilike("name", DIGISOL_HOUSE_NAME).maybeSingle();
+  if (!house?.id) return null;
+  const { data } = await db
+    .from("leads")
+    .select("name, email")
+    .eq("client_id", house.id)
+    .eq("stage", "won")
+    .ilike("company", companyName)
+    .not("email", "is", null)
+    .limit(1);
+  const lead = data?.[0];
+  return lead?.email ? { email: lead.email as string, name: (lead.name as string | null) ?? null } : null;
+}
+
 /**
  * Records a Hub company as a won lead in DigiSol's pipeline, linked to DigiSol's contact for it when
  * one exists. Safe to call repeatedly; one won lead per company. DigiSol itself is never counted.

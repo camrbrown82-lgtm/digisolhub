@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CompetitiveEmailButton } from "@/components/hub/CompetitiveEmailButton";
 import { CompetitiveReport } from "@/components/hub/CompetitiveReport";
 import { CompetitiveRunForm } from "@/components/hub/CompetitiveRunForm";
 import { PrintButton } from "@/components/hub/PrintButton";
@@ -8,6 +9,7 @@ import type {
   MarketPresence,
   SiteSnapshot,
 } from "@/lib/competitive/schema";
+import { clientSignUpContact } from "@/lib/clientWins";
 import { ensureCompetitiveSchema } from "@/lib/ensureCompetitiveSchema";
 import { createClient } from "@/lib/supabase/server";
 import { prospectHostKey } from "@/lib/prospectAudit/seedCatalog";
@@ -75,6 +77,23 @@ export default async function CompetitivePage({
         .maybeSingle()
     : { data: null };
 
+  const reportCompany = selected
+    ? (selected.inputs as Inputs).companyName ||
+      ((selected.sources ?? {}) as { company?: SiteSnapshot }).company?.name ||
+      companyName
+    : companyName;
+  const [signUpContact, emailed] = selected?.result
+    ? await Promise.all([
+        clientSignUpContact(supabase, active?.name || ""),
+        supabase
+          .from("competitive_analyses")
+          .select("emailed_to, emailed_at")
+          .eq("id", selected.id)
+          .maybeSingle()
+          .then((r) => (r.data ?? null) as { emailed_to: string | null; emailed_at: string | null } | null),
+      ])
+    : [null, null];
+
   const domain = companySiteUrl(active);
   // Only pre-fill from an analysis of this company's own website.
   const lastInputs = domain
@@ -92,7 +111,19 @@ export default async function CompetitivePage({
             writing the report, even when Working on is DigiSol.
           </p>
         </div>
-        {selected?.result ? <PrintButton label="Print / save PDF" /> : null}
+        {selected?.result ? (
+          <div className="flex flex-wrap items-start gap-2">
+            <CompetitiveEmailButton
+              analysisId={selected.id}
+              companyName={reportCompany}
+              defaultEmail={signUpContact?.email}
+              defaultName={signUpContact?.name}
+              lastEmailedTo={emailed?.emailed_to}
+              lastEmailedAt={emailed?.emailed_at}
+            />
+            <PrintButton label="Print / save PDF" />
+          </div>
+        ) : null}
       </div>
 
       {historyError ? (
@@ -143,11 +174,7 @@ export default async function CompetitivePage({
 
       {selected?.result ? (
         <CompetitiveReport
-          companyName={
-            (selected.inputs as Inputs).companyName ||
-            ((selected.sources ?? {}) as { company?: SiteSnapshot }).company?.name ||
-            companyName
-          }
+          companyName={reportCompany}
           report={selected.result as Report}
           inputs={selected.inputs as Inputs}
           sources={
