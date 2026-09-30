@@ -166,7 +166,7 @@ function connectionFailure(product: GoogleProduct, error: unknown): ProductAudit
     } else if (error.noAccess || error.status === 404) {
       message =
         product === "ads"
-          ? `The Hub's manager account can't reach this Google Ads account. Link it under the Hub's manager account (or add ${robot} as a Standard user).`
+          ? `The Hub can't reach this Google Ads account yet. Either link it under the Hub's manager account (in the manager account: Accounts, then + , then Link existing account; then accept the request in this account under Admin, Access and security, Managers), or in this account go to Admin, Access and security, Users and add ${robot} with Standard access.`
           : `The Hub's robot login doesn't have access yet. Add ${robot} as ${product === "ga4" ? "an Editor in GA4 (Admin → Property access management)" : "a Full user in Search Console (Settings → Users and permissions)"}.`;
     }
   }

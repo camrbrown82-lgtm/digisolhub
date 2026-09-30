@@ -1,4 +1,4 @@
-import { googleFetch } from "@/lib/google/auth";
+import { GoogleApiError, googleFetch } from "@/lib/google/auth";
 
 const VERSION = process.env.GOOGLE_ADS_API_VERSION?.trim() || "v25";
 const BASE = `https://googleads.googleapis.com/${VERSION}`;
@@ -20,21 +20,46 @@ export function adsApiReady() {
   return Boolean(managerCustomerId());
 }
 
-function headers() {
+function headers(loginCustomerId: string) {
   const token = developerToken();
   return {
     ...(token ? { "developer-token": token } : {}),
-    "login-customer-id": managerCustomerId(),
+    "login-customer-id": loginCustomerId,
   };
+}
+
+/** Accounts the robot was added to directly (not linked under the manager) only answer with their own login id. */
+const directLogin = new Set<string>();
+
+async function adsCall<T>(customerId: string, path: string, body: unknown): Promise<T> {
+  const cid = cleanCustomerId(customerId);
+  const url = `${BASE}/customers/${cid}${path}`;
+  const manager = managerCustomerId();
+  if (directLogin.has(cid) || cid === manager) {
+    return googleFetch<T>(url, { body, headers: headers(cid) });
+  }
+  try {
+    return await googleFetch<T>(url, { body, headers: headers(manager) });
+  } catch (error) {
+    if (!(error instanceof GoogleApiError) || error.adsCode !== "USER_PERMISSION_DENIED") throw error;
+    try {
+      const result = await googleFetch<T>(url, { body, headers: headers(cid) });
+      directLogin.add(cid);
+      return result;
+    } catch {
+      throw error;
+    }
+  }
 }
 
 export async function adsSearch<T>(customerId: string, query: string): Promise<T[]> {
   const rows: T[] = [];
   let pageToken: string | undefined;
   do {
-    const json = await googleFetch<{ results?: T[]; nextPageToken?: string }>(
-      `${BASE}/customers/${cleanCustomerId(customerId)}/googleAds:search`,
-      { body: { query, ...(pageToken ? { pageToken } : {}) }, headers: headers() },
+    const json = await adsCall<{ results?: T[]; nextPageToken?: string }>(
+      customerId,
+      "/googleAds:search",
+      { query, ...(pageToken ? { pageToken } : {}) },
     );
     rows.push(...(json.results ?? []));
     pageToken = json.nextPageToken;
@@ -43,10 +68,7 @@ export async function adsSearch<T>(customerId: string, query: string): Promise<T
 }
 
 async function adsMutate(customerId: string, path: string, body: unknown) {
-  return googleFetch(`${BASE}/customers/${cleanCustomerId(customerId)}${path}`, {
-    body,
-    headers: headers(),
-  });
+  return adsCall(customerId, path, body);
 }
 
 export function enableAutoTagging(customerId: string) {
