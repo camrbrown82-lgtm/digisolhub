@@ -100,22 +100,42 @@ export async function writePosterArtDirection(
     slideCount?: number;
     context?: string;
     siteUrl?: string;
+    /** An official badge is added under the art after generation. */
+    badgeFacts?: string;
   },
 ) {
   const slide = input.slide;
   const slideCount = input.slideCount || 1;
-  const job = slide
+  const site = input.siteUrl?.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  const job = slide?.freeform
     ? [
-        `Slide ${slide.index} of ${slideCount} — ${slide.label}`,
-        slide.visualIdea ? `Requested layout: ${slide.visualIdea}` : "",
-        "MUST PRINT THIS COPY EXACTLY, spelled as written:",
-        mustPrintBlock(slide),
-        input.context ? `Series notes: ${input.context}` : "",
-        input.siteUrl ? `Canonical site URL if a button is needed: ${input.siteUrl}` : "",
+        "OWNER'S BRIEF (instructions, not poster copy; never print these sentences):",
+        input.brief.trim(),
+        "Write the poster copy yourself in the brand voice, then typeset exactly that copy:",
+        "- one headline of at most 7 words",
+        "- one supporting line of at most 14 words",
+        `- one button${site ? ` whose label or the line under it is exactly "${site}"` : ""}`,
+        "Use only facts from the brief, the brand kit, and the facts below. No invented stats or claims.",
+        input.badgeFacts ? `Facts: ${input.badgeFacts}` : "",
       ]
         .filter(Boolean)
         .join("\n")
-    : input.brief;
+    : slide
+      ? [
+          `Slide ${slide.index} of ${slideCount} — ${slide.label}`,
+          slide.visualIdea ? `Requested layout: ${slide.visualIdea}` : "",
+          "MUST PRINT THIS COPY EXACTLY, spelled as written:",
+          mustPrintBlock(slide),
+          input.context ? `Series notes: ${input.context}` : "",
+          input.siteUrl ? `Canonical site URL if a button is needed: ${input.siteUrl}` : "",
+          input.badgeFacts ? `Facts: ${input.badgeFacts}` : "",
+        ]
+          .filter(Boolean)
+          .join("\n")
+      : input.brief;
+  const badgeRule = input.badgeFacts
+    ? "\n- Do not draw any badge, seal, medal, laurel, rosette, certificate, or award emblem. The official award badge is added on its own band under the artwork after generation. The copy may name the award."
+    : "";
   const fallback = brandImagePrompt(
     input.companyName,
     input.brand,
@@ -132,8 +152,11 @@ export async function writePosterArtDirection(
           role: "system",
           content: `You write one image-generation prompt for a single social-media infographic slide. Output the prompt only — no title, no markdown, no quotes around the whole prompt.
 
-You are a typesetter, not a copywriter.
-- Every MUST PRINT line must appear in the image, spelled exactly. Do not paraphrase, shorten, merge, or swap in a brand tagline.
+${
+  slide?.freeform
+    ? "The owner gave instructions, not copy. Write short, specific copy in the brand voice, then write the full image prompt around it: layout, hierarchy, lighting, and where each line sits, with the exact copy in quotes. The prompt must describe the whole poster, not just list the copy."
+    : "You are a typesetter, not a copywriter.\n- Every MUST PRINT line must appear in the image, spelled exactly. Do not paraphrase, shorten, merge, or swap in a brand tagline."
+}
 - If the visual idea conflicts with the copy, keep ALL required text readable and adapt the layout.
 - Do not invent extra slogans, stats, phone numbers, cities, or URLs.
 ${brandColorLock(input.brand)}
@@ -142,7 +165,8 @@ ${brandColorLock(input.brand)}
 - Fill the whole canvas with the layout. Do not leave a logo hole and do not draw a logo — a separate brand bar is added after generation so the mark never covers copy.
 - Closing slides: a solid highlight-colored button shape containing the exact URL from the copy.
 - Carousel slides must match each other: same background, same margins, same type style.
-- No photos of real people, no QR codes, no watermarks, no unreadably small type.`,
+- No photos of real people, no QR codes, no watermarks, no unreadably small type.
+- The only website address allowed is the one given in the job. Never write any other domain.${badgeRule}`,
         },
         {
           role: "user",
@@ -157,8 +181,8 @@ Official logo is stamped after generation.`,
       ],
     });
     const written = jsonSafeText(completion.choices[0]?.message?.content?.trim() || "");
-    return enforceVisualBrandLock(written || fallback, input.companyName, input.brand);
+    return enforceVisualBrandLock(`${badgeRule.trim()}\n\n${written || fallback}`, input.companyName, input.brand);
   } catch {
-    return enforceVisualBrandLock(fallback, input.companyName, input.brand);
+    return enforceVisualBrandLock(`${badgeRule.trim()}\n\n${fallback}`, input.companyName, input.brand);
   }
 }

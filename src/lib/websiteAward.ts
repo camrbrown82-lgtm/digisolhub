@@ -66,7 +66,23 @@ export type AwardStatus =
       latest: { score: number; auditedAt: string } | null;
       /** DigiSol's own site. Shown as "we pass our own audit", never as the Excellence Award. */
       house?: boolean;
+      /** Promo example for DigiSol's own posters: "Your business", 90+, earn yours. Never a real award. */
+      sample?: boolean;
     };
+
+/** The Excellence Award as an example, for DigiSol marketing that invites businesses to earn it. */
+export function sampleAward(): AwardStatus {
+  return {
+    state: "valid",
+    auditId: "sample",
+    companyName: "Your business",
+    site: "",
+    score: AWARD_MIN_SCORE,
+    auditedAt: new Date().toISOString(),
+    latest: null,
+    sample: true,
+  };
+}
 
 /** Public id for DigiSol's own badge; always resolves to the newest audit of wwwdigisol.com. */
 export const HOUSE_AWARD_ID = "digisol";

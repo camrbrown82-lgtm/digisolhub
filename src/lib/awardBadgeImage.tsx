@@ -62,10 +62,12 @@ export function awardBadgeElement(award: AwardStatus, theme: AwardTheme, scale =
             </div>
             <div style={{ display: "flex", fontSize: s(24), opacity: 0.85, marginTop: s(8) }}>
               <span>{words.scoreLabel}</span>
-              <span style={{ color: theme.highlight, fontWeight: 700, marginLeft: s(8) }}>{`${award.score}/100`}</span>
+              <span style={{ color: theme.highlight, fontWeight: 700, marginLeft: s(8) }}>
+                {award.sample ? `${award.score}+/100` : `${award.score}/100`}
+              </span>
             </div>
             <div style={{ display: "flex", fontSize: s(18), opacity: 0.6, marginTop: s(10) }}>
-              {`Verified ${awardDate(award.auditedAt)} · wwwdigisol.com`}
+              {award.sample ? "Earn yours · wwwdigisol.com" : `Verified ${awardDate(award.auditedAt)} · wwwdigisol.com`}
             </div>
           </div>
         ) : (

@@ -18,6 +18,8 @@ export type PosterSlide = {
   subhead: string;
   body: string;
   mustPrint: string[];
+  /** The brief is instructions ("a poster that…"), not copy, so the art director writes the copy. */
+  freeform?: boolean;
 };
 
 const SLIDE_SPLIT =
@@ -105,7 +107,8 @@ export function parsePosterSlides(brief: string): {
   if (!slides.length) {
     const headline = takeField(cleaned, ["Headline", "Title"]);
     const subhead = takeField(cleaned, ["Sub-headline", "Subhead"]);
-    const body = takeField(cleaned, ["Body Copy", "Body", "Text"]) || cleaned;
+    const bodyField = takeField(cleaned, ["Body Copy", "Body", "Text"]);
+    const body = bodyField || cleaned;
     const mustPrint = [
       ...linesFrom(headline),
       ...linesFrom(subhead),
@@ -120,6 +123,11 @@ export function parsePosterSlides(brief: string): {
       subhead,
       body,
       mustPrint: mustPrint.length ? mustPrint : [cleaned.slice(0, 280)],
+      freeform:
+        !headline &&
+        !subhead &&
+        !bodyField &&
+        /\b(poster|flyer|graphic|make|create|design|include|capture|encourag\w*|should|want|need)\b/i.test(cleaned),
     });
   }
 

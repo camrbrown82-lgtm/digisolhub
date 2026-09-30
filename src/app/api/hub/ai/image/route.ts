@@ -21,6 +21,7 @@ import {
   type PosterSlide,
 } from "@/lib/posterBrief";
 import { posterSlidesToPdf } from "@/lib/posterPdf";
+import { addBadgeBand, resolvePosterBadge } from "@/lib/posterBadge";
 import { posterSocialPack } from "@/lib/posterSocial";
 import { stampOfficialLogo } from "@/lib/stampLogo";
 import { companySiteUrl, getWorkspaceClient } from "@/lib/workspace";
@@ -128,6 +129,10 @@ export async function POST(request: Request) {
     const openai = createOpenAIClient();
     const preferred = process.env.OPENAI_IMAGE_MODEL;
     const logo = await resolveOfficialLogoFile(supabase, client);
+    const { badge, warning: badgeWarning } = await resolvePosterBadge(supabase, client, prompt).catch(() => ({
+      badge: null,
+      warning: "Could not load the award badge.",
+    }));
     const seriesId = crypto.randomUUID();
 
     const directedSlides = await Promise.all(
@@ -141,6 +146,7 @@ export async function POST(request: Request) {
           slideCount: slides.length,
           context: parsed.context,
           siteUrl,
+          badgeFacts: badge?.facts,
         }),
       ),
     );
@@ -156,9 +162,16 @@ export async function POST(request: Request) {
         );
       }
       let stamped = buffer;
+      if (badge) {
+        try {
+          stamped = await addBadgeBand(stamped, badge.award, brand.backgroundColor);
+        } catch (badgeError) {
+          console.error("Could not add award badge", badgeError);
+        }
+      }
       if (logo?.buffer.length) {
         try {
-          stamped = await stampOfficialLogo(buffer, logo.buffer, {
+          stamped = await stampOfficialLogo(stamped, logo.buffer, {
             backgroundColor: brand.backgroundColor,
             accentColor: brand.highlightColor || brand.accentColor,
           });
@@ -289,7 +302,8 @@ export async function POST(request: Request) {
       prompt: directedSlides.join("\n\n---\n\n"),
       social,
       logoStamped: Boolean(logo?.buffer.length),
-      warning: saveWarning || undefined,
+      badgeAdded: Boolean(badge),
+      warning: [saveWarning, badgeWarning].filter(Boolean).join(" ") || undefined,
     });
   } catch (err) {
     console.error("AI poster failed", err);

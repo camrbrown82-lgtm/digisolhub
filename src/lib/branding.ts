@@ -111,6 +111,64 @@ function inferredTextColor(background: string) {
   return hexLuminance(background) < 0.35 ? "#f4f4f5" : "#18181b";
 }
 
+function contrast(a: string, b: string) {
+  const [hi, lo] = [hexLuminance(a), hexLuminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/** Plain-English name for a hex, since image models follow color words better than codes. */
+export function describeHex(hex: string) {
+  const raw = hex.replace("#", "");
+  const full = raw.length === 3 ? raw.split("").map((c) => c + c).join("") : raw;
+  const n = Number.parseInt(full, 16);
+  if (!Number.isFinite(n)) return "";
+  const [r, g, b] = [(n >> 16) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const s = max === min ? 0 : (max - min) / (1 - Math.abs(2 * l - 1));
+  if (s < 0.15 || max - min < 0.06) {
+    if (l < 0.03) return "pure black";
+    if (l < 0.12) return "near-black";
+    if (l < 0.3) return "charcoal gray";
+    if (l < 0.6) return "mid gray";
+    if (l < 0.9) return "light gray";
+    return l > 0.99 ? "pure white" : "cool near-white";
+  }
+  let h = 0;
+  if (max === r) h = ((g - b) / (max - min)) % 6;
+  else if (max === g) h = (b - r) / (max - min) + 2;
+  else h = (r - g) / (max - min) + 4;
+  h = (h * 60 + 360) % 360;
+  if (l > 0.85 && h >= 30 && h < 70) return "pale cream";
+  const hue =
+    h < 15 || h >= 345
+      ? "red"
+      : h < 40
+        ? "orange"
+        : h < 65
+          ? "yellow"
+          : h < 160
+            ? "green"
+            : h < 195
+              ? "teal"
+              : h < 215
+                ? "sky blue"
+                : h < 238
+                  ? "blue"
+                  : h < 275
+                    ? "indigo"
+                    : h < 300
+                      ? "violet"
+                      : "pink";
+  return l < 0.3 ? `dark ${hue}` : l > 0.75 ? `light ${hue}` : hue;
+}
+
+const named = (hex: string) => {
+  const name = describeHex(hex);
+  return name ? `${hex} (${name})` : hex;
+};
+
 export function isDarkBrand(brand: CompanyBrand) {
   return hexLuminance(brand.backgroundColor) < 0.35;
 }
@@ -118,32 +176,55 @@ export function isDarkBrand(brand: CompanyBrand) {
 export function brandColorLock(brand: CompanyBrand) {
   const dark = isDarkBrand(brand);
   return [
-    `BACKGROUND: ${brand.backgroundColor} full-bleed. ${dark ? "This is a DARK poster. Forbidden: white, cream, ivory, beige, paper, light gray." : "This is a LIGHT poster. Forbidden: black or navy fields as the page."}`,
-    `TEXT COLOR: ${brand.textColor}. Headlines, body, and captions use this (or a close tint). High contrast on the background.`,
-    `HIGHLIGHTS: ${brand.highlightColor}. Use for glow, rules, buttons, and key words only.`,
-    `PRIMARY: ${brand.primaryColor}. SECONDARY: ${brand.secondaryColor}. ACCENT: ${brand.accentColor}.`,
+    `BACKGROUND: ${named(brand.backgroundColor)} full-bleed. ${dark ? "This is a DARK poster. Forbidden: white, cream, ivory, beige, paper, light gray." : "This is a LIGHT poster. Forbidden: black or navy fields as the page."}`,
+    `TEXT COLOR: ${named(brand.textColor)}. Headlines, body, and captions use exactly this color, not a warmer or yellower tint. High contrast on the background.`,
+    `HIGHLIGHTS: ${named(brand.highlightColor)}. Use for glow, rules, buttons, and key words only.`,
+    `PRIMARY: ${named(brand.primaryColor)}. SECONDARY: ${named(brand.secondaryColor)}. ACCENT: ${named(brand.accentColor)}.`,
+    "No other hues. Do not introduce navy, royal blue, gold, beige, or any color not listed here.",
   ].join("\n");
+}
+
+/** Short color and type rules placed first in image prompts, so length limits never cut them. */
+export function posterColorHeader(brand: CompanyBrand) {
+  const font = brand.fonts.split(",")[0]?.trim();
+  return [
+    `MANDATORY COLORS: page ${named(brand.backgroundColor)}; every word of text ${named(brand.textColor)}; buttons, rules, and glow ${named(brand.highlightColor)} with ${named(brand.primaryColor)}. No other hues.`,
+    font
+      ? `MANDATORY TYPE: ${font}-style type for every line. Do not swap in condensed, serif, or display fonts that aren't ${font}.`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function parseBrand(value: unknown, fallback: CompanyBrand = NEUTRAL_BRAND): CompanyBrand {
   const row = asRecord(value);
   const backgroundColor = normalizeHex(text(row.backgroundColor, ""), fallback.backgroundColor);
+  const savedText = normalizeHex(text(row.textColor, ""), fallback.textColor || inferredTextColor(backgroundColor));
+  // A kit switched to a light background can still carry the dark-mode default text color.
+  const textColor = contrast(savedText, backgroundColor) < 3 ? inferredTextColor(backgroundColor) : savedText;
+  const primaryColor = normalizeHex(text(row.primaryColor, ""), fallback.primaryColor);
+  const secondaryColor = normalizeHex(text(row.secondaryColor, ""), fallback.secondaryColor);
+  const accentColor = normalizeHex(text(row.accentColor, ""), fallback.accentColor);
+  const savedHighlight = normalizeHex(
+    text(row.highlightColor, ""),
+    fallback.highlightColor || fallback.accentColor,
+  );
+  const highlightColor =
+    contrast(savedHighlight, backgroundColor) >= 3
+      ? savedHighlight
+      : [accentColor, secondaryColor, primaryColor].find((color) => contrast(color, backgroundColor) >= 3) ||
+        savedHighlight;
   return {
     tagline: text(row.tagline, fallback.tagline),
     voice: text(row.voice, fallback.voice),
     audience: text(row.audience, fallback.audience),
-    primaryColor: normalizeHex(text(row.primaryColor, ""), fallback.primaryColor),
-    secondaryColor: normalizeHex(text(row.secondaryColor, ""), fallback.secondaryColor),
-    accentColor: normalizeHex(text(row.accentColor, ""), fallback.accentColor),
+    primaryColor,
+    secondaryColor,
+    accentColor,
     backgroundColor,
-    textColor: normalizeHex(
-      text(row.textColor, ""),
-      fallback.textColor || inferredTextColor(backgroundColor),
-    ),
-    highlightColor: normalizeHex(
-      text(row.highlightColor, ""),
-      fallback.highlightColor || fallback.accentColor,
-    ),
+    textColor,
+    highlightColor,
     fonts: text(row.fonts, fallback.fonts),
     doSay: text(row.doSay, fallback.doSay),
     dontSay: text(row.dontSay, fallback.dontSay),
@@ -315,7 +396,7 @@ export function enforceVisualBrandLock(
   brand: CompanyBrand,
 ) {
   const lock = brandLockRules(companyName, brand, "visual");
-  return `${prompt.trim()}\n\n${lock}`.slice(0, 3900);
+  return `${posterColorHeader(brand)}\n\n${prompt.trim()}\n\n${lock}`.slice(0, 3900);
 }
 
 export function sanitizeVisualNotes(value: string) {
