@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AwardEmbedCode } from "@/components/AwardEmbedCode";
 import WebsiteAwardBadge from "@/components/WebsiteAwardBadge";
+import { markAddPageViewed } from "@/lib/awardRegistry";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { getOutboundSiteUrl } from "@/lib/supabase/env";
 import { AWARD_MIN_SCORE, awardDate, awardEmbedHtml, awardLinks, loadAward } from "@/lib/websiteAward";
@@ -30,6 +31,7 @@ export default async function AwardPage({
   const { verify } = awardLinks(base, award.auditId);
   const current = award.state === "valid";
   const adding = current && searchParams.add === "1";
+  if (adding) await markAddPageViewed(createAdminClient(), award.auditId);
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-16">
@@ -88,7 +90,10 @@ export default async function AwardPage({
         ) : null}
       </section>
 
-      <p className="mt-10 text-sm">
+      <p className="mt-10 flex gap-6 text-sm">
+        <Link href="/awards" className="text-indigo-300 hover:text-indigo-200">
+          See award winners
+        </Link>
         <Link href="/" className="text-indigo-300 hover:text-indigo-200">
           About DigiSol
         </Link>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { awardEmailContent } from "@/lib/awardEmail";
+import { recordAward } from "@/lib/awardRegistry";
 import { DIGISOL_BRAND, DIGISOL_HOUSE_NAME } from "@/lib/branding";
 import { findOrCreateContactForSend, sendEmailToContact } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -68,6 +69,19 @@ export async function POST(request: Request) {
       clientId: houseId || null,
       companyName: DIGISOL_HOUSE_NAME,
       brand: DIGISOL_BRAND,
+    });
+    await recordAward(createAdminClient(), {
+      id: award.auditId,
+      source: "hub",
+      companyName: award.companyName,
+      url: award.site,
+      score: award.score,
+      auditId: award.auditId,
+      clientId,
+      contactId: contact.id,
+      sentTo: to,
+      sentAt: new Date().toISOString(),
+      awardedAt: award.auditedAt,
     });
     return NextResponse.json({ ok: true, sendId: sent.sendId ?? null });
   } catch (err) {

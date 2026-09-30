@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Archive,
+  Award,
   BarChart3,
   Bot,
   Building2,
@@ -27,6 +28,7 @@ const nav = [
   { href: "/hub/brand", label: "Brand", icon: Palette },
   { href: "/hub/contacts", label: "Contacts", icon: Contact },
   { href: "/hub/prospects", label: "Prospect audits", icon: Radar },
+  { href: "/hub/awards", label: "Website awards", icon: Award },
   { href: "/hub/competitive", label: "Competitive analysis", icon: Swords },
   { href: "/hub/email", label: "Email", icon: Mail },
   { href: "/hub/campaigns", label: "Campaigns", icon: Workflow },

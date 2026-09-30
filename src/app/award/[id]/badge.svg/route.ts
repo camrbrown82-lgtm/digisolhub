@@ -1,3 +1,4 @@
+import { markBadgeSeen } from "@/lib/awardRegistry";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { awardDate, loadAward } from "@/lib/websiteAward";
 
@@ -15,13 +16,15 @@ function svg(body: string) {
   return new Response(body, {
     headers: {
       "Content-Type": "image/svg+xml; charset=utf-8",
-      "Cache-Control": "public, max-age=3600, s-maxage=3600",
+      // Short CDN cache so requests from the winner's site still reach us and mark the badge as live.
+      "Cache-Control": "public, max-age=3600, s-maxage=300",
     },
   });
 }
 
-export async function GET(_request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: { id: string } }) {
   const award = hasAdminClient() ? await loadAward(createAdminClient(), params.id) : { state: "missing" as const };
+  if (award.state === "valid") await markBadgeSeen(createAdminClient(), award.auditId, request.headers.get("referer"));
   const font = "font-family=\"Inter,Segoe UI,Helvetica,Arial,sans-serif\"";
 
   if (award.state !== "valid") {

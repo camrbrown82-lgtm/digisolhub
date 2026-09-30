@@ -11,6 +11,7 @@ import { getResendApiKey } from "@/lib/email";
 import { evaluateCaslPublishedContact } from "@/lib/prospectAudit/casl";
 import { prospectSendBlockReason } from "@/lib/prospectAudit/sendGate";
 import { sendProspectAuditEmail } from "@/lib/prospectAudit/email";
+import { recordAward, siteHost } from "@/lib/awardRegistry";
 import { AWARD_MIN_SCORE, type ProspectAward } from "@/lib/websiteAward";
 import {
   ensureProspectQueue,
@@ -700,6 +701,21 @@ async function processOneProspect(input: {
         error_message: null,
       })
       .eq("id", prospect.id);
+
+    if (awarded) {
+      await recordAward(db, {
+        id: prospect.id,
+        source: "prospect",
+        companyName: prospect.business_name?.trim() || siteHost(prospect.url),
+        url: prospect.url,
+        score: priorAward?.score ?? audit.score,
+        prospectId: prospect.id,
+        contactId: sent.contactId,
+        sentTo: casl.email,
+        sentAt: now,
+        awardedAt: priorAward?.awardedAt ?? now,
+      });
+    }
 
     await logAgentActivity({
       supabase: db,
