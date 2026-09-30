@@ -11,6 +11,7 @@ import { getResendApiKey } from "@/lib/email";
 import { evaluateCaslPublishedContact } from "@/lib/prospectAudit/casl";
 import { prospectSendBlockReason } from "@/lib/prospectAudit/sendGate";
 import { sendProspectAuditEmail } from "@/lib/prospectAudit/email";
+import { AWARD_MIN_SCORE, type ProspectAward } from "@/lib/websiteAward";
 import {
   ensureProspectQueue,
   type EnsureProspectQueueResult,
@@ -510,6 +511,15 @@ async function processOneProspect(input: {
   const { db, clientId, prospect, dryRun } = input;
   const now = new Date().toISOString();
 
+  // A badge may already be live on their site, so re-audits must keep the award snapshot.
+  const { data: prior } = await db
+    .from("prospects")
+    .select("audit_report")
+    .eq("id", prospect.id)
+    .maybeSingle();
+  const priorAward = (prior?.audit_report as { award?: ProspectAward } | null)?.award;
+  const keepAward = priorAward ? { award: priorAward } : {};
+
   await db
     .from("prospects")
     .update({ audit_status: "processing", error_message: null })
@@ -541,6 +551,7 @@ async function processOneProspect(input: {
             issues: audit.issues.slice(0, 12),
             seo: audit.seo,
             metrics: audit.metrics,
+            ...keepAward,
           },
           contact_email: casl.email || prospect.contact_email,
           casl_status: "blocked",
@@ -605,6 +616,7 @@ async function processOneProspect(input: {
         weaknesses: summary.weaknesses,
         opener: summary.opener,
         subject: summary.subject,
+        ...keepAward,
       },
       contact_email: casl.email || prospect.contact_email,
       casl_status: "eligible",
@@ -647,6 +659,21 @@ async function processOneProspect(input: {
       };
     }
 
+    const awarded = audit.score >= AWARD_MIN_SCORE;
+    if (awarded && !priorAward) {
+      const award: ProspectAward = { score: audit.score, awardedAt: now };
+      tokenPatch.audit_report = { ...tokenPatch.audit_report, award };
+      // Saved before sending so the badge image and verify page work as soon as the email lands.
+      await db
+        .from("prospects")
+        .update({
+          audit_score: audit.score,
+          last_audited_at: now,
+          audit_report: tokenPatch.audit_report,
+        })
+        .eq("id", prospect.id);
+    }
+
     const sent = await sendProspectAuditEmail({
       db,
       clientId,
@@ -657,6 +684,7 @@ async function processOneProspect(input: {
       url: prospect.url,
       score: audit.score,
       summary,
+      awarded,
     });
 
     await db

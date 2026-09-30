@@ -14,9 +14,11 @@ import {
   DIGISOL_EMAIL,
   DIGISOL_FOUNDER,
   DIGISOL_FOUNDER_TITLE,
+  DIGISOL_GOOGLE_REVIEW_URL,
   DIGISOL_PHONE,
   DIGISOL_SITE_URL,
 } from "@/lib/site";
+import { AWARD_MIN_SCORE, awardLinks } from "@/lib/websiteAward";
 
 export type AuditFollowUpSource = "prospect_audit" | "visitor_chat";
 
@@ -36,6 +38,11 @@ export type AuditFollowUpInput = {
   source: AuditFollowUpSource;
   /** Email language; audit findings are machine-translated when not English. */
   language?: Locale;
+  /**
+   * Award id (`prospects.id`) for a prospect site scoring AWARD_MIN_SCORE+. The first email then leads
+   * with the Excellence Award badge. English prospect outreach only.
+   */
+  awardId?: string;
   /** When true, skip Resend and only upsert contact/lead. */
   dryRun?: boolean;
 };
@@ -120,6 +127,13 @@ export async function sendAuditFollowUpEmail(input: AuditFollowUpInput) {
     input.source === "visitor_chat" ? "visitor_chat" : "prospect_audit";
   const language = input.language ?? DEFAULT_LOCALE;
   const tier = scoreTier(input.score);
+  const award =
+    input.awardId &&
+    input.source === "prospect_audit" &&
+    input.score >= AWARD_MIN_SCORE &&
+    language === DEFAULT_LOCALE
+      ? { id: input.awardId, companyName: input.company?.trim() || hostOf(input.url) }
+      : undefined;
   const tags = Array.from(
     new Set([
       ...((existing?.tags as string[] | null) ?? []),
@@ -128,6 +142,7 @@ export async function sendAuditFollowUpEmail(input: AuditFollowUpInput) {
       "audit_followup",
       ...(input.source === "prospect_audit" ? ["cold_prospect"] : []),
       ...(tier === "strong" ? ["audit_strong"] : []),
+      ...(award ? ["award_winner"] : []),
       ...(tier === "needs_work" ? ["audit_needs_work"] : []),
       ...(language !== DEFAULT_LOCALE ? [`lang:${language}`] : []),
     ]),
@@ -172,8 +187,9 @@ export async function sendAuditFollowUpEmail(input: AuditFollowUpInput) {
   });
 
   const t = getMessages(language).emails;
-  const subject =
-    input.subject?.trim() || t.auditSubject(input.score, input.source, tier);
+  const subject = award
+    ? `${award.companyName}, your website earned the DigiSol Excellence Award (${input.score}/100)`
+    : input.subject?.trim() || t.auditSubject(input.score, input.source, tier);
 
   const strengths = (input.strengths || []).filter(Boolean).slice(0, 4);
   const weaknesses = input.weaknesses.slice(0, 5);
@@ -205,6 +221,7 @@ export async function sendAuditFollowUpEmail(input: AuditFollowUpInput) {
     strengths,
     source: input.source,
     language,
+    award,
   });
 
   if (input.dryRun || !getResendApiKey()) {
@@ -267,7 +284,9 @@ export function buildAuditFollowUpHtml(input: {
   strengths?: string[];
   source: AuditFollowUpSource;
   language?: Locale;
+  award?: { id: string; companyName: string };
 }) {
+  if (input.award) return buildAwardFirstEmailHtml({ ...input, award: input.award });
   const language = input.language ?? DEFAULT_LOCALE;
   const t = getMessages(language).emails;
   const tier = scoreTier(input.score);
@@ -320,6 +339,81 @@ ${t.hubPitch(tier, pricingUrl)}
 <p><a href="${consultUrl}">${escapeHtml(t.bookConsult)}</a> · <a href="${pricingUrl}">${escapeHtml(t.pricing)}</a> · ${escapeHtml(DIGISOL_PHONE)} · <a href="mailto:${DIGISOL_EMAIL}">${escapeHtml(DIGISOL_EMAIL)}</a></p>
 <p style="color:#71717a;font-size:12px;">${escapeHtml(t.casl(input.source))} ${escapeHtml(t.footer)}</p>
 `.trim();
+}
+
+const emailButton = (href: string, label: string, primary: boolean) =>
+  `<a href="${escapeHtml(href)}" style="display:inline-block;padding:14px 26px;border-radius:12px;font-weight:700;font-size:15px;text-decoration:none;${
+    primary ? "background:#fbbf24;color:#0f172a;" : "background:#ffffff;color:#0f172a;border:1px solid #cbd5e1;"
+  }">${escapeHtml(label)}</a>`;
+
+/**
+ * First outreach email for a prospect whose site earned the Excellence Award: the badge and an
+ * "add it to your site" CTA come first, then the audit notes, then optional offers.
+ */
+function buildAwardFirstEmailHtml(input: {
+  opener: string;
+  summary: string;
+  score: number;
+  weaknesses: string[];
+  strengths?: string[];
+  source: AuditFollowUpSource;
+  award: { id: string; companyName: string };
+}) {
+  const t = getMessages(DEFAULT_LOCALE).emails;
+  const links = awardLinks(DIGISOL_SITE_URL, input.award.id);
+  const company = escapeHtml(input.award.companyName);
+  const list = (items: string[]) =>
+    `<ul style="padding-left:20px;margin:0 0 16px">${items
+      .map((item) => `<li style="margin-bottom:6px">${escapeHtml(item)}</li>`)
+      .join("")}</ul>`;
+  const strengths = (input.strengths || []).filter(Boolean).slice(0, 4);
+  const polish = (input.weaknesses.length ? input.weaknesses : t.fallbackWeaknessesStrong).slice(0, 3);
+  const products = suggestProducts(input.score, input.weaknesses, DEFAULT_LOCALE);
+  const pricingUrl = siteUrl("/pricing?view=strong#growth", DEFAULT_LOCALE);
+  const consultUrl = siteUrl("/#contact", DEFAULT_LOCALE);
+
+  return `
+<div style="display:none;max-height:0;overflow:hidden">Your site scored ${input.score}/100 and earned the DigiSol Excellence Award. Your badge is ready to add.</div>
+<p>${escapeHtml(input.opener)}</p>
+<p><strong>${company}'s website scored ${input.score}/100</strong> on our website audit. Sites that score ${AWARD_MIN_SCORE} or higher earn the <strong>DigiSol Excellence Award</strong>, and yours made it.</p>
+<p style="text-align:center;margin:28px 0">
+  <a href="${escapeHtml(links.add)}"><img src="${escapeHtml(links.badgePng)}" width="320" height="120" alt="DigiSol Excellence Award: ${company}, ${input.score}/100" style="border:0;max-width:100%"></a>
+</p>
+<p><strong>Why put it on your site?</strong></p>
+${list([
+  "Visitors see at a glance that your site passed an outside check for speed, security and SEO.",
+  "It adds trust right where people decide whether to call you or book.",
+  "It stays honest. The badge links to a live verification page with your score and date.",
+])}
+<p style="text-align:center;margin:28px 0">${emailButton(links.add, "Add my badge (2 minutes)", true)}</p>
+<p style="font-size:13px;color:#475569">Someone else runs your website? Forward them this email. The page has copy-paste code and steps for WordPress, Wix, Squarespace and Shopify.</p>
+<hr style="border:none;border-top:1px solid #e2e8f0;margin:28px 0">
+<p><strong>From the audit</strong></p>
+<p>${escapeHtml(input.summary)}</p>
+${strengths.length ? `<p><strong>${escapeHtml(t.strengthsHeading)}</strong></p>${list(strengths)}` : ""}
+<p><strong>${escapeHtml(t.fixHeading("strong"))}</strong></p>
+${list(polish)}
+<hr style="border:none;border-top:1px solid #e2e8f0;margin:28px 0">
+<p><strong>If you'd like to take a look</strong></p>
+<p>No pressure at all. A great site is the hard part. These are the ways we help businesses turn that into more calls and bookings:</p>
+<ul style="padding-left:20px;margin:0 0 16px">${products
+    .map((p) => `<li style="margin-bottom:6px"><strong>${escapeHtml(p.name)}</strong> — ${escapeHtml(p.blurb)}</li>`)
+    .join("")}</ul>
+<p style="margin:20px 0">${emailButton(pricingUrl, "See plans for strong sites", false)}</p>
+<p>${t.consultLine(escapeHtml(DIGISOL_FOUNDER), escapeHtml(DIGISOL_FOUNDER_TITLE), true)}</p>
+<p><a href="${consultUrl}">${escapeHtml(t.bookConsult)}</a> · ${escapeHtml(DIGISOL_PHONE)} · <a href="mailto:${DIGISOL_EMAIL}">${escapeHtml(DIGISOL_EMAIL)}</a></p>
+<p style="font-size:13px;color:#475569"><strong>P.S.</strong> If the audit was useful, a quick <a href="${escapeHtml(DIGISOL_GOOGLE_REVIEW_URL)}">Google review</a> helps other local businesses find us. The award is yours either way.</p>
+<p>Congratulations again,<br>${escapeHtml(DIGISOL_FOUNDER)}<br>DigiSol</p>
+<p style="color:#71717a;font-size:12px;">${escapeHtml(t.casl(input.source))} ${escapeHtml(t.footer)}</p>
+`.trim();
+}
+
+function hostOf(url: string) {
+  try {
+    return new URL(url.includes("://") ? url : `https://${url}`).hostname.replace(/^www\./i, "");
+  } catch {
+    return url;
+  }
 }
 
 function defaultAuditOpener(opts: {

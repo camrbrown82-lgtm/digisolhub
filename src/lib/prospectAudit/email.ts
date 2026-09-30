@@ -13,6 +13,8 @@ export async function sendProspectAuditEmail(input: {
   url: string;
   score: number;
   summary: ProspectAuditSummary;
+  /** Site earned the Excellence Award; its award id is the prospect id. */
+  awarded?: boolean;
 }) {
   const block = await prospectSendBlockReason(input.db, input.email);
   if (block) {
@@ -31,6 +33,7 @@ export async function sendProspectAuditEmail(input: {
     opener: input.summary.opener,
     subject: input.summary.subject,
     source: "prospect_audit",
+    awardId: input.awarded ? input.prospectId : undefined,
   });
 
   // Keep trade tag on the contact for filtering.

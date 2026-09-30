@@ -66,7 +66,39 @@ export type AwardStatus =
       latest: { score: number; auditedAt: string } | null;
     };
 
-/** Looks up an award by audit id and checks it against the company's latest audit of its own site. */
+/** Snapshot saved on a prospect's `audit_report` when the outreach email hands it the award. */
+export type ProspectAward = { score: number; awardedAt: string };
+
+async function loadProspectAward(db: SupabaseClient, id: string): Promise<AwardStatus> {
+  const { data: prospect } = await db
+    .from("prospects")
+    .select("id, business_name, url, audit_score, last_audited_at, audit_report")
+    .eq("id", id)
+    .maybeSingle();
+  const award = (prospect?.audit_report as { award?: ProspectAward } | null)?.award;
+  if (!prospect || !award || !(Number(award.score) >= AWARD_MIN_SCORE)) return { state: "missing" };
+
+  const site = hostKey(String(prospect.url));
+  const reaudited =
+    prospect.last_audited_at && new Date(String(prospect.last_audited_at)) > new Date(award.awardedAt);
+  const latest = reaudited
+    ? { score: Number(prospect.audit_score) || 0, auditedAt: String(prospect.last_audited_at) }
+    : null;
+  return {
+    state: latest && latest.score < AWARD_MIN_SCORE ? "superseded" : "valid",
+    auditId: String(prospect.id),
+    companyName: String(prospect.business_name || "").trim() || site,
+    site,
+    score: Number(award.score),
+    auditedAt: award.awardedAt,
+    latest,
+  };
+}
+
+/**
+ * Looks up an award by id and checks it against the latest audit of the same site. Hub companies are
+ * keyed by `website_audits.id`; audited prospects by `prospects.id`.
+ */
 export async function loadAward(db: SupabaseClient, auditId: string): Promise<AwardStatus> {
   if (!UUID.test(auditId)) return { state: "missing" };
   const { data: audit } = await db
@@ -74,7 +106,8 @@ export async function loadAward(db: SupabaseClient, auditId: string): Promise<Aw
     .select("id, client_id, url, final_url, score, created_at, clients(name, domain)")
     .eq("id", auditId)
     .maybeSingle();
-  if (!audit?.client_id) return { state: "missing" };
+  if (!audit) return loadProspectAward(db, auditId);
+  if (!audit.client_id) return { state: "missing" };
   const client = (Array.isArray(audit.clients) ? audit.clients[0] : audit.clients) as
     | { name?: string | null; domain?: string | null }
     | null;
