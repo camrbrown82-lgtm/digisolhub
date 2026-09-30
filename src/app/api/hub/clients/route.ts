@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { starterBrandForCompany } from "@/lib/branding";
+import { recordClientWin } from "@/lib/clientWins";
 
 export async function GET() {
   const { supabase, error } = await requireHubSession();
@@ -45,5 +46,6 @@ export async function POST(request: Request) {
   if (insertError) {
     return NextResponse.json({ error: insertError.message }, { status: 400 });
   }
+  await recordClientWin(supabase, data.id).catch(() => null);
   return NextResponse.json({ id: data.id });
 }
