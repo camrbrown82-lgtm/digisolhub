@@ -5,6 +5,7 @@ import { Navbar } from "@/components/Navbar";
 import { ShareButtons } from "@/components/ShareButtons";
 import { DIGISOL_SITE_URL } from "@/lib/site";
 import WebsiteAwardBadge from "@/components/WebsiteAwardBadge";
+import { awardBadgeTheme } from "@/lib/awardTheme";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { getOutboundSiteUrl } from "@/lib/supabase/env";
 import { AWARD_MIN_SCORE, awardDate, awardLinks, loadAward } from "@/lib/websiteAward";
@@ -43,7 +44,7 @@ async function featuredWinners() {
 }
 
 export default async function AwardWinnersPage() {
-  const winners = await featuredWinners().catch(() => []);
+  const [winners, theme] = await Promise.all([featuredWinners().catch(() => []), awardBadgeTheme()]);
   const base = getOutboundSiteUrl();
 
   return (
@@ -55,7 +56,7 @@ export default async function AwardWinnersPage() {
           The award goes to businesses whose own website scores {AWARD_MIN_SCORE} or higher on DigiSol&apos;s website
           audit. It checks server speed, HTTPS, page titles and descriptions, headings, structured data, and other
           technical SEO basics. Every badge links to a live verification page.{" "}
-          <Link href={ABOUT_POST} className="text-amber-300 hover:text-amber-200">
+          <Link href={ABOUT_POST} className="text-sky-300 hover:text-sky-200">
             How the award works
           </Link>
         </p>
@@ -72,6 +73,7 @@ export default async function AwardWinnersPage() {
                   score={w.score}
                   date={awardDate(w.auditedAt)}
                   verifyUrl={awardLinks(base, w.auditId).verify}
+                  theme={theme}
                 />
               ) : null,
             )}
@@ -91,7 +93,7 @@ export default async function AwardWinnersPage() {
           <p className="mt-2 text-sm text-zinc-400">
             Get a free audit. If your site scores {AWARD_MIN_SCORE}+, the award and badge are yours.
           </p>
-          <Link href="/#contact" className="mt-4 inline-block text-sm font-semibold text-amber-300 hover:text-amber-200">
+          <Link href="/#contact" className="mt-4 inline-block text-sm font-semibold text-sky-300 hover:text-sky-200">
             Request a free website audit
           </Link>
         </section>

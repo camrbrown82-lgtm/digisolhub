@@ -84,8 +84,8 @@ function AwardSection({
   }
 
   return (
-    <div className="rounded-2xl border border-amber-400/30 bg-amber-400/5 p-5">
-      <h3 className="text-sm font-semibold text-amber-200">DigiSol Excellence Award earned</h3>
+    <div className="rounded-2xl border border-indigo-500/40 bg-indigo-500/5 p-5">
+      <h3 className="text-sm font-semibold text-sky-200">DigiSol Excellence Award earned</h3>
       <p className="mt-1 text-sm text-zinc-400">
         {companyName} scored {audit.score}/100. Paste the embed code on their website. The badge links to a public
         verify page and switches to &quot;Not current&quot; if a later audit of the site drops below {AWARD_MIN_SCORE}.

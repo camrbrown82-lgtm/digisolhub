@@ -23,7 +23,7 @@ export function AwardEmbedCode({ embed, className = "" }: { embed: string; class
       <button
         type="button"
         onClick={() => void copy()}
-        className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-amber-300"
+        className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
       >
         {copied ? "Copied" : "Copy embed code"}
       </button>

@@ -343,7 +343,9 @@ ${t.hubPitch(tier, pricingUrl)}
 
 const emailButton = (href: string, label: string, primary: boolean) =>
   `<a href="${escapeHtml(href)}" style="display:inline-block;padding:14px 26px;border-radius:12px;font-weight:700;font-size:15px;text-decoration:none;${
-    primary ? "background:#fbbf24;color:#0f172a;" : "background:#ffffff;color:#0f172a;border:1px solid #cbd5e1;"
+    primary
+      ? `background:${DIGISOL_BRAND.primaryColor};color:#ffffff;`
+      : "background:#ffffff;color:#0f172a;border:1px solid #cbd5e1;"
   }">${escapeHtml(label)}</a>`;
 
 /**

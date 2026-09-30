@@ -1,8 +1,10 @@
 import { markBadgeSeen } from "@/lib/awardRegistry";
+import { awardTheme, type AwardTheme } from "@/lib/awardTheme";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { awardDate, loadAward } from "@/lib/websiteAward";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 function escapeXml(value: string) {
   return value.replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" })[c]!);
@@ -22,35 +24,67 @@ function svg(body: string) {
   });
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
-  const award = hasAdminClient() ? await loadAward(createAdminClient(), params.id) : { state: "missing" as const };
-  if (award.state === "valid") await markBadgeSeen(createAdminClient(), award.auditId, request.headers.get("referer"));
-  const font = "font-family=\"Inter,Segoe UI,Helvetica,Arial,sans-serif\"";
-
-  if (award.state !== "valid") {
-    return svg(`<svg xmlns="http://www.w3.org/2000/svg" width="320" height="120" viewBox="0 0 320 120" role="img" aria-label="DigiSol award not current">
-  <rect x="1" y="1" width="318" height="118" rx="14" fill="#1e293b" stroke="#475569" stroke-width="2"/>
-  <text x="160" y="52" text-anchor="middle" ${font} font-size="13" font-weight="700" fill="#94a3b8" letter-spacing="1.5">DIGISOL EXCELLENCE AWARD</text>
-  <text x="160" y="78" text-anchor="middle" ${font} font-size="13" fill="#64748b">Not current</text>
-</svg>`);
-  }
-
-  const name = escapeXml(clip(award.companyName, 30));
-  const date = escapeXml(awardDate(award.auditedAt));
-  const label = escapeXml(`DigiSol Excellence Award: ${award.companyName}, website audit ${award.score}/100`);
-  return svg(`<svg xmlns="http://www.w3.org/2000/svg" width="320" height="120" viewBox="0 0 320 120" role="img" aria-label="${label}">
+function frame(theme: AwardTheme, label: string, inner: string, current: boolean) {
+  const font = 'font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif"';
+  const logo = theme.logoData
+    ? `<clipPath id="emblem"><circle cx="56" cy="60" r="38"/></clipPath>
+  <image href="${theme.logoData}" x="18" y="22" width="76" height="76" clip-path="url(#emblem)" preserveAspectRatio="xMidYMid slice"${current ? "" : ' opacity="0.35"'}/>
+  <circle cx="56" cy="60" r="38" fill="none" stroke="${theme.highlight}" stroke-opacity="${current ? 0.7 : 0.25}" stroke-width="1.5"/>`
+    : "";
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="120" viewBox="0 0 320 120" role="img" aria-label="${escapeXml(label)}" ${font}>
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0f172a"/>
-      <stop offset="1" stop-color="#1e293b"/>
+    <linearGradient id="wash" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="${theme.primary}" stop-opacity="0"/>
+      <stop offset="1" stop-color="${theme.primary}" stop-opacity="${current ? 0.35 : 0.1}"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="${theme.primary}"/>
+      <stop offset="1" stop-color="${theme.highlight}"/>
     </linearGradient>
   </defs>
-  <rect x="1" y="1" width="318" height="118" rx="14" fill="url(#bg)" stroke="#fbbf24" stroke-width="2"/>
-  <circle cx="300" cy="10" r="46" fill="#fbbf24" fill-opacity="0.12"/>
-  <rect x="84" y="14" width="152" height="20" rx="10" fill="#fbbf24"/>
-  <text x="160" y="28" text-anchor="middle" ${font} font-size="9.5" font-weight="700" fill="#020617" letter-spacing="1.4">DIGISOL EXCELLENCE AWARD</text>
-  <text x="160" y="62" text-anchor="middle" ${font} font-size="18" font-weight="800" fill="#ffffff">${name}</text>
-  <text x="160" y="84" text-anchor="middle" ${font} font-size="12" fill="#cbd5e1">Website audit <tspan font-weight="700" fill="#fbbf24">${award.score}/100</tspan></text>
-  <text x="160" y="104" text-anchor="middle" ${font} font-size="10" fill="#94a3b8">Verified ${date} · wwwdigisol.com</text>
-</svg>`);
+  <rect x="1" y="1" width="318" height="118" rx="14" fill="${theme.background}"/>
+  <rect x="1" y="1" width="318" height="118" rx="14" fill="url(#wash)"/>
+  ${current ? `<circle cx="304" cy="8" r="52" fill="${theme.highlight}" fill-opacity="0.14"/>` : ""}
+  <rect x="1" y="1" width="318" height="118" rx="14" fill="none" stroke="${current ? "url(#edge)" : theme.text}" stroke-opacity="${current ? 1 : 0.25}" stroke-width="2"/>
+  ${logo}
+  ${inner}
+</svg>`;
+}
+
+export async function GET(request: Request, { params }: { params: { id: string } }) {
+  const [award, theme] = await Promise.all([
+    hasAdminClient() ? loadAward(createAdminClient(), params.id) : Promise.resolve({ state: "missing" as const }),
+    awardTheme(),
+  ]);
+  const x = theme.logoData ? 108 : 20;
+  const pill = `<rect x="${x}" y="16" width="172" height="18" rx="9" fill="${theme.primary}"/>
+  <text x="${x + 86}" y="28.6" text-anchor="middle" font-size="8.8" font-weight="700" fill="${theme.text}" letter-spacing="1.2">DIGISOL EXCELLENCE AWARD</text>`;
+
+  if (award.state !== "valid") {
+    return svg(
+      frame(
+        theme,
+        "DigiSol award not current",
+        `<g opacity="0.55">${pill}</g>
+  <text x="${x}" y="70" font-size="14" fill="${theme.text}" fill-opacity="0.6">Not current</text>`,
+        false,
+      ),
+    );
+  }
+
+  await markBadgeSeen(createAdminClient(), award.auditId, request.headers.get("referer"));
+  const long = award.companyName.length > 18;
+  const name = escapeXml(clip(award.companyName, long ? 26 : 18));
+  const date = escapeXml(awardDate(award.auditedAt));
+  return svg(
+    frame(
+      theme,
+      `DigiSol Excellence Award: ${award.companyName}, website audit ${award.score}/100`,
+      `${pill}
+  <text x="${x}" y="60" font-size="${long ? 14 : 17}" font-weight="800" fill="${theme.text}">${name}</text>
+  <text x="${x}" y="81" font-size="12" fill="${theme.text}" fill-opacity="0.8">Website audit <tspan font-weight="700" fill="${theme.highlight}" fill-opacity="1">${award.score}/100</tspan></text>
+  <text x="${x}" y="101" font-size="9.5" fill="${theme.text}" fill-opacity="0.6">Verified ${date} · wwwdigisol.com</text>`,
+      true,
+    ),
+  );
 }

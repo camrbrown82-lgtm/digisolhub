@@ -5,6 +5,7 @@ import { AwardEmbedCode } from "@/components/AwardEmbedCode";
 import { ShareButtons } from "@/components/ShareButtons";
 import WebsiteAwardBadge from "@/components/WebsiteAwardBadge";
 import { markAddPageViewed } from "@/lib/awardRegistry";
+import { awardBadgeTheme } from "@/lib/awardTheme";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { getOutboundSiteUrl } from "@/lib/supabase/env";
 import { AWARD_MIN_SCORE, awardDate, awardEmbedHtml, awardLinks, loadAward } from "@/lib/websiteAward";
@@ -46,11 +47,15 @@ export default async function AwardPage({
   const current = award.state === "valid";
   const adding = current && searchParams.add === "1";
   if (adding) await markAddPageViewed(createAdminClient(), award.auditId);
+  const theme = await awardBadgeTheme();
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-16">
       {adding ? (
-        <section className="mb-12 rounded-2xl border border-amber-400/40 bg-amber-400/5 p-6">
+        <section
+          className="mb-12 rounded-2xl border p-6"
+          style={{ borderColor: `${theme.primary}80`, background: `${theme.primary}14` }}
+        >
           <h1 className="text-2xl font-semibold text-white">Add your award badge</h1>
           <p className="mt-2 text-sm text-zinc-300">
             Congratulations, {award.companyName}. Copy the code below and paste it into your website. The badge
@@ -82,7 +87,13 @@ export default async function AwardPage({
 
       {current ? (
         <div className="mt-8">
-          <WebsiteAwardBadge companyName={award.companyName} score={award.score} date={date} verifyUrl={verify} />
+          <WebsiteAwardBadge
+            companyName={award.companyName}
+            score={award.score}
+            date={date}
+            verifyUrl={verify}
+            theme={theme}
+          />
           <ShareButtons
             className="mt-8"
             url={verify}

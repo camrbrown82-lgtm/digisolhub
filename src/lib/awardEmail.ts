@@ -1,3 +1,4 @@
+import { DIGISOL_BRAND } from "@/lib/branding";
 import { DIGISOL_GOOGLE_REVIEW_URL } from "@/lib/site";
 import { AWARD_MIN_SCORE } from "@/lib/websiteAward";
 
@@ -7,7 +8,9 @@ function esc(value: string) {
 
 const button = (href: string, label: string, primary: boolean) =>
   `<a href="${esc(href)}" style="display:inline-block;padding:14px 26px;border-radius:12px;font-weight:700;font-size:15px;text-decoration:none;${
-    primary ? "background:#fbbf24;color:#0f172a;" : "background:#ffffff;color:#0f172a;border:1px solid #cbd5e1;"
+    primary
+      ? `background:${DIGISOL_BRAND.primaryColor};color:#ffffff;`
+      : "background:#ffffff;color:#0f172a;border:1px solid #cbd5e1;"
   }">${esc(label)}</a>`;
 
 /** Email telling a company its website earned the award, asking it to add the badge (and, separately, for a review). */
