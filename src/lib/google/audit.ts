@@ -157,17 +157,17 @@ function connectionFailure(product: GoogleProduct, error: unknown): ProductAudit
       error.adsCode === "DEVELOPER_TOKEN_NOT_APPROVED";
     if (testAccess) {
       const project = cloudProjectId();
-      message = `The Google Ads API is already on. DigiSol's Cloud project${project ? ` (${project})` : ""} only has Test access, so it cannot read a live Ads account. On that project's Google Ads API page, apply for Explorer access. Google reviews Explorer access automatically.`;
+      message = `The Google Ads API is already on. The Hub's Cloud project${project ? ` (${project})` : ""} only has Test access, so it cannot read a live Ads account. On that project's Google Ads API page, apply for Explorer access. Google reviews Explorer access automatically.`;
       if (project) {
         helpUrl = `https://console.cloud.google.com/apis/api/googleads.googleapis.com/overview?project=${project}`;
       }
     } else if (error.disabledApi) {
-      message = `The ${PRODUCT_LABELS[product]} API is turned off in DigiSol's Google Cloud project. Turn it on, wait a minute, then run the check again.`;
+      message = `The ${PRODUCT_LABELS[product]} API is turned off in the Hub's Google Cloud project. Turn it on, wait a minute, then run the check again.`;
     } else if (error.noAccess || error.status === 404) {
       message =
         product === "ads"
-          ? `DigiSol's manager account can't reach this Google Ads account. Link it under the DigiSol manager account (or add ${robot} as a Standard user).`
-          : `DigiSol's robot login doesn't have access yet. Add ${robot} as ${product === "ga4" ? "an Editor in GA4 (Admin → Property access management)" : "a Full user in Search Console (Settings → Users and permissions)"}.`;
+          ? `The Hub's manager account can't reach this Google Ads account. Link it under the Hub's manager account (or add ${robot} as a Standard user).`
+          : `The Hub's robot login doesn't have access yet. Add ${robot} as ${product === "ga4" ? "an Editor in GA4 (Admin → Property access management)" : "a Full user in Search Console (Settings → Users and permissions)"}.`;
     }
   }
   return { state: { connected: false, error: message, helpUrl }, checks: [] };
@@ -580,7 +580,7 @@ async function auditAds(ids: GoogleSetupIds): Promise<ProductAudit> {
   if (!cid) return notLinked("Pick this company's Google Ads account, or leave it empty if they don't run ads.");
   if (!ads.adsApiReady()) {
     return notLinked(
-      "Add GOOGLE_ADS_MANAGER_ID (DigiSol's manager account number) on Vercel, then redeploy.",
+      "Add GOOGLE_ADS_MANAGER_ID (the Hub's manager account number) on Vercel, then redeploy.",
     );
   }
   let customer: AdsRow["customer"];

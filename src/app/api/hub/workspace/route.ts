@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       .maybeSingle();
     if (!data?.id) {
       return NextResponse.json(
-        { error: "That company is gone. Pick DigiSol (or another) under Working on." },
+        { error: "That company is gone. Pick another one under Working on." },
         { status: 400 },
       );
     }
