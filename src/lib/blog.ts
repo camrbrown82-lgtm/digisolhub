@@ -24,6 +24,88 @@ export type BlogPost = {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "competitive-analysis-and-weekly-google-checks",
+    title: "See Where You Stand Against Local Competitors, and Keep Google Checked Every Week",
+    excerpt:
+      "A useful comparison looks at the whole path from search to booked work, not just who ranks first. Here is what DigiSol Hub now checks, and how the Monday Google check keeps Analytics, Search Console, and Ads from drifting.",
+    category: "Growth",
+    publishedAt: "2026-09-29",
+    readingMinutes: 6,
+    keywords: [
+      "competitive analysis local business",
+      "competitor website audit Alberta",
+      "Google Analytics weekly check",
+      "Search Console sitemap",
+      "Google Ads wasted spend",
+    ],
+    sections: [
+      {
+        heading: "Guessing at the competition is expensive",
+        body: [
+          "Most owners know one or two rivals by name and assume the rest from what they see on Google. That misses the businesses that are quietly easier to contact, clearer about price, or simply better reviewed. By the time you notice, they already have the calls.",
+          "A useful comparison is specific. It looks at your site and a short list of real competitors, then says where you are ahead, where you match, and where a customer would pick them instead.",
+        ],
+      },
+      {
+        heading: "What the Hub compares",
+        body: [
+          "In DigiSol Hub, competitive analysis belongs to the company you are working on. Kaylev can find the top local competitors, or you can paste the ones you already watch. It audits each website, checks Google reviews, listings, and social presence, then writes a prioritized plan. A run takes a few minutes.",
+          "The score is built from the same checks every time, so a later run shows exactly which points you gained or lost. The areas it scores are:",
+        ],
+        bullets: [
+          "Website experience and speed.",
+          "On-page SEO: titles, headings, and descriptions.",
+          "Local SEO and the Google Business Profile.",
+          "Reviews and reputation.",
+          "Content and authority.",
+          "Offer, pricing, and messaging.",
+          "Conversion: calls to action, forms, chat, and booking.",
+          "Social and brand presence.",
+          "Trust signals: credentials, guarantees, and proof.",
+        ],
+      },
+      {
+        heading: "Google does not stay set up by itself",
+        body: [
+          "A competitive gap is only half the story. Plenty of businesses set up Google once and never look again. Analytics stops counting visits properly, a sitemap is never read, and ad money goes to searches that never become leads.",
+          "You stay the owner of every Google account. DigiSol is added as a user, and you can remove that access anytime.",
+        ],
+      },
+      {
+        heading: "What the Monday check covers",
+        body: [
+          "Every Monday the Hub checks the Working-on company's Google setup again and emails what changed. Safe fixes can be applied in one click. Nothing about ad spend changes without your OK.",
+        ],
+        bullets: [
+          "Analytics: visits counted once, a full year of history kept, and calls, forms, and bookings treated as conversions.",
+          "Search Console: key pages indexed, sitemaps read, and the searches where you are close to page one.",
+          "Google Ads: searches that cost money without bringing leads, campaigns on low-intent networks, and broken conversion tracking.",
+          "Google reviews: the listing's rating and review count, checked regularly, plus a one-tap link you can send after a finished job.",
+        ],
+        links: [
+          { label: "Google Business Profile checklist for Airdrie and Calgary", href: "/blog/google-business-profile-checklist-airdrie-calgary" },
+          { label: "How to get more Google reviews the right way", href: "/blog/how-to-get-more-google-reviews-alberta" },
+        ],
+      },
+      {
+        heading: "How to use both",
+        body: [
+          "Run the competitive analysis first so you know the one or two gaps that actually cost you work. Then let the Monday Google check keep the measurement honest, so the next comparison is based on real visits, real reviews, and ads that are not leaking.",
+          "If you want this set up for your business, ask for a Google setup check or a competitive run. We will use your accounts and your competitors, and you keep ownership of both.",
+        ],
+        links: [
+          { label: "See the weekly Google check", href: "/#google-autopilot" },
+          { label: "Ask DigiSol to set it up", href: "/#contact" },
+        ],
+      },
+    ],
+    furtherReading: [
+      { label: "Google: Tips to improve your local ranking", href: "https://support.google.com/business/answer/7091" },
+      { label: "Google Search Console: Get started", href: "https://support.google.com/webmasters/answer/9128668" },
+      { label: "Google Analytics: Set up a property", href: "https://support.google.com/analytics/answer/9304153" },
+    ],
+  },
+  {
     slug: "how-to-get-more-google-reviews-alberta",
     title: "How to Get More Google Reviews for Your Alberta Business (the Right Way)",
     excerpt:

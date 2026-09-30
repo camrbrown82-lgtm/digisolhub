@@ -144,7 +144,7 @@ export const DISPATCH_ISSUES: DispatchIssue[] = [
       {
         heading: "Kaylev: the assistant that never clocks out",
         body: [
-          "Kaylev is DigiSol’s built-in AI. It works inside your Hub and on your website, using your business details and your brand kit.",
+          "Kaylev is DigiSol’s built-in AI. He works inside your Hub and on your website, using your business details and your brand kit.",
         ],
         bullets: [
           "Answers website visitors 24/7 and saves their details straight to your contacts.",
