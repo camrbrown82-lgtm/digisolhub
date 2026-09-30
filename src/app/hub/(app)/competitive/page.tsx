@@ -10,7 +10,13 @@ import type {
 } from "@/lib/competitive/schema";
 import { ensureCompetitiveSchema } from "@/lib/ensureCompetitiveSchema";
 import { createClient } from "@/lib/supabase/server";
-import { getWorkspaceClient, resolveClientId } from "@/lib/workspace";
+import { prospectHostKey } from "@/lib/prospectAudit/seedCatalog";
+import { companySiteUrl, getWorkspaceClient, resolveClientId } from "@/lib/workspace";
+
+function sameSite(a: string, b: string) {
+  const key = (value: string) => prospectHostKey(value.includes("://") ? value : `https://${value}`);
+  return Boolean(key(a) && key(a) === key(b));
+}
 
 export const dynamic = "force-dynamic";
 
@@ -55,8 +61,10 @@ export default async function CompetitivePage({
   const history = (historyData ?? []) as AnalysisRow[];
 
   const running = history.find((r) => r.status === "queued" || r.status === "running");
+  // A ?id= from another company's report falls back to this company's latest one.
+  const latestCompleted = history.find((r) => r.status === "completed")?.id || null;
   const selectedId =
-    searchParams.id || history.find((r) => r.status === "completed")?.id || null;
+    searchParams.id && history.some((r) => r.id === searchParams.id) ? searchParams.id : latestCompleted;
 
   const { data: selected } = selectedId
     ? await supabase
@@ -67,12 +75,11 @@ export default async function CompetitivePage({
         .maybeSingle()
     : { data: null };
 
-  const lastInputs = history[0]?.inputs;
-  const domain = active?.domain
-    ? active.domain.startsWith("http")
-      ? active.domain
-      : `https://${active.domain}`
-    : "";
+  const domain = companySiteUrl(active);
+  // Only pre-fill from an analysis of this company's own website.
+  const lastInputs = domain
+    ? history.find((r) => r.inputs?.url && sameSite(r.inputs.url, domain))?.inputs
+    : history[0]?.inputs;
 
   return (
     <div className="space-y-6">
@@ -96,6 +103,7 @@ export default async function CompetitivePage({
 
       <div className="print:hidden">
         <CompetitiveRunForm
+          key={clientId}
           companyName={companyName}
           defaults={{
             url: lastInputs?.url || domain,
