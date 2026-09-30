@@ -1,12 +1,18 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { isLeadActivityType } from "@/lib/lead-pipeline";
+import { assertLeadInWorkspace, requireWorkspaceClientId } from "@/lib/tenantGuard";
 
 type Params = { params: { id: string } };
 
 export async function POST(request: Request, { params }: Params) {
   const { user, supabase, error } = await requireHubSession();
   if (error || !user) return error;
+  const { clientId, error: workspaceError } = await requireWorkspaceClientId(supabase);
+  if (workspaceError) return workspaceError;
+  if (!(await assertLeadInWorkspace(supabase, params.id, clientId))) {
+    return NextResponse.json({ error: "Lead not found" }, { status: 404 });
+  }
 
   const body = (await request.json()) as {
     type?: string;

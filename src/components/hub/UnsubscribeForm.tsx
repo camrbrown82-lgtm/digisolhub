@@ -6,10 +6,12 @@ export function UnsubscribeForm({
   email,
   token,
   valid,
+  companyName,
 }: {
   email: string;
   token: string;
   valid: boolean;
+  companyName: string;
 }) {
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
@@ -40,7 +42,7 @@ export function UnsubscribeForm({
   if (done) {
     return (
       <p className="text-sm text-zinc-300">
-        You are unsubscribed. DigiSol will not send you further campaign email.
+        You are unsubscribed. {companyName} will not send you further campaign email.
       </p>
     );
   }
@@ -48,7 +50,7 @@ export function UnsubscribeForm({
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <p className="text-sm text-zinc-400">
-        Unsubscribe <span className="text-white">{email}</span> from DigiSol
+        Unsubscribe <span className="text-white">{email}</span> from {companyName}{" "}
         campaigns.
       </p>
       {error ? (

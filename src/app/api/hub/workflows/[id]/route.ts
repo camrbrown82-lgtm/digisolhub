@@ -1,21 +1,28 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { ensureTagDescriptionSchema } from "@/lib/ensureTagSchema";
+import { assertRowInWorkspace, requireWorkspaceClientId } from "@/lib/tenantGuard";
 
 type Params = { params: { id: string } };
 
 export async function GET(_request: Request, { params }: Params) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
+  const { clientId, error: workspaceError } = await requireWorkspaceClientId(supabase);
+  if (workspaceError) return workspaceError;
 
   const { data, error: queryError } = await supabase
     .from("workflows")
     .select("*")
     .eq("id", params.id)
-    .single();
+    .eq("client_id", clientId)
+    .maybeSingle();
 
   if (queryError) {
     return NextResponse.json({ error: queryError.message }, { status: 404 });
+  }
+  if (!data) {
+    return NextResponse.json({ error: "Workflow not found" }, { status: 404 });
   }
   return NextResponse.json({ workflow: data });
 }
@@ -23,6 +30,11 @@ export async function GET(_request: Request, { params }: Params) {
 export async function PATCH(request: Request, { params }: Params) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
+  const { clientId, error: workspaceError } = await requireWorkspaceClientId(supabase);
+  if (workspaceError) return workspaceError;
+  if (!(await assertRowInWorkspace(supabase, "workflows", params.id, clientId))) {
+    return NextResponse.json({ error: "Workflow not found" }, { status: 404 });
+  }
 
   const body = (await request.json().catch(() => null)) as {
     name?: string;
@@ -56,7 +68,8 @@ export async function PATCH(request: Request, { params }: Params) {
   const { error: updateError } = await supabase
     .from("workflows")
     .update(patch)
-    .eq("id", params.id);
+    .eq("id", params.id)
+    .eq("client_id", clientId);
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 400 });

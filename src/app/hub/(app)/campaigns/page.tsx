@@ -63,9 +63,14 @@ export default async function CampaignsPage() {
     sendsQuery = sendsQuery.in("contact_id", scopedIds);
   }
 
-  let runsQuery = supabase
+  const { data: companyWorkflows } = active
+    ? await supabase.from("workflows").select("id").eq("client_id", active.id)
+    : { data: [] as { id: string }[] };
+  const companyWorkflowIds = (companyWorkflows ?? []).map((row) => row.id as string);
+  const runsQuery = supabase
     .from("workflow_runs")
     .select("id, workflow_id, status, started_at, finished_at, log, contacts(email, name, company)")
+    .in("workflow_id", companyWorkflowIds)
     .order("started_at", { ascending: false })
     .limit(30);
 
@@ -95,7 +100,7 @@ export default async function CampaignsPage() {
     workflowsQuery,
     campaignsQuery,
     emptySends ? Promise.resolve({ data: [] as never[], error: null }) : sendsQuery,
-    runsQuery,
+    companyWorkflowIds.length ? runsQuery : Promise.resolve({ data: [] as never[], error: null }),
     templatesQuery,
     assetsQuery,
     loadContentTests(supabase, workspace?.id ?? null, { useGa4: isDigisol }),

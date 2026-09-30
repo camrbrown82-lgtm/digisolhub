@@ -4,7 +4,13 @@ import { HubSidebar } from "@/components/hub/HubSidebar";
 import { isAllowedEmail } from "@/lib/allowlist";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
-import { ensureDigisolClient, getActiveClientId, listClients } from "@/lib/workspace";
+import {
+  companySiteUrl,
+  ensureDigisolClient,
+  getWorkspaceClient,
+  isDigisolClient,
+  listClients,
+} from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
 
@@ -27,13 +33,19 @@ export default async function HubAppLayout({
 
   await ensureDigisolClient(supabase);
   const clients = await listClients(supabase);
-  const activeClientId = await getActiveClientId();
+  const workspace = await getWorkspaceClient(supabase);
+  const house = isDigisolClient(workspace);
 
   return (
     <HubShell
       clients={clients}
-      activeClientId={activeClientId}
-      sidebar={<HubSidebar />}
+      activeClientId={workspace?.id || ""}
+      sidebar={
+        <HubSidebar
+          companyName={workspace?.name || ""}
+          siteUrl={house ? "/" : companySiteUrl(workspace)}
+        />
+      }
     >
       {children}
     </HubShell>

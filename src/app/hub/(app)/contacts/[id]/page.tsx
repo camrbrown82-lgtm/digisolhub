@@ -8,6 +8,7 @@ import { contactAbVariantLabel } from "@/lib/contactAbVariants";
 import { ensureCampaignChannelSchema } from "@/lib/ensureCampaignChannelSchema";
 import { ensureProspectsSchema } from "@/lib/ensureProspectsSchema";
 import { createClient } from "@/lib/supabase/server";
+import { resolveClientId } from "@/lib/workspace";
 
 export default async function ContactDetailPage({
   params,
@@ -19,12 +20,15 @@ export default async function ContactDetailPage({
     ensureProspectsSchema().catch(() => null),
   ]);
   const supabase = await createClient();
+  const clientId = await resolveClientId(supabase);
+  if (!clientId) notFound();
   const { data: clients } = await supabase.from("clients").select("id, name").order("name");
   const { data: contact } = await supabase
     .from("contacts")
     .select("*")
     .eq("id", params.id)
-    .single();
+    .eq("client_id", clientId)
+    .maybeSingle();
 
   if (!contact) notFound();
 
@@ -47,6 +51,7 @@ export default async function ContactDetailPage({
       "id, business_name, url, trade, contact_email, audit_status, audit_score, audit_summary, emailed_at, engaged_at, casl_status, last_audited_at",
     )
     .eq("contact_id", params.id)
+    .eq("client_id", clientId)
     .order("last_audited_at", { ascending: false })
     .limit(1)
     .maybeSingle();

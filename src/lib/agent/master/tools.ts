@@ -7,7 +7,7 @@ import {
   sendEmailToContact,
 } from "@/lib/email";
 import { getEmailLogoUrl } from "@/lib/emailLogo";
-import { fetchDigisolGa4Summary } from "@/lib/ga4";
+import { companyGa4PropertyId, fetchGa4Summary } from "@/lib/ga4";
 import { reviewsForAgent } from "@/lib/googleReviews";
 import { googleSetupForAgent } from "@/lib/google/audit";
 import { summarizeLeadPerformance, type LeadRecord } from "@/lib/lead-pipeline";
@@ -176,7 +176,9 @@ export async function fetchCompanyAnalyticsTool(
   const website = summarizeSiteEvents(site.data ?? [], scope.domain);
   const pipeline = summarizeLeadPerformance((leadsResult.data ?? []) as LeadRecord[]);
   const [ga4, googleReviews, googleSetup] = await Promise.all([
-    isDigisol ? fetchDigisolGa4Summary(days) : Promise.resolve(null),
+    companyGa4PropertyId(ctx.supabase, scope.companyId, isDigisol).then((id) =>
+      id ? fetchGa4Summary(id, days) : null,
+    ),
     reviewsForAgent(ctx.supabase, scope.companyId),
     googleSetupForAgent(ctx.supabase, scope.companyId),
   ]);

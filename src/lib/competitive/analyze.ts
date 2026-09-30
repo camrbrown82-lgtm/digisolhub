@@ -81,6 +81,30 @@ export function businessNameFromSite(snapshot: {
   }
 }
 
+const CANADIAN_REGIONS = [
+  "Alberta",
+  "British Columbia",
+  "Saskatchewan",
+  "Manitoba",
+  "Ontario",
+  "Quebec",
+  "New Brunswick",
+  "Nova Scotia",
+  "Prince Edward Island",
+  "Newfoundland and Labrador",
+  "Yukon",
+  "Northwest Territories",
+  "Nunavut",
+];
+
+/** Web-search locale from the company's own service area; none when it can't be told. */
+function searchLocation(location: string) {
+  const region = CANADIAN_REGIONS.find((name) =>
+    location.toLowerCase().includes(name.toLowerCase()),
+  );
+  return region ? { type: "approximate" as const, country: "CA", region } : undefined;
+}
+
 function isDirectoryHost(host: string) {
   return BLOCKED_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`));
 }
@@ -159,7 +183,7 @@ export async function inferProfile(input: {
     output: Output.object({
       schema: z.object({
         industry: z.string().describe("Short industry label, e.g. 'residential HVAC' or 'web design agency'"),
-        location: z.string().describe("Primary service area, e.g. 'Airdrie and Calgary, Alberta'"),
+        location: z.string().describe("Primary service area, e.g. 'Springfield and area, Illinois'"),
       }),
     }),
     prompt: `From this business website, identify its industry and primary service area.
@@ -168,11 +192,11 @@ URL: ${input.snapshot.url}
 Title: ${input.snapshot.title || ""}
 Meta: ${input.snapshot.metaDescription || ""}
 Page text: ${input.snapshot.excerpt.slice(0, 2000)}
-If the location is unclear, use "Alberta, Canada".`,
+Use only what the site says. If the location is unclear, use "their local area".`,
   });
   return {
     industry: input.industry || result.output?.industry || "local business",
-    location: input.location || result.output?.location || "Alberta, Canada",
+    location: input.location || result.output?.location || "their local area",
     tokens: tokensOf(result.usage),
   };
 }
@@ -190,7 +214,7 @@ export async function findCompetitors(input: {
     tools: {
       web_search: openai.tools.webSearch({
         searchContextSize: "medium",
-        userLocation: { type: "approximate", country: "CA", region: "Alberta" },
+        userLocation: searchLocation(input.location),
       }),
     },
     maxOutputTokens: 1200,
@@ -252,7 +276,7 @@ export async function researchPresence(input: {
       tools: {
         web_search: openai.tools.webSearch({
           searchContextSize: "low",
-          userLocation: { type: "approximate", country: "CA", region: "Alberta" },
+          userLocation: searchLocation(input.location),
         }),
       },
       maxOutputTokens: 700,

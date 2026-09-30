@@ -1,3 +1,4 @@
+import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
 import { parseAudiencePreset, type AudiencePreset } from "@/lib/contactAudiences";
 import { WEBSITE_AUDIT_PAGE_URL } from "@/lib/media";
 import {
@@ -32,7 +33,7 @@ export type AiWorkflowTag = {
   description: string;
 };
 
-export const WORKFLOW_BUILDER_SYSTEM_PROMPT = `You are DigiSol Hub's expert custom workflow architect for Alberta SMBs.
+export const WORKFLOW_BUILDER_SYSTEM_PROMPT = `You are DigiSol Hub's expert custom workflow architect. You design for the one company named in the brief, in its own voice and market, never for DigiSol unless DigiSol is that company.
 
 You ONLY design automations for DigiSol's visual workflow builder (React Flow). You know this product deeply.
 
@@ -51,7 +52,7 @@ You ONLY design automations for DigiSol's visual workflow builder (React Flow). 
 - Edges: { id, source, target } connecting the path in order.
 - Prefer 4–8 steps. ALWAYS alternate email and wait: welcome send → wait → follow-up send → tag. Do not stack two tags with no email.
 - Wait durations must match the timeline. A "1 day" or "break the ice" goal uses duration "1d" between the welcome and the follow-up. Longer nurtures use "2d" or "3d".
-- Welcome send label should name the asset: "Welcome + audit video" when the goal mentions a video or audit. The public audit video page is ${WEBSITE_AUDIT_PAGE_URL} — put that URL in the send step label or tagDescription so the operator remembers to include it in the template.
+- Welcome send label should name the asset the goal mentions, e.g. "Welcome + video" or "Welcome + offer". If the brief gives an asset URL, put it in the send step label or tagDescription so the operator remembers to include it in the template.
 - If the goal mentions a poster, label the send "Welcome + poster" and note which poster in tagDescription.
 - You choose the tag names. Do not leave tags blank. Typical progress tags: welcomed, followup-sent, nurtured.
 - summary MUST be a numbered step list the operator can read without opening the canvas, for example:
@@ -87,14 +88,17 @@ Never invent unsupported actions (no SMS, no webhooks, no if/else, no A/B). Neve
 
 export function buildWorkflowUserPrompt(brief: WorkflowBrief) {
   return [
-    `Company: ${brief.companyName || "DigiSol client"}`,
+    `Company: ${brief.companyName || "(not set)"}`,
+    brief.companyName?.trim().toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase()
+      ? `DigiSol's public website-audit video page: ${WEBSITE_AUDIT_PAGE_URL}`
+      : null,
     `Primary goal: ${brief.goal}`,
     brief.timeline ? `Timeline / cadence: ${brief.timeline}` : null,
     brief.audience ? `Audience: ${brief.audience}` : null,
     brief.offer ? `Offer / CTA: ${brief.offer}` : null,
     brief.triggerHint
       ? `Preferred trigger (hint): ${brief.triggerHint}`
-      : "Choose the best DigiSol trigger for this goal.",
+      : "Choose the best trigger for this goal.",
     brief.tagGuidance
       ? `Tag guidance from operator: ${brief.tagGuidance}`
       : "Invent clear CRM tags with descriptions that match the nurture stages.",
@@ -108,7 +112,7 @@ export function buildWorkflowUserPrompt(brief: WorkflowBrief) {
         ].join("\n")
       : "No saved email templates yet — leave templateId empty.",
     "",
-    "Design the best DigiSol Hub workflow graph AND the tag catalogue for this brief.",
+    "Design the best workflow graph AND the tag catalogue for this brief.",
   ]
     .filter(Boolean)
     .join("\n");

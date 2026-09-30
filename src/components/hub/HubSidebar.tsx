@@ -34,7 +34,13 @@ const nav = [
   { href: "/hub/ai", label: "AI posters", icon: Bot },
   { href: "/hub/integrations", label: "Integrations", icon: Plug },
 ];
-export function HubSidebar() {
+export function HubSidebar({
+  companyName,
+  siteUrl,
+}: {
+  companyName: string;
+  siteUrl: string;
+}) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -86,12 +92,15 @@ export function HubSidebar() {
         </Link>
       </nav>
       <div className="border-t border-zinc-800 p-3">
-        <Link
-          href="/"
-          className="mb-2 block rounded-lg px-3 py-2 text-sm text-indigo-300/70 hover:text-sky-200"
-        >
-          View public site
-        </Link>
+        {siteUrl ? (
+          <a
+            href={siteUrl}
+            {...(siteUrl.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+            className="mb-2 block truncate rounded-lg px-3 py-2 text-sm text-indigo-300/70 hover:text-sky-200"
+          >
+            View {companyName ? `${companyName}'s` : "public"} site
+          </a>
+        ) : null}
         <button
           type="button"
           onClick={signOut}

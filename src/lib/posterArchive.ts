@@ -44,11 +44,16 @@ export async function listPosterAssets(
   });
 }
 
-export async function seriesAssets(supabase: SupabaseClient, assetId: string) {
+export async function seriesAssets(
+  supabase: SupabaseClient,
+  assetId: string,
+  clientId: string,
+) {
   const { data: asset, error } = await supabase
     .from("assets")
     .select("*")
     .eq("id", assetId)
+    .eq("client_id", clientId)
     .maybeSingle();
   if (error || !asset) return [] as PosterAsset[];
   const seriesId = seriesIdFromAsset(asset);
@@ -56,6 +61,7 @@ export async function seriesAssets(supabase: SupabaseClient, assetId: string) {
     .from("assets")
     .select("*")
     .eq("bucket", "ai-posters")
+    .eq("client_id", clientId)
     .eq("series_id", seriesId);
   if (byColumn?.length) return byColumn as PosterAsset[];
 
@@ -63,7 +69,7 @@ export async function seriesAssets(supabase: SupabaseClient, assetId: string) {
     .from("assets")
     .select("*")
     .eq("bucket", "ai-posters")
-    .eq("client_id", asset.client_id);
+    .eq("client_id", clientId);
   const matched = ((pool ?? []) as PosterAsset[]).filter(
     (row) => seriesIdFromAsset(row) === seriesId,
   );

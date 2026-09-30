@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { emitHubEvent } from "@/lib/events";
+import { assertRowInWorkspace, requireWorkspaceClientId } from "@/lib/tenantGuard";
 
 type Params = { params: { id: string } };
 
@@ -9,6 +10,11 @@ const RUN_CAP = 50;
 export async function POST(request: Request, { params }: Params) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
+  const { clientId, error: workspaceError } = await requireWorkspaceClientId(supabase);
+  if (workspaceError) return workspaceError;
+  if (!(await assertRowInWorkspace(supabase, "workflows", params.id, clientId))) {
+    return NextResponse.json({ error: "Workflow not found" }, { status: 404 });
+  }
 
   const body = (await request.json()) as {
     contactId?: string;
@@ -35,13 +41,24 @@ export async function POST(request: Request, { params }: Params) {
     );
   }
 
-  const { data: unsubscribedRows } = await supabase
+  const { data: contactRows } = await supabase
     .from("contacts")
-    .select("id")
+    .select("id, unsubscribed_at")
     .in("id", ids)
-    .not("unsubscribed_at", "is", null);
-  const unsubscribed = new Set((unsubscribedRows ?? []).map((row) => row.id as string));
-  const runIds = ids.filter((id) => !unsubscribed.has(id));
+    .eq("client_id", clientId);
+  const inWorkspace = new Set((contactRows ?? []).map((row) => row.id as string));
+  const unsubscribed = new Set(
+    (contactRows ?? [])
+      .filter((row) => row.unsubscribed_at)
+      .map((row) => row.id as string),
+  );
+  const runIds = ids.filter((id) => inWorkspace.has(id) && !unsubscribed.has(id));
+  if (inWorkspace.size === 0) {
+    return NextResponse.json(
+      { error: "None of the selected contacts belong to this company." },
+      { status: 404 },
+    );
+  }
   if (runIds.length === 0) {
     return NextResponse.json(
       { error: "Everyone selected has unsubscribed — Kaylev won't email them." },
@@ -64,7 +81,8 @@ export async function POST(request: Request, { params }: Params) {
     const { data: found } = await supabase
       .from("email_templates")
       .select("id")
-      .in("id", planTemplateIds);
+      .in("id", planTemplateIds)
+      .eq("client_id", clientId);
     if ((found ?? []).length !== planTemplateIds.length) {
       return NextResponse.json(
         { error: "The email plan points at a template that no longer exists. Re-run Kaylev's match." },

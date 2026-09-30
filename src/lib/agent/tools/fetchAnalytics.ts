@@ -1,5 +1,5 @@
 import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
-import { fetchDigisolGa4Summary } from "@/lib/ga4";
+import { companyGa4PropertyId, fetchGa4Summary } from "@/lib/ga4";
 import { summarizeLeadPerformance, type LeadRecord } from "@/lib/lead-pipeline";
 import { reconcileHubEmailStats } from "@/lib/resendStats";
 import { summarizeSiteEvents } from "@/lib/site-analytics";
@@ -73,10 +73,11 @@ export const fetchAnalytics: AgentToolDefinition = {
       unsubQuery,
       siteQuery,
       leadsQuery,
-      reconcileHubEmailStats(ctx.supabase, scopedIds),
+      reconcileHubEmailStats(ctx.supabase, scopedIds, { accountMetrics: isDigisol }),
     ]);
 
-    const ga4 = isDigisol ? await fetchDigisolGa4Summary(days) : null;
+    const ga4PropertyId = await companyGa4PropertyId(ctx.supabase, ctx.clientId, isDigisol);
+    const ga4 = ga4PropertyId ? await fetchGa4Summary(ga4PropertyId, days) : null;
 
     const website = summarizeSiteEvents(site.data ?? [], client?.domain);
     const pipeline = summarizeLeadPerformance((leadsResult.data ?? []) as LeadRecord[]);

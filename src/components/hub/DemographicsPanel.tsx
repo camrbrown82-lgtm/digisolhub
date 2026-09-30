@@ -90,9 +90,11 @@ function Breakdown({
 export function DemographicsPanel({
   days,
   data,
+  domain,
 }: {
   days: number;
   data: Ga4Demographics;
+  domain?: string | null;
 }) {
   const withheldNote =
     "Google hides age and gender until enough people visit, to protect privacy. It fills in as traffic grows.";
@@ -103,7 +105,7 @@ export function DemographicsPanel({
         <div>
           <h2 className="text-lg font-semibold text-white">Demographics</h2>
           <p className="mt-1 max-w-2xl text-sm text-zinc-400">
-            Who visited wwwdigisol.com in the last {days} days, from Google Analytics.
+            Who visited {domain || "this company's site"} in the last {days} days, from Google Analytics.
             Each row shows all visitors, then visitors who came from a Google Ads
             click. Use the Google Ads column for targeting.
           </p>

@@ -57,7 +57,6 @@ export function ClientSwitcher({
         onChange={(event) => void onChange(event.target.value)}
         className={compact ? "hub-field mt-0 py-1.5 text-sm" : "hub-field mt-1 text-sm"}
       >
-        <option value="">All companies</option>
         {clients.map((client) => (
           <option key={client.id} value={client.id}>
             {client.name}

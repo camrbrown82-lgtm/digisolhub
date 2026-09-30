@@ -29,14 +29,15 @@ export default async function IntegrationsPage() {
     {
       name: "Resend From",
       ok: Boolean(from.email) && !from.isTest,
-      detail: from.email || "Missing",
+      detail: isDigisol ? from.email || "Missing" : undefined,
     },
     { name: "OpenAI", ok: Boolean(process.env.OPENAI_API_KEY?.trim()) },
     { name: "Inngest", ok: Boolean(process.env.INNGEST_EVENT_KEY) },
-    { name: "Dispatch cron secret", ok: Boolean(process.env.CRON_SECRET?.trim()) },
-    { name: "Web3Forms", ok: Boolean(process.env.WEB3FORMS_ACCESS_KEY || process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY) },
+    { name: "Dispatch cron secret", house: true, ok: Boolean(process.env.CRON_SECRET?.trim()) },
+    { name: "Web3Forms", house: true, ok: Boolean(process.env.WEB3FORMS_ACCESS_KEY || process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY) },
     {
       name: "Google Ads",
+      house: true,
       ok: Boolean(
         (process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || process.env.GOOGLE_ADS_ID || "")
           .trim()
@@ -58,10 +59,12 @@ export default async function IntegrationsPage() {
     },
     {
       name: "Google Ads lead form webhook",
+      house: true,
       ok: Boolean(process.env.GOOGLE_ADS_LEAD_KEY?.trim()),
     },
     {
       name: "GA4 Data API",
+      house: true,
       ok: Boolean(
         process.env.GA4_PROPERTY_ID?.trim() &&
           (process.env.GA4_CLIENT_EMAIL?.trim() || process.env.GOOGLE_CLIENT_EMAIL?.trim()) &&
@@ -79,23 +82,28 @@ export default async function IntegrationsPage() {
     },
     {
       name: "Meta Pixel",
+      house: true,
       ok: metaPixelConfigured(),
       detail: metaPixelId() || "Missing",
     },
     {
       name: "Meta Conversions API",
+      house: true,
       ok: metaCapiConfigured(),
     },
     {
       name: "Meta Ads Insights",
+      house: true,
       ok: metaAdsInsightsConfigured(),
     },
     {
       name: "Instagram Insights",
+      house: true,
       ok: instagramInsightsConfigured(),
     },
     {
       name: "Meta Page publish",
+      house: true,
       ok: Boolean(
         process.env.META_PAGE_ID?.trim() &&
           (process.env.META_PAGE_ACCESS_TOKEN?.trim() ||
@@ -113,7 +121,7 @@ export default async function IntegrationsPage() {
           process.env.RESEND_WEBHOOKS_SECRET?.trim(),
       ),
     },
-  ];
+  ].filter((row) => isDigisol || !("house" in row && row.house));
 
   return (
     <div className="space-y-6">

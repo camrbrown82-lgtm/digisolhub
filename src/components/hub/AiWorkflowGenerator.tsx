@@ -16,7 +16,7 @@ const AUDIENCE_COPY: Record<AudiencePreset, string> = {
   leads: "New leads — forms, Facebook, Kaylev chat, consult requests.",
   engaged:
     "Engaged contacts — opened or clicked an email, or tagged engaged / warm-lead.",
-  me: "Me only — a self-test on my DigiSol contact.",
+  me: "Me only — a self-test send to my own contact.",
 };
 
 export function AiWorkflowGenerator() {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { parsePosterMeta } from "@/lib/posterSocial";
 import { seriesAssets } from "@/lib/posterArchive";
+import { requireWorkspaceClientId } from "@/lib/tenantGuard";
 
 type Params = { params: { id: string } };
 
@@ -13,6 +14,8 @@ function withArchivedNote(notes: string | null | undefined, archivedAt: string |
 export async function PATCH(request: Request, { params }: Params) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
+  const { clientId, error: workspaceError } = await requireWorkspaceClientId(supabase);
+  if (workspaceError) return workspaceError;
 
   let archived = true;
   try {
@@ -22,7 +25,7 @@ export async function PATCH(request: Request, { params }: Params) {
     archived = true;
   }
 
-  const rows = await seriesAssets(supabase, params.id);
+  const rows = await seriesAssets(supabase, params.id, clientId);
   if (!rows.length) {
     return NextResponse.json({ error: "Poster not found" }, { status: 404 });
   }
@@ -32,14 +35,16 @@ export async function PATCH(request: Request, { params }: Params) {
   const { error: updateError } = await supabase
     .from("assets")
     .update({ archived_at: archivedAt })
-    .in("id", ids);
+    .in("id", ids)
+    .eq("client_id", clientId);
 
   if (updateError) {
     for (const row of rows) {
       await supabase
         .from("assets")
         .update({ notes: withArchivedNote(row.notes, archivedAt) })
-        .eq("id", row.id);
+        .eq("id", row.id)
+        .eq("client_id", clientId);
     }
   }
 
@@ -49,8 +54,10 @@ export async function PATCH(request: Request, { params }: Params) {
 export async function DELETE(_request: Request, { params }: Params) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
+  const { clientId, error: workspaceError } = await requireWorkspaceClientId(supabase);
+  if (workspaceError) return workspaceError;
 
-  const rows = await seriesAssets(supabase, params.id);
+  const rows = await seriesAssets(supabase, params.id, clientId);
   if (!rows.length) {
     return NextResponse.json({ error: "Poster not found" }, { status: 404 });
   }
@@ -79,7 +86,8 @@ export async function DELETE(_request: Request, { params }: Params) {
   const { error: deleteError } = await supabase
     .from("assets")
     .delete()
-    .in("id", rows.map((row) => row.id));
+    .in("id", rows.map((row) => row.id))
+    .eq("client_id", clientId);
   if (deleteError) {
     return NextResponse.json({ error: deleteError.message }, { status: 400 });
   }

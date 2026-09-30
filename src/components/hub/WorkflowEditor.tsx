@@ -305,8 +305,7 @@ export function WorkflowEditor({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             email,
-            name: "Cameron Brown",
-            company: "DigiSol",
+            name: "Me (test send)",
             source: "manual",
             tags: ["operator", "self_test"],
           }),
@@ -325,8 +324,7 @@ export function WorkflowEditor({
         const created: ContactOption = {
           id: json.id,
           email,
-          name: "Cameron Brown",
-          company: "DigiSol",
+          name: "Me (test send)",
           tags: ["operator", "self_test"],
           audited: false,
         };

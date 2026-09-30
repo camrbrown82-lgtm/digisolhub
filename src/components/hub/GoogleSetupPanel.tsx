@@ -196,7 +196,7 @@ export function GoogleSetupPanel({
       {!robotReady ? (
         <p className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100/90">
           Add <code className="text-amber-50">GA4_CLIENT_EMAIL</code> and{" "}
-          <code className="text-amber-50">GA4_PRIVATE_KEY</code> (DigiSol&apos;s Google service account)
+          <code className="text-amber-50">GA4_PRIVATE_KEY</code> (the Hub&apos;s Google service account)
           on Vercel and redeploy.
         </p>
       ) : null}
@@ -236,10 +236,10 @@ export function GoogleSetupPanel({
         className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 text-sm text-zinc-300"
       >
         <summary className="cursor-pointer font-semibold text-white">
-          Give DigiSol access {allConnected ? "(done)" : "(one time per company)"}
+          Give the Hub access {allConnected ? "(done)" : "(one time per company)"}
         </summary>
         <p className="mt-3 text-zinc-400">
-          {companyName} adds DigiSol&apos;s robot login once. After that the weekly check and fixes run
+          {companyName} adds the Hub&apos;s robot login once. After that the weekly check and fixes run
           without anyone signing in.
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -266,8 +266,8 @@ export function GoogleSetupPanel({
           <li>
             <span className="text-zinc-200">Google Ads:</span>{" "}
             {managerId
-              ? `accept DigiSol's manager account link (${formatCustomerId(managerId)}). Send the request from the manager account: Accounts → + → Link existing account.`
-              : "link the account under DigiSol's Google Ads manager account."}
+              ? `accept the Hub's manager account link (${formatCustomerId(managerId)}). Send the request from the manager account: Accounts → + → Link existing account.`
+              : "link the account under the Hub's Google Ads manager account."}
             {!adsReady ? (
               <span className="mt-1 block text-amber-200/80">
                 Skip this for now. See the manager account reminder above.
@@ -286,7 +286,7 @@ export function GoogleSetupPanel({
             disabled={Boolean(busy) || !robotReady}
             className="text-sm text-indigo-400 hover:text-indigo-300 disabled:opacity-50"
           >
-            {busy === "discover" ? "Looking…" : "Find accounts DigiSol can see"}
+            {busy === "discover" ? "Looking…" : "Find accounts the Hub can see"}
           </button>
         </div>
         {discovery && Object.keys(discovery.errors).length ? (

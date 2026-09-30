@@ -211,7 +211,8 @@ async function sendCampaign(
         ...(body.subject ? { subject: body.subject } : {}),
         ...(body.html ? { html: body.html } : {}),
       })
-      .eq("id", body.templateId);
+      .eq("id", body.templateId)
+      .eq("client_id", clientId);
   }
 
   const { data: campaign } = await supabase

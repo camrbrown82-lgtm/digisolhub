@@ -379,7 +379,7 @@ export function ContentTestCard({
 
       {!gaTracked ? (
         <p className="mt-3 text-xs text-zinc-500">
-          Website visits come from Google Analytics on DigiSol&apos;s own site. For this company, leads from the
+          Website visits aren&apos;t tracked for this company in Google Analytics, so leads from the
           tracking links and the numbers you enter decide the winner.
         </p>
       ) : null}

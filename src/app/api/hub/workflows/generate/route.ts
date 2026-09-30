@@ -139,12 +139,12 @@ export async function POST(request: Request) {
       .filter(Boolean);
 
     audienceLine = [
-      "HARD LOCK — audited DigiSol prospect companies ONLY.",
+      `HARD LOCK — audited ${companyName} prospect companies ONLY.`,
       `${auditedCount} CRM contacts currently match (prospect audit / prospect_audit tags).`,
       auditedSample.length
         ? `Sample: ${auditedSample.join("; ")}.`
         : "No audited contacts linked yet — still design for that audience only.",
-      "Do NOT design for the full CRM, DigiSol staff, or random leads.",
+      `Do NOT design for the full CRM, ${companyName} staff, or random leads.`,
       "The operator will multi-select these audited contacts in the workflow Run audience panel.",
       preset === "trades"
         ? "Narrow to TRADE businesses only (HVAC, plumbing, electrical, mechanical). Return audience \"trades\"."

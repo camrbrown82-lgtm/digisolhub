@@ -10,9 +10,10 @@ import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { DemographicsPanel } from "@/components/hub/DemographicsPanel";
 import {
   emptyGa4Demographics,
-  fetchDigisolGa4Demographics,
-  fetchDigisolGa4Summary,
-  ga4ConfigStatus,
+  companyGa4PropertyId,
+  fetchGa4Demographics,
+  fetchGa4Summary,
+  ga4StatusFor,
   type Ga4Summary,
 } from "@/lib/ga4";
 import {
@@ -55,7 +56,8 @@ export default async function AnalyticsPage() {
   const scopedIds = active ? await contactIdsForClient(supabase, active.id) : null;
   const isDigisol =
     (active?.name || "").toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase();
-  const gaStatus = ga4ConfigStatus();
+  const ga4PropertyId = await companyGa4PropertyId(supabase, active?.id, isDigisol);
+  const gaStatus = ga4StatusFor(ga4PropertyId);
 
   if (active && !active.site_key) {
     const siteKey = newSiteKey();
@@ -153,9 +155,8 @@ export default async function AnalyticsPage() {
       siteQuery,
       leadsQuery,
       withTimeout(
-        // The env GA4 property is DigiSol's own site; other companies never see it.
-        isDigisol && gaStatus.ready
-          ? fetchDigisolGa4Summary(14)
+        gaStatus.ready
+          ? fetchGa4Summary(ga4PropertyId, 14)
           : Promise.resolve(emptyGa4),
         7000,
         ga4TimeoutFallback,
@@ -219,9 +220,9 @@ export default async function AnalyticsPage() {
       isDigisol
         ? withTimeout(fetchInstagramInsights(), 8000, emptyInstagramInsights())
         : Promise.resolve(emptyInstagramInsights()),
-      isDigisol && gaStatus.ready
+      gaStatus.ready
         ? withTimeout(
-            fetchDigisolGa4Demographics(28),
+            fetchGa4Demographics(ga4PropertyId, 28),
             7000,
             emptyGa4Demographics({
               configured: true,
@@ -309,8 +310,9 @@ export default async function AnalyticsPage() {
               <h2 className="text-lg font-semibold text-white">Performance</h2>
               <p className="mt-1 text-sm text-zinc-400">
                 {active?.name || "This company"}&apos;s numbers for the last 14 days:
-                visits from the Hub tracker, email, leads, and Kaylev. Only this
-                company&apos;s data shows here.
+                {gaStatus.ready ? " its Google Analytics," : ""} visits from the Hub
+                tracker, email, leads, and Kaylev. Only this company&apos;s data shows here.
+                {gaStatus.ready ? null : " Connect its GA4 property in Google setup to add Google Analytics."}
               </p>
             </div>
             <a href="/hub/google" className="text-sm text-indigo-400 hover:text-indigo-300">
@@ -319,7 +321,7 @@ export default async function AnalyticsPage() {
           </div>
         )}
 
-        {!isDigisol ? null : !gaStatus.ready ? (
+        {!isDigisol && !gaStatus.ready ? null : !gaStatus.ready ? (
           <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm text-amber-100/90">
             <p className="font-medium text-amber-50">Connect the GA4 Data API</p>
             <p className="mt-2 text-amber-100/80">
@@ -385,7 +387,7 @@ export default async function AnalyticsPage() {
 
         <AnalyticsDashboard
           companyName={active?.name}
-          gaConfigured={isDigisol && gaStatus.ready}
+          gaConfigured={gaStatus.ready}
           gaError={ga4.error}
           traffic={{
             sessions: ga4.sessions,
@@ -451,7 +453,9 @@ export default async function AnalyticsPage() {
         ) : null}
       </section>
 
-      {isDigisol ? <DemographicsPanel days={28} data={demographics} /> : null}
+      {gaStatus.ready ? (
+        <DemographicsPanel days={28} data={demographics} domain={active?.domain} />
+      ) : null}
 
       {contentTests.tests.length > 0 ? (
         <section className="space-y-4">

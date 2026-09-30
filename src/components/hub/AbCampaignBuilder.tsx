@@ -105,7 +105,7 @@ export function AbCampaignBuilder({
         <div>
           <h2 className="text-lg font-semibold text-white">A/B email test</h2>
           <p className="mt-1 text-sm text-zinc-400">
-            Same industry audience, two template variants. DigiSol splits the
+            Same industry audience, two template variants. The Hub splits the
             list, tracks opens/clicks per variant, and lets you audit daily,
             weekly, or monthly before declaring a winner. Narrow by campaign
             channel or sticky Test A / Test B assignment when needed.

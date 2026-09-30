@@ -12,10 +12,13 @@ export async function GET(request: Request) {
   if (error) return error;
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  const clientId = await resolveClientId(supabase);
+  if (!clientId) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const { data } = await supabase
     .from("competitive_analyses")
     .select("id, status, stage, error, completed_at")
     .eq("id", id)
+    .eq("client_id", clientId)
     .maybeSingle();
   if (!data) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(data);

@@ -77,8 +77,8 @@ export function mergeVarsFromBrand(
 ): MergeVars {
   return {
     name: name?.trim() || "there",
-    company: companyName.trim() || "DigiSol",
-    contactCompany: contactCompany?.trim() || companyName.trim() || "DigiSol",
+    company: companyName.trim(),
+    contactCompany: contactCompany?.trim() || companyName.trim(),
     logo,
     tagline: brand.tagline?.trim() || "",
     primaryColor: brand.primaryColor || "",
@@ -101,15 +101,15 @@ export function renderMergeFields(
     logoMode === "token"
       ? "{{logo}}"
       : logoMode === "company"
-        ? vars.company?.trim() || "DigiSol"
+        ? vars.company?.trim() || ""
         : vars.logo?.trim() || vars.company?.trim() || "";
 
   return text
     .replaceAll("{{name}}", vars.name?.trim() || "there")
-    .replaceAll("{{company}}", vars.company?.trim() || "DigiSol")
+    .replaceAll("{{company}}", vars.company?.trim() || "")
     .replaceAll(
       "{{contact_company}}",
-      vars.contactCompany?.trim() || vars.company?.trim() || "DigiSol",
+      vars.contactCompany?.trim() || vars.company?.trim() || "",
     )
     .replaceAll("{{tagline}}", vars.tagline?.trim() || "")
     .replaceAll("{{primary}}", vars.primaryColor?.trim() || "")
@@ -127,47 +127,45 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
     key: "welcome",
     name: "Welcome",
     blurb: "Warm first touch after a new lead or kickoff.",
-    subject: "{{name}}, you're in — let's build",
+    subject: "Welcome to {{company}}, {{name}}",
     body: `Hey {{name}},
 
 Welcome to {{company}}. Glad you're here.
 
 {{tagline}}
 
-Reply with the one thing you want working better in the next 30 days, and we'll come back with a tight plan.
+If there's anything you're looking for, just reply to this email and we'll help you out.
 
 Talk soon,
 {{company}}`,
   },
   {
     key: "proposal",
-    name: "Proposal follow-up",
-    blurb: "Short nudge after you sent a quote or scope.",
-    subject: "Quick thought on your {{contact_company}} build",
+    name: "Quote follow-up",
+    blurb: "Short nudge after you sent a quote or offer.",
+    subject: "Following up on your quote",
     body: `Hey {{name}},
 
-Wanted to bump the proposal while it's still fresh.
+Just checking in on the quote we sent while it's still fresh.
 
-The piece that usually moves the needle first is the homepage offer plus a faster path to contact. If that still matches what you need, I can lock dates this week.
-
-If the scope should shrink or shift, say the word and I'll recut it.
+If it looks good, reply and we'll get you booked in. If anything should change, tell us what and we'll adjust it.
 
 {{company}}`,
   },
   {
     key: "project_update",
-    name: "Project update",
+    name: "Status update",
     blurb: "Status note that feels human, not a ticket dump.",
-    subject: "This week's progress on {{company}}",
+    subject: "An update from {{company}}",
     body: `Hey {{name}},
 
-Quick pulse on the build:
+A quick update from us:
 
-• Shipped: the pages and flows we scoped last week
-• Next: polish, tracking, and the launch checklist
-• Need from you: a yes/no on the homepage copy
+• Done: 
+• Next: 
+• Need from you: 
 
-If anything feels off, reply on this thread and I'll adjust before we go further.
+If anything looks off, reply on this thread and we'll sort it out.
 
 {{company}}`,
   },
@@ -180,7 +178,7 @@ If anything feels off, reply on this thread and I'll adjust before we go further
 
 Friendly reminder that an invoice for {{company}} is sitting in your inbox.
 
-Pay whenever you have 60 seconds — that keeps the next sprint unblocked.
+It only takes a minute to pay, and it keeps everything moving.
 
 If the bill looks wrong or you need it split, reply here and I'll fix it today.
 
@@ -189,16 +187,18 @@ Thanks,
   },
   {
     key: "newsletter",
-    name: "Monthly flare",
+    name: "Monthly news",
     blurb: "A punchy update people might actually open.",
-    subject: "One change that lifted replies this month",
+    subject: "What's new at {{company}} this month",
     body: `Hey {{name}},
 
-Most sites leak leads in the same spot: a clever headline and a timid next step.
+Here's what's new at {{company}} this month:
 
-We tightened the offer, moved the form up, and made the first reply feel like a conversation — not a ticket.
+• 
+• 
+• 
 
-If you want the same pass on {{company}}, hit reply with "show me" and I'll send a 3-bullet plan.
+Reply any time. We read every message.
 
 {{company}}`,
   },
@@ -209,13 +209,13 @@ If you want the same pass on {{company}}, hit reply with "show me" and I'll send
     subject: "Recap + next step from today",
     body: `Hey {{name}},
 
-Good session. Here's the short version:
+Thanks for the time today. Here's the short version:
 
-• We agreed the site should sell the outcome, not the stack
-• I'll draft the homepage and form this week
-• You send brand files / logo if anything changed
+• We agreed: 
+• We'll do next: 
+• You'll send: 
 
-I'll ping you when there's something to click. If I missed a decision, correct me on this thread.
+If I missed anything, correct me on this thread.
 
 {{company}}`,
   },

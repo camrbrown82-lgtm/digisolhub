@@ -1,4 +1,5 @@
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { LOCATION_PAGES } from "@/lib/locations";
 
 export type Ga4Summary = {
@@ -52,8 +53,31 @@ function readPrivateKey() {
   return raw.replace(/\\n/g, "\n");
 }
 
+/** The company's GA4 property from Google setup. Only DigiSol falls back to the env property. */
+export async function companyGa4PropertyId(
+  db: SupabaseClient,
+  clientId: string | null | undefined,
+  isDigisol: boolean,
+) {
+  let saved = "";
+  if (clientId) {
+    const { data } = await db
+      .from("google_setups")
+      .select("ga4_property_id")
+      .eq("client_id", clientId)
+      .maybeSingle();
+    saved = String(data?.ga4_property_id || "").replace(/\D/g, "");
+  }
+  return saved || (isDigisol ? ga4ConfigStatus().propertyId : "");
+}
+
+/** DigiSol's own property (env). Other companies use their Google setup property via `ga4StatusFor`. */
 export function ga4ConfigStatus() {
-  const propertyId = (process.env.GA4_PROPERTY_ID || "").trim();
+  return ga4StatusFor((process.env.GA4_PROPERTY_ID || "").trim());
+}
+
+export function ga4StatusFor(propertyId: string | null | undefined) {
+  const id = (propertyId || "").replace(/\D/g, "");
   const clientEmail = (
     process.env.GA4_CLIENT_EMAIL ||
     process.env.GOOGLE_CLIENT_EMAIL ||
@@ -61,9 +85,9 @@ export function ga4ConfigStatus() {
   ).trim();
   const privateKey = readPrivateKey();
   return {
-    propertyId,
+    propertyId: id,
     clientEmail,
-    ready: Boolean(propertyId && clientEmail && privateKey),
+    ready: Boolean(id && clientEmail && privateKey),
   };
 }
 
@@ -214,9 +238,16 @@ export async function fetchGa4ContentTestStats(
   }
 }
 
-/** Who visits wwwdigisol.com: all visitors next to Google Ads visitors, by age, gender, city, device. */
-export async function fetchDigisolGa4Demographics(days = 28): Promise<Ga4Demographics> {
-  const { propertyId, clientEmail, ready } = ga4ConfigStatus();
+export function fetchDigisolGa4Demographics(days = 28) {
+  return fetchGa4Demographics(ga4ConfigStatus().propertyId, days);
+}
+
+/** Who visits a company's site: all visitors next to Google Ads visitors, by age, gender, city, device. */
+export async function fetchGa4Demographics(
+  propertyIdInput: string | null | undefined,
+  days = 28,
+): Promise<Ga4Demographics> {
+  const { propertyId, clientEmail, ready } = ga4StatusFor(propertyIdInput);
   if (!ready) return emptyGa4Demographics();
   try {
     const client = new BetaAnalyticsDataClient({
@@ -295,13 +326,21 @@ export async function fetchDigisolGa4Demographics(days = 28): Promise<Ga4Demogra
   }
 }
 
-export async function fetchDigisolGa4Summary(days = 14): Promise<Ga4Summary> {
-  const { propertyId, clientEmail, ready } = ga4ConfigStatus();
+export function fetchDigisolGa4Summary(days = 14) {
+  return fetchGa4Summary(ga4ConfigStatus().propertyId, days);
+}
+
+export async function fetchGa4Summary(
+  propertyIdInput: string | null | undefined,
+  days = 14,
+): Promise<Ga4Summary> {
+  const { propertyId, clientEmail, ready } = ga4StatusFor(propertyIdInput);
   if (!ready) {
     return emptySummary({
       configured: false,
-      error:
-        "Add GA4_PROPERTY_ID, GA4_CLIENT_EMAIL, and GA4_PRIVATE_KEY on Vercel to pull live Google Analytics into this page.",
+      error: propertyId
+        ? "Add GA4_CLIENT_EMAIL and GA4_PRIVATE_KEY on Vercel to pull live Google Analytics into this page."
+        : "No GA4 property is connected for this company. Pick one in Google setup.",
     });
   }
 
@@ -317,7 +356,7 @@ export async function fetchDigisolGa4Summary(days = 14): Promise<Ga4Summary> {
               emptySummary({
                 configured: true,
                 error:
-                  "Google Analytics timed out — try refreshing. First-party DigiSol stats below still load.",
+                  "Google Analytics timed out — try refreshing. First-party website stats below still load.",
               }),
             ),
           GA4_TIMEOUT_MS,

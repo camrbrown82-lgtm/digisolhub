@@ -17,14 +17,15 @@ export default async function WorkflowDetailPage({
   searchParams?: { audience?: string };
 }) {
   const supabase = await createClient();
+  const clientId = await resolveClientId(supabase);
+  if (!clientId) notFound();
   const { data: workflow } = await supabase
     .from("workflows")
     .select("*")
     .eq("id", params.id)
-    .single();
+    .eq("client_id", clientId)
+    .maybeSingle();
   if (!workflow) notFound();
-
-  const clientId = await resolveClientId(supabase);
 
   let contactsQuery = supabase
     .from("contacts")

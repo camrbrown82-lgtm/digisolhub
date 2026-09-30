@@ -33,6 +33,21 @@ export async function assertContactInWorkspace(
   return Boolean(data?.id);
 }
 
+export async function assertRowInWorkspace(
+  supabase: SupabaseClient,
+  table: string,
+  id: string,
+  clientId: string,
+) {
+  const { data } = await supabase
+    .from(table)
+    .select("id")
+    .eq("id", id)
+    .eq("client_id", clientId)
+    .maybeSingle();
+  return Boolean(data?.id);
+}
+
 export async function assertLeadInWorkspace(
   supabase: SupabaseClient,
   leadId: string,

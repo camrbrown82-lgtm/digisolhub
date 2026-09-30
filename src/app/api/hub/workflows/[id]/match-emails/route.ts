@@ -86,12 +86,16 @@ export async function POST(request: Request, { params }: Params) {
   }
 
   const clientId = await resolveClientId(supabase);
+  if (!clientId) {
+    return NextResponse.json({ error: "Workflow not found" }, { status: 404 });
+  }
 
   const { data: workflow } = await supabase
     .from("workflows")
     .select("id, name, graph")
     .eq("id", params.id)
-    .single();
+    .eq("client_id", clientId)
+    .maybeSingle();
   if (!workflow) {
     return NextResponse.json({ error: "Workflow not found" }, { status: 404 });
   }
@@ -139,7 +143,8 @@ export async function POST(request: Request, { params }: Params) {
       supabase
         .from("prospects")
         .select("contact_id, business_name, trade, city, audit_score, audit_summary")
-        .in("contact_id", contactIds),
+        .in("contact_id", contactIds)
+        .eq("client_id", clientId),
     ]);
 
   const templates = (templateRows ?? []).map((row) => ({

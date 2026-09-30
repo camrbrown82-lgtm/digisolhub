@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
-import { resolveClientId } from "@/lib/workspace";
+import { resolveClientId, workspaceIsDigisol } from "@/lib/workspace";
 
 type Params = { params: { id: string } };
 
@@ -9,12 +9,14 @@ export async function GET(_request: Request, { params }: Params) {
   if (error) return error;
 
   const clientId = await resolveClientId(supabase);
-  const { data, error: queryError } = await supabase
-    .from("email_templates")
-    .select("*")
-    .eq("id", params.id)
-    .or(clientId ? `client_id.eq.${clientId},client_id.is.null` : "client_id.is.null")
-    .maybeSingle();
+  if (!clientId) {
+    return NextResponse.json({ error: "Template not found for this company" }, { status: 404 });
+  }
+  const query = supabase.from("email_templates").select("*").eq("id", params.id);
+  const { data, error: queryError } = await ((await workspaceIsDigisol(supabase))
+    ? query.or(`client_id.eq.${clientId},client_id.is.null`)
+    : query.eq("client_id", clientId)
+  ).maybeSingle();
 
   if (queryError || !data) {
     return NextResponse.json(

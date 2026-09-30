@@ -1,12 +1,18 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { ensureCampaignAbSchema } from "@/lib/ensureCampaignAbSchema";
+import { assertRowInWorkspace, requireWorkspaceClientId } from "@/lib/tenantGuard";
 
 type Params = { params: { id: string } };
 
 export async function PATCH(request: Request, { params }: Params) {
   const { supabase, user, error } = await requireHubSession();
   if (error) return error;
+  const { clientId, error: workspaceError } = await requireWorkspaceClientId(supabase);
+  if (workspaceError) return workspaceError;
+  if (!(await assertRowInWorkspace(supabase, "campaigns", params.id, clientId))) {
+    return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+  }
 
   await Promise.race([
     ensureCampaignAbSchema().catch(() => null),
@@ -57,7 +63,8 @@ export async function PATCH(request: Request, { params }: Params) {
     await supabase
       .from("campaigns")
       .update({ winner_variant: winnerPick })
-      .eq("id", params.id);
+      .eq("id", params.id)
+      .eq("client_id", clientId);
   }
 
   return NextResponse.json({ audit });
@@ -66,6 +73,11 @@ export async function PATCH(request: Request, { params }: Params) {
 export async function GET(_request: Request, { params }: Params) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
+  const { clientId, error: workspaceError } = await requireWorkspaceClientId(supabase);
+  if (workspaceError) return workspaceError;
+  if (!(await assertRowInWorkspace(supabase, "campaigns", params.id, clientId))) {
+    return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+  }
 
   const { data, error: listError } = await supabase
     .from("campaign_audits")

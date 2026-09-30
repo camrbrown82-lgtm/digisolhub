@@ -5,7 +5,7 @@ import {
   getResendTrackingStatus,
 } from "@/lib/resendTracking";
 import { syncResendEngagementFromApi } from "@/lib/resendStats";
-import { contactIdsForClient, ensureDigisolClient } from "@/lib/workspace";
+import { contactIdsForClient, resolveClientId } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -28,14 +28,13 @@ export async function POST() {
   if (error) return error;
 
   const tracking = await ensureResendOpenTracking({ force: true });
-  const clientId = await ensureDigisolClient(supabase);
+  const clientId = await resolveClientId(supabase);
   const contactIds = clientId
     ? await contactIdsForClient(supabase, clientId)
     : [];
-  const sync = await syncResendEngagementFromApi(supabase, {
-    contactIds: contactIds.length ? contactIds : null,
-    limit: 40,
-  });
+  const sync = contactIds.length
+    ? await syncResendEngagementFromApi(supabase, { contactIds, limit: 40 })
+    : null;
 
   return NextResponse.json({
     ok: true,

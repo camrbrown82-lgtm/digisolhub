@@ -1,6 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { brandFromClient, type CompanyBrand, DIGISOL_BRAND } from "@/lib/branding";
+import {
+  brandFromClient,
+  type CompanyBrand,
+  DIGISOL_BRAND,
+  DIGISOL_HOUSE_NAME,
+  NEUTRAL_BRAND,
+} from "@/lib/branding";
 import { buildEmailHtml, htmlToText } from "@/lib/emailHtml";
 import {
   EMAIL_LOGO_CID,
@@ -151,8 +157,9 @@ export async function sendEmailToContact(input: SendEmailInput) {
       brand = brand || resolved.brand;
     }
   }
-  companyName = companyName || contact.company || "DigiSol";
-  brand = brand || DIGISOL_BRAND;
+  // No company on the send means a legacy DigiSol contact; a company never borrows DigiSol's kit.
+  companyName = companyName || (clientId ? "" : DIGISOL_HOUSE_NAME);
+  brand = brand || (clientId ? NEUTRAL_BRAND : DIGISOL_BRAND);
 
   let subject = input.subject ?? "";
   let html = input.html ?? "";
@@ -199,7 +206,7 @@ export async function sendEmailToContact(input: SendEmailInput) {
     highlightColor: brand.highlightColor,
     fonts: brand.fonts,
   });
-  const personalized = wrapCampaignHtml(branded, contact.email);
+  const personalized = wrapCampaignHtml(branded, contact.email, companyName);
   const unsub = oneClickUnsubscribeUrl(contact.email);
 
   const bcc = Array.from(
