@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AwardEmbedCode } from "@/components/AwardEmbedCode";
 import { ShareButtons } from "@/components/ShareButtons";
 import WebsiteAwardBadge from "@/components/WebsiteAwardBadge";
 import { markAddPageViewed } from "@/lib/awardRegistry";
+import { INTERNAL_TRAFFIC_COOKIE } from "@/lib/internalTraffic";
 import { awardBadgeTheme } from "@/lib/awardTheme";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { getOutboundSiteUrl } from "@/lib/supabase/env";
@@ -60,7 +62,9 @@ export default async function AwardPage({
   }
   const current = award.state === "valid";
   const adding = current && searchParams.add === "1";
-  if (adding) await markAddPageViewed(createAdminClient(), award.auditId);
+  if (adding && cookies().get(INTERNAL_TRAFFIC_COOKIE)?.value !== "1") {
+    await markAddPageViewed(createAdminClient(), award.auditId);
+  }
   const theme = await awardBadgeTheme();
 
   return (

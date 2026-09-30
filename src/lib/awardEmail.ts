@@ -50,3 +50,58 @@ export function awardEmailContent(input: {
 
   return { subject, html };
 }
+
+function greeting(recipientName?: string | null) {
+  return recipientName?.trim() ? `Hi ${esc(recipientName.trim().split(/\s+/)[0])},` : "Hi there,";
+}
+
+/** Follow-up after they open the add page but the badge isn't live yet. */
+export function awardHelpEmailContent(input: {
+  companyName: string;
+  recipientName?: string | null;
+  score: number;
+  addBadgeUrl: string;
+  winnersUrl: string;
+  embedHtml: string;
+}) {
+  const company = esc(input.companyName);
+  const subject = `${input.companyName} is on the DigiSol award winners page`;
+  const html = `
+<div style="display:none;max-height:0;overflow:hidden">Congratulations again. Here's the badge code if you'd like a hand adding it.</div>
+<p>${greeting(input.recipientName)}</p>
+<p>Congratulations again on the <strong>DigiSol Excellence Award</strong>. ${company} is now featured on our <a href="${esc(input.winnersUrl)}">award winners page</a> with its ${input.score}/100 score.</p>
+<p><strong>Want a hand adding the badge to your site?</strong> It takes about two minutes:</p>
+<ul style="padding-left:20px;margin:0 0 16px">
+  <li style="margin-bottom:6px">Reply with who manages your website and I'll send them the code, or</li>
+  <li style="margin-bottom:6px">Paste this code anywhere on your site. The footer works well:</li>
+</ul>
+<pre style="white-space:pre-wrap;word-break:break-all;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:12px;font-size:12px;color:#0f172a">${esc(input.embedHtml)}</pre>
+<p style="text-align:center;margin:28px 0">${button(input.addBadgeUrl, "Get my badge code", true)}</p>
+<p>Once it's up, the badge links to your live verification page, so visitors can check the score for themselves.</p>
+<p>Cameron Brown<br>DigiSol</p>`;
+  return { subject, html };
+}
+
+/** Thank-you once the badge shows up on their website. */
+export function awardLiveEmailContent(input: {
+  companyName: string;
+  recipientName?: string | null;
+  score: number;
+  host: string;
+  verifyUrl: string;
+  winnersUrl: string;
+}) {
+  const company = esc(input.companyName);
+  const facebook = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(input.verifyUrl)}`;
+  const linkedin = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(input.verifyUrl)}`;
+  const subject = `Your DigiSol Excellence Award badge is live on ${input.host}`;
+  const html = `
+<div style="display:none;max-height:0;overflow:hidden">Thanks for adding your badge. Here's how to share it with your customers.</div>
+<p>${greeting(input.recipientName)}</p>
+<p>Your <strong>DigiSol Excellence Award</strong> badge is now live on <strong>${esc(input.host)}</strong>. Thanks for showing it off. Visitors can click it to see ${company}'s verified ${input.score}/100 score.</p>
+<p>You're also featured on our <a href="${esc(input.winnersUrl)}">award winners page</a>.</p>
+<p><strong>Tell your customers.</strong> A quick post lets them know your website passed an outside check for speed, security and SEO:</p>
+<p style="margin:20px 0">${button(facebook, "Share on Facebook", true)}&nbsp; ${button(linkedin, "Share on LinkedIn", false)}</p>
+<p>Congratulations again,<br>Cameron Brown<br>DigiSol</p>`;
+  return { subject, html };
+}

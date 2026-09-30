@@ -142,12 +142,22 @@ export default async function AwardsPage() {
                           <div className="text-xs text-zinc-500">
                             {row.claimed_from} · {new Date(row.claimed_at).toLocaleDateString()}
                           </div>
+                          {row.live_emailed_at ? (
+                            <div className="text-xs text-zinc-500">Thank-you emailed</div>
+                          ) : null}
                         </div>
                       ) : row.add_page_viewed_at ? (
                         <div className="text-sky-200">
                           Opened add page
                           <div className="text-xs text-zinc-500">
                             {new Date(row.add_page_viewed_at).toLocaleDateString()}
+                          </div>
+                          <div className="text-xs text-zinc-500">
+                            {row.help_emailed_at
+                              ? `Help email sent ${new Date(row.help_emailed_at).toLocaleDateString()}`
+                              : row.sent_to
+                                ? "Help email goes out 3 hours after"
+                                : null}
                           </div>
                         </div>
                       ) : (

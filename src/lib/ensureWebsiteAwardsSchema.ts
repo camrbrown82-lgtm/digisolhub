@@ -25,6 +25,8 @@ alter table public.website_awards
   add column if not exists claimed_at timestamptz,
   add column if not exists claimed_from text,
   add column if not exists featured boolean not null default false,
+  add column if not exists help_emailed_at timestamptz,
+  add column if not exists live_emailed_at timestamptz,
   add column if not exists updated_at timestamptz not null default now();
 
 alter table public.website_awards alter column award_category set default 'DigiSol Excellence Award';

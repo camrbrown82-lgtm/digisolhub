@@ -484,6 +484,22 @@ export const auditGoogleSetups = inngest.createFunction(
   },
 );
 
+/** Award winners: help email after they open the add page, thank-you + owner alert once the badge is live. */
+export const runAwardFollowups = inngest.createFunction(
+  {
+    id: "award-followups",
+    retries: 1,
+    concurrency: { limit: 1 },
+    triggers: [{ cron: "TZ=America/Edmonton */15 * * * *" }, { event: "hub/awards.followups" }],
+  },
+  async ({ step }) => {
+    return step.run("followups", async () => {
+      const { runAwardFollowups: run } = await import("@/lib/awardFollowups");
+      return run(createAdminClient());
+    });
+  },
+);
+
 /** Kaylev competitive analysis: research, audit, and write the report in durable steps. */
 export const runCompetitiveAnalysis = inngest.createFunction(
   {
@@ -747,5 +763,6 @@ export const functions = [
   sendDispatchIssues,
   snapshotGoogleReviews,
   auditGoogleSetups,
+  runAwardFollowups,
   runCompetitiveAnalysis,
 ];

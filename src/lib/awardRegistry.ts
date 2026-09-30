@@ -24,6 +24,8 @@ export type AwardRow = {
   claimed_at: string | null;
   claimed_from: string | null;
   featured: boolean;
+  help_emailed_at?: string | null;
+  live_emailed_at?: string | null;
   created_at: string;
 };
 
