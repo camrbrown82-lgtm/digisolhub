@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { inngest } from "@/inngest/client";
 import { requireHubSession } from "@/lib/auth";
-import { toSiteUrl } from "@/lib/competitive/analyze";
+import { hostsMatch, toSiteUrl } from "@/lib/competitive/analyze";
 import { ensureCompetitiveSchema } from "@/lib/ensureCompetitiveSchema";
 import { getWorkspaceClient, resolveClientId } from "@/lib/workspace";
 
@@ -53,6 +53,19 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  const { data: companies } = await supabase.from("clients").select("id, name, domain");
+  const owner = (companies ?? []).find(
+    (c) => c.id !== clientId && c.domain && hostsMatch(String(c.domain), url),
+  );
+  if (owner) {
+    return NextResponse.json(
+      {
+        error: `That's ${owner.name}'s website. Switch Working on to ${owner.name} so the analysis is saved under that company.`,
+      },
+      { status: 409 },
+    );
+  }
+
   const competitorUrls = (body?.competitorUrls ?? [])
     .map((u) => String(u).trim())
     .filter(Boolean)
