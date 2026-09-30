@@ -13,7 +13,7 @@ import {
  * data we collected, so the same site always gets the same score and each
  * change on the site shows up as specific points gained or lost.
  */
-export const SCORING_VERSION = 2;
+export const SCORING_VERSION = 3;
 
 export type DimensionKey = (typeof COMPETITIVE_DIMENSIONS)[number]["key"];
 
@@ -102,6 +102,8 @@ type Signals = {
   pagesRead: number;
   sections: string[];
   pageTitles: string[];
+  /** City / service-area page paths linked anywhere on the pages read. */
+  locationPaths: string[];
 };
 
 const has = (features: string[], prefix: string) => features.some((f) => f.startsWith(prefix));
@@ -171,7 +173,22 @@ function signalsFor(site: SiteSnapshot, presence: MarketPresence | undefined): S
     pagesRead: Math.max(1, site.pages?.length ?? 1),
     sections: site.sections ?? [],
     pageTitles: (site.pages ?? []).map((p) => p.title.toLowerCase()),
+    locationPaths: (f.find((x) => /city\/service-area page link/.test(x))?.split(": ")[1] ?? "")
+      .split(",")
+      .map((p) => p.trim().toLowerCase())
+      .filter(Boolean),
   };
+}
+
+/**
+ * Full points when the homepage or any page read (e.g. /locations/calgary) names the city in its
+ * title or H1; partial when a city page for it is linked but was not read.
+ */
+function cityNamedPoints(s: Signals, place: string) {
+  const named = new RegExp(`\\b${place}\\b`, "i");
+  if (named.test(`${s.title} ${s.h1}`) || s.pageTitles.some((t) => named.test(t))) return 15;
+  const slug = place.toLowerCase().replace(/[^a-z0-9à-ÿ]+/g, "-");
+  return s.locationPaths.some((p) => p.split("/").pop() === slug) ? 10 : 0;
 }
 
 const DEFAULT_ACTIONS = ["Get a quote", "Request an estimate", "Book", "Contact us", "Call"];
@@ -260,9 +277,10 @@ const RUBRIC: Record<DimensionKey, CheckDef[]> = {
     },
     {
       id: "city_in_title",
-      label: "Service city named in the title or H1",
+      label: ({ place }) => `${place} named in a page title or H1 (homepage or city page)`,
       max: 15,
-      points: (s, place) => all(place && new RegExp(`\\b${place}\\b`, "i").test(`${s.title} ${s.h1}`), 15),
+      skip: ({ place }) => !place,
+      points: (s, place) => cityNamedPoints(s, place),
     },
     {
       id: "local_schema",
@@ -405,10 +423,15 @@ const RUBRIC: Record<DimensionKey, CheckDef[]> = {
   ],
 };
 
-/** First place name from "Airdrie and Calgary, Alberta" → "Airdrie". */
+/** Areas too broad to expect in a page title; the city check is left out for them. */
+const BROAD_AREA =
+  /^(world|worldwide|global|globally|international|anywhere|everywhere|online|remote|nationwide|north america|europe|canada|usa|us|united states|united kingdom|uk|australia)$/i;
+
+/** First place name from "Airdrie and Calgary, Alberta" → "Airdrie"; "" for "World" or "Canada". */
 function primaryPlace(location: string) {
   const first = location.split(/,| and |\/|&/i)[0]?.trim() ?? "";
-  return first.replace(/[^A-Za-zÀ-ÿ' -]/g, "").trim();
+  const place = first.replace(/[^A-Za-zÀ-ÿ' -]/g, "").trim();
+  return BROAD_AREA.test(place) ? "" : place;
 }
 
 function activeChecks(key: DimensionKey, ctx: ScoreContext) {
