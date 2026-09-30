@@ -64,11 +64,17 @@ export async function ensureWebsiteAwardsSchema() {
     return { ok: false as const, error: "POSTGRES_URL is not set, so the website_awards columns can't be added." };
   }
 
+  // pg v8.16+ treats sslmode=require as verify-full, which rejects Supabase pooler certs.
+  const cleaned = connectionString
+    .replace(/([?&])sslmode=[^&]*/gi, "$1")
+    .replace(/[?&]$/, "")
+    .replace(/\?&/, "?")
+    .replace(/\?$/, "");
   const client = new pg.Client({
-    connectionString,
+    connectionString: cleaned,
     connectionTimeoutMillis: 4000,
     query_timeout: 8000,
-    ssl: connectionString.includes("localhost") ? undefined : { rejectUnauthorized: false },
+    ssl: cleaned.includes("localhost") ? undefined : { rejectUnauthorized: false },
   });
   try {
     await Promise.race([
