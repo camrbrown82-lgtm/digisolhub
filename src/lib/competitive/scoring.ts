@@ -1,7 +1,10 @@
 import {
   COMPETITIVE_DIMENSIONS,
   type CompetitiveReport,
+  type CtaCount,
+  type IndustryPlaybook,
   type MarketPresence,
+  type OptionalCheck,
   type SiteSnapshot,
 } from "@/lib/competitive/schema";
 
@@ -10,7 +13,7 @@ import {
  * data we collected, so the same site always gets the same score and each
  * change on the site shows up as specific points gained or lost.
  */
-export const SCORING_VERSION = 1;
+export const SCORING_VERSION = 2;
 
 export type DimensionKey = (typeof COMPETITIVE_DIMENSIONS)[number]["key"];
 
@@ -46,6 +49,10 @@ export type Scorecard = {
   company: SiteScore;
   competitors: SiteScore[];
   competitorOverallAverage: number | null;
+  industry?: string;
+  playbook?: IndustryPlaybook;
+  /** Checklist items left out because they don't fit this industry. */
+  notScored?: string[];
 };
 
 export type StoredCompetitiveReport = CompetitiveReport & {
@@ -89,6 +96,12 @@ type Signals = {
   googleRating: number | null;
   reviewCount: number | null;
   googleVerified: boolean;
+  /** False for runs saved before calls to action were counted. */
+  ctaKnown: boolean;
+  ctas: CtaCount[];
+  pagesRead: number;
+  sections: string[];
+  pageTitles: string[];
 };
 
 const has = (features: string[], prefix: string) => features.some((f) => f.startsWith(prefix));
@@ -153,13 +166,61 @@ function signalsFor(site: SiteSnapshot, presence: MarketPresence | undefined): S
     googleRating: parseNumber(presence?.googleRating),
     reviewCount: parseNumber(presence?.reviewCount),
     googleVerified: presence?.googleSource === "google",
+    ctaKnown: Array.isArray(site.ctas),
+    ctas: site.ctas ?? [],
+    pagesRead: Math.max(1, site.pages?.length ?? 1),
+    sections: site.sections ?? [],
+    pageTitles: (site.pages ?? []).map((p) => p.title.toLowerCase()),
   };
+}
+
+const DEFAULT_ACTIONS = ["Get a quote", "Request an estimate", "Book", "Contact us", "Call"];
+const FILLER = new Set(["now", "the", "a", "an", "to", "your", "our", "my", "free", "today", "us", "here", "online", "with", "for", "and", "of", "in", "on"]);
+const words = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9à-ÿ ]+/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+
+/** "Bid now" matches "Bid Now!" and "Place a bid"; "Get a quote" matches "Get my free quote". */
+function matchesAction(label: string, action: string) {
+  const need = words(action).filter((w) => !FILLER.has(w));
+  if (!need.length) return false;
+  const have = words(label);
+  return need.every((n) => have.some((h) => h.startsWith(n) || (h.length >= 3 && n.startsWith(h))));
+}
+
+function primaryCtaPoints(s: Signals, book: IndustryPlaybook | undefined) {
+  if (!s.ctaKnown) return all(s.quoteCta, 20);
+  const actions = book?.primaryActions.length ? book.primaryActions : DEFAULT_ACTIONS;
+  const hits = s.ctas.filter((c) => actions.some((a) => matchesAction(c.label, a)));
+  if (!hits.length) return 0;
+  const pages = new Set(hits.flatMap((c) => c.pages)).size;
+  const total = hits.reduce((sum, c) => sum + c.count, 0);
+  if (s.pagesRead <= 1 || pages >= Math.max(2, Math.ceil(s.pagesRead / 2))) return 20;
+  return total >= 3 ? 16 : 12;
+}
+
+function keyPagesFound(s: Signals, book: IndustryPlaybook | undefined) {
+  const haystack = [...s.sections, ...s.pagePaths, ...s.pageTitles, ...s.ctas.map((c) => c.label.toLowerCase())].join(" ");
+  const pages = book?.keyPages ?? [];
+  return pages.filter((p) => p.match.some((m) => haystack.includes(m.toLowerCase()))).length;
 }
 
 const LOCAL_SCHEMA =
   /LocalBusiness|ProfessionalService|HomeAndConstructionBusiness|Contractor|Plumber|Electrician|HVACBusiness|RoofingContractor|Dentist|MedicalBusiness|AutoRepair|LegalService|AccountingService|Store|Restaurant|RealEstateAgent/i;
 
-type CheckDef = { id: string; label: string; max: number; points: (s: Signals, place: string) => number };
+type ScoreContext = { place: string; playbook?: IndustryPlaybook; industry: string };
+
+type CheckDef = {
+  id: string;
+  label: string | ((ctx: ScoreContext) => string);
+  max: number;
+  points: (s: Signals, place: string, ctx: ScoreContext) => number;
+  /** Leave the check out entirely, e.g. when there is no playbook to score against. */
+  skip?: (ctx: ScoreContext) => boolean;
+};
 
 const all = (ok: unknown, max: number) => (ok ? max : 0);
 
@@ -238,6 +299,17 @@ const RUBRIC: Record<DimensionKey, CheckDef[]> = {
     { id: "review_link", label: "Leave-a-Google-review link on the site", max: 15, points: (s) => all(s.reviewLink, 15) },
   ],
   content: [
+    {
+      id: "industry_pages",
+      label: ({ playbook }) =>
+        `Key pages for this industry (${(playbook?.keyPages ?? []).map((p) => p.label).join(", ")})`,
+      max: 30,
+      skip: ({ playbook }) => !playbook?.keyPages.length,
+      points: (s, _place, ctx) => {
+        const total = ctx.playbook?.keyPages.length ?? 0;
+        return total ? Math.round((keyPagesFound(s, ctx.playbook) / total) * 30) : 0;
+      },
+    },
     { id: "blog", label: "Blog or guides section", max: 30, points: (s) => all(s.blog, 30) },
     { id: "faq", label: "FAQ section", max: 20, points: (s) => all(s.faq, 20) },
     {
@@ -277,8 +349,20 @@ const RUBRIC: Record<DimensionKey, CheckDef[]> = {
     { id: "guarantee", label: "Guarantee or warranty", max: 20, points: (s) => all(s.guarantee, 20) },
   ],
   conversion: [
-    { id: "form", label: "Contact or lead form", max: 20, points: (s) => all(s.forms > 0, 20) },
-    { id: "quote", label: "Quote / estimate call to action", max: 20, points: (s) => all(s.quoteCta, 20) },
+    {
+      id: "primary_cta",
+      label: ({ playbook }) =>
+        `Main call to action for this industry (${(playbook?.primaryActions.length ? playbook.primaryActions : DEFAULT_ACTIONS).join(" / ")}) on most pages`,
+      max: 25,
+      points: (s, _place, ctx) => Math.round((primaryCtaPoints(s, ctx.playbook) / 20) * 25),
+    },
+    {
+      id: "cta_variety",
+      label: "3+ different calls to action across the site",
+      max: 10,
+      points: (s) => (s.ctas.length >= 3 ? 10 : s.ctas.length >= 1 ? 5 : 0),
+    },
+    { id: "form", label: "Contact or lead form", max: 15, points: (s) => all(s.forms > 0, 15) },
     { id: "tel", label: "Click-to-call phone link", max: 15, points: (s) => all(s.tel, 15) },
     { id: "booking", label: "Online booking", max: 15, points: (s) => all(s.booking, 15) },
     { id: "chat", label: "Website chat", max: 15, points: (s) => all(s.chat, 15) },
@@ -327,15 +411,37 @@ function primaryPlace(location: string) {
   return first.replace(/[^A-Za-zÀ-ÿ' -]/g, "").trim();
 }
 
-export function scoreSite(site: SiteSnapshot, presence: MarketPresence | undefined, location: string): SiteScore {
+function activeChecks(key: DimensionKey, ctx: ScoreContext) {
+  const skipped = new Set<string>(ctx.playbook?.notApplicable ?? []);
+  return RUBRIC[key].filter((c) => !skipped.has(c.id) && !c.skip?.(ctx));
+}
+
+/** Labels of checklist items left out for this industry. */
+export function notScoredLabels(playbook: IndustryPlaybook | undefined) {
+  const skipped = new Set<string>(playbook?.notApplicable ?? []);
+  const ctx: ScoreContext = { place: "", playbook, industry: "" };
+  const labels = Object.values(RUBRIC)
+    .flat()
+    .filter((c) => skipped.has(c.id as OptionalCheck))
+    .map((c) => (typeof c.label === "function" ? c.label(ctx) : c.label));
+  return Array.from(new Set(labels));
+}
+
+export function scoreSite(
+  site: SiteSnapshot,
+  presence: MarketPresence | undefined,
+  location: string,
+  opts: { playbook?: IndustryPlaybook; industry?: string } = {},
+): SiteScore {
   const signals = signalsFor(site, presence);
   const place = primaryPlace(location);
+  const ctx: ScoreContext = { place, playbook: opts.playbook, industry: opts.industry ?? "" };
   const dimensions = COMPETITIVE_DIMENSIONS.map(({ key }) => {
-    const checks = RUBRIC[key].map((c) => ({
+    const checks = activeChecks(key, ctx).map((c) => ({
       id: c.id,
-      label: c.label,
+      label: typeof c.label === "function" ? c.label(ctx) : c.label,
       max: c.max,
-      points: Math.min(c.max, Math.max(0, c.points(signals, place))),
+      points: Math.min(c.max, Math.max(0, c.points(signals, place, ctx))),
     }));
     const max = checks.reduce((sum, c) => sum + c.max, 0);
     const got = checks.reduce((sum, c) => sum + c.points, 0);
@@ -358,12 +464,15 @@ export function buildScorecard(input: {
   competitors: SiteSnapshot[];
   presence: MarketPresence[];
   location: string;
+  industry?: string;
+  playbook?: IndustryPlaybook;
 }): Scorecard {
   const presenceFor = (url: string) => input.presence.find((p) => hostOf(p.url) === hostOf(url));
-  const company = scoreSite(input.company, presenceFor(input.company.url), input.location);
+  const opts = { playbook: input.playbook, industry: input.industry };
+  const company = scoreSite(input.company, presenceFor(input.company.url), input.location, opts);
   const competitors = input.competitors
     .filter((c) => c.ok)
-    .map((c) => scoreSite(c, presenceFor(c.url), input.location));
+    .map((c) => scoreSite(c, presenceFor(c.url), input.location, opts));
   return {
     version: SCORING_VERSION,
     company,
@@ -371,6 +480,9 @@ export function buildScorecard(input: {
     competitorOverallAverage: competitors.length
       ? Math.round(competitors.reduce((sum, c) => sum + c.overall, 0) / competitors.length)
       : null,
+    industry: input.industry,
+    playbook: input.playbook,
+    notScored: notScoredLabels(input.playbook),
   };
 }
 
@@ -446,7 +558,11 @@ export function compareScores(
 }
 
 /** Plain-text scorecard for the report prompt so the written analysis matches the numbers. */
-export function scorecardPromptBlock(card: Scorecard, changes: ScoreComparison | null) {
+export function scorecardPromptBlock(
+  card: Scorecard,
+  changes: ScoreComparison | null,
+  opts: { checklistUpdated?: boolean } = {},
+) {
   const lines = card.company.dimensions.map((d) => {
     const label = COMPETITIVE_DIMENSIONS.find((x) => x.key === d.key)?.label ?? d.key;
     const missing = d.checks.filter((c) => c.points < c.max).map((c) => c.label);
@@ -463,8 +579,15 @@ export function scorecardPromptBlock(card: Scorecard, changes: ScoreComparison |
           ? `Regressions: ${changes.lost.map((g) => `${g.label} (-${g.points}, ${g.dimension})`).join("; ")}`
           : "Regressions: none.",
       ]
-    : ["This is the first analysis for this company."];
+    : [
+        opts.checklistUpdated
+          ? "The checklist was updated for this industry since the last analysis, so these scores are not comparable to earlier runs. Don't describe differences from earlier reports as improvements or regressions."
+          : "This is the first analysis for this company.",
+      ];
+  const notScored = card.notScored?.length
+    ? [`Not scored because it doesn't fit this industry: ${card.notScored.join("; ")}.`]
+    : [];
   return `Overall: company ${card.company.overall}${card.competitorOverallAverage != null ? `, competitor average ${card.competitorOverallAverage}` : ""}.
 ${lines.join("\n")}
-${changeLines.join("\n")}`;
+${[...notScored, ...changeLines].join("\n")}`;
 }

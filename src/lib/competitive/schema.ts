@@ -88,12 +88,47 @@ export const competitiveReportSchema = z.object({
 
 export type CompetitiveReport = z.infer<typeof competitiveReportSchema>;
 
+/** Checklist items that only matter in some industries (an auction house has no quote form or booking). */
+export const OPTIONAL_CHECKS = [
+  "form",
+  "booking",
+  "chat",
+  "sms",
+  "pricing_page",
+  "prices",
+  "services_page",
+  "guarantee",
+  "city_pages",
+  "city_in_title",
+  "map",
+  "portfolio",
+  "blog",
+  "newsletter",
+  "video",
+] as const;
+
+export type OptionalCheck = (typeof OPTIONAL_CHECKS)[number];
+
+/** What a strong website looks like in this company's industry. Scoring and the report both use it. */
+export type IndustryPlaybook = {
+  /** Buttons customers in this industry should find everywhere, e.g. "Bid now". */
+  primaryActions: string[];
+  secondaryActions: string[];
+  keyPages: Array<{ label: string; match: string[] }>;
+  notApplicable: OptionalCheck[];
+  /** What wins customers in this industry, in a few sentences. */
+  notes: string;
+};
+
 export type CompetitiveInputs = {
   url: string;
   industry: string;
   location: string;
   competitorUrls: string[];
+  playbook?: IndustryPlaybook;
 };
+
+export type CtaCount = { label: string; count: number; pages: string[] };
 
 export type SiteSnapshot = {
   name: string;
@@ -112,6 +147,10 @@ export type SiteSnapshot = {
   pages?: SitePage[];
   /** Features found on the site, e.g. "Click-to-call phone link". */
   features?: string[];
+  /** Action buttons and links on the pages read, e.g. "Bid now" ×23. */
+  ctas?: CtaCount[];
+  /** First path segment of every internal link, e.g. "/auctions". */
+  sections?: string[];
   error?: string;
 };
 

@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmailToContact } from "@/lib/email";
 import { isMailScannerContact, resolveScannerStatus } from "@/lib/mailScanner";
 import { contactMatchesAudience, leadAudienceOf } from "@/lib/workflowGraph";
+import type { IndustryPlaybook } from "@/lib/competitive/schema";
 
 type FlowNode = {
   id: string;
@@ -522,19 +523,18 @@ export const runCompetitiveAnalysis = inngest.createFunction(
     const row = await step.run("load", async () => {
       const { data } = await admin
         .from("competitive_analyses")
-        .select("id, client_id, inputs, clients(name, domain)")
+        .select("id, client_id, inputs, clients(name, domain, notes)")
         .eq("id", analysisId)
         .single();
       await setStage("Reading the website");
-      const client = data?.clients as
-        | { name?: string; domain?: string | null }
-        | { name?: string; domain?: string | null }[]
-        | null;
+      type ClientRow = { name?: string; domain?: string | null; notes?: string | null };
+      const client = data?.clients as ClientRow | ClientRow[] | null;
       const clientRow = Array.isArray(client) ? client[0] : client;
       return {
         clientId: (data?.client_id as string | null) ?? null,
         clientName: clientRow?.name || "This company",
         clientDomain: clientRow?.domain || "",
+        clientNotes: clientRow?.notes || "",
         inputs: (data?.inputs ?? {}) as {
           url: string;
           industry: string;
@@ -549,22 +549,42 @@ export const runCompetitiveAnalysis = inngest.createFunction(
     );
     // The website in the form is the subject. Working-on DigiSol must not
     // rename a different business, such as DealFinder Auctions, to DigiSol.
-    const companyName = hostsMatch(crawled.url || row.inputs.url, row.clientDomain)
-      ? row.clientName
-      : businessNameFromSite(crawled);
+    const isOwnSite = hostsMatch(crawled.url || row.inputs.url, row.clientDomain);
+    const companyName = isOwnSite ? row.clientName : businessNameFromSite(crawled);
     const company = { ...crawled, name: companyName };
 
     const profile = await step.run("profile", async () => {
+      // Reuse the playbook from the last run on this site so its scores stay comparable.
+      const { data: earlier } = row.clientId
+        ? await admin
+            .from("competitive_analyses")
+            .select("inputs")
+            .eq("client_id", row.clientId)
+            .eq("status", "completed")
+            .neq("id", analysisId)
+            .order("completed_at", { ascending: false })
+            .limit(5)
+        : { data: [] };
+      const previous = (earlier ?? [])
+        .map((r) => r.inputs as { url?: string; industry?: string; location?: string; playbook?: IndustryPlaybook })
+        .find((i) => i?.playbook && i.url && hostsMatch(i.url, company.url));
       const p = await inferProfile({
         companyName,
         snapshot: company,
         industry: row.inputs.industry,
         location: row.inputs.location,
+        notes: isOwnSite ? row.clientNotes : "",
+        previous: previous ?? null,
       });
       await setStage("Finding competitors");
       return p;
     });
-    const inputs = { ...row.inputs, industry: profile.industry, location: profile.location };
+    const inputs = {
+      ...row.inputs,
+      industry: profile.industry,
+      location: profile.location,
+      playbook: profile.playbook,
+    };
 
     const found = await step.run("competitors", async () => {
       if (inputs.competitorUrls.length > 0) {
@@ -599,7 +619,7 @@ export const runCompetitiveAnalysis = inngest.createFunction(
     });
 
     const scores = await step.run("score", async () => {
-      const { buildScorecard, compareScores } = await import("@/lib/competitive/scoring");
+      const { buildScorecard, compareScores, SCORING_VERSION } = await import("@/lib/competitive/scoring");
       const { prospectHostKey } = await import("@/lib/prospectAudit/seedCatalog");
       type Presence = (typeof presence)[number]["presence"];
       const sameHost = (a: string, b: string) => prospectHostKey(a) === prospectHostKey(b);
@@ -607,7 +627,7 @@ export const runCompetitiveAnalysis = inngest.createFunction(
       const { data: prev } = row.clientId
         ? await admin
             .from("competitive_analyses")
-            .select("id, inputs, sources, completed_at")
+            .select("id, inputs, sources, result, completed_at")
             .eq("client_id", row.clientId)
             .eq("status", "completed")
             .neq("id", analysisId)
@@ -648,22 +668,30 @@ export const runCompetitiveAnalysis = inngest.createFunction(
         competitors,
         presence: allPresence,
         location: inputs.location,
+        industry: inputs.industry,
+        playbook: inputs.playbook,
       });
+      const prevVersion = (prev?.result as { scorecard?: { version?: number } } | null)?.scorecard?.version;
+      // Older runs didn't read the whole site or count calls to action, so a
+      // comparison would show crawler changes as site improvements.
+      const checklistUpdated = Boolean(sameSubject && prev && prevVersion !== SCORING_VERSION);
       let changes = null;
-      if (sameSubject && prev && prevSources.company) {
+      if (sameSubject && prev && prevSources.company && !checklistUpdated) {
         // Re-score the old run with today's checklist and location so the comparison is like for like.
         const before = buildScorecard({
           company: prevSources.company,
           competitors: [],
           presence: prevSources.presence ?? [],
           location: inputs.location,
+          industry: inputs.industry,
+          playbook: inputs.playbook,
         });
         changes = compareScores(scorecard.company, before.company, {
           previousId: prev.id as string,
           previousDate: (prev.completed_at as string | null) ?? null,
         });
       }
-      return { scorecard, changes, presence: allPresence };
+      return { scorecard, changes, checklistUpdated, presence: allPresence };
     });
 
     const report = await step.run("report", async () => {
@@ -676,6 +704,7 @@ export const runCompetitiveAnalysis = inngest.createFunction(
         presence: scores.presence,
         scorecard: scores.scorecard,
         changes: scores.changes,
+        checklistUpdated: scores.checklistUpdated,
       });
     });
 

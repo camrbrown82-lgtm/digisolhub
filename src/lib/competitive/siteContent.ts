@@ -1,4 +1,4 @@
-import type { SitePage } from "@/lib/competitive/schema";
+import type { CtaCount, SitePage } from "@/lib/competitive/schema";
 
 const USER_AGENT = "DigiSolHubBot/1.0 (+https://wwwdigisol.com; competitive-analysis)";
 const FETCH_TIMEOUT_MS = 8000;
@@ -6,6 +6,10 @@ const FETCH_TIMEOUT_MS = 8000;
 /** Page kinds worth reading, scored by path and link text. */
 const PAGE_PRIORITY: Array<[RegExp, number]> = [
   [/pric|package|plans?\b|cost|rates/i, 10],
+  [
+    /\b(auctions?|catalog(ue)?|lots?|live|bid(ding)?|consign(ment)?|sell|buy|shop|store|products?|inventory|listings?|menus?|order|reserv\w*|events?|tickets?|donat\w*|courses?|classes|membership)\b/i,
+    9,
+  ],
   [/service|what-we-do|solutions|offer/i, 9],
   [/quote|estimate|contact|book|consult/i, 8],
   [/about|team|story|who-we/i, 7],
@@ -77,7 +81,19 @@ function titleOf(html: string) {
 
 type LinkCandidate = { url: string; score: number; kind: number };
 
+const OTHER_KIND = PAGE_PRIORITY.length;
 const PER_KIND_LIMIT = 2;
+/** Button text that asks the visitor to do something: "Bid now", "Get a quote", "Book online". */
+const CTA_LABEL =
+  /^(bid|place (a )?bid|buy|shop|order|book|reserve|schedule|register|sign ?up|join|subscribe|get|request|start|call|phone|contact|consign|sell|enter|apply|donate|download|claim|try|view|see|browse|watch|chat|message|text|learn more|find|explore|add to (cart|bag)|check ?out|talk|ask|compare|visit|shop now|preview)\b/i;
+
+function cleanLabel(inner: string) {
+  return decodeEntities(inner.replace(/<[^>]+>/g, " "))
+    .replace(/[→»›>←«‹<]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[.!:]+$/, "");
+}
 /** Pricing, services and quote/contact pages get extra room. */
 const KEY_PAGE_WEIGHT = 8;
 const LOCATION_KIND = PAGE_PRIORITY.findIndex(([pattern]) => pattern.test("/locations/calgary"));
@@ -88,7 +104,7 @@ const LOCATION_PATH = /\/(locations?|service-areas?|areas)\/[a-z0-9-]+$/i;
 function candidateLinks(
   html: string,
   baseUrl: string,
-  opts: { locationLimit?: number } = {},
+  opts: { locationLimit?: number; perKind?: Map<number, number>; exclude?: Set<string> } = {},
 ): LinkCandidate[] {
   const base = new URL(baseUrl);
   const host = base.hostname.replace(/^www\./, "");
@@ -107,10 +123,14 @@ function candidateLinks(
     const path = url.pathname.replace(/\/+$/, "") || "/";
     if (path === "/" || SKIP_PATH.test(path)) continue;
     const label = `${path} ${match[2].replace(/<[^>]+>/g, " ")}`;
-    const kind = PAGE_PRIORITY.findIndex(([pattern]) => pattern.test(label));
+    const matched = PAGE_PRIORITY.findIndex(([pattern]) => pattern.test(label));
+    const inChrome = chrome.includes(match[1]);
+    // Header links and call-to-action buttons lead to the pages the business cares about,
+    // whatever they are called.
+    const kind = matched >= 0 ? matched : inChrome || CTA_LABEL.test(cleanLabel(match[2])) ? OTHER_KIND : -1;
     if (kind < 0) continue;
-    let score = PAGE_PRIORITY[kind][1];
-    if (chrome.includes(match[1])) score += 3;
+    let score = kind === OTHER_KIND ? 4 : PAGE_PRIORITY[kind][1];
+    if (inChrome) score += 3;
     if (kind !== LOCATION_KIND) {
       score -= Math.max(0, path.split("/").filter(Boolean).length - 1) * 3;
     }
@@ -118,9 +138,9 @@ function candidateLinks(
     const prev = best.get(key);
     if (!prev || score > prev.score) best.set(key, { score, kind });
   }
-  const perKind = new Map<number, number>();
+  const perKind = opts.perKind ?? new Map<number, number>();
   return Array.from(best, ([url, v]) => ({ url, ...v }))
-    .filter((c) => c.score > 0)
+    .filter((c) => c.score > 0 && !opts.exclude?.has(c.url))
     .sort((a, b) => b.score - a.score)
     .filter((c) => {
       const count = perKind.get(c.kind) ?? 0;
@@ -250,18 +270,36 @@ function detectFeatures(pages: Array<{ url: string; html: string }>) {
 export async function crawlSiteContent(
   homepage: { url: string; html: string },
   depth: "full" | "light",
-): Promise<{ pages: SitePage[]; features: string[] }> {
+): Promise<{ pages: SitePage[]; features: string[]; ctas: CtaCount[]; sections: string[] }> {
   const limits =
     depth === "full"
       ? { extraPages: 10, homeChars: 14000, pageChars: 6000, totalChars: 80000 }
       : { extraPages: 4, homeChars: 3500, pageChars: 1500, totalChars: 9000 };
 
+  const perKind = new Map<number, number>();
   const ranked = candidateLinks(homepage.html, homepage.url, {
     locationLimit: depth === "full" ? 24 : PER_KIND_LIMIT,
+    perKind,
   });
-  const seen = new Set<string>();
+  const homeKey = new URL(homepage.url).pathname.replace(/\/+$/, "");
+  const seen = new Set<string>([`${new URL(homepage.url).origin}${homeKey || "/"}`]);
+  const unseen = (link: LinkCandidate) => {
+    if (seen.has(link.url)) return false;
+    seen.add(link.url);
+    return true;
+  };
+  const isKey = (kind: number) => kind !== OTHER_KIND && PAGE_PRIORITY[kind][1] >= KEY_PAGE_WEIGHT;
+  const fetchAll = (list: LinkCandidate[]) =>
+    Promise.all(
+      list.map(async (link) => {
+        const page = await fetchHtml(link.url);
+        return page ? { ...page, key: isKey(link.kind) } : null;
+      }),
+    );
+
+  const firstRound = ranked.filter((link) => link.kind !== LOCATION_KIND).slice(0, limits.extraPages).filter(unseen);
   const links = [
-    ...ranked.filter((link) => link.kind !== LOCATION_KIND).slice(0, limits.extraPages),
+    ...firstRound,
     ...ranked.filter((link) => link.kind === LOCATION_KIND),
     ...(depth === "full"
       ? locationPageUrls(homepage.html, homepage.url).map((url) => ({
@@ -270,18 +308,22 @@ export async function crawlSiteContent(
           kind: LOCATION_KIND,
         }))
       : []),
-  ].filter((link) => {
-    if (seen.has(link.url)) return false;
-    seen.add(link.url);
-    return true;
-  });
-  const fetched = await Promise.all(
-    links.map(async (link) => {
-      const page = await fetchHtml(link.url);
-      return page ? { ...page, key: PAGE_PRIORITY[link.kind][1] >= KEY_PAGE_WEIGHT } : null;
-    }),
-  );
-  const homeKey = new URL(homepage.url).pathname.replace(/\/+$/, "");
+  ].filter((link) => firstRound.includes(link) || unseen(link));
+  const fetched = await fetchAll(links);
+
+  // Homepages that are only a doorway ("Enter the auction") keep the real offer one click deeper.
+  const room = limits.extraPages - firstRound.length;
+  if (depth === "full" && room > 0) {
+    const deeperKinds = new Map<number, number>();
+    const deeper = fetched
+      .filter((page): page is NonNullable<typeof page> => Boolean(page))
+      .flatMap((page) => candidateLinks(page.html, page.url, { perKind: deeperKinds, exclude: seen }))
+      .filter((link) => link.kind !== LOCATION_KIND)
+      .sort((a, b) => b.score - a.score)
+      .filter(unseen)
+      .slice(0, room);
+    fetched.push(...(await fetchAll(deeper)));
+  }
   const extra = fetched.filter(
     (p, i, all): p is { url: string; html: string; key: boolean } =>
       Boolean(p) &&
@@ -316,5 +358,70 @@ export async function crawlSiteContent(
     budget -= text.length;
     pages.push({ url: page.url, title: titleOf(page.html), text });
   }
-  return { pages, features: detectFeatures([homepage, ...extra]) };
+  const read = [homepage, ...extra];
+  const ctas = callsToAction(read);
+  const sections = siteSections(read);
+  const features = detectFeatures(read);
+  if (ctas.length) {
+    features.push(
+      `Calls to action on the ${read.length} page(s) read: ${ctas
+        .slice(0, 12)
+        .map((c) => `"${c.label}" ×${c.count} (${c.pages.length} page${c.pages.length === 1 ? "" : "s"})`)
+        .join(", ")}`,
+    );
+  }
+  if (sections.length) features.push(`Site sections linked: ${sections.join(", ")}`);
+  return { pages, features, ctas, sections };
+}
+
+/** Every action button or link on the pages read, with how often and where it appears. */
+function callsToAction(pages: Array<{ url: string; html: string }>): CtaCount[] {
+  const found = new Map<string, CtaCount>();
+  for (const page of pages) {
+    const path = new URL(page.url).pathname || "/";
+    const body = page.html
+      .replace(/<head[\s\S]*?<\/head>/i, " ")
+      .replace(/<(script|style|noscript|template)[\s\S]*?<\/\1>/gi, " ");
+    const labels = [
+      ...Array.from(body.matchAll(/<(a|button)\b[^>]*>([\s\S]*?)<\/\1>/gi), (m) => m[2]),
+      ...Array.from(
+        body.matchAll(/<input\b[^>]*type=["'](?:submit|button)["'][^>]*value=["']([^"']+)["']/gi),
+        (m) => m[1],
+      ),
+    ];
+    for (const raw of labels) {
+      const label = cleanLabel(raw);
+      if (!label || label.length > 40 || label.split(" ").length > 6 || !CTA_LABEL.test(label)) continue;
+      if (/@|\d{3}[\s.-]?\d{3}[\s.-]?\d{4}/.test(label)) continue;
+      const key = label.toLowerCase();
+      const entry = found.get(key) ?? { label, count: 0, pages: [] };
+      entry.count += 1;
+      if (!entry.pages.includes(path)) entry.pages.push(path);
+      found.set(key, entry);
+    }
+  }
+  return Array.from(found.values())
+    .sort((a, b) => b.pages.length - a.pages.length || b.count - a.count)
+    .slice(0, 25);
+}
+
+/** Top-level sections the site links to, e.g. /auctions, /consign, /faq. */
+function siteSections(pages: Array<{ url: string; html: string }>) {
+  const host = new URL(pages[0].url).hostname.replace(/^www\./, "");
+  const found = new Set<string>();
+  for (const page of pages) {
+    for (const match of Array.from(page.html.matchAll(/<a\b[^>]*href=["']([^"'#]+)["']/gi))) {
+      let url: URL;
+      try {
+        url = new URL(decodeEntities(match[1]), page.url);
+      } catch {
+        continue;
+      }
+      if (!/^https?:$/.test(url.protocol) || url.hostname.replace(/^www\./, "") !== host) continue;
+      const segment = url.pathname.split("/").filter(Boolean)[0];
+      if (!segment || segment.startsWith("_") || SKIP_PATH.test(`/${segment}`)) continue;
+      found.add(`/${segment.toLowerCase()}`);
+    }
+  }
+  return Array.from(found).sort().slice(0, 30);
 }
