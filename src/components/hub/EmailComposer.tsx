@@ -77,7 +77,7 @@ export function EmailComposer({
   const [busy, setBusy] = useState<"save" | "send" | "ai" | "logo" | "">("");
   const [aiPrompt, setAiPrompt] = useState("");
   const [logoStamp, setLogoStamp] = useState(Date.now());
-  const [logoSrc, setLogoSrc] = useState("/logo.jpg");
+  const [logoSrc, setLogoSrc] = useState("");
   const [focusField, setFocusField] = useState<"subject" | "body" | "ai">("body");
   const [dragOver, setDragOver] = useState(false);
 
@@ -133,7 +133,7 @@ export function EmailComposer({
         if (!cancelled) setLogoSrc(dataUrl);
       })
       .catch(() => {
-        if (!cancelled) setLogoSrc("/logo.jpg");
+        if (!cancelled) setLogoSrc("");
       });
     return () => {
       cancelled = true;
@@ -372,7 +372,7 @@ export function EmailComposer({
       return;
     }
     setLogoStamp(Date.now());
-    setStatus("Using the DigiSol site logo");
+    setStatus(`Uploaded logo removed. Emails use ${companyName}'s brand-kit logo, or the company name if there isn't one.`);
   }
 
   async function fillContacts() {
@@ -455,12 +455,16 @@ export function EmailComposer({
         }`}
       >
         <div className="flex items-center justify-center rounded-xl border border-zinc-800 bg-black p-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`/api/hub/email-logo?t=${logoStamp}`}
-            alt={`${companyName} email logo`}
-            className="h-16 w-auto max-w-full object-contain"
-          />
+          {logoSrc ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={logoSrc}
+              alt={`${companyName} email logo`}
+              className="h-16 w-auto max-w-full object-contain"
+            />
+          ) : (
+            <span className="text-center text-sm font-semibold text-white">{companyName}</span>
+          )}
         </div>
         <div className="space-y-2">
           <p className="text-sm font-medium text-white">Official {companyName} logo</p>
@@ -666,7 +670,7 @@ export function EmailComposer({
             {sendMode === "bcc"
               ? "First recipient is To; the rest go on BCC. Best for announcements — merge fields only apply to the To address."
               : sendMode === "ai_each"
-                ? "Each Hub contact gets their own AI-rewritten email To their address (max 25). Put digisol2026@yahoo.com only in Also BCC if you want one audit copy — not in Recipients."
+                ? "Each Hub contact gets their own AI-rewritten email To their address (max 25). Put your own inbox only in Also BCC if you want one audit copy — not in Recipients."
                 : "Each recipient gets their own email To their address with {{name}} / {{contact_company}} filled in."}
           </p>
         </fieldset>
@@ -676,7 +680,7 @@ export function EmailComposer({
             value={bccAlso}
             onChange={(event) => setBccAlso(event.target.value)}
             className="hub-field"
-            placeholder="hello@wwwdigisol.com"
+            placeholder="you@yourinbox.com"
           />
           <span className="mt-1 block text-xs text-zinc-500">
             Personalized / AI each: BCC is added to the{" "}

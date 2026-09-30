@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
+import { workspaceIsDigisol } from "@/lib/workspace";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { runProspectAuditWorker } from "@/lib/prospectAudit/worker";
 import type { ProspectTrade } from "@/lib/prospectAudit/limits";
@@ -120,8 +121,14 @@ export async function POST(request: Request) {
     }
   }
 
-  const { error } = await requireHubSession();
+  const { error, supabase } = await requireHubSession();
   if (error) return error;
+  if (!(await workspaceIsDigisol(supabase))) {
+    return NextResponse.json(
+      { error: "The prospect audit run is DigiSol's outreach. Switch Working on to DigiSol to run it." },
+      { status: 403 },
+    );
+  }
 
   try {
     return await run(request, body, { forceManual: true });

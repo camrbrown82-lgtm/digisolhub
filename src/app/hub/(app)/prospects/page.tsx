@@ -4,7 +4,7 @@ import { ProspectAuditRunButton } from "@/components/hub/ProspectAuditRunButton"
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { ensureProspectsSchema } from "@/lib/ensureProspectsSchema";
 import { createClient } from "@/lib/supabase/server";
-import { getActiveClient, resolveClientId } from "@/lib/workspace";
+import { getActiveClient, getWorkspaceClient, isDigisolClient, resolveClientId } from "@/lib/workspace";
 
 type ProspectRow = {
   id: string;
@@ -38,8 +38,10 @@ export default async function ProspectsPage() {
     new Promise((resolve) => setTimeout(resolve, 3000)),
   ]);
   const supabase = await createClient();
-  const active = await getActiveClient(supabase);
+  const active = (await getActiveClient(supabase)) ?? (await getWorkspaceClient(supabase));
   const clientId = (await resolveClientId(supabase)) || active?.id || "";
+  // The daily audit queue and its outreach emails run as DigiSol.
+  const isDigisol = isDigisolClient(active);
 
   const todayStart = new Date();
   todayStart.setUTCHours(0, 0, 0, 0);
@@ -96,6 +98,14 @@ export default async function ProspectsPage() {
         <div>
           <h1 className="text-3xl font-semibold text-white">Prospect audits</h1>
           <WorkspaceScope companyName={active?.name} noun="prospect audits" />
+          {!isDigisol ? (
+            <p className="mt-2 max-w-2xl text-sm text-zinc-400">
+              Website audits Kaylev filed for {active?.name || "this company"}. The daily
+              automated audit-and-email run is DigiSol&apos;s own outreach, so it
+              doesn&apos;t run here.
+            </p>
+          ) : (
+          <>
           <p className="mt-2 max-w-2xl text-sm text-zinc-400">
             Daily automated website audits. Kaylev emails a business only when
             its own site conspicuously publishes that address, the domain has a
@@ -114,12 +124,14 @@ export default async function ProspectsPage() {
             anytime — that bypasses the cron daily ceiling and re-queues prior
             dry-runs / Resend failures for a live send.
           </p>
+          </>
+          )}
         </div>
         <div className="flex flex-col items-end gap-3">
           <Link href="/hub/contacts?source=prospect_audit" className="hub-btn-secondary">
             View audit leads
           </Link>
-          <ProspectAuditRunButton />
+          {isDigisol ? <ProspectAuditRunButton /> : null}
         </div>
       </div>
 

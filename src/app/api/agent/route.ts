@@ -23,6 +23,7 @@ import {
 import { ensureAgentActivityLogSchema } from "@/lib/ensureAgentActivityLogSchema";
 import { ensureClientAiWalletSchema } from "@/lib/ensureClientAiWalletSchema";
 import { getOpenAIApiKey } from "@/lib/openai";
+import { workspaceIsDigisol } from "@/lib/workspace";
 import {
   checkAgentBudget,
   estimateToolCost,
@@ -78,6 +79,16 @@ export async function POST(request: Request) {
       ensureAgentActivityLogSchema().catch(() => null),
       ensureClientAiWalletSchema().catch(() => null),
     ]);
+
+    if (!(await workspaceIsDigisol(supabase))) {
+      return NextResponse.json(
+        {
+          error: "This agent works on DigiSol's own data. Switch Working on to DigiSol, or use the Hub AI chat for this company.",
+          code: "digisol_only",
+        },
+        { status: 403 },
+      );
+    }
 
     const scope = await resolveDigisolScope(supabase, user!.id);
     const promptText = extractPromptText(body);

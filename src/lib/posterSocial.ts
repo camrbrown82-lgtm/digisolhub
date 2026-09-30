@@ -38,19 +38,15 @@ export function posterSocialPack(input: {
   slides?: PosterSlide[];
 }): PosterSocialPack {
   const company = input.companyName.trim() || "DigiSol";
-  const site = (input.siteUrl || DIGISOL_SITE_URL).replace(/\/$/, "");
+  const isDigisol = company.toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase();
+  const site = (input.siteUrl || (isDigisol ? DIGISOL_SITE_URL : "")).replace(/\/$/, "");
   const urls = (input.imageUrls?.length ? input.imageUrls : [input.imageUrl]).filter(Boolean);
   const url = urls[0] || input.imageUrl;
   const hook = shortPosterCaption(input.slides || []) || input.tagline?.trim() || company;
   const carousel = urls.length > 1;
-  const isDigisol = company.toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase();
   const hashtags = [
     `#${company.replace(/[^A-Za-z0-9]+/g, "")}`,
-    "#Alberta",
-    "#Airdrie",
-    "#Calgary",
-    "#Edmonton",
-    "#Marketing",
+    ...(isDigisol ? ["#Alberta", "#Airdrie", "#Calgary", "#Edmonton", "#Marketing"] : []),
   ].filter((tag, index, list) => tag.length > 1 && list.indexOf(tag) === index);
 
   const facebook = [
@@ -67,9 +63,11 @@ export function posterSocialPack(input: {
   const linkedin = [
     hook,
     "",
-    `Read the full dispatch: ${site}`,
+    site ? (isDigisol ? `Read the full dispatch: ${site}` : `Learn more: ${site}`) : "",
     urls.length > 1 ? `Slides:\n${urls.map((item, index) => `${index + 1}. ${item}`).join("\n")}` : `Poster: ${url}`,
-  ].join("\n");
+  ]
+    .filter((line, index) => index !== 2 || line !== "")
+    .join("\n");
 
   const instagram = [
     hook,
@@ -81,13 +79,13 @@ export function posterSocialPack(input: {
     .filter((line) => line !== "")
     .join("\n");
 
-  const twitter = clip(`${hook}\n${site}\n${hashtags.slice(0, 3).join(" ")}`, 280);
+  const twitter = clip([hook, site, hashtags.slice(0, 3).join(" ")].filter(Boolean).join("\n"), 280);
 
   const fileBody = [
     `${company.toUpperCase()} ${carousel ? "CAROUSEL" : "POSTER"}`,
     hook,
     "",
-    `Site: ${site}`,
+    site ? `Site: ${site}` : "",
     isDigisol ? `Instagram: ${DIGISOL_INSTAGRAM_URL}` : "",
     input.pdfUrl ? `PDF: ${input.pdfUrl}` : "",
     "",
@@ -164,27 +162,18 @@ export function socialPackFromAsset(
   },
   input: { companyName: string; tagline?: string; siteUrl?: string },
 ): PosterSocialPack {
-  if (isPosterSocialPack(poster.social_pack)) {
-    const pack = poster.social_pack;
-    return {
-      ...pack,
-      urls: pack.urls?.length ? pack.urls : [pack.url],
-      twitter: pack.twitter || clip(`${pack.instagram}\n${input.siteUrl || DIGISOL_SITE_URL}`, 280),
-      instagramUrl: pack.instagramUrl || DIGISOL_INSTAGRAM_URL,
-      instagramHandle: pack.instagramHandle || DIGISOL_INSTAGRAM_HANDLE,
-    };
-  }
+  const isDigisol = input.companyName.trim().toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase();
+  const site = input.siteUrl || (isDigisol ? DIGISOL_SITE_URL : "");
+  const fillIn = (pack: PosterSocialPack): PosterSocialPack => ({
+    ...pack,
+    urls: pack.urls?.length ? pack.urls : [pack.url],
+    twitter: pack.twitter || clip([pack.instagram, site].filter(Boolean).join("\n"), 280),
+    instagramUrl: pack.instagramUrl || (isDigisol ? DIGISOL_INSTAGRAM_URL : undefined),
+    instagramHandle: pack.instagramHandle || (isDigisol ? DIGISOL_INSTAGRAM_HANDLE : undefined),
+  });
+  if (isPosterSocialPack(poster.social_pack)) return fillIn(poster.social_pack);
   const meta = parsePosterMeta(poster.notes);
-  if (isPosterSocialPack(meta?.social)) {
-    const pack = meta.social;
-    return {
-      ...pack,
-      urls: pack.urls?.length ? pack.urls : [pack.url],
-      twitter: pack.twitter || clip(`${pack.instagram}\n${input.siteUrl || DIGISOL_SITE_URL}`, 280),
-      instagramUrl: pack.instagramUrl || DIGISOL_INSTAGRAM_URL,
-      instagramHandle: pack.instagramHandle || DIGISOL_INSTAGRAM_HANDLE,
-    };
-  }
+  if (isPosterSocialPack(meta?.social)) return fillIn(meta.social);
   return posterSocialPack({
     companyName: input.companyName,
     tagline: input.tagline,

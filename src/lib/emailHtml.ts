@@ -31,6 +31,7 @@ export function htmlToText(html: string) {
 function inlineLogoImg(src: string, companyName: string) {
   const safeSrc = escapeHtml(src);
   const alt = escapeHtml(companyName || "Logo");
+  if (!src.trim()) return `<strong style="display:block;text-align:center;font-size:22px;">${alt}</strong>`;
   return `<img src="${safeSrc}" alt="${alt}" width="180" style="display:block;margin:0 auto;max-width:180px;height:auto;border:0;" />`;
 }
 
@@ -38,6 +39,9 @@ function inlineLogoImg(src: string, companyName: string) {
 function headerLogoImg(src: string, companyName: string) {
   const safeSrc = escapeHtml(src);
   const alt = escapeHtml(companyName || "Logo");
+  if (!src.trim()) {
+    return `<div style="padding:22px 24px;font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:700;line-height:1.2;color:#ffffff;">${alt}</div>`;
+  }
   return `<img src="${safeSrc}" alt="${alt}" width="600" style="display:block;width:100%;max-width:600px;height:auto;border:0;margin:0;padding:0;line-height:0;" />`;
 }
 
@@ -77,7 +81,7 @@ export function buildEmailHtml(
     /[<>"]/g,
     "",
   );
-  const tagline = opts.tagline?.trim() || "Engineering & growth";
+  const tagline = opts.tagline?.trim() || "";
   const headerLogo = headerLogoImg(opts.logoSrc, company);
   const inlineLogo = inlineLogoImg(opts.logoSrc, company);
   const withToken = body.replaceAll("{{logo}}", inlineLogo);

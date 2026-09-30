@@ -236,6 +236,8 @@ export async function syncResendEngagementFromApi(
 export async function reconcileHubEmailStats(
   db: SupabaseClient,
   contactIds: string[] | null,
+  /** Resend metrics cover the whole account (every company), so only the house workspace may blend them in. */
+  options: { accountMetrics?: boolean } = {},
 ): Promise<ReconciledEmailStats> {
   const emptySends = !contactIds || contactIds.length === 0;
 
@@ -260,7 +262,21 @@ export async function reconcileHubEmailStats(
       ]);
 
   const [resend, syncResult] = await Promise.all([
-    fetchResendAccountMetrics(14),
+    options.accountMetrics
+      ? fetchResendAccountMetrics(14)
+      : Promise.resolve<ResendAccountMetrics>({
+          configured: Boolean(getResendApiKey()),
+          days: 14,
+          sent: 0,
+          delivered: 0,
+          opened: 0,
+          uniqueOpened: 0,
+          clicked: 0,
+          uniqueClicked: 0,
+          bounced: 0,
+          openRate: null,
+          clickRate: null,
+        }),
     syncPromise,
   ]);
 

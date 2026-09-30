@@ -65,9 +65,13 @@ export async function POST(request: Request) {
 
     const { data: existing } = await supabase
       .from("contacts")
-      .select("id, tags, unsubscribed_at")
+      .select("id, tags, unsubscribed_at, client_id")
       .ilike("email", ilikeExact(email))
       .maybeSingle();
+    if (existing?.client_id && clientId && existing.client_id !== clientId) {
+      failed.push({ email, error: "Already a contact of another company in the Hub, so it wasn't moved." });
+      continue;
+    }
     if (existing?.unsubscribed_at) {
       skippedUnsubscribed += 1;
       continue;

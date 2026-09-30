@@ -6,9 +6,18 @@ import {
   startAbAuditVideoCampaign,
 } from "@/lib/campaigns/abAuditVideo7Day";
 import { ensureAnalyticsSocialSchema } from "@/lib/ensureAnalyticsSocialSchema";
+import { workspaceIsDigisol } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+async function houseOnly(supabase: Parameters<typeof workspaceIsDigisol>[0]) {
+  if (await workspaceIsDigisol(supabase)) return null;
+  return NextResponse.json(
+    { error: "This campaign belongs to DigiSol. Switch Working on to DigiSol to manage it." },
+    { status: 403 },
+  );
+}
 
 /**
  * DigiSol Alberta Facebook Group — 7-day / 5-variant audit video campaign.
@@ -19,6 +28,8 @@ export const runtime = "nodejs";
 export async function GET() {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
+  const denied = await houseOnly(supabase);
+  if (denied) return denied;
 
   // Do not block status on schema migration — that was hanging Hub monitoring.
   try {
@@ -35,6 +46,8 @@ export async function GET() {
 export async function POST() {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
+  const denied = await houseOnly(supabase);
+  if (denied) return denied;
 
   await Promise.race([
     ensureAnalyticsSocialSchema({ force: true }).catch(() => null),
@@ -55,6 +68,8 @@ export async function POST() {
 export async function PATCH(request: Request) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
+  const denied = await houseOnly(supabase);
+  if (denied) return denied;
 
   let body: { postId?: string; action?: string };
   try {

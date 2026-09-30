@@ -29,8 +29,9 @@ export default async function CampaignsPage() {
     new Promise((resolve) => setTimeout(resolve, 3000)),
   ]);
   const supabase = await createClient();
-  const active = await getActiveClient(supabase);
-  const workspace = active ?? (await getWorkspaceClient(supabase));
+  // Always a real company (house DigiSol when the cookie is missing), so no query goes unscoped.
+  const active = (await getActiveClient(supabase)) ?? (await getWorkspaceClient(supabase));
+  const workspace = active;
   const isDigisol = (workspace?.name || "").toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase();
   const scopedIds = active ? await contactIdsForClient(supabase, active.id) : null;
   const emptySends = Boolean(active && scopedIds && scopedIds.length === 0);
@@ -327,7 +328,7 @@ export default async function CampaignsPage() {
         </section>
       ) : null}
 
-      <AbAuditVideoCampaignPanel />
+      {isDigisol ? <AbAuditVideoCampaignPanel /> : null}
 
       <AbCampaignBuilder templates={templates} />
 

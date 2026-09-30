@@ -142,6 +142,8 @@ export async function fetchCompanyAnalyticsTool(
   );
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
   const scopedIds = await contactIdsForClient(ctx.supabase, scope.companyId);
+  const isDigisol =
+    scope.companyName.toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase();
 
   const [contacts, unsubscribed, site, leadsResult, email] = await Promise.all([
     ctx.supabase
@@ -168,13 +170,11 @@ export async function fetchCompanyAnalyticsTool(
       .eq("client_id", scope.companyId)
       .order("created_at", { ascending: false })
       .limit(2000),
-    reconcileHubEmailStats(ctx.supabase, scopedIds),
+    reconcileHubEmailStats(ctx.supabase, scopedIds, { accountMetrics: isDigisol }),
   ]);
 
   const website = summarizeSiteEvents(site.data ?? [], scope.domain);
   const pipeline = summarizeLeadPerformance((leadsResult.data ?? []) as LeadRecord[]);
-  const isDigisol =
-    scope.companyName.toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase();
   const [ga4, googleReviews, googleSetup] = await Promise.all([
     isDigisol ? fetchDigisolGa4Summary(days) : Promise.resolve(null),
     reviewsForAgent(ctx.supabase, scope.companyId),

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { FILE_KIND_LABELS, isFileKind, uniqueZipName } from "@/lib/files";
-import { getActiveClient, getActiveClientId } from "@/lib/workspace";
+import { getWorkspaceClient } from "@/lib/workspace";
 import { zipFiles } from "@/lib/zip";
 
 export const dynamic = "force-dynamic";
@@ -11,8 +11,8 @@ export async function GET(request: Request) {
   if (error) return error;
 
   const kind = new URL(request.url).searchParams.get("kind") ?? "";
-  const clientId = await getActiveClientId();
-  const active = await getActiveClient(supabase);
+  const active = await getWorkspaceClient(supabase);
+  const clientId = active?.id || "00000000-0000-0000-0000-000000000000";
 
   let query = supabase
     .from("assets")
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
   }
 
   const zip = zipFiles(entries);
-  const slug = (active?.name || "all-companies")
+  const slug = (active?.name || "files")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");

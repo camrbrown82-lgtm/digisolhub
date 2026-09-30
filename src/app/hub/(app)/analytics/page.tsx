@@ -153,8 +153,8 @@ export default async function AnalyticsPage() {
       siteQuery,
       leadsQuery,
       withTimeout(
-        // DigiSol GA4 is house-level — always pull when credentials exist.
-        gaStatus.ready
+        // The env GA4 property is DigiSol's own site; other companies never see it.
+        isDigisol && gaStatus.ready
           ? fetchDigisolGa4Summary(14)
           : Promise.resolve(emptyGa4),
         7000,
@@ -179,7 +179,7 @@ export default async function AnalyticsPage() {
           )
         : Promise.resolve({ data: null }),
       withTimeout(
-        reconcileHubEmailStats(supabase, scopedIds),
+        reconcileHubEmailStats(supabase, scopedIds, { accountMetrics: isDigisol }),
         6000,
         {
           sends: 0,
@@ -212,8 +212,13 @@ export default async function AnalyticsPage() {
         4000,
         emptyAgent,
       ),
-      withTimeout(fetchMetaAdsSummary(14), 8000, emptyMetaAdsSummary(14)),
-      withTimeout(fetchInstagramInsights(), 8000, emptyInstagramInsights()),
+      // Meta and Instagram tokens are DigiSol's accounts.
+      isDigisol
+        ? withTimeout(fetchMetaAdsSummary(14), 8000, emptyMetaAdsSummary(14))
+        : Promise.resolve(emptyMetaAdsSummary(14)),
+      isDigisol
+        ? withTimeout(fetchInstagramInsights(), 8000, emptyInstagramInsights())
+        : Promise.resolve(emptyInstagramInsights()),
       isDigisol && gaStatus.ready
         ? withTimeout(
             fetchDigisolGa4Demographics(28),
@@ -278,27 +283,43 @@ export default async function AnalyticsPage() {
       </div>
 
       <section className="space-y-4">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-white">
-              DigiSol Google Analytics
-            </h2>
-            <p className="mt-1 text-sm text-zinc-400">
-              Live GA4 numbers for wwwdigisol.com (last 14 days) — on-page SEO,
-              city landers, Dispatch, and CRO traffic in one place.
-            </p>
+        {isDigisol ? (
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-white">
+                DigiSol Google Analytics
+              </h2>
+              <p className="mt-1 text-sm text-zinc-400">
+                Live GA4 numbers for wwwdigisol.com (last 14 days) — on-page SEO,
+                city landers, Dispatch, and CRO traffic in one place.
+              </p>
+            </div>
+            <a
+              href="https://analytics.google.com/"
+              className="text-sm text-indigo-400 hover:text-indigo-300"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open Google Analytics
+            </a>
           </div>
-          <a
-            href="https://analytics.google.com/"
-            className="text-sm text-indigo-400 hover:text-indigo-300"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Open Google Analytics
-          </a>
-        </div>
+        ) : (
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-white">Performance</h2>
+              <p className="mt-1 text-sm text-zinc-400">
+                {active?.name || "This company"}&apos;s numbers for the last 14 days:
+                visits from the Hub tracker, email, leads, and Kaylev. Only this
+                company&apos;s data shows here.
+              </p>
+            </div>
+            <a href="/hub/google" className="text-sm text-indigo-400 hover:text-indigo-300">
+              Google setup
+            </a>
+          </div>
+        )}
 
-        {!gaStatus.ready ? (
+        {!isDigisol ? null : !gaStatus.ready ? (
           <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm text-amber-100/90">
             <p className="font-medium text-amber-50">Connect the GA4 Data API</p>
             <p className="mt-2 text-amber-100/80">
@@ -334,6 +355,7 @@ export default async function AnalyticsPage() {
           </div>
         ) : null}
 
+        {isDigisol ? (
         <GoogleAdsPanel
           days={14}
           configured={gaStatus.ready && !ga4.error}
@@ -359,10 +381,11 @@ export default async function AnalyticsPage() {
                     : null,
           }))}
         />
+        ) : null}
 
         <AnalyticsDashboard
           companyName={active?.name}
-          gaConfigured={gaStatus.ready}
+          gaConfigured={isDigisol && gaStatus.ready}
           gaError={ga4.error}
           traffic={{
             sessions: ga4.sessions,
@@ -404,6 +427,7 @@ export default async function AnalyticsPage() {
           topSources={topSources}
         />
 
+        {isDigisol ? (
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
           <h3 className="text-sm font-semibold text-white">City landers (GA4)</h3>
           <ul className="mt-3 space-y-2 text-sm">
@@ -424,6 +448,7 @@ export default async function AnalyticsPage() {
             )}
           </ul>
         </div>
+        ) : null}
       </section>
 
       {isDigisol ? <DemographicsPanel days={28} data={demographics} /> : null}
@@ -593,8 +618,12 @@ export default async function AnalyticsPage() {
         </div>
       </section>
 
-      <MetaAdsPanel summary={metaAds} />
-      <InstagramInsightsPanel summary={instagram} />
+      {isDigisol ? (
+        <>
+          <MetaAdsPanel summary={metaAds} />
+          <InstagramInsightsPanel summary={instagram} />
+        </>
+      ) : null}
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-white">Lead pipeline</h2>

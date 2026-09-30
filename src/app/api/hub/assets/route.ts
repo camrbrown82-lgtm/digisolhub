@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { inferFileKind, isFileKind, MAX_FILE_BYTES, MAX_FILE_MB } from "@/lib/files";
-import { getActiveClientId } from "@/lib/workspace";
+import { resolveClientId } from "@/lib/workspace";
 
 const BUCKETS = ["assets", "email-images", "ai-posters"] as const;
 
@@ -49,7 +49,7 @@ async function registerAsset(
       kind,
       byte_size: input.file.size,
       notes: input.notes?.trim() || null,
-      client_id: (await getActiveClientId()) || null,
+      client_id: (await resolveClientId(supabase)) || null,
     })
     .select("*")
     .single();
@@ -62,7 +62,7 @@ export async function GET() {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
-  const clientId = await getActiveClientId();
+  const clientId = await resolveClientId(supabase);
   let query = supabase.from("assets").select("*").order("created_at", { ascending: false });
   if (clientId) query = query.eq("client_id", clientId);
   const { data, error: queryError } = await query;
@@ -106,7 +106,7 @@ export async function POST(request: Request) {
         kind,
         byte_size: body.byte_size ?? null,
         notes: body.notes?.trim() || null,
-        client_id: (await getActiveClientId()) || null,
+        client_id: (await resolveClientId(supabase)) || null,
       })
       .select("*")
       .single();

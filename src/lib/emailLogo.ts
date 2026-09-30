@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
 import { getOutboundSiteUrl, getSiteUrl } from "@/lib/supabase/env";
 
 export const EMAIL_LOGO_NOTE = "email-logo";
@@ -48,6 +49,22 @@ export async function getEmailLogoAsset(
   return null;
 }
 
+/** The site logo on disk is DigiSol's, so only the house company (or legacy rows with no company) may fall back to it. */
+async function companyLogoFallback(supabase: SupabaseClient, clientId?: string | null) {
+  if (!clientId) return { isHouse: true, brandLogoUrl: "" };
+  const { data } = await supabase
+    .from("clients")
+    .select("name, branding")
+    .eq("id", clientId)
+    .maybeSingle();
+  const brandLogoUrl = String((data?.branding as { logoUrl?: string } | null)?.logoUrl || "").trim();
+  return {
+    isHouse: (data?.name || "").trim().toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase(),
+    brandLogoUrl: brandLogoUrl.includes("localhost") ? "" : brandLogoUrl,
+  };
+}
+
+/** Empty string when the company has no logo; emails then show the company name instead. */
 export async function getEmailLogoUrl(
   supabase: SupabaseClient,
   clientId?: string | null,
@@ -56,7 +73,9 @@ export async function getEmailLogoUrl(
   if (asset?.public_url && !asset.public_url.includes("localhost")) {
     return asset.public_url;
   }
-  return publicEmailLogoUrl();
+  const fallback = await companyLogoFallback(supabase, clientId);
+  if (fallback.brandLogoUrl) return fallback.brandLogoUrl;
+  return fallback.isHouse ? publicEmailLogoUrl() : "";
 }
 
 export function readSiteLogoFile(): EmailLogoFile | null {
@@ -83,20 +102,32 @@ export async function resolveEmailLogoFile(
   clientId?: string | null,
 ): Promise<EmailLogoFile | null> {
   const asset = await getEmailLogoAsset(supabase, clientId);
-  if (asset?.public_url) {
-    try {
-      const response = await fetch(asset.public_url);
-      if (response.ok) {
-        const mime = response.headers.get("content-type") || "image/png";
-        return {
-          buffer: Buffer.from(await response.arrayBuffer()),
-          filename: asset.path.split("/").pop() || "logo.png",
-          contentType: mime.split(";")[0] || "image/png",
-        };
-      }
-    } catch {
-      // Fall back to the site logo on disk.
-    }
+  const fromAsset = asset?.public_url
+    ? await fetchLogoFile(asset.public_url, asset.path.split("/").pop() || "logo.png")
+    : null;
+  if (fromAsset) return fromAsset;
+  const fallback = await companyLogoFallback(supabase, clientId);
+  if (fallback.brandLogoUrl) {
+    const fromBrand = await fetchLogoFile(
+      fallback.brandLogoUrl,
+      fallback.brandLogoUrl.split("/").pop()?.split("?")[0] || "logo.png",
+    );
+    if (fromBrand) return fromBrand;
   }
-  return readSiteLogoFile();
+  return fallback.isHouse ? readSiteLogoFile() : null;
+}
+
+async function fetchLogoFile(url: string, filename: string): Promise<EmailLogoFile | null> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const mime = response.headers.get("content-type") || "image/png";
+    return {
+      buffer: Buffer.from(await response.arrayBuffer()),
+      filename,
+      contentType: mime.split(";")[0] || "image/png",
+    };
+  } catch {
+    return null;
+  }
 }

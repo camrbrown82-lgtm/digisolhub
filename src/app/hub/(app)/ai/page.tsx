@@ -7,8 +7,7 @@ import { brandFromClient } from "@/lib/branding";
 import { listPosterAssets } from "@/lib/posterArchive";
 import { groupPosterSeries, socialPackFromAsset } from "@/lib/posterSocial";
 import { createClient } from "@/lib/supabase/server";
-import { getOutboundSiteUrl } from "@/lib/supabase/env";
-import { getActiveClient, getWorkspaceClient } from "@/lib/workspace";
+import { companySiteUrl, getActiveClient, getWorkspaceClient } from "@/lib/workspace";
 
 export default async function AiPage() {
   const supabase = await createClient();
@@ -20,7 +19,7 @@ export default async function AiPage() {
     clientId: selected?.id || brandSource?.id,
     archived: false,
   });
-  const siteUrl = getOutboundSiteUrl();
+  const siteUrl = companySiteUrl(brandSource);
   const groups = groupPosterSeries(posters);
 
   return (

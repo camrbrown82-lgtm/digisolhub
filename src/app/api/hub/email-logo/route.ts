@@ -2,22 +2,20 @@ import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import {
   EMAIL_LOGO_NOTE,
-  defaultEmailLogoUrl,
   getEmailLogoAsset,
+  getEmailLogoUrl,
 } from "@/lib/emailLogo";
 import { persistClientLogo } from "@/lib/brandLogo";
-import { getActiveClientId } from "@/lib/workspace";
+import { resolveClientId } from "@/lib/workspace";
 
-export async function GET(request: Request) {
+export async function GET() {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
-  const clientId = await getActiveClientId();
-  const asset = await getEmailLogoAsset(supabase, clientId || null);
-  if (asset?.public_url) {
-    return NextResponse.redirect(asset.public_url);
-  }
-  return NextResponse.redirect(new URL("/logo.jpg", request.url));
+  const clientId = await resolveClientId(supabase);
+  const url = await getEmailLogoUrl(supabase, clientId || null);
+  if (url) return NextResponse.redirect(url);
+  return NextResponse.json({ error: "This company has no logo yet" }, { status: 404 });
 }
 
 export async function POST(request: Request) {
@@ -33,7 +31,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Upload a PNG, JPEG, or similar image" }, { status: 400 });
   }
 
-  const clientId = (await getActiveClientId()) || null;
+  const clientId = (await resolveClientId(supabase)) || null;
   const ext = file.name.split(".").pop() || "png";
   const path = `logos/${clientId || "shared"}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -87,10 +85,10 @@ export async function DELETE() {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
-  const clientId = (await getActiveClientId()) || null;
+  const clientId = (await resolveClientId(supabase)) || null;
   const asset = await getEmailLogoAsset(supabase, clientId);
   if (asset?.id) {
     await supabase.from("assets").delete().eq("id", asset.id);
   }
-  return NextResponse.json({ ok: true, url: defaultEmailLogoUrl() });
+  return NextResponse.json({ ok: true, url: await getEmailLogoUrl(supabase, clientId) });
 }

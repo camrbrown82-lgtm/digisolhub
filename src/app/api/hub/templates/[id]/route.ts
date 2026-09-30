@@ -8,14 +8,19 @@ export async function GET(_request: Request, { params }: Params) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
+  const clientId = await resolveClientId(supabase);
   const { data, error: queryError } = await supabase
     .from("email_templates")
     .select("*")
     .eq("id", params.id)
-    .single();
+    .or(clientId ? `client_id.eq.${clientId},client_id.is.null` : "client_id.is.null")
+    .maybeSingle();
 
-  if (queryError) {
-    return NextResponse.json({ error: queryError.message }, { status: 404 });
+  if (queryError || !data) {
+    return NextResponse.json(
+      { error: queryError?.message || "Template not found for this company" },
+      { status: 404 },
+    );
   }
   return NextResponse.json({ template: data });
 }
@@ -46,28 +51,33 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   const clientId = await resolveClientId(supabase);
-  let query = supabase.from("email_templates").update(patch).eq("id", params.id);
-  if (clientId) query = query.eq("client_id", clientId);
+  if (!clientId) {
+    return NextResponse.json({ error: "Pick a company under Working on first." }, { status: 400 });
+  }
 
-  const { data, error: updateError } = await query.select("id").maybeSingle();
+  const { data, error: updateError } = await supabase
+    .from("email_templates")
+    .update(patch)
+    .eq("id", params.id)
+    .eq("client_id", clientId)
+    .select("id")
+    .maybeSingle();
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 400 });
   }
   if (!data?.id) {
-    // Template may belong to another/missing company — re-home to Working on.
-    const { data: moved, error: moveError } = await supabase
+    // Legacy templates saved before companies existed can be claimed; another company's can't.
+    const { data: claimed, error: claimError } = await supabase
       .from("email_templates")
-      .update({ ...patch, client_id: clientId || null })
+      .update({ ...patch, client_id: clientId })
       .eq("id", params.id)
+      .is("client_id", null)
       .select("id")
       .maybeSingle();
-    if (moveError || !moved?.id) {
+    if (claimError || !claimed?.id) {
       return NextResponse.json(
-        {
-          error:
-            "Could not save this template for the current company. Pick DigiSol under Working on, then try Save again.",
-        },
+        { error: "This template belongs to another company. Switch Working on to that company to edit it." },
         { status: 404 },
       );
     }
@@ -80,13 +90,19 @@ export async function DELETE(_request: Request, { params }: Params) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
-  const { error: deleteError } = await supabase
+  const clientId = await resolveClientId(supabase);
+  const { data, error: deleteError } = await supabase
     .from("email_templates")
     .delete()
-    .eq("id", params.id);
+    .eq("id", params.id)
+    .eq("client_id", clientId)
+    .select("id");
 
   if (deleteError) {
     return NextResponse.json({ error: deleteError.message }, { status: 400 });
+  }
+  if (!data?.length) {
+    return NextResponse.json({ error: "Template not found for this company" }, { status: 404 });
   }
   return NextResponse.json({ ok: true });
 }

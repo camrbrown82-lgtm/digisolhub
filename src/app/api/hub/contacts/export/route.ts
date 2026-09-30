@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { CONTACT_CSV_COLUMNS, toCsv } from "@/lib/csv";
 import { ensureCampaignChannelSchema } from "@/lib/ensureCampaignChannelSchema";
-import { getActiveClient, getActiveClientId } from "@/lib/workspace";
+import { getWorkspaceClient } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +13,8 @@ export async function GET(request: Request) {
   await ensureCampaignChannelSchema().catch(() => null);
 
   const template = new URL(request.url).searchParams.get("template") === "1";
-  const clientId = await getActiveClientId();
-  const active = await getActiveClient(supabase);
+  const active = await getWorkspaceClient(supabase);
+  const clientId = active?.id || "00000000-0000-0000-0000-000000000000";
 
   let rows: Record<string, string>[] = [];
   if (!template) {
@@ -66,7 +66,7 @@ export async function GET(request: Request) {
   }
 
   const csv = toCsv(rows, [...CONTACT_CSV_COLUMNS]);
-  const slug = (active?.name || "all-companies")
+  const slug = (active?.name || "contacts")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");

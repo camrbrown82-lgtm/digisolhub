@@ -5,7 +5,7 @@ import { FileImporter } from "@/components/hub/FileImporter";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { FILE_KIND_LABELS, isFileKind, type FileKind } from "@/lib/files";
 import { createClient } from "@/lib/supabase/server";
-import { getActiveClient } from "@/lib/workspace";
+import { getWorkspaceClient } from "@/lib/workspace";
 
 const FILTERS = [
   { href: "/hub/assets", label: "All files", kind: "" },
@@ -28,7 +28,7 @@ export default async function AssetsPage({
   searchParams?: { kind?: string };
 }) {
   const supabase = await createClient();
-  const active = await getActiveClient(supabase);
+  const active = await getWorkspaceClient(supabase);
   const kind = searchParams?.kind ?? "";
   let query = supabase.from("assets").select("*").order("created_at", { ascending: false });
   if (active) query = query.eq("client_id", active.id);

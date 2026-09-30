@@ -274,7 +274,7 @@ export function createDigisolAgentTools(ctx: DigisolAgentContext) {
                   .order("created_at", { ascending: false })
                   .limit(500),
                 fetchDigisolGa4Summary(days),
-                reconcileHubEmailStats(ctx.supabase, scopedIds),
+                reconcileHubEmailStats(ctx.supabase, scopedIds, { accountMetrics: true }),
                 reviewsForAgent(ctx.supabase, ctx.clientId),
                 googleSetupForAgent(ctx.supabase, ctx.clientId),
               ]);

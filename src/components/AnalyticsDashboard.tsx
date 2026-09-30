@@ -268,14 +268,14 @@ export function AnalyticsDashboard({
         <h2 className="text-lg font-semibold text-white">Performance dashboard</h2>
         <p className="mt-1 text-sm text-zinc-400">
           Color-coded traffic, conversion health, and weak points
-          {companyName ? ` for ${companyName}` : ""} — GA4 + DigiSol Hub + agent
-          telemetry.
+          {companyName ? ` for ${companyName}` : ""} —{" "}
+          {gaConfigured ? "GA4, Hub site tracking, and agent telemetry." : "Hub site tracking and agent telemetry."}
         </p>
       </div>
 
       {gaError ? (
         <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-100">
-          GA4 error: {gaError}. Showing first-party DigiSol Hub signals where available.
+          GA4 error: {gaError}. Showing first-party Hub signals where available.
         </div>
       ) : null}
 

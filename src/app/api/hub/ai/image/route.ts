@@ -23,8 +23,7 @@ import {
 import { posterSlidesToPdf } from "@/lib/posterPdf";
 import { posterSocialPack } from "@/lib/posterSocial";
 import { stampOfficialLogo } from "@/lib/stampLogo";
-import { getOutboundSiteUrl } from "@/lib/supabase/env";
-import { getWorkspaceClient } from "@/lib/workspace";
+import { companySiteUrl, getWorkspaceClient } from "@/lib/workspace";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -121,7 +120,7 @@ export async function POST(request: Request) {
   try {
     const client = await getWorkspaceClient(supabase);
     const { companyName, brand } = brandFromClient(client);
-    const siteUrl = getOutboundSiteUrl();
+    const siteUrl = companySiteUrl(client);
     const parsed = parsePosterSlides(prompt);
     const slides: PosterSlide[] = parsed.slides.map((slide) =>
       withHouseCtaDetails(slide, companyName, siteUrl),

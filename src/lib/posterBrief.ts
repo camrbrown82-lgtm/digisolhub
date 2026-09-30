@@ -143,8 +143,9 @@ export function withHouseCtaDetails(slide: PosterSlide, companyName: string, sit
   if (house && !blob.includes("airdrie")) {
     extras.push(`${DIGISOL_CITY}, AB`);
   }
-  if (!/wwwdigisol\.com|https?:\/\//i.test(blob)) {
-    extras.push(siteUrl || DIGISOL_SITE_URL);
+  const url = siteUrl || (house ? DIGISOL_SITE_URL : "");
+  if (url && !/https?:\/\/|www\./i.test(blob)) {
+    extras.push(url);
   }
   if (!extras.length) return slide;
   return {

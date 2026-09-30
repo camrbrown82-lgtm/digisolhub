@@ -6,19 +6,18 @@ import {
   sanitizeWorkflowGraph,
   type WorkflowTrigger,
 } from "@/lib/workflowGraph";
-import { getActiveClientId } from "@/lib/workspace";
+import { resolveClientId } from "@/lib/workspace";
 
 export async function GET() {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
 
-  const clientId = await getActiveClientId();
-  let query = supabase
+  const clientId = await resolveClientId(supabase);
+  const { data, error: queryError } = await supabase
     .from("workflows")
     .select("*")
+    .eq("client_id", clientId)
     .order("updated_at", { ascending: false });
-  if (clientId) query = query.eq("client_id", clientId);
-  const { data, error: queryError } = await query;
 
   if (queryError) {
     return NextResponse.json({ error: queryError.message }, { status: 400 });
@@ -51,7 +50,7 @@ export async function POST(request: Request) {
       trigger,
       graph,
       enabled: Boolean(body.enabled),
-      client_id: (await getActiveClientId()) || null,
+      client_id: (await resolveClientId(supabase)) || null,
     })
     .select("id")
     .single();

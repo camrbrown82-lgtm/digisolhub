@@ -10,12 +10,16 @@ import { instagramInsightsConfigured } from "@/lib/meta/instagramInsights";
 import { metaPixelConfigured } from "@/lib/metaPixel";
 import { adsApiReady } from "@/lib/google/adsApi";
 import { serviceAccountReady } from "@/lib/google/auth";
+import { createClient } from "@/lib/supabase/server";
+import { getWorkspaceClient, isDigisolClient } from "@/lib/workspace";
 
 function status(ok: boolean) {
   return ok ? "Configured" : "Missing";
 }
 
-export default function IntegrationsPage() {
+export default async function IntegrationsPage() {
+  const workspace = await getWorkspaceClient(await createClient());
+  const isDigisol = isDigisolClient(workspace);
   const from = parseFromAddress(
     process.env.RESEND_FROM || process.env.RESEND_FROM_EMAIL || "",
   );
@@ -117,7 +121,8 @@ export default function IntegrationsPage() {
         <h1 className="text-3xl font-semibold text-white">Integrations</h1>
         <p className="mt-1 text-sm text-zinc-400">
           API keys stay in Vercel / .env.local. This page only shows whether each
-          connector is present — never the secret itself.
+          connector is present — never the secret itself. These are the Hub&apos;s
+          platform connections, shared by every company.
         </p>
       </div>
       <ul className="divide-y divide-zinc-800 rounded-2xl border border-zinc-800">
@@ -130,6 +135,16 @@ export default function IntegrationsPage() {
           </li>
         ))}
       </ul>
+      {!isDigisol ? (
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 text-sm text-zinc-400">
+          <p>
+            DigiSol&apos;s own setup notes (Dispatch, its Google Ads and GA4 property, Meta, and
+            DNS) show when Working on is DigiSol. For {workspace?.name || "this company"}, connect
+            Google under <a href="/hub/google" className="text-indigo-300 hover:underline">Google setup</a>{" "}
+            and install the visitor tracker from Analytics.
+          </p>
+        </div>
+      ) : (
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 text-sm text-zinc-400">
         <p>
           Point Web3Forms (or any form webhook) at{" "}
@@ -225,6 +240,7 @@ export default function IntegrationsPage() {
           <code className="text-zinc-200">OPENAI_IMAGE_MODEL=dall-e-3</code>.
         </p>
       </div>
+      )}
     </div>
   );
 }

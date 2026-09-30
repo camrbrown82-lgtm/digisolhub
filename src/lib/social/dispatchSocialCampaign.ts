@@ -14,6 +14,7 @@ import {
   publishSocialPost,
   socialProviderConfigured,
 } from "@/lib/social/providers";
+import { ensureDigisolClient } from "@/lib/workspace";
 
 export type SocialAbCopy = {
   bodyA: string;
@@ -167,7 +168,7 @@ export async function draftSocialAbVariants(input: {
     messages: [
       {
         role: "system",
-        content: `You write short DigiSol social posts for ${input.channel}.
+        content: `You write short social posts for ${input.channel}, in the voice of the brand kit below.
 ${input.brandPrompt ? `Brand kit:\n${input.brandPrompt}\n` : ""}
 Return JSON only:
 {
@@ -204,15 +205,12 @@ Write two meaningfully different variants.`,
 }
 
 function fallbackBody(
-  channel: SocialCampaignChannel,
+  _channel: SocialCampaignChannel,
   goal: string,
   variant: "A" | "B",
 ) {
-  const angle =
-    variant === "A"
-      ? "Clear next step for your website and marketing."
-      : "A small conversion fix can change how leads find you.";
-  return `DigiSol · ${channel}\n\n${goal}\n\n${angle}\n\nWant a free site check? Reply or visit wwwdigisol.com`;
+  const angle = variant === "A" ? "Take a look and tell us what you think." : "Reply or send us a message to learn more.";
+  return `${goal}\n\n${angle}`;
 }
 
 /**
@@ -255,7 +253,20 @@ export async function processSocialPostQueue(
     error?: string;
   }> = [];
 
+  // Provider tokens are DigiSol's own pages; other companies' posts wait until they connect accounts.
+  const houseId = await ensureDigisolClient(db);
+
   for (const row of rows ?? []) {
+    if (row.client_id !== houseId) {
+      results.push({
+        id: row.id,
+        channel: row.channel,
+        ok: false,
+        skipped: true,
+        error: "This company has no connected social account yet — post it manually.",
+      });
+      continue;
+    }
     if (!isSocialCampaignChannel(row.channel)) {
       results.push({
         id: row.id,

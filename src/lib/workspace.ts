@@ -7,6 +7,7 @@ import {
   isBrandEmpty,
   starterBrandForCompany,
 } from "@/lib/branding";
+import { getOutboundSiteUrl } from "@/lib/supabase/env";
 
 export const HUB_CLIENT_COOKIE = "hub_client_id";
 
@@ -118,6 +119,23 @@ export async function getWorkspaceClient(supabase: SupabaseClient) {
   if (active) return active;
   // Stale Working-on cookie (deleted company) → house DigiSol workspace.
   return getDigisolClient(supabase);
+}
+
+export function isDigisolClient(client: { name?: string | null } | null | undefined) {
+  return (client?.name || "").trim().toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase();
+}
+
+/** Public site for a company's copy and posters: DigiSol's own site for the house, otherwise the company domain (or ""). */
+export function companySiteUrl(client: { name?: string | null; domain?: string | null } | null | undefined) {
+  if (isDigisolClient(client)) return getOutboundSiteUrl();
+  const domain = (client?.domain || "").trim().replace(/\/$/, "");
+  if (!domain) return "";
+  return domain.startsWith("http") ? domain : `https://${domain}`;
+}
+
+/** DigiSol-only features (house GA4, Meta, Dispatch, prospect queue) check this before running. */
+export async function workspaceIsDigisol(supabase: SupabaseClient) {
+  return isDigisolClient(await getWorkspaceClient(supabase));
 }
 
 export async function contactIdsForClient(

@@ -4,7 +4,7 @@ import { brandFromClient, type CompanyBrand, DIGISOL_BRAND } from "@/lib/brandin
 import { buildEmailHtml, htmlToText } from "@/lib/emailHtml";
 import {
   EMAIL_LOGO_CID,
-  publicEmailLogoUrl,
+  getEmailLogoUrl,
   resolveEmailLogoFile,
 } from "@/lib/emailLogo";
 import { mergeVarsFromBrand, renderMergeFields } from "@/lib/emailTemplates";
@@ -188,7 +188,7 @@ export async function sendEmailToContact(input: SendEmailInput) {
     ? `cid:${EMAIL_LOGO_CID}`
     : input.logoSrc && !input.logoSrc.includes("localhost")
       ? input.logoSrc
-      : publicEmailLogoUrl();
+      : await getEmailLogoUrl(db, clientId);
   const branded = buildEmailHtml(mergedBody, {
     logoSrc,
     companyName,
