@@ -14,7 +14,13 @@ import { getWorkspaceClient, resolveClientId } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
 
-type Inputs = { url: string; industry: string; location: string; competitorUrls: string[] };
+type Inputs = {
+  url: string;
+  industry: string;
+  location: string;
+  competitorUrls: string[];
+  companyName?: string;
+};
 
 type AnalysisRow = {
   id: string;
@@ -75,8 +81,8 @@ export default async function CompetitivePage({
           <h1 className="text-3xl font-semibold text-white">Competitive analysis</h1>
           <WorkspaceScope companyName={active?.name} noun="analyses" />
           <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-            Each analysis belongs to the company you&apos;re working on. Switch Working on to
-            analyse another client or DigiSol itself.
+            The website you enter is the company being analyzed. DigiSol stays the agency
+            writing the report, even when Working on is DigiSol.
           </p>
         </div>
         {selected?.result ? <PrintButton label="Print / save PDF" /> : null}
@@ -129,7 +135,11 @@ export default async function CompetitivePage({
 
       {selected?.result ? (
         <CompetitiveReport
-          companyName={companyName}
+          companyName={
+            (selected.inputs as Inputs).companyName ||
+            ((selected.sources ?? {}) as { company?: SiteSnapshot }).company?.name ||
+            companyName
+          }
           report={selected.result as Report}
           inputs={selected.inputs as Inputs}
           sources={

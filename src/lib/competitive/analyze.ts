@@ -45,6 +45,42 @@ export function toSiteUrl(raw: string) {
   return normalizeProspectUrl(value.startsWith("http") ? value : `https://${value}`);
 }
 
+/** True when two websites are the same host, ignoring www. */
+export function hostsMatch(a: string, b: string) {
+  if (!a.trim() || !b.trim()) return false;
+  const left = prospectHostKey(a.includes("://") ? a : `https://${a}`);
+  const right = prospectHostKey(b.includes("://") ? b : `https://${b}`);
+  return Boolean(left && right && left === right);
+}
+
+/**
+ * Name of the business whose site was crawled. Used when that site is not the
+ * Working-on company, so a DealFinder run is not written up as DigiSol.
+ */
+export function businessNameFromSite(snapshot: {
+  title: string | null;
+  h1: string | null;
+  url: string;
+}) {
+  const clean = (value: string) =>
+    value
+      .split(/\s+[|–—]\s+|\s+-\s+/)[0]
+      .replace(/^(home|welcome)\s+/i, "")
+      .replace(/\s+(home|homepage|welcome)$/i, "")
+      .trim();
+  for (const raw of [snapshot.title, snapshot.h1]) {
+    const name = raw ? clean(raw) : "";
+    if (name.length >= 2 && name.length <= 80 && !/^home$/i.test(name)) return name;
+  }
+  try {
+    const host = new URL(snapshot.url).hostname.replace(/^www\./i, "");
+    const label = host.split(".")[0] || host;
+    return label.replace(/[-_]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+  } catch {
+    return "This company";
+  }
+}
+
 function isDirectoryHost(host: string) {
   return BLOCKED_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`));
 }
@@ -290,7 +326,10 @@ export async function synthesizeReport(input: {
     temperature: 0,
     maxOutputTokens: 9000,
     output: Output.object({ schema: competitiveReportSchema }),
-    prompt: `You are Kaylev, DigiSol's growth analyst. Write a comprehensive competitive analysis for ${input.companyName}, a ${input.inputs.industry} business serving ${input.inputs.location}.
+    prompt: `You are Kaylev, writing a competitive analysis for one client company. DigiSol is the agency preparing the report. DigiSol is not the company being analyzed.
+
+SUBJECT: ${input.companyName} (${input.company.url}), a ${input.inputs.industry} business serving ${input.inputs.location}.
+Write every summary, score explanation, SWOT point, keyword, and action about ${input.companyName} and the competitor sites below. Do not describe DigiSol's services, website, location, stack, or offers as if they belong to ${input.companyName}. Ignore anything you know about DigiSol as a business.
 
 Use only the data below. Be specific and evidence-based: cite scores, ratings, review counts, titles, and what each site actually says. Where data is "unknown", say so and add it to dataGaps rather than inventing it.
 

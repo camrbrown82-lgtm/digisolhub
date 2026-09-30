@@ -103,9 +103,9 @@ export function CompetitiveRunForm({ companyName, defaults, activeRunId, activeS
         <div>
           <h2 className="text-lg font-semibold text-white">Run a competitive analysis</h2>
           <p className="mt-1 max-w-2xl text-sm text-zinc-400">
-            Kaylev finds {companyName}&apos;s top local competitors (or uses the ones you list),
-            audits every website, checks Google reviews, listings and social presence, then
-            scores each area and writes a prioritized action plan. Takes 2 to 4 minutes.
+            Kaylev analyzes the website below, finds its competitors (or uses the ones you
+            list), checks Google reviews, listings and social presence, then writes the
+            action plan for that business. Saved under {companyName}. Takes 2 to 4 minutes.
           </p>
         </div>
       </div>

@@ -508,6 +508,8 @@ export const runCompetitiveAnalysis = inngest.createFunction(
       snapshotSite,
       synthesizeReport,
       toSiteUrl,
+      businessNameFromSite,
+      hostsMatch,
       COMPETITIVE_REPORT_MODEL,
     } = await import("@/lib/competitive/analyze");
     const admin = createAdminClient();
@@ -520,15 +522,19 @@ export const runCompetitiveAnalysis = inngest.createFunction(
     const row = await step.run("load", async () => {
       const { data } = await admin
         .from("competitive_analyses")
-        .select("id, client_id, inputs, clients(name)")
+        .select("id, client_id, inputs, clients(name, domain)")
         .eq("id", analysisId)
         .single();
       await setStage("Reading the website");
-      const client = data?.clients as { name?: string } | { name?: string }[] | null;
-      const name = (Array.isArray(client) ? client[0]?.name : client?.name) || "This company";
+      const client = data?.clients as
+        | { name?: string; domain?: string | null }
+        | { name?: string; domain?: string | null }[]
+        | null;
+      const clientRow = Array.isArray(client) ? client[0] : client;
       return {
         clientId: (data?.client_id as string | null) ?? null,
-        companyName: name,
+        clientName: clientRow?.name || "This company",
+        clientDomain: clientRow?.domain || "",
         inputs: (data?.inputs ?? {}) as {
           url: string;
           industry: string;
@@ -538,13 +544,19 @@ export const runCompetitiveAnalysis = inngest.createFunction(
       };
     });
 
-    const company = await step.run("snapshot-company", () =>
-      snapshotSite(row.companyName, row.inputs.url, "full"),
+    const crawled = await step.run("snapshot-company", () =>
+      snapshotSite(row.clientName, row.inputs.url, "full"),
     );
+    // The website in the form is the subject. Working-on DigiSol must not
+    // rename a different business, such as DealFinder Auctions, to DigiSol.
+    const companyName = hostsMatch(crawled.url || row.inputs.url, row.clientDomain)
+      ? row.clientName
+      : businessNameFromSite(crawled);
+    const company = { ...crawled, name: companyName };
 
     const profile = await step.run("profile", async () => {
       const p = await inferProfile({
-        companyName: row.companyName,
+        companyName,
         snapshot: company,
         industry: row.inputs.industry,
         location: row.inputs.location,
@@ -565,7 +577,7 @@ export const runCompetitiveAnalysis = inngest.createFunction(
         };
       }
       return findCompetitors({
-        companyName: row.companyName,
+        companyName,
         companyUrl: company.url,
         industry: inputs.industry,
         location: inputs.location,
@@ -603,6 +615,10 @@ export const runCompetitiveAnalysis = inngest.createFunction(
             .limit(1)
             .maybeSingle()
         : { data: null };
+      const prevInputs = (prev?.inputs ?? {}) as { url?: string };
+      const sameSubject = Boolean(
+        prevInputs.url && hostsMatch(prevInputs.url, company.url),
+      );
       const prevSources = (prev?.sources ?? {}) as { company?: typeof company; presence?: Presence[] };
 
       // A web search that misses the company's Google rating shouldn't read as losing it.
@@ -634,7 +650,7 @@ export const runCompetitiveAnalysis = inngest.createFunction(
         location: inputs.location,
       });
       let changes = null;
-      if (prev && prevSources.company) {
+      if (sameSubject && prev && prevSources.company) {
         // Re-score the old run with today's checklist and location so the comparison is like for like.
         const before = buildScorecard({
           company: prevSources.company,
@@ -653,7 +669,7 @@ export const runCompetitiveAnalysis = inngest.createFunction(
     const report = await step.run("report", async () => {
       await setStage("Writing the analysis and action plan");
       return synthesizeReport({
-        companyName: row.companyName,
+        companyName,
         inputs,
         company,
         competitors,
@@ -674,7 +690,7 @@ export const runCompetitiveAnalysis = inngest.createFunction(
         .update({
           status: "completed",
           stage: null,
-          inputs,
+          inputs: { ...inputs, companyName },
           result: report.report,
           sources: {
             company,
