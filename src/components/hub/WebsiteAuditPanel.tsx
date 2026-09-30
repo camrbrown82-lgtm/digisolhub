@@ -1,7 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { AwardEmbedCode } from "@/components/AwardEmbedCode";
+import WebsiteAwardBadge from "@/components/WebsiteAwardBadge";
 import { MicDictateButton, appendDictation } from "@/components/hub/MicDictateButton";
+import {
+  AWARD_MIN_SCORE,
+  auditIsOwnSite,
+  awardDate,
+  awardEligible,
+  awardEmbedHtml,
+  awardLinks,
+} from "@/lib/websiteAward";
 
 type ReportItem = {
   kind: "strength" | "weakness";
@@ -26,14 +36,115 @@ type AuditRow = {
   created_at?: string;
 };
 
+function AwardSection({
+  audit,
+  companyName,
+  domain,
+  awardBaseUrl,
+}: {
+  audit: AuditRow;
+  companyName: string;
+  domain?: string | null;
+  awardBaseUrl: string;
+}) {
+  const [to, setTo] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sendNote, setSendNote] = useState("");
+  if (!audit.id || !awardEligible(audit, domain)) {
+    return (
+      <p className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-3 text-sm text-zinc-400">
+        {audit.score >= AWARD_MIN_SCORE && !auditIsOwnSite(audit, domain)
+          ? `This audit isn't of ${companyName}'s own website${domain ? ` (${domain})` : ""}, so it can't earn the DigiSol Excellence Award.`
+          : `A score of ${AWARD_MIN_SCORE}+ on ${companyName}'s own website earns the DigiSol Excellence Award, a badge they can put on their site.`}
+      </p>
+    );
+  }
+  const links = awardLinks(awardBaseUrl, audit.id);
+  const embed = awardEmbedHtml(awardBaseUrl, audit.id, companyName, audit.score);
+  const date = awardDate(audit.created_at || new Date().toISOString());
+
+  async function sendAward() {
+    setSending(true);
+    setSendNote("");
+    try {
+      const res = await fetch("/api/hub/website-audit/award-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ auditId: audit.id, to: to.trim() }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(json.error || "Could not send the award email.");
+      setSendNote(`Sent to ${to.trim()}.`);
+      setTo("");
+    } catch (err) {
+      setSendNote(err instanceof Error ? err.message : "Could not send the award email.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-amber-400/30 bg-amber-400/5 p-5">
+      <h3 className="text-sm font-semibold text-amber-200">DigiSol Excellence Award earned</h3>
+      <p className="mt-1 text-sm text-zinc-400">
+        {companyName} scored {audit.score}/100. Paste the embed code on their website. The badge links to a public
+        verify page and switches to &quot;Not current&quot; if a later audit of the site drops below {AWARD_MIN_SCORE}.
+      </p>
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <WebsiteAwardBadge companyName={companyName} score={audit.score} date={date} verifyUrl={links.verify} />
+        <div className="space-y-4">
+          <div>
+            <p className="mb-2 text-xs text-zinc-500">Embed code</p>
+            <AwardEmbedCode embed={embed} />
+            <a
+              href={links.verify}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-block text-sm text-indigo-300 hover:text-indigo-200"
+            >
+              Open verify page
+            </a>
+          </div>
+          <div className="border-t border-zinc-800 pt-4">
+            <p className="text-xs text-zinc-500">
+              Email the award from DigiSol. It asks them to add the badge, then separately asks for a quick Google
+              review, and says the award is theirs either way.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <input
+                type="email"
+                value={to}
+                onChange={(event) => setTo(event.target.value)}
+                placeholder="owner@company.com"
+                className="hub-field min-w-[12rem] flex-1 text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => void sendAward()}
+                disabled={sending || !to.trim()}
+                className="rounded-xl bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-400 disabled:opacity-50"
+              >
+                {sending ? "Sending…" : "Email the award"}
+              </button>
+            </div>
+            {sendNote ? <p className="mt-2 text-xs text-zinc-400">{sendNote}</p> : null}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function WebsiteAuditPanel({
   companyName,
   domain,
   initialAudit,
+  awardBaseUrl,
 }: {
   companyName?: string | null;
   domain?: string | null;
   initialAudit?: AuditRow | null;
+  awardBaseUrl: string;
 }) {
   const [audit, setAudit] = useState<AuditRow | null>(initialAudit ?? null);
   const [url, setUrl] = useState(
@@ -145,6 +256,13 @@ export function WebsiteAuditPanel({
           </div>
 
           <p className="text-sm text-zinc-400">{report?.summary}</p>
+
+          <AwardSection
+            audit={audit}
+            companyName={companyName || "This company"}
+            domain={domain}
+            awardBaseUrl={awardBaseUrl}
+          />
 
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">

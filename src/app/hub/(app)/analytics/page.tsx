@@ -6,6 +6,7 @@ import { GoogleReviewsPanel } from "@/components/hub/GoogleReviewsPanel";
 import { MetaAdsPanel } from "@/components/hub/MetaAdsPanel";
 import { InstagramInsightsPanel } from "@/components/hub/InstagramInsightsPanel";
 import { WebsiteAuditPanel } from "@/components/hub/WebsiteAuditPanel";
+import { getOutboundSiteUrl } from "@/lib/supabase/env";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { DemographicsPanel } from "@/components/hub/DemographicsPanel";
 import {
@@ -518,8 +519,10 @@ export default async function AnalyticsPage() {
       />
 
       <WebsiteAuditPanel
+        key={active?.id ?? "none"}
         companyName={active?.name}
         domain={active?.domain}
+        awardBaseUrl={getOutboundSiteUrl()}
         initialAudit={
           "data" in latestAudit ? latestAudit.data : latestAudit
         }
