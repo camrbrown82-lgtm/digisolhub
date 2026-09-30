@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { awardTheme } from "@/lib/awardTheme";
+import { awardTheme, rgba } from "@/lib/awardTheme";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { awardDate, loadAward } from "@/lib/websiteAward";
 
@@ -25,8 +25,9 @@ export async function GET(_request: Request, { params }: { params: { id: string 
           display: "flex",
           alignItems: "center",
           padding: "0 36px",
-          background: `linear-gradient(135deg, ${theme.background} 30%, ${theme.primary}${valid ? "59" : "1a"})`,
-          border: `4px solid ${valid ? theme.primary : `${theme.text}40`}`,
+          backgroundColor: theme.background,
+          backgroundImage: `linear-gradient(135deg, ${theme.background} 35%, ${rgba(theme.primary, valid ? 0.28 : 0.08)})`,
+          border: `4px solid ${valid ? theme.primary : rgba(theme.text, 0.25)}`,
           borderRadius: 28,
           color: theme.text,
           fontFamily: "sans-serif",
@@ -41,7 +42,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
             alt=""
             style={{
               borderRadius: 999,
-              border: `3px solid ${theme.highlight}${valid ? "b3" : "40"}`,
+              border: `3px solid ${rgba(theme.highlight, valid ? 0.7 : 0.25)}`,
               opacity: valid ? 1 : 0.35,
             }}
           />

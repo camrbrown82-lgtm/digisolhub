@@ -23,6 +23,12 @@ function hex(value: string | undefined, fallback: string) {
   return raw.length === 4 ? `#${raw[1]}${raw[1]}${raw[2]}${raw[2]}${raw[3]}${raw[3]}` : raw.toLowerCase();
 }
 
+/** `rgba()` from a #rrggbb theme color; the PNG renderer doesn't read 8-digit hex. */
+export function rgba(color: string, alpha: number) {
+  const n = Number.parseInt(color.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
+
 function absolute(url: string) {
   if (!url) return "";
   return url.startsWith("http") ? url : `${DIGISOL_SITE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
