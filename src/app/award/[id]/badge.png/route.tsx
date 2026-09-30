@@ -43,17 +43,18 @@ export async function GET(_request: Request, { params }: { params: { id: string 
           DIGISOL EXCELLENCE AWARD
         </div>
         {valid ? (
-          <>
-            <div style={{ display: "flex", fontSize: 36, fontWeight: 800, marginTop: 18, maxWidth: 580, textAlign: "center" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <div style={{ display: "flex", fontSize: 36, fontWeight: 800, marginTop: 18, maxWidth: 580 }}>
               {name.length > 30 ? `${name.slice(0, 29)}…` : name}
             </div>
             <div style={{ display: "flex", fontSize: 24, color: "#cbd5e1", marginTop: 8 }}>
-              Website audit&nbsp;<span style={{ color: "#fbbf24", fontWeight: 700 }}>{award.score}/100</span>
+              <span>Website audit</span>
+              <span style={{ color: "#fbbf24", fontWeight: 700, marginLeft: 8 }}>{`${award.score}/100`}</span>
             </div>
             <div style={{ display: "flex", fontSize: 19, color: "#94a3b8", marginTop: 10 }}>
-              Verified {awardDate(award.auditedAt)} · wwwdigisol.com
+              {`Verified ${awardDate(award.auditedAt)} · wwwdigisol.com`}
             </div>
-          </>
+          </div>
         ) : (
           <div style={{ display: "flex", fontSize: 26, color: "#64748b", marginTop: 16 }}>Not current</div>
         )}
