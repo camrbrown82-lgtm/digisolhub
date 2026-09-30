@@ -27,6 +27,16 @@ export function Footer() {
             />
             <ListingLinks location="footer" />
             <GoogleRating location="footer" />
+            <a href="/award/digisol" className="block w-fit" title="Verify our website audit score">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/award/digisol/badge.svg"
+                alt="DigiSol passes its own website audit. Verify the score."
+                width={192}
+                height={72}
+                loading="lazy"
+              />
+            </a>
           </div>
 
           <div className="min-w-0 flex-1 space-y-3">

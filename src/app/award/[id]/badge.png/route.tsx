@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { awardTheme, rgba } from "@/lib/awardTheme";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
-import { awardDate, loadAward } from "@/lib/websiteAward";
+import { awardDate, badgeText, loadAward } from "@/lib/websiteAward";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -13,7 +13,8 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     awardTheme(),
   ]);
   const valid = award.state === "valid";
-  const name = valid ? award.companyName : "";
+  const words = badgeText(award.state === "missing" ? { companyName: "" } : award);
+  const name = valid ? words.title : "";
   const long = name.length > 18;
 
   const image = new ImageResponse(
@@ -61,7 +62,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
               borderRadius: 999,
             }}
           >
-            DIGISOL EXCELLENCE AWARD
+            {words.pill}
           </div>
           {valid ? (
             <div style={{ display: "flex", flexDirection: "column" }}>
@@ -69,7 +70,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
                 {name.length > 26 ? `${name.slice(0, 25)}…` : name}
               </div>
               <div style={{ display: "flex", fontSize: 24, opacity: 0.85, marginTop: 8 }}>
-                <span>Website audit</span>
+                <span>{words.scoreLabel}</span>
                 <span style={{ color: theme.highlight, fontWeight: 700, marginLeft: 8 }}>{`${award.score}/100`}</span>
               </div>
               <div style={{ display: "flex", fontSize: 18, opacity: 0.6, marginTop: 10 }}>

@@ -8,7 +8,14 @@ import { markAddPageViewed } from "@/lib/awardRegistry";
 import { awardBadgeTheme } from "@/lib/awardTheme";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { getOutboundSiteUrl } from "@/lib/supabase/env";
-import { AWARD_MIN_SCORE, awardDate, awardEmbedHtml, awardLinks, loadAward } from "@/lib/websiteAward";
+import {
+  AWARD_MIN_SCORE,
+  awardDate,
+  awardEmbedHtml,
+  awardLinks,
+  HOUSE_AWARD_ID,
+  loadAward,
+} from "@/lib/websiteAward";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +24,12 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   if (!hasAdminClient()) return { title: "Verify a DigiSol Excellence Award", robots };
   const award = await loadAward(createAdminClient(), params.id);
   if (award.state !== "valid") return { title: "Verify a DigiSol Excellence Award", robots };
-  const title = `${award.companyName} earned the DigiSol Excellence Award`;
-  const description = `${award.companyName}'s website scored ${award.score}/100 on DigiSol's website audit for speed, security, and technical SEO. Only sites scoring ${AWARD_MIN_SCORE}+ earn it.`;
+  const title = award.house
+    ? `DigiSol passes its own website audit (${award.score}/100)`
+    : `${award.companyName} earned the DigiSol Excellence Award`;
+  const description = award.house
+    ? `DigiSol's own website scored ${award.score}/100 on the same audit DigiSol runs for clients: speed, security, and technical SEO.`
+    : `${award.companyName}'s website scored ${award.score}/100 on DigiSol's website audit for speed, security, and technical SEO. Only sites scoring ${AWARD_MIN_SCORE}+ earn it.`;
   const { verify, badgePng } = awardLinks(getOutboundSiteUrl(), award.auditId);
   const images = [{ url: badgePng, width: 640, height: 240, alt: title }];
   return {
@@ -44,6 +55,9 @@ export default async function AwardPage({
   const date = awardDate(award.auditedAt);
   const base = getOutboundSiteUrl();
   const { verify } = awardLinks(base, award.auditId);
+  if (award.house) {
+    return <HouseAudit score={award.score} site={award.site} date={date} current={award.state === "valid"} />;
+  }
   const current = award.state === "valid";
   const adding = current && searchParams.add === "1";
   if (adding) await markAddPageViewed(createAdminClient(), award.auditId);
@@ -131,6 +145,76 @@ export default async function AwardPage({
         </Link>
         <Link href="/" className="text-indigo-300 hover:text-indigo-200">
           About DigiSol
+        </Link>
+      </p>
+    </main>
+  );
+}
+
+/** DigiSol's own site: a self-audit, stated plainly, never presented as the award. */
+function HouseAudit({ score, site, date, current }: { score: number; site: string; date: string; current: boolean }) {
+  const verify = awardLinks(getOutboundSiteUrl(), HOUSE_AWARD_ID).verify;
+  return (
+    <main className="mx-auto max-w-2xl px-4 py-16">
+      <h1 className="text-3xl font-semibold text-white">We pass our own audit</h1>
+      <p
+        className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
+          current
+            ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-100"
+            : "border-amber-500/40 bg-amber-500/10 text-amber-100"
+        }`}
+      >
+        {current
+          ? `Verified. DigiSol's own website (${site}) scored ${score}/100 on ${date}, using the same audit we run for clients.`
+          : `DigiSol's own website (${site}) scored ${score}/100 on ${date}, below the ${AWARD_MIN_SCORE} we hold award winners to. We're on it.`}
+      </p>
+
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/award/${HOUSE_AWARD_ID}/badge.svg`}
+        alt={`DigiSol passes its own website audit: ${score}/100`}
+        width={480}
+        height={180}
+        className="mx-auto mt-8 max-w-full"
+      />
+
+      <section className="mt-10 space-y-3 text-sm text-zinc-400">
+        <h2 className="text-lg font-semibold text-white">What this badge means</h2>
+        <p>
+          This is our own website, checked with the exact audit clients and prospects get: server speed, HTTPS, page
+          titles and descriptions, headings, mobile setup, structured data, and other technical SEO basics. The badge
+          always shows our newest audit, so if the score drops, it drops here too.
+        </p>
+        <p>
+          It is not the DigiSol Excellence Award. We give that to other businesses whose sites score {AWARD_MIN_SCORE}+,
+          and we don&apos;t award ourselves.
+        </p>
+      </section>
+
+      <ShareButtons
+        className="mt-8"
+        url={verify}
+        caption={`We hold our own website to the same bar as our clients: wwwdigisol.com scored ${score}/100 on the DigiSol website audit. See how your site scores: ${verify}`}
+        analyticsKey="award_house"
+        heading="Share"
+      />
+
+      <section className="mt-10 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
+        <h2 className="text-lg font-semibold text-white">How does your website score?</h2>
+        <p className="mt-2 text-sm text-zinc-400">
+          Get a free audit. Sites that score {AWARD_MIN_SCORE}+ earn the DigiSol Excellence Award.
+        </p>
+        <Link href="/#contact" className="mt-4 inline-block text-sm font-semibold text-sky-300 hover:text-sky-200">
+          Request a free website audit
+        </Link>
+      </section>
+
+      <p className="mt-10 flex gap-6 text-sm">
+        <Link href="/awards" className="text-indigo-300 hover:text-indigo-200">
+          See award winners
+        </Link>
+        <Link href="/blog/digisol-excellence-award-website-badge" className="text-indigo-300 hover:text-indigo-200">
+          About the award
         </Link>
       </p>
     </main>

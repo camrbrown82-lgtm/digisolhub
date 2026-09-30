@@ -1,7 +1,7 @@
 import { markBadgeSeen } from "@/lib/awardRegistry";
 import { awardTheme, type AwardTheme } from "@/lib/awardTheme";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
-import { awardDate, loadAward } from "@/lib/websiteAward";
+import { awardDate, badgeText, loadAward } from "@/lib/websiteAward";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -57,8 +57,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
     awardTheme(),
   ]);
   const x = theme.logoData ? 108 : 20;
+  const words = badgeText(award.state === "missing" ? { companyName: "" } : award);
   const pill = `<rect x="${x}" y="16" width="172" height="18" rx="9" fill="${theme.primary}"/>
-  <text x="${x + 86}" y="28.6" text-anchor="middle" font-size="8.8" font-weight="700" fill="${theme.text}" letter-spacing="1.2">DIGISOL EXCELLENCE AWARD</text>`;
+  <text x="${x + 86}" y="28.6" text-anchor="middle" font-size="8.8" font-weight="700" fill="${theme.text}" letter-spacing="1.2">${words.pill}</text>`;
 
   if (award.state !== "valid") {
     return svg(
@@ -73,16 +74,18 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 
   await markBadgeSeen(createAdminClient(), award.auditId, request.headers.get("referer"));
-  const long = award.companyName.length > 18;
-  const name = escapeXml(clip(award.companyName, long ? 26 : 18));
+  const long = words.title.length > 18;
+  const name = escapeXml(clip(words.title, long ? 26 : 18));
   const date = escapeXml(awardDate(award.auditedAt));
   return svg(
     frame(
       theme,
-      `DigiSol Excellence Award: ${award.companyName}, website audit ${award.score}/100`,
+      award.house
+        ? `DigiSol passes its own website audit: ${award.score}/100`
+        : `DigiSol Excellence Award: ${award.companyName}, website audit ${award.score}/100`,
       `${pill}
   <text x="${x}" y="60" font-size="${long ? 14 : 17}" font-weight="800" fill="${theme.text}">${name}</text>
-  <text x="${x}" y="81" font-size="12" fill="${theme.text}" fill-opacity="0.8">Website audit <tspan font-weight="700" fill="${theme.highlight}" fill-opacity="1">${award.score}/100</tspan></text>
+  <text x="${x}" y="81" font-size="12" fill="${theme.text}" fill-opacity="0.8">${words.scoreLabel} <tspan font-weight="700" fill="${theme.highlight}" fill-opacity="1">${award.score}/100</tspan></text>
   <text x="${x}" y="101" font-size="9.5" fill="${theme.text}" fill-opacity="0.6">Verified ${date} · wwwdigisol.com</text>`,
       true,
     ),

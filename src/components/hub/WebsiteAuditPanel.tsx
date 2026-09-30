@@ -11,6 +11,7 @@ import {
   awardEligible,
   awardEmbedHtml,
   awardLinks,
+  HOUSE_AWARD_ID,
 } from "@/lib/websiteAward";
 
 type ReportItem = {
@@ -50,6 +51,28 @@ function AwardSection({
   const [to, setTo] = useState("");
   const [sending, setSending] = useState(false);
   const [sendNote, setSendNote] = useState("");
+  if (companyName.trim().toLowerCase() === "digisol") {
+    const house = awardLinks(awardBaseUrl, HOUSE_AWARD_ID);
+    return (
+      <div className="rounded-2xl border border-indigo-500/40 bg-indigo-500/5 p-5">
+        <h3 className="text-sm font-semibold text-sky-200">DigiSol&apos;s own badge: &quot;We pass our own audit&quot;</h3>
+        <p className="mt-1 text-sm text-zinc-400">
+          DigiSol doesn&apos;t award itself the Excellence Award. Instead, the site footer shows a live badge with the
+          newest audit of wwwdigisol.com, linked to a public verify page. Re-running this audit updates it.
+        </p>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={house.badge} alt="" width={320} height={120} className="mt-4" />
+        <a
+          href={house.verify}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 inline-block text-sm text-indigo-300 hover:text-indigo-200"
+        >
+          Open verify page
+        </a>
+      </div>
+    );
+  }
   if (!audit.id || !awardEligible(audit, domain)) {
     return (
       <p className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-3 text-sm text-zinc-400">
