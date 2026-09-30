@@ -1,4 +1,4 @@
-import { parseFromAddress } from "@/lib/email";
+import { getResendFrom, parseFromAddress } from "@/lib/email";
 import { DispatchSendButton } from "@/components/hub/DispatchSendButton";
 import { ResendTrackingPanel } from "@/components/hub/ResendTrackingPanel";
 import {
@@ -20,9 +20,7 @@ function status(ok: boolean) {
 export default async function IntegrationsPage() {
   const workspace = await getWorkspaceClient(await createClient());
   const isDigisol = isDigisolClient(workspace);
-  const from = parseFromAddress(
-    process.env.RESEND_FROM || process.env.RESEND_FROM_EMAIL || "",
-  );
+  const from = parseFromAddress(getResendFrom());
   const rows = [
     { name: "Supabase", ok: Boolean(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) },
     { name: "Resend", ok: Boolean(process.env.RESEND_API_KEY) },

@@ -26,7 +26,6 @@ function firstEnv(...names: string[]) {
   return "";
 }
 
-const TEST_FROM = "DigiSol <onboarding@resend.dev>";
 const PERSONAL_INBOX_DOMAINS = new Set([
   "gmail.com",
   "googlemail.com",
@@ -51,9 +50,15 @@ export function parseFromAddress(value: string) {
   return { raw, email, domain, name, isTest: domain === "resend.dev" };
 }
 
+/** Every Hub email comes from DigiSol, including emails to the companies DigiSol manages. */
+export const DIGISOL_FROM = "DigiSol <hello@wwwdigisol.com>";
+
+/**
+ * The Hub's sender. RESEND_FROM is shared with other Vercel projects (DealFinder sets its own
+ * sender there), so it is ignored; only HUB_RESEND_FROM can change the DigiSol address.
+ */
 export function getResendFrom() {
-  const configured = firstEnv("RESEND_FROM", "RESEND_FROM_EMAIL", "EMAIL_FROM");
-  if (!configured) return TEST_FROM;
+  const configured = firstEnv("HUB_RESEND_FROM") || DIGISOL_FROM;
   const parsed = parseFromAddress(configured);
   if (!parsed.email) return configured;
   return parsed.name ? `${parsed.name} <${parsed.email}>` : parsed.email;
@@ -63,7 +68,7 @@ export function assertSendableFrom(from = getResendFrom()) {
   const parsed = parseFromAddress(from);
   if (PERSONAL_INBOX_DOMAINS.has(parsed.domain)) {
     throw new Error(
-      `RESEND_FROM is ${parsed.email}. Resend cannot send From a personal inbox. Use an address on the verified domain, for example DigiSol <hello@wwwdigisol.com>, and put ${parsed.email} in RESEND_REPLY_TO if you want replies there.`,
+      `HUB_RESEND_FROM is ${parsed.email}. Resend cannot send From a personal inbox. Use an address on the verified domain, for example DigiSol <hello@wwwdigisol.com>, and put ${parsed.email} in RESEND_REPLY_TO if you want replies there.`,
     );
   }
 }
@@ -73,7 +78,7 @@ export function explainResendError(message: string, from = getResendFrom()) {
   const using = parsed.email ? ` Sending as ${parsed.email}.` : "";
   const lower = message.toLowerCase();
   if (parsed.isTest || lower.includes("only send testing emails")) {
-    return `${message}${using} RESEND_FROM is still the Resend test sender. Set it to an address on your verified domain, for example DigiSol <hello@wwwdigisol.com>, then redeploy.`;
+    return `${message}${using} HUB_RESEND_FROM is still the Resend test sender. Set it to an address on your verified domain, for example DigiSol <hello@wwwdigisol.com>, then redeploy.`;
   }
   if (lower.includes("not verified") || lower.includes("invalid `from`") || lower.includes("invalid from")) {
     return `${message}${using} The From domain must match the domain that is green in the same Resend account as RESEND_API_KEY.`;

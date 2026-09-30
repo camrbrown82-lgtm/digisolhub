@@ -799,8 +799,8 @@ export function EmailComposer({
           </button>
         </div>
         <p className="text-xs text-zinc-500">
-          Sends use RESEND_FROM on the server. Hub → Integrations shows the
-          address without revealing the API key.
+          Every email goes out from DigiSol, whichever company you&apos;re working on.
+          Hub → Integrations shows the sending address.
         </p>
         {status ? <p className="text-sm text-indigo-300">{status}</p> : null}
       </section>
