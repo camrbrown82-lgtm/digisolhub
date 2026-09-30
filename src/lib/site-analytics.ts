@@ -8,9 +8,10 @@ export type SiteEvent = {
   created_at: string;
 };
 
+/** `data-exclude` takes comma-separated path prefixes (e.g. "/admin") that aren't counted. */
 export function trackingSnippet(origin: string, siteKey: string) {
   const src = `${origin.replace(/\/$/, "")}/t.js`;
-  return `<script defer src="${src}" data-key="${siteKey}"></script>`;
+  return `<script defer src="${src}" data-key="${siteKey}" data-exclude="/admin"></script>`;
 }
 
 export function isBot(userAgent: string) {

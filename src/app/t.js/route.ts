@@ -12,7 +12,16 @@ const script = `(() => {
       try { key = new URL(script.src).searchParams.get("k"); } catch (e) {}
     }
     if (!key) return;
-    if (location.pathname.indexOf("/hub") === 0) return;
+    var excluded = ["/hub"].concat(
+      ((script && script.getAttribute("data-exclude")) || "").split(",").map(function (p) { return p.trim(); }).filter(Boolean)
+    );
+    function skipped() {
+      for (var i = 0; i < excluded.length; i++) {
+        if (location.pathname.indexOf(excluded[i]) === 0) return true;
+      }
+      return false;
+    }
+    if (skipped()) return;
     var origin = script.src ? new URL(script.src).origin : location.origin;
     var storageKey = "ds_vid_" + key;
     var visitor = null;
@@ -24,7 +33,7 @@ const script = `(() => {
 
     function send() {
       if (/(?:^|;\\s*)ds_internal=1(?:;|$)/.test(document.cookie)) return;
-      if (location.pathname.indexOf("/hub") === 0) return;
+      if (skipped()) return;
       fetch(origin + "/api/collect", {
         method: "POST",
         headers: { "content-type": "application/json" },
