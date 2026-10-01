@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bot, ExternalLink, Loader2, Pause, Play, Rocket, Save, Trash2 } from "lucide-react";
+import { Bot, ExternalLink, ImagePlus, Loader2, Pause, Play, Rocket, Save, Trash2 } from "lucide-react";
 import type { AdDraftRow } from "@/lib/meta/adDrafts";
 import { AD_CTAS, AD_OBJECTIVES } from "@/lib/meta/adOptions";
+import { isStoredPosterUrl, posterExportUrl } from "@/lib/posterSizes";
 
 export type RobotPoster = { url: string; label: string };
 export type CampaignStats = { spend: number; clicks: number; leads: number; cpl: number | null };
@@ -30,7 +31,7 @@ function PosterPicker({
   onChange: (url: string) => void;
 }) {
   if (!posters.length) {
-    return <p className="text-xs text-zinc-500">No posters yet. Make one under AI posters first.</p>;
+    return <p className="text-xs text-zinc-500">No image yet. Make ad images below, or save a poster first.</p>;
   }
   return (
     <div className="flex gap-2 overflow-x-auto pb-1">
@@ -40,14 +41,57 @@ function PosterPicker({
           type="button"
           onClick={() => onChange(poster.url)}
           title={poster.label}
-          className={`relative h-24 w-20 shrink-0 overflow-hidden rounded-lg border-2 ${
+          className={`relative h-28 w-[4.5rem] shrink-0 overflow-hidden rounded-lg border-2 bg-zinc-900 ${
             value === poster.url ? "border-indigo-400" : "border-transparent opacity-70 hover:opacity-100"
           }`}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={poster.url} alt={poster.label} className="h-full w-full object-cover" />
+          <img
+            src={isStoredPosterUrl(poster.url) ? posterExportUrl(poster.url, "feed") : poster.url}
+            alt={poster.label}
+            className="h-full w-full object-contain"
+          />
         </button>
       ))}
+    </div>
+  );
+}
+
+function hostOf(url: string) {
+  try {
+    return new URL(url).host.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
+function AdPreview({ draft }: { draft: AdDraftRow }) {
+  const image = draft.poster_url
+    ? isStoredPosterUrl(draft.poster_url)
+      ? posterExportUrl(draft.poster_url, "feed")
+      : draft.poster_url
+    : "";
+  return (
+    <div className="overflow-hidden rounded-xl border border-zinc-700 bg-white text-zinc-900 shadow-sm">
+      <p className="line-clamp-4 px-3 py-2.5 text-[13px] leading-snug">{draft.primary_text || "Primary text"}</p>
+      {image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={image} alt="" className="aspect-[4/5] w-full bg-zinc-100 object-cover" />
+      ) : (
+        <div className="flex aspect-[4/5] items-center justify-center bg-zinc-100 text-xs text-zinc-400">
+          No image yet
+        </div>
+      )}
+      <div className="flex items-center gap-3 border-t border-zinc-200 px-3 py-2.5">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] uppercase tracking-wide text-zinc-500">{hostOf(draft.link_url) || "website"}</p>
+          <p className="line-clamp-2 text-sm font-semibold leading-tight">{draft.headline || "Headline"}</p>
+          {draft.description ? <p className="line-clamp-2 text-xs text-zinc-500">{draft.description}</p> : null}
+        </div>
+        <span className="shrink-0 rounded-md bg-zinc-200 px-3 py-1.5 text-xs font-semibold">
+          {AD_CTAS[draft.cta as keyof typeof AD_CTAS] || "Learn more"}
+        </span>
+      </div>
     </div>
   );
 }
@@ -76,6 +120,7 @@ function DraftCard({
   const router = useRouter();
   const [draft, setDraft] = useState(initial);
   const [locations, setLocations] = useState(initial.locations.join(", "));
+  const [made, setMade] = useState<RobotPoster[]>([]);
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState(initial.error || "");
   const editable = draft.status === "draft" || draft.status === "failed";
@@ -132,6 +177,35 @@ function DraftCard({
     if (await call("POST", { action: "launch" }, "launch")) router.refresh();
   }
 
+  async function makeImages() {
+    setBusy("images");
+    setMessage("");
+    try {
+      const response = await fetch(`/api/hub/meta-ads/${draft.id}/images`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          headline: draft.headline,
+          description: draft.description,
+          cta: draft.cta,
+        }),
+      });
+      const json = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        images?: { url: string; label: string }[];
+      };
+      if (!response.ok || !json.images?.length) {
+        setMessage(json.error || "Could not make ad images.");
+        return;
+      }
+      setMade((current) => [...json.images!, ...current]);
+      set("poster_url", json.images[0].url);
+      setMessage("Two feed-sized images are ready. The first one is selected.");
+    } finally {
+      setBusy("");
+    }
+  }
+
   async function remove() {
     if (!window.confirm("Delete this draft?")) return;
     if (await call("DELETE", undefined, "delete")) onRemoved();
@@ -160,27 +234,8 @@ function DraftCard({
         </p>
       ) : null}
 
-      <div className="mt-4 grid gap-5 lg:grid-cols-[220px_1fr]">
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-3 text-xs">
-          <p className="whitespace-pre-line text-zinc-200">{draft.primary_text || "Primary text"}</p>
-          {draft.poster_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={draft.poster_url} alt="" className="mt-2 aspect-[4/5] w-full rounded object-cover" />
-          ) : (
-            <div className="mt-2 flex aspect-[4/5] items-center justify-center rounded bg-zinc-900 text-zinc-600">
-              No poster
-            </div>
-          )}
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <p className="truncate font-semibold text-white">{draft.headline || "Headline"}</p>
-              <p className="truncate text-zinc-500">{draft.description}</p>
-            </div>
-            <span className="shrink-0 rounded bg-zinc-800 px-2 py-1 text-zinc-200">
-              {AD_CTAS[draft.cta as keyof typeof AD_CTAS] || "Learn more"}
-            </span>
-          </div>
-        </div>
+      <div className="mt-4 grid gap-5 lg:grid-cols-[300px_1fr]">
+        <AdPreview draft={draft} />
 
         {editable ? (
           <div className="grid gap-3 sm:grid-cols-2">
@@ -278,8 +333,27 @@ function DraftCard({
               />
             </label>
             <div className="sm:col-span-2">
-              <p className="mb-1 text-xs text-zinc-400">Poster (sent to Meta at 1080×1350)</p>
-              <PosterPicker posters={posters} value={draft.poster_url || ""} onChange={(url) => set("poster_url", url)} />
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-zinc-400">Image, 1080×1350 feed size</p>
+                <button
+                  type="button"
+                  onClick={() => void makeImages()}
+                  disabled={Boolean(busy) || !draft.headline.trim()}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-indigo-400/40 px-3 py-1.5 text-xs font-semibold text-indigo-200 hover:bg-indigo-500/15 disabled:opacity-60"
+                >
+                  {busy === "images" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <ImagePlus className="h-3.5 w-3.5" />
+                  )}
+                  {busy === "images" ? "Making two versions…" : "Make ad images"}
+                </button>
+              </div>
+              <PosterPicker
+                posters={[...made, ...posters]}
+                value={draft.poster_url || ""}
+                onChange={(url) => set("poster_url", url)}
+              />
             </div>
           </div>
         ) : (
