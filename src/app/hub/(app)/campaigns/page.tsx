@@ -7,12 +7,16 @@ import { AiWorkflowGenerator } from "@/components/hub/AiWorkflowGenerator";
 import { ContentTestBuilder, type TestAssetOption } from "@/components/hub/ContentTestBuilder";
 import { ContentTestCard } from "@/components/hub/ContentTestCard";
 import { NewWorkflowButton } from "@/components/hub/NewWorkflowButton";
+import { SocialWeekPlanner } from "@/components/hub/SocialWeekPlanner";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
 import { ACTIVE_SOCIAL_CHANNELS } from "@/lib/campaignChannels";
 import { loadContentTests } from "@/lib/contentTestData";
 import { DISPATCH_ISSUES, dispatchCardUrl, dispatchUrl } from "@/lib/dispatch";
+import { ensureAnalyticsSocialSchema } from "@/lib/ensureAnalyticsSocialSchema";
 import { ensureContentTestSchema } from "@/lib/ensureContentTestSchema";
+import { maxDailyBudget } from "@/lib/meta/ads";
+import type { SocialPlan } from "@/lib/social/weekPlan";
 import { parsePosterMeta } from "@/lib/posterSocial";
 import { socialProviderConfigured } from "@/lib/social/providers";
 import { contactIdsForClient, getActiveClient, getWorkspaceClient } from "@/lib/workspace";
@@ -25,7 +29,7 @@ function pct(part: number, whole: number) {
 
 export default async function CampaignsPage() {
   await Promise.race([
-    ensureContentTestSchema().catch(() => null),
+    Promise.all([ensureContentTestSchema().catch(() => null), ensureAnalyticsSocialSchema().catch(() => null)]),
     new Promise((resolve) => setTimeout(resolve, 3000)),
   ]);
   const supabase = await createClient();
@@ -236,6 +240,16 @@ export default async function CampaignsPage() {
   const activeWorkflows = workflows.filter((row) => row.enabled).length;
   const draftCampaigns = campaigns.filter((row) => row.status === "draft").length;
 
+  const { data: planRows } = isDigisol
+    ? await supabase
+        .from("social_plans")
+        .select("id, status, brief, weekly_budget, summary, why, items, error, created_at, approved_at")
+        .eq("client_id", active?.id || "")
+        .order("created_at", { ascending: false })
+        .limit(8)
+    : { data: [] };
+  const socialPlans = (planRows ?? []) as SocialPlan[];
+
   const campaignStats = new Map<
     string,
     { sent: number; opened: number; clicked: number }
@@ -295,6 +309,15 @@ export default async function CampaignsPage() {
           </div>
         ))}
       </section>
+
+      {isDigisol ? (
+        <SocialWeekPlanner plans={socialPlans} maxDaily={maxDailyBudget()} />
+      ) : (
+        <section className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm text-amber-100">
+          Social planning posts and ads run on DigiSol&apos;s Facebook, Instagram, and ad account. Switch Working on
+          to DigiSol to plan a week.
+        </section>
+      )}
 
       <ContentTestBuilder
         companyName={workspace?.name || "this company"}
