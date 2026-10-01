@@ -36,12 +36,13 @@ export function BusinessCardMaker({
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "kaylev",
-      text: "Tell me what to put on the card, or what to change after you see it. I keep the name, phone, and email unless you say otherwise.",
+      text: "Tell me what to put on the card, or what to change after you see it. The front carries the name. The back carries the QR code. I keep the name, phone, and email unless you say otherwise.",
     },
   ]);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [cardUrl, setCardUrl] = useState("");
+  const [backUrl, setBackUrl] = useState("");
   const [pdfUrl, setPdfUrl] = useState("");
   const [qrUrl, setQrUrl] = useState("");
   const [assetId, setAssetId] = useState("");
@@ -50,7 +51,7 @@ export function BusinessCardMaker({
     if (!siteReady || busy) return;
     const asked = note.trim();
     setBusy(true);
-    setStatus(asked ? "Kaylev is updating the card…" : "Kaylev is typesetting the card and embedding the QR code…");
+    setStatus(asked ? "Kaylev is updating both sides…" : "Kaylev is typesetting the front and the QR side…");
     if (asked) {
       setMessages((current) => [...current, { role: "user", text: asked }]);
       setDirections("");
@@ -64,6 +65,7 @@ export function BusinessCardMaker({
       error?: string;
       id?: string;
       url?: string;
+      backUrl?: string;
       pdfUrl?: string;
       qrUrl?: string;
       line?: string;
@@ -83,6 +85,7 @@ export function BusinessCardMaker({
       return;
     }
     setCardUrl(result.url);
+    setBackUrl(result.backUrl || "");
     setPdfUrl(result.pdfUrl || "");
     setQrUrl(result.qrUrl || "");
     setAssetId(result.id || "");
@@ -97,8 +100,8 @@ export function BusinessCardMaker({
     ]);
     setStatus(
       result.id
-        ? "Card saved. Archive or delete it if it does not look right. Print the PDF at 100% scale."
-        : "Card is ready, but it could not be filed for archive or delete. Print the PDF at 100% scale.",
+        ? "Both sides saved. Print the PDF double-sided, flip on the long edge, at 100% scale."
+        : "Both sides are ready. Print the PDF double-sided, flip on the long edge, at 100% scale.",
     );
     router.refresh();
   }
@@ -113,9 +116,9 @@ export function BusinessCardMaker({
       <div>
         <h2 className="text-lg font-semibold text-white">Business cards</h2>
         <p className="mt-1 max-w-2xl text-sm text-zinc-400">
-          Kaylev makes a 3.5 × 2 inch card for {companyName} from this brand kit.
-          The logo is the official mark, and the QR code is a real code that opens
-          the website with Kaylev as the source. {scanNote}
+          Kaylev makes a two-sided 3.5 × 2 inch card for {companyName} from this brand kit.
+          The front has the name. The back has a real QR code that opens the website
+          with Kaylev as the source. {scanNote}
         </p>
       </div>
       {siteReady ? (
@@ -196,16 +199,29 @@ export function BusinessCardMaker({
       ) : null}
       {cardUrl ? (
         <div className="space-y-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={cardUrl}
-            alt={`${companyName} business card`}
-            className="w-full max-w-xl rounded-xl border border-zinc-800"
-          />
+          <div className="grid max-w-3xl gap-4 sm:grid-cols-2">
+            <figure>
+              <figcaption className="mb-1 text-xs font-medium uppercase tracking-wide text-zinc-500">Front</figcaption>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={cardUrl} alt={`${companyName} business card front`} className="w-full rounded-xl border border-zinc-800" />
+            </figure>
+            {backUrl ? (
+              <figure>
+                <figcaption className="mb-1 text-xs font-medium uppercase tracking-wide text-zinc-500">Back</figcaption>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={backUrl} alt={`${companyName} business card back`} className="w-full rounded-xl border border-zinc-800" />
+              </figure>
+            ) : null}
+          </div>
           <div className="flex flex-wrap gap-3 text-sm">
             <a href={cardUrl} target="_blank" rel="noreferrer" className="text-indigo-300 hover:text-indigo-200">
-              Open print image
+              Open front
             </a>
+            {backUrl ? (
+              <a href={backUrl} target="_blank" rel="noreferrer" className="text-indigo-300 hover:text-indigo-200">
+                Open back
+              </a>
+            ) : null}
             {pdfUrl ? (
               <a href={pdfUrl} target="_blank" rel="noreferrer" className="text-indigo-300 hover:text-indigo-200">
                 Open print PDF
@@ -219,6 +235,7 @@ export function BusinessCardMaker({
               onDone={(action) => {
                 if (action === "delete") {
                   setCardUrl("");
+                  setBackUrl("");
                   setPdfUrl("");
                   setQrUrl("");
                   setAssetId("");

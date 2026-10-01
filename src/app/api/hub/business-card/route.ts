@@ -124,7 +124,7 @@ export async function POST(request: Request) {
   try {
     const logo = await resolveOfficialLogoFile(supabase, client);
     const qrPng = await renderQrPng(qrUrl, 720);
-    const card = await renderBusinessCard({
+    const { front, back } = await renderBusinessCard({
       companyName,
       line,
       personName,
@@ -140,21 +140,32 @@ export async function POST(request: Request) {
     });
 
     const pdfDoc = await PDFDocument.create();
-    const png = await pdfDoc.embedPng(card);
-    const page = pdfDoc.addPage([252, 144]);
-    page.drawImage(png, { x: 0, y: 0, width: 252, height: 144 });
+    for (const side of [front, back]) {
+      const embedded = await pdfDoc.embedPng(side);
+      const page = pdfDoc.addPage([252, 144]);
+      page.drawImage(embedded, { x: 0, y: 0, width: 252, height: 144 });
+    }
     const pdf = Buffer.from(await pdfDoc.save());
 
     const seriesId = crypto.randomUUID();
     const stamp = Date.now();
-    const pngPath = `${stamp}-${seriesId}-card.png`;
+    const sides = [
+      { buffer: front, path: `${stamp}-${seriesId}-card-front.png`, label: "front" },
+      { buffer: back, path: `${stamp}-${seriesId}-card-back.png`, label: "back" },
+    ] as const;
+    const pngUrls: string[] = [];
+    for (const side of sides) {
+      const { error: pngError } = await supabase.storage.from("ai-posters").upload(side.path, side.buffer, {
+        contentType: "image/png",
+        upsert: false,
+      });
+      if (pngError) return NextResponse.json({ error: pngError.message }, { status: 400 });
+      pngUrls.push(supabase.storage.from("ai-posters").getPublicUrl(side.path).data.publicUrl);
+    }
+    const pngPath = sides[0].path;
+    const pngUrl = pngUrls[0];
+    const backUrl = pngUrls[1];
     const pdfPath = `${stamp}-${seriesId}-card.pdf`;
-    const { error: pngError } = await supabase.storage.from("ai-posters").upload(pngPath, card, {
-      contentType: "image/png",
-      upsert: false,
-    });
-    if (pngError) return NextResponse.json({ error: pngError.message }, { status: 400 });
-    const pngUrl = supabase.storage.from("ai-posters").getPublicUrl(pngPath).data.publicUrl;
     let pdfUrl = "";
     const { error: pdfError } = await supabase.storage.from("ai-posters").upload(pdfPath, pdf, {
       contentType: "application/pdf",
@@ -167,6 +178,7 @@ export async function POST(request: Request) {
       tagline: line,
       brief: `Business card. QR opens ${qrUrl}`,
       imageUrl: pngUrl,
+      imageUrls: pngUrls,
       siteUrl,
     });
     const notes = JSON.stringify(
@@ -179,7 +191,8 @@ export async function POST(request: Request) {
         directions: clip(body?.directions, 800),
         seriesId,
         slideIndex: 1,
-        slideCount: 1,
+        slideCount: 2,
+        backUrl,
         social: jsonSafeValue({
           url: social.url,
           urls: social.urls,
@@ -196,17 +209,38 @@ export async function POST(request: Request) {
       bucket: "ai-posters",
       path: pngPath,
       public_url: pngUrl,
-      filename: `${companyName.replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "") || "card"}-business-card.png`,
+      filename: `${companyName.replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "") || "card"}-business-card-front.png`,
       mime_type: "image/png",
       kind: "image",
-      byte_size: card.length,
+      byte_size: front.length,
       notes,
       client_id: client?.id || null,
       series_id: seriesId,
       slide_index: 1,
-      slide_count: 1,
+      slide_count: 2,
+    };
+    const backNotes = JSON.stringify(
+      jsonSafeValue({
+        kind: "business-card",
+        brief: jsonSafeText(`Business card back for ${companyName}`).slice(0, 300),
+        qrUrl,
+        pdfUrl,
+        seriesId,
+        slideIndex: 2,
+        slideCount: 2,
+      }),
+    );
+    const backRow = {
+      ...row,
+      path: sides[1].path,
+      public_url: backUrl,
+      filename: row.filename.replace(/-front\.png$/, "-back.png"),
+      byte_size: back.length,
+      notes: backNotes,
+      slide_index: 2,
     };
     let assetId = "";
+    await supabase.from("assets").insert(backRow);
     const inserted = await supabase.from("assets").insert(row).select("id").single();
     if (inserted.data?.id) assetId = inserted.data.id as string;
     else {
@@ -231,6 +265,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       id: assetId || undefined,
       url: pngUrl,
+      backUrl,
       pdfUrl: pdfUrl || undefined,
       qrUrl,
       line,
