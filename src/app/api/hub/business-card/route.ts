@@ -18,34 +18,71 @@ function clip(value: unknown, max: number) {
   return typeof value === "string" ? value.replace(/\s+/g, " ").trim().slice(0, max) : "";
 }
 
-async function kaylevLine(companyName: string, brand: ReturnType<typeof brandFromClient>["brand"], fallback: string) {
-  if (!getOpenAIApiKey()) return fallback;
+type CardCopy = {
+  line: string;
+  personName: string;
+  personTitle: string;
+  phone: string;
+  email: string;
+  reply: string;
+};
+
+async function kaylevCard(
+  companyName: string,
+  brand: ReturnType<typeof brandFromClient>["brand"],
+  input: CardCopy & { directions: string },
+): Promise<CardCopy> {
+  const current: CardCopy = {
+    line: input.line || (brand.tagline || "").trim() || companyName,
+    personName: input.personName,
+    personTitle: input.personTitle,
+    phone: input.phone,
+    email: input.email,
+    reply: input.directions
+      ? "I used the details on the form."
+      : "Card uses the details on the form.",
+  };
+  if (!getOpenAIApiKey()) return current;
   try {
     const completion = await createOpenAIClient().chat.completions.create({
       model: getOpenAITextModel(),
       temperature: 0.3,
-      max_tokens: 80,
+      max_tokens: 280,
       response_format: { type: "json_object" },
       messages: [
         {
           role: "system",
-          content: `You are Kaylev. Write one line for a printed business card. Return JSON {"line":"..."} only.
-The line is at most 12 words, in this company's voice, using only the brand kit.
-Do not invent prices, stats, phone numbers, guarantees, people, or a website.
-If the tagline already works on a card, use it.`,
+          content: `You are Kaylev, typesetting one printed business card. Return JSON with keys line, personName, personTitle, phone, email, reply.
+Keep each field exactly as given unless the directions say to change or remove it. An empty string removes that field. When a current field says (blank), return an empty string.
+line is at most 12 words. reply is one short sentence saying what you changed.
+Use only the directions, the fields given, and the brand kit. Do not invent prices, stats, phone numbers, emails, people, or a website.`,
         },
         {
           role: "user",
-          content: `${brandKitPrompt(companyName, brand, "copy")}\nTagline: ${brand.tagline || "(none)"}`,
+          content: `${brandKitPrompt(companyName, brand, "copy")}
+Tagline: ${brand.tagline || "(none)"}
+Current name: ${current.personName || "(blank)"}
+Current title: ${current.personTitle || "(blank)"}
+Current phone: ${current.phone || "(blank)"}
+Current email: ${current.email || "(blank)"}
+Current line: ${current.line}
+Directions: ${input.directions || "(none — write a short line from the tagline if the current line is only the company name)"}`,
         },
       ],
     });
-    const parsed = JSON.parse(completion.choices[0]?.message?.content || "{}") as { line?: unknown };
-    const line = clip(parsed.line, 140);
-    return line || fallback;
+    const parsed = JSON.parse(completion.choices[0]?.message?.content || "{}") as Record<string, unknown>;
+    const email = clip(parsed.email, 80);
+    return {
+      line: clip(parsed.line, 140) || current.line,
+      personName: clip(parsed.personName, 80),
+      personTitle: clip(parsed.personTitle, 80),
+      phone: clip(parsed.phone, 40),
+      email: email.includes("@") || email === "" ? email : current.email,
+      reply: clip(parsed.reply, 240) || current.reply,
+    };
   } catch (err) {
     console.error("Kaylev card line failed", err);
-    return fallback;
+    return current;
   }
 }
 
@@ -70,15 +107,19 @@ export async function POST(request: Request) {
     phone?: string;
     email?: string;
     line?: string;
+    directions?: string;
   } | null;
-  const personName = clip(body?.personName, 80);
-  const personTitle = clip(body?.personTitle, 80);
-  const phone = clip(body?.phone, 40);
   const emailRaw = clip(body?.email, 80);
-  const email = emailRaw.includes("@") ? emailRaw : "";
-  const typedLine = clip(body?.line, 140);
-  const fallback = (brand.tagline || "").trim() || companyName;
-  const line = typedLine || (await kaylevLine(companyName, brand, fallback));
+  const written = await kaylevCard(companyName, brand, {
+    personName: clip(body?.personName, 80),
+    personTitle: clip(body?.personTitle, 80),
+    phone: clip(body?.phone, 40),
+    email: emailRaw.includes("@") ? emailRaw : "",
+    line: clip(body?.line, 140),
+    directions: clip(body?.directions, 800),
+    reply: "",
+  });
+  const { line, personName, personTitle, phone, email, reply } = written;
 
   try {
     const logo = await resolveOfficialLogoFile(supabase, client);
@@ -133,7 +174,9 @@ export async function POST(request: Request) {
         kind: "business-card",
         brief: jsonSafeText(`Business card for ${companyName}`).slice(0, 300),
         qrUrl,
+        pdfUrl,
         line,
+        directions: clip(body?.directions, 800),
         seriesId,
         slideIndex: 1,
         slideCount: 1,
@@ -163,26 +206,39 @@ export async function POST(request: Request) {
       slide_index: 1,
       slide_count: 1,
     };
-    const { error: insertError } = await supabase.from("assets").insert(row).select("id").single();
-    if (insertError) {
-      const { error: retryError } = await supabase.from("assets").insert({
-        bucket: row.bucket,
-        path: row.path,
-        public_url: row.public_url,
-        filename: row.filename,
-        mime_type: row.mime_type,
-        kind: row.kind,
-        client_id: row.client_id,
-        notes: "business-card",
-      });
-      if (retryError) console.error("Could not save business card row", retryError.message);
+    let assetId = "";
+    const inserted = await supabase.from("assets").insert(row).select("id").single();
+    if (inserted.data?.id) assetId = inserted.data.id as string;
+    else {
+      const retry = await supabase
+        .from("assets")
+        .insert({
+          bucket: row.bucket,
+          path: row.path,
+          public_url: row.public_url,
+          filename: row.filename,
+          mime_type: row.mime_type,
+          kind: row.kind,
+          client_id: row.client_id,
+          notes: "business-card",
+        })
+        .select("id")
+        .single();
+      if (retry.data?.id) assetId = retry.data.id as string;
+      else console.error("Could not save business card row", inserted.error?.message || retry.error?.message);
     }
 
     return NextResponse.json({
+      id: assetId || undefined,
       url: pngUrl,
       pdfUrl: pdfUrl || undefined,
       qrUrl,
       line,
+      personName,
+      personTitle,
+      phone,
+      email,
+      reply,
     });
   } catch (err) {
     console.error("Business card failed", err);

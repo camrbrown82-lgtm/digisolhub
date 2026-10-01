@@ -2,6 +2,10 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { PosterActions } from "@/components/hub/PosterActions";
+import { MicDictateButton, appendDictation } from "@/components/hub/MicDictateButton";
+
+type ChatMessage = { role: "kaylev" | "user"; text: string };
 
 export function BusinessCardMaker({
   companyName,
@@ -28,43 +32,80 @@ export function BusinessCardMaker({
   const [phone, setPhone] = useState(defaults.phone);
   const [email, setEmail] = useState(defaults.email);
   const [line, setLine] = useState(defaults.line);
+  const [directions, setDirections] = useState("");
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      role: "kaylev",
+      text: "Tell me what to put on the card, or what to change after you see it. I keep the name, phone, and email unless you say otherwise.",
+    },
+  ]);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [cardUrl, setCardUrl] = useState("");
   const [pdfUrl, setPdfUrl] = useState("");
   const [qrUrl, setQrUrl] = useState("");
+  const [assetId, setAssetId] = useState("");
 
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault();
+  async function makeCard(note: string) {
     if (!siteReady || busy) return;
+    const asked = note.trim();
     setBusy(true);
-    setStatus("Kaylev is typesetting the card and embedding the QR code…");
-    setCardUrl("");
-    setPdfUrl("");
-    setQrUrl("");
+    setStatus(asked ? "Kaylev is updating the card…" : "Kaylev is typesetting the card and embedding the QR code…");
+    if (asked) {
+      setMessages((current) => [...current, { role: "user", text: asked }]);
+      setDirections("");
+    }
     const response = await fetch("/api/hub/business-card", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ personName, personTitle, phone, email, line }),
+      body: JSON.stringify({ personName, personTitle, phone, email, line, directions: asked }),
     });
     const result = (await response.json().catch(() => ({}))) as {
       error?: string;
+      id?: string;
       url?: string;
       pdfUrl?: string;
       qrUrl?: string;
       line?: string;
+      personName?: string;
+      personTitle?: string;
+      phone?: string;
+      email?: string;
+      reply?: string;
     };
     setBusy(false);
     if (!response.ok || !result.url) {
       setStatus(result.error || "Kaylev could not build the card.");
+      setMessages((current) => [
+        ...current,
+        { role: "kaylev", text: result.error || "I could not build that card. Try again." },
+      ]);
       return;
     }
     setCardUrl(result.url);
     setPdfUrl(result.pdfUrl || "");
     setQrUrl(result.qrUrl || "");
+    setAssetId(result.id || "");
     if (result.line) setLine(result.line);
-    setStatus("Card saved. Print the PDF at 100% scale so the QR stays scannable.");
+    if (typeof result.personName === "string") setPersonName(result.personName);
+    if (typeof result.personTitle === "string") setPersonTitle(result.personTitle);
+    if (typeof result.phone === "string") setPhone(result.phone);
+    if (typeof result.email === "string") setEmail(result.email);
+    setMessages((current) => [
+      ...current,
+      { role: "kaylev", text: result.reply || "Card is ready. Tell me if you want a change." },
+    ]);
+    setStatus(
+      result.id
+        ? "Card saved. Archive or delete it if it does not look right. Print the PDF at 100% scale."
+        : "Card is ready, but it could not be filed for archive or delete. Print the PDF at 100% scale.",
+    );
     router.refresh();
+  }
+
+  function onSubmit(event: FormEvent) {
+    event.preventDefault();
+    void makeCard(directions);
   }
 
   return (
@@ -106,8 +147,44 @@ export function BusinessCardMaker({
               />
             </label>
           </div>
+
+          <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
+            <p className="text-sm font-medium text-white">Directions for Kaylev</p>
+            <div className="mt-2 max-h-48 space-y-2 overflow-y-auto">
+              {messages.map((message, index) => (
+                <p
+                  key={`${message.role}-${index}`}
+                  className={`rounded-lg px-3 py-2 text-sm ${
+                    message.role === "kaylev" ? "bg-indigo-500/10 text-indigo-100" : "bg-zinc-800 text-zinc-100"
+                  }`}
+                >
+                  <span className="mr-2 text-xs uppercase tracking-wide text-zinc-500">
+                    {message.role === "kaylev" ? "Kaylev" : "You"}
+                  </span>
+                  {message.text}
+                </p>
+              ))}
+            </div>
+            <label className="mt-3 block text-sm">
+              <span className="flex items-center justify-between gap-2">
+                Message
+                <MicDictateButton
+                  disabled={busy}
+                  onText={(chunk) => setDirections((current) => appendDictation(current, chunk))}
+                />
+              </span>
+              <textarea
+                value={directions}
+                onChange={(event) => setDirections(event.target.value)}
+                rows={3}
+                className="hub-field mt-1.5 resize-y"
+                placeholder="Example: shorter line, drop the email, put Founder under the name."
+              />
+            </label>
+          </div>
+
           <button type="submit" disabled={busy} className="hub-btn">
-            {busy ? "Making the card…" : "Kaylev, make this card"}
+            {busy ? "Making the card…" : directions.trim() ? "Send to Kaylev" : "Kaylev, make this card"}
           </button>
         </form>
       ) : (
@@ -135,6 +212,25 @@ export function BusinessCardMaker({
               </a>
             ) : null}
           </div>
+          {assetId ? (
+            <PosterActions
+              id={assetId}
+              noun="business card"
+              onDone={(action) => {
+                if (action === "delete") {
+                  setCardUrl("");
+                  setPdfUrl("");
+                  setQrUrl("");
+                  setAssetId("");
+                  setStatus("Card deleted.");
+                } else if (action === "archive") {
+                  setStatus("Card archived. Restore it from Archives on AI posters.");
+                } else {
+                  setStatus("Card restored to AI posters.");
+                }
+              }}
+            />
+          ) : null}
         </div>
       ) : null}
     </section>

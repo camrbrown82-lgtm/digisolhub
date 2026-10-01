@@ -7,9 +7,13 @@ import { Archive, ArchiveRestore, Trash2 } from "lucide-react";
 export function PosterActions({
   id,
   archived = false,
+  noun = "poster set",
+  onDone,
 }: {
   id: string;
   archived?: boolean;
+  noun?: string;
+  onDone?: (action: "archive" | "restore" | "delete") => void;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<"archive" | "delete" | "">("");
@@ -23,15 +27,17 @@ export function PosterActions({
     });
     setBusy("");
     if (!response.ok) return;
+    onDone?.(nextArchived ? "archive" : "restore");
     router.refresh();
   }
 
   async function remove() {
-    if (!confirm("Delete this poster set? This cannot be undone.")) return;
+    if (!confirm(`Delete this ${noun}? This cannot be undone.`)) return;
     setBusy("delete");
     const response = await fetch(`/api/hub/posters/${id}`, { method: "DELETE" });
     setBusy("");
     if (!response.ok) return;
+    onDone?.("delete");
     router.refresh();
   }
 
