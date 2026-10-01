@@ -4,6 +4,7 @@ import { isAdCta, isAdObjective, type AdObjective } from "@/lib/meta/adOptions";
 import { lookalikeForCountry } from "@/lib/meta/audiences";
 import { MetaApiError, metaGraph } from "@/lib/meta/graph";
 import { applyPlacementRecommendations } from "@/lib/meta/opportunity";
+import { isDigisolSiteUrl, kaylevAuditUrl } from "@/lib/site";
 import { fitInto } from "@/lib/stampLogo";
 
 export { AD_CTAS, AD_OBJECTIVES, isAdCta, isAdObjective, type AdCta, type AdObjective } from "@/lib/meta/adOptions";
@@ -251,13 +252,14 @@ export async function createPausedCampaign(draft: AdDraft): Promise<CreatedAd> {
     }
 
     const cta = isAdCta(draft.cta) ? draft.cta : "LEARN_MORE";
+    const link = isDigisolSiteUrl(draft.link_url) ? kaylevAuditUrl() : draft.link_url;
     const linkData = {
       image_hash: imageHash,
-      link: draft.link_url,
+      link,
       message: draft.primary_text,
       name: draft.headline,
       description: draft.description || undefined,
-      call_to_action: { type: cta, value: { link: draft.link_url } },
+      call_to_action: { type: cta, value: { link } },
     };
     const creativeParams = (instagram: boolean) => ({
       name: `${draft.name} · creative`,

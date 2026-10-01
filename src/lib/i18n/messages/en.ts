@@ -636,6 +636,8 @@ Got a website? Share the URL and I'll run a free audit. No site yet, or curious 
     greetingGeneral: (name: string) => `Hey there! I'm ${name}, DigiSol's digital assistant. Whether you're local or scaling from afar, we help businesses fix conversion leaks and grow online.
 
 Got a website? Share the URL and I'll run a free audit. No site yet, or curious about cost / what you'd need? I can set you up with a free consultation with Cameron — just tell me your email.`,
+    greetingAudit: (name: string) =>
+      `Hey, I'm ${name}. I can run a free website audit for you right here. Paste your site address and I'll score it and email you the breakdown.`,
     panelAria: (name: string) => `${name} DigiSol chat`,
     subtitle: "Free website audit",
     close: "Close chat",

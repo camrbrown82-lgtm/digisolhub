@@ -922,6 +922,8 @@ Vous avez un site Web? Donnez-moi l’adresse et je ferai un audit gratuit. Pas 
     greetingGeneral: (name) => `Bonjour! Ici ${name}, l’IA de DigiSol. Que vous soyez tout près ou loin d’ici, nous aidons les entreprises à colmater leurs fuites de conversion et à croître en ligne.
 
 Vous avez un site Web? Donnez-moi l’adresse et je ferai un audit gratuit. Pas encore de site, ou des questions sur les coûts ou vos besoins? Je peux vous réserver une consultation gratuite avec Cameron : donnez-moi simplement votre courriel.`,
+    greetingAudit: (name) =>
+      `Bonjour, ici ${name}. Je peux faire un audit de site gratuit pour vous, ici même. Collez l’adresse de votre site et je vais le noter, puis vous envoyer le compte rendu par courriel.`,
     panelAria: (name) => `Discussion avec ${name} de DigiSol`,
     subtitle: "Audit de site gratuit",
     close: "Fermer la discussion",

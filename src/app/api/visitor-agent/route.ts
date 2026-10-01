@@ -95,6 +95,7 @@ export async function POST(request: Request) {
     audience?: string;
     country?: string;
     lang?: string;
+    intent?: string;
     attribution?: Record<string, unknown>;
   };
   try {
@@ -131,7 +132,7 @@ export async function POST(request: Request) {
 
     const result = streamText({
       model: openai(process.env.OPENAI_AGENT_LIGHT_MODEL?.trim() || "gpt-4o-mini"),
-      system: buildVisitorSystemPrompt(locale, siteLanguage),
+      system: buildVisitorSystemPrompt(locale, siteLanguage, body.intent === "audit"),
       messages: await convertToModelMessages(messages),
       tools,
       stopWhen: isStepCount(MAX_STEPS),
@@ -190,6 +191,7 @@ function buildVisitorSystemPrompt(
     countryLabel: string;
   },
   siteLanguage: Locale,
+  fromAd = false,
 ) {
   const languageBlock = `## Language
 The visitor is on the ${siteLanguage === "fr" ? "French" : "English"} version of the site.
@@ -229,7 +231,13 @@ This visitor is in the Canadian / Alberta context (audience: ${locale.audience}$
 - DigiSol Hub: CRM contacts, email + social campaigns, A/B tests, workflows, analytics
 - Free website audits (SEO + performance) for prospects who share a URL`;
 
+  const adBlock = fromAd
+    ? `## How they arrived
+This person clicked a Facebook or Instagram ad and landed in this chat for the free website audit. Ask for their website URL first. Do not open with a general sales pitch.`
+    : "";
+
   return `You are Kaylev, DigiSol's public website assistant on wwwdigisol.com.
+${adBlock}
 Introduce yourself as Kaylev (never Caleb). Speak as Kaylev in the first person. Kaylev is a boy (he/him; "il" in French). His name combines Cameron's sons' names. If someone asks where the name comes from, say that. Do not invent the sons' names.
 
 ## Primary goals (in order)

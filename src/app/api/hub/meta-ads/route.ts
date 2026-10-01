@@ -6,6 +6,7 @@ import { ensureMetaSchema } from "@/lib/ensureMetaSchema";
 import { adsWorkspace, DRAFT_COLUMNS, draftFields } from "@/lib/meta/adDrafts";
 import { AD_CTAS, AD_OBJECTIVES, maxDailyBudget } from "@/lib/meta/ads";
 import { createOpenAIClient, getOpenAIApiKey, openaiErrorMessage } from "@/lib/openai";
+import { isDigisolSiteUrl, kaylevAuditUrl } from "@/lib/site";
 import { companySiteUrl } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,7 @@ export async function POST(request: Request) {
 
   const { companyName, brand } = brandFromClient(workspace.client);
   const site = companySiteUrl(workspace.client);
+  const digisolAd = Boolean(site && isDigisolSiteUrl(site));
 
   let written: Record<string, unknown> = {};
   try {
@@ -46,7 +48,7 @@ headline: at most 40 characters
 primary_text: 1-3 short sentences, at most 220 characters, ending on one clear next step
 description: at most 30 characters
 cta: one of ${Object.keys(AD_CTAS).join(", ")}
-link_path: the page path on ${site || "the website"} to send people to, e.g. "/" or "/contact"
+link_path: ${digisolAd ? `"/" — the click opens Kaylev's free website audit, so mention that free audit in primary_text` : `the page path on ${site || "the website"} to send people to, e.g. "/" or "/contact"`}
 locations: array of 1-5 place names the brief targets, defaulting to where the company works. List the cities, or one province, or one country — not a city together with the province or country that contains it
 age_min, age_max: integers between 18 and 65. Use the ages of people who would actually buy this offer. Use 18 and 65 only when the offer is for every adult.
 
@@ -63,12 +65,14 @@ ${brandKitPrompt(companyName, brand, "copy")}`,
   }
 
   const path = typeof written.link_path === "string" && written.link_path.startsWith("/") ? written.link_path : "/";
+  const linkUrl =
+    site && isDigisolSiteUrl(site) ? kaylevAuditUrl() : site ? `${site.replace(/\/$/, "")}${path}` : "";
   const fields = draftFields({
     ...written,
     ...(body?.objective ? { objective: body.objective } : {}),
     daily_budget: body?.dailyBudget || 20,
     poster_url: body?.posterUrl || "",
-    link_url: site ? `${site.replace(/\/$/, "")}${path}` : "",
+    link_url: linkUrl,
   });
 
   const { data, error: insertError } = await supabase

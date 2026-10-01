@@ -29,8 +29,16 @@ function readCookie(name: string) {
   return match ? decodeURIComponent(match.split("=").slice(1).join("=")) : "";
 }
 
-function createGreetingMessage(audience: VisitorAudience, t: Messages["chat"]): UIMessage {
-  const text = audience === "alberta" ? t.greetingAlberta(KAYLEV_NAME) : t.greetingGeneral(KAYLEV_NAME);
+function createGreetingMessage(
+  audience: VisitorAudience,
+  t: Messages["chat"],
+  auditOffer: boolean,
+): UIMessage {
+  const text = auditOffer
+    ? t.greetingAudit(KAYLEV_NAME)
+    : audience === "alberta"
+      ? t.greetingAlberta(KAYLEV_NAME)
+      : t.greetingGeneral(KAYLEV_NAME);
   return {
     id: "kaylev-visitor-greeting",
     role: "assistant",
@@ -53,6 +61,7 @@ export function VisitorChat() {
   const locale = useLocale();
   const t = useMessages().chat;
   const [open, setOpen] = useState(false);
+  const [auditOffer, setAuditOffer] = useState(false);
   const [input, setInput] = useState("");
   const [audience, setAudience] = useState<VisitorAudience>("international");
   const [country, setCountry] = useState("");
@@ -65,8 +74,15 @@ export function VisitorChat() {
     setCountry(readCookie(GEO_COUNTRY_COOKIE).toUpperCase());
   }, []);
 
-  // Open by default on desktop; stay collapsed on small screens so copy isn't covered.
+  // Ad clicks use ?kaylev=audit and open the free-audit offer, including on a phone.
+  // Otherwise the chat starts open on desktop and collapsed on a small screen.
   useEffect(() => {
+    const audit = new URLSearchParams(window.location.search).get("kaylev") === "audit";
+    setAuditOffer(audit);
+    if (audit) {
+      setOpen(true);
+      return;
+    }
     const mq = window.matchMedia("(min-width: 1024px)");
     const sync = () => setOpen(mq.matches);
     sync();
@@ -89,15 +105,16 @@ export function VisitorChat() {
           country: country || undefined,
           lang: locale,
           attribution: readStoredAttribution() ?? undefined,
+          intent: auditOffer ? "audit" : undefined,
         }),
       }),
-    [audience, country, locale],
+    [audience, country, locale, auditOffer],
   );
 
   const { messages, sendMessage, status, error, clearError } = useChat({
-    id: `kaylev-${locale}-${audience}-${country || "xx"}`,
+    id: `kaylev-${locale}-${audience}-${country || "xx"}-${auditOffer ? "audit" : "home"}`,
     transport,
-    messages: [createGreetingMessage(audience, t)],
+    messages: [createGreetingMessage(audience, t, auditOffer)],
   });
 
   const busy = status === "submitted" || status === "streaming";

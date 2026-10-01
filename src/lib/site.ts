@@ -1,4 +1,20 @@
 export const DIGISOL_SITE_URL = "https://wwwdigisol.com";
+
+/** Facebook and Instagram ads land here so Kaylev opens on the free website audit. */
+export function kaylevAuditUrl() {
+  return `${DIGISOL_SITE_URL}/?kaylev=audit`;
+}
+
+export function isDigisolSiteUrl(url: string) {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "");
+    const siteHost = new URL(DIGISOL_SITE_URL).hostname.replace(/^www\./, "");
+    return host === siteHost;
+  } catch {
+    return false;
+  }
+}
+
 export const DIGISOL_FOUNDER = "Cameron Brown";
 export const DIGISOL_FOUNDER_TITLE = "Founder & CEO";
 /** Public business inbox — use everywhere visitors / schema / Kaylev see email. */

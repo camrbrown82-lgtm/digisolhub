@@ -11,6 +11,7 @@ import { maxDailyBudget } from "@/lib/meta/ads";
 import { metaPixelId } from "@/lib/meta/config";
 import { createOpenAIClient, getOpenAIApiKey, openaiErrorMessage } from "@/lib/openai";
 import { isStoredPosterUrl } from "@/lib/posterSizes";
+import { isDigisolSiteUrl, kaylevAuditUrl } from "@/lib/site";
 import { dailyFromWeekly, planItems } from "@/lib/social/weekPlan";
 import { companySiteUrl } from "@/lib/workspace";
 
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
 summary: 1 sentence of the plan
 why: 2 sentences on which platform and which cities will work best, and why
 posts: exactly 3 objects, each with channel (one of ${channels}), dayOffset (0, 2 or 4), hour (8-20, Mountain Time), body (the full post, at most 400 characters), posterIndex (0 to ${Math.max(0, posters.length - 1)}), reason (one short sentence)
-ad: one object with name, objective (${leadsOk ? Object.keys(AD_OBJECTIVES).join(" or ") : "OUTCOME_TRAFFIC only"}), headline (max 40 characters), primaryText, description (max 30 characters), cta (one of ${Object.keys(AD_CTAS).join(", ")}), linkPath (a path on ${site || "the site"}), locations (1-4 city names, or one province, not a city plus the province that contains it), ageMin, ageMax, posterIndex, reason
+ad: one object with name, objective (${leadsOk ? Object.keys(AD_OBJECTIVES).join(" or ") : "OUTCOME_TRAFFIC only"}), headline (max 40 characters), primaryText${site && isDigisolSiteUrl(site) ? " (mention the free website audit — the click opens Kaylev)" : ""}, description (max 30 characters), cta (one of ${Object.keys(AD_CTAS).join(", ")}), linkPath (a path on ${site || "the site"}), locations (1-4 city names, or one province, not a city plus the province that contains it), ageMin, ageMax, posterIndex, reason
 
 Posts publish to the company's Facebook Page and Instagram feed. Ads run on Facebook and Instagram in the cities you name. Do not plan Groups, Stories, TikTok, or LinkedIn ads.
 Use only facts from the brief and the brand kit. No invented stats, prices, or guarantees.
@@ -94,7 +95,8 @@ ${brandKitPrompt(companyName, brand, "copy")}`,
             id: "ad",
             kind: "ad",
             posterUrl: withPoster(ad.posterIndex),
-            linkUrl: site ? `${site.replace(/\/$/, "")}${path}` : "",
+            linkUrl:
+              site && isDigisolSiteUrl(site) ? kaylevAuditUrl() : site ? `${site.replace(/\/$/, "")}${path}` : "",
             included: weekly > 0,
           }
         : null,
