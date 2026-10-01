@@ -48,7 +48,7 @@ description: at most 30 characters
 cta: one of ${Object.keys(AD_CTAS).join(", ")}
 link_path: the page path on ${site || "the website"} to send people to, e.g. "/" or "/contact"
 locations: array of 1-5 place names the brief targets, defaulting to where the company works. List the cities, or one province, or one country — not a city together with the province or country that contains it
-age_min, age_max: integers between 18 and 65
+age_min, age_max: integers between 18 and 65. Use the ages of people who would actually buy this offer. Use 18 and 65 only when the offer is for every adult.
 
 Use only facts from the brief and the brand kit. No invented stats, prices, guarantees, or refunds.
 

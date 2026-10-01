@@ -6,6 +6,7 @@ import { adAccountInfo, maxDailyBudget, metaPageId, type AdAccountInfo } from "@
 import { adviceLabel, coachCampaigns } from "@/lib/meta/adsCoach";
 import { metaAdAccountId } from "@/lib/meta/config";
 import { emptyMetaAdsSummary, fetchMetaAdsSummary } from "@/lib/meta/insights";
+import { emptyOpportunity, opportunityStatus } from "@/lib/meta/opportunity";
 import { createClient } from "@/lib/supabase/server";
 import { getWorkspaceClient, isDigisolClient, resolveClientId } from "@/lib/workspace";
 
@@ -53,9 +54,13 @@ export default async function AdsPage() {
   }
 
   const clientId = (await resolveClientId(supabase)) || active?.id || "";
-  const [account, summary, draftsResult, postersResult] = await Promise.all([
+  const [account, summary, opportunity, draftsResult, postersResult] = await Promise.all([
     withTimeout<AdAccountInfo>(adAccountInfo(), 6000, { ok: false, error: "Meta did not answer in time." }),
     withTimeout(fetchMetaAdsSummary(14), 8000, emptyMetaAdsSummary(14)),
+    withTimeout(opportunityStatus(), 12000, {
+      ...emptyOpportunity(),
+      error: "Meta did not answer in time. Refresh to try again.",
+    }),
     supabase
       .from("meta_ad_drafts")
       .select(DRAFT_COLUMNS)
@@ -122,6 +127,36 @@ export default async function AdsPage() {
           </ol>
         </div>
       )}
+
+      {connected ? (
+        <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 text-sm text-zinc-300">
+          <h2 className="text-lg font-semibold text-white">Opportunity score</h2>
+          <p className="mt-2 text-2xl font-semibold text-white">
+            {opportunity.score == null ? "—" : Math.round(opportunity.score)}
+            <span className="text-base font-normal text-zinc-500"> / 100</span>
+          </p>
+          {opportunity.error ? <p className="mt-2 text-amber-200">{opportunity.error}</p> : null}
+          {opportunity.lookalike.note ? <p className="mt-2">{opportunity.lookalike.note}</p> : null}
+          {opportunity.applied.length ? (
+            <p className="mt-2">Turned on: {opportunity.applied.join(", ")}.</p>
+          ) : null}
+          {opportunity.held.length ? (
+            <ul className="mt-3 space-y-1 text-zinc-400">
+              {opportunity.held.map((item) => (
+                <li key={item.title}>
+                  Held back {item.title}. {item.reason}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {opportunity.leftInAdsManager > 0 ? (
+            <p className="mt-2 text-zinc-500">
+              {opportunity.leftInAdsManager} other Meta suggestion{opportunity.leftInAdsManager === 1 ? "" : "s"} left in
+              Ads Manager so the poster, copy, and budget stay as you set them.
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       {advice.length ? (
         <section className="space-y-3">

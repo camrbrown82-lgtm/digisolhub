@@ -138,16 +138,20 @@ function DraftCard({
         headers: { "Content-Type": "application/json" },
         body: body ? JSON.stringify(body) : undefined,
       });
-      const json = (await response.json().catch(() => ({}))) as { error?: string; draft?: AdDraftRow };
+      const json = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        draft?: AdDraftRow;
+        audienceNote?: string;
+      };
       if (json.draft) {
         setDraft(json.draft);
         setLocations(json.draft.locations.join(", "));
       }
       if (!response.ok) {
         setMessage(json.error || "Something went wrong.");
-        return false;
+        return null;
       }
-      return true;
+      return json;
     } finally {
       setBusy("");
     }
@@ -164,8 +168,13 @@ function DraftCard({
 
   async function createInMeta() {
     if (!(await call("PATCH", fields(), "create"))) return;
-    if (await call("POST", { action: "create" }, "create")) {
-      setMessage("Created in Meta, paused. Nothing spends until you launch it.");
+    const created = await call("POST", { action: "create" }, "create");
+    if (created) {
+      setMessage(
+        created.audienceNote
+          ? `Created in Meta, paused. Nothing spends until you launch it. ${created.audienceNote}`
+          : "Created in Meta, paused. Nothing spends until you launch it.",
+      );
       router.refresh();
     }
   }
@@ -331,6 +340,10 @@ function DraftCard({
                 onChange={(e) => setLocations(e.target.value)}
                 placeholder="Airdrie, Calgary, Edmonton"
               />
+              <span className="mt-1 block text-zinc-500">
+                The ad stays inside these places and ages. A 1% lookalike is added only after the pixel has 100
+                visitors, and those people still have to be in these places.
+              </span>
             </label>
             <div className="sm:col-span-2">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">

@@ -84,7 +84,7 @@ export async function POST(request: Request, { params }: Params) {
         meta_creative_id: created.creativeId,
         meta_ad_id: created.adId,
       });
-      return NextResponse.json({ ok: true, draft: saved });
+      return NextResponse.json({ ok: true, draft: saved, audienceNote: created.audienceNote });
     }
     if (body?.action === "launch") {
       if (!draft.meta_campaign_id) return NextResponse.json({ error: "Create it in Meta first." }, { status: 400 });
