@@ -824,6 +824,8 @@ Got a website? Share the URL and I'll run a free audit. No site yet, or curious 
       `Pick a core package, add a monthly growth engine if you want ongoing SEO or ads, then stack modules for cities, e-commerce, or custom apps. Same DigiSol dual threat — design, engineering, and marketing — for every Alberta industry. Listed prices exclude ${gst}% GST; tax is added at Stripe Checkout.`,
     coreHeading: "1 · Core package",
     monthlyHeading: "2 · Monthly growth (optional)",
+    monthlyFeeNote:
+      "Of each monthly rate, 18% is DigiSol's fee for setting your company up on this platform and running it. The other 82% goes directly to your ad spend, SEO, and the other services in that plan.",
     launchOnly: "Launch only",
     launchOnlyBody: "No monthly retainer — pay for the build and run campaigns later.",
     modulesHeading: "3 · Scale modules",

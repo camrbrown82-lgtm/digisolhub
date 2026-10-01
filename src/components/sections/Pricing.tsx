@@ -552,6 +552,9 @@ export function PricingBuilder({
             {t.retainersHeading}
           </h3>
           <p className="mt-2 text-sm text-zinc-500">{t.retainersBody}</p>
+          <p className="mt-3 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm leading-relaxed text-amber-50">
+            {t.monthlyFeeNote}
+          </p>
           <div className="mt-4 grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
             <button
               type="button"
@@ -672,6 +675,9 @@ export function PricingBuilder({
         <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
           {t.monthlyHeading}
         </h3>
+        <p className="mt-3 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm leading-relaxed text-amber-50">
+          {t.monthlyFeeNote}
+        </p>
         <div className="mt-4 grid gap-4 lg:grid-cols-3">
           <button
             type="button"

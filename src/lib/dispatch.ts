@@ -163,7 +163,7 @@ export const DISPATCH_ISSUES: DispatchIssue[] = [
           "Foundation, $4,500: a custom-designed website (up to 6 pages), mobile-first and fast, with lead capture into the Hub, Google Analytics tracking, and local business schema.",
           "Growth Engine, $7,500: everything in Foundation plus your Google Business Profile, local SEO, conversion-focused pages, an automated nurture workflow, and city landing pages.",
           "Full Funnel, $12,000: everything in Growth Engine plus Google Ads and Meta campaigns, landing pages built for paid traffic, a campaign dashboard, and quarterly strategy reviews.",
-          "Monthly retainers: Local Growth $1,200, Paid Media $1,800 (ad spend separate), or Full Growth $2,800 with local SEO, ads, content, and priority support.",
+          "Monthly retainers: Local Growth $1,200, Paid Media $1,800, or Full Growth $2,800 with local SEO, ads, content, and priority support. Of each monthly rate, 18% is DigiSol's platform fee. The other 82% goes to your ad spend, SEO, and the other services in that plan.",
           "Add-ons: extra pages, city landing packs, e-commerce, custom web apps, and brand kit refreshes.",
         ],
         after: [

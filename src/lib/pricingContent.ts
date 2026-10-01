@@ -111,7 +111,7 @@ export const PRICING_FAQ: { q: string; a: string }[] = [
   },
   {
     q: "Are there monthly costs?",
-    a: `DigiSol hosts and maintains your site, and that's covered by any monthly retainer: ${retainerList}. Launching without a retainer? Ask about hosting in your quote. Ad spend is paid separately to Google and Meta.`,
+    a: `DigiSol hosts and maintains your site, and that's covered by any monthly retainer: ${retainerList}. Launching without a retainer? Ask about hosting in your quote. Of each monthly rate, 18% is DigiSol's fee for setting you up on this platform. The other 82% goes directly to your ad spend, SEO, and the other services in that plan.`,
   },
   {
     q: "Do I own my domain and content?",

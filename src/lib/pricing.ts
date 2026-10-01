@@ -120,7 +120,7 @@ export const PRICING_RETAINERS: PricingItem[] = [
   {
     id: "retainer_ads",
     name: "Paid media retainer",
-    blurb: "Google + Meta management on top of your site (ad spend separate).",
+    blurb: "Google + Meta management on top of your site.",
     kind: "recurring",
     amount: 1800_00,
     interval: "month",

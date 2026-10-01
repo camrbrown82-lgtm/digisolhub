@@ -90,7 +90,7 @@ const pricingItems: Record<string, PricingItemCopy> = {
   },
   retainer_ads: {
     name: "Forfait Publicité payante",
-    blurb: "Gestion Google et Meta en plus de votre site (budget publicitaire en sus).",
+    blurb: "Gestion Google et Meta en plus de votre site.",
     includes: [
       "Création et optimisation des campagnes",
       "Notes sur les tests de créations",
@@ -1134,7 +1134,7 @@ Vous avez un site Web? Donnez-moi l’adresse et je ferai un audit gratuit. Pas 
       },
       {
         q: "Y a-t-il des frais mensuels?",
-        a: `DigiSol héberge et entretient votre site, ce qui est couvert par n’importe quel forfait mensuel : ${retainerList}. Vous lancez sans forfait mensuel? Demandez les options d’hébergement dans votre soumission. Le budget publicitaire est payé séparément à Google et à Meta.`,
+        a: `DigiSol héberge et entretient votre site, ce qui est couvert par n’importe quel forfait mensuel : ${retainerList}. Vous lancez sans forfait mensuel? Demandez les options d’hébergement dans votre soumission. Sur chaque tarif mensuel, 18 % constituent les frais de DigiSol pour vous installer sur cette plateforme. Les 82 % restants vont directement à votre budget publicitaire, au SEO et aux autres services de ce forfait.`,
       },
       {
         q: "Suis-je propriétaire de mon domaine et de mon contenu?",
@@ -1226,6 +1226,8 @@ Vous avez un site Web? Donnez-moi l’adresse et je ferai un audit gratuit. Pas 
       `Choisissez un forfait de base, ajoutez un moteur de croissance mensuel si vous voulez du SEO ou de la publicité en continu, puis empilez des modules pour les villes, le commerce en ligne ou les applications sur mesure. La même force double de DigiSol (design, ingénierie et marketing) pour tous les secteurs de l’Alberta. Les prix affichés excluent la TPS de ${gst} %; la taxe est ajoutée au paiement Stripe.`,
     coreHeading: "1 · Forfait de base",
     monthlyHeading: "2 · Croissance mensuelle (facultatif)",
+    monthlyFeeNote:
+      "Sur chaque tarif mensuel, 18 % constituent les frais de DigiSol pour installer votre entreprise sur cette plateforme et la faire fonctionner. Les 82 % restants vont directement à votre budget publicitaire, au SEO et aux autres services de ce forfait.",
     launchOnly: "Lancement seulement",
     launchOnlyBody: "Aucun forfait mensuel : payez le développement et lancez vos campagnes plus tard.",
     modulesHeading: "3 · Modules d’expansion",
