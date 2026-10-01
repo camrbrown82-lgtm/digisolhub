@@ -143,7 +143,7 @@ export function GoogleRating({ location }: { location: ListingLocation }) {
       aria-label={t.reviewAria}
       className={
         isFooter
-          ? "inline-flex items-center gap-2.5 rounded-lg border border-indigo-400/30 bg-indigo-500/10 px-2.5 py-1.5 text-left transition hover:border-sky-400/40 hover:bg-indigo-500/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+          ? "inline-flex w-full max-w-xs items-center gap-2.5 rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-3 py-2.5 text-left transition hover:border-sky-400/40 hover:bg-indigo-500/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
           : "inline-flex items-center gap-3 rounded-2xl border border-indigo-400/30 bg-indigo-500/10 px-4 py-3 text-left transition hover:border-indigo-400/50 hover:bg-indigo-500/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
       }
     >

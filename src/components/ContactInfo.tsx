@@ -95,8 +95,8 @@ export function ContactInfo({ location }: ContactInfoProps) {
   }
 
   return (
-    <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5">
-      <li className="w-full text-sm text-indigo-200/80 sm:w-auto sm:basis-full">
+    <ul className="mt-4 space-y-2.5">
+      <li className="text-sm leading-snug text-indigo-100/90">
         <Identity location={location} />
       </li>
       {links.map((link) => (
