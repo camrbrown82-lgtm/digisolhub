@@ -455,7 +455,42 @@ function siteContentBlock(s: SiteSnapshot) {
   const pages = s.pages
     .map((page) => `#### Page: ${page.url}${page.title ? ` — ${page.title}` : ""}\n${page.text}`)
     .join("\n\n");
-  return `${features}\nPages read (${s.pages.length}), exact on-page copy:\n${pages}`;
+  return `${features}\nPages read (${s.pages.length}), on-page copy:\n${pages}`;
+}
+
+/**
+ * gpt-4.1 rejects a single request whose prompt plus reserved output exceeds
+ * this account's 30k tokens-per-minute cap. Keep page copy inside a character
+ * budget and reserve fewer output tokens so the report call fits.
+ */
+const REPORT_MAX_OUTPUT_TOKENS = 6500;
+const REPORT_PAGE_CHAR_BUDGET = 36_000;
+
+function trimSnapshotPages(snapshot: SiteSnapshot, charBudget: number): SiteSnapshot {
+  if (!snapshot.pages?.length) {
+    return { ...snapshot, excerpt: snapshot.excerpt.slice(0, Math.min(charBudget, 1800)) };
+  }
+  const pages: SiteSnapshot["pages"] = [];
+  let left = charBudget;
+  for (const page of snapshot.pages) {
+    if (left < 400) break;
+    const text = page.text.slice(0, left);
+    left -= text.length;
+    pages.push({ ...page, text });
+  }
+  return { ...snapshot, pages };
+}
+
+function trimForReport(company: SiteSnapshot, competitors: SiteSnapshot[]) {
+  const companyBudget = Math.round(REPORT_PAGE_CHAR_BUDGET * 0.62);
+  const each = Math.max(
+    2200,
+    Math.floor((REPORT_PAGE_CHAR_BUDGET - companyBudget) / Math.max(competitors.length, 1)),
+  );
+  return {
+    company: trimSnapshotPages(company, companyBudget),
+    competitors: competitors.map((c) => trimSnapshotPages(c, each)),
+  };
 }
 
 export async function synthesizeReport(input: {
@@ -471,11 +506,12 @@ export async function synthesizeReport(input: {
   const openai = openaiClient();
   const presenceFor = (url: string) =>
     input.presence.find((p) => prospectHostKey(p.url) === prospectHostKey(url));
+  const trimmed = trimForReport(input.company, input.competitors);
 
   const result = await generateText({
     model: openai(COMPETITIVE_REPORT_MODEL),
     temperature: 0,
-    maxOutputTokens: 9000,
+    maxOutputTokens: REPORT_MAX_OUTPUT_TOKENS,
     output: Output.object({ schema: competitiveReportSchema }),
     prompt: `You are Kaylev, writing a competitive analysis for one client company. DigiSol is the agency preparing the report. DigiSol is not the company being analyzed.
 
@@ -486,7 +522,7 @@ ${playbookPromptBlock(input.inputs)}
 
 Use only the data below. Be specific and evidence-based: cite scores, ratings, review counts, titles, and what each site actually says. Where data is "unknown", say so and add it to dataGaps rather than inventing it.
 
-${input.companyName}'s own website is given in full below: the exact copy of its homepage and key pages, plus a list of what is already on the site. Treat it as the source of truth about what ${input.companyName} already does.
+${input.companyName}'s website is below: copy from its homepage and key pages (shortened when the site is long), plus a list of what is already on the site. Treat the "Already on the site" list as complete even when a page's copy was cut.
 - Before recommending anything, check that copy and the "Already on the site" list. Never recommend adding something the company already has (for example a pricing page, quote form, FAQ, blog, click-to-call, booking, city pages or structured data).
 - Every path listed after "city/service-area page link(s)" is a live landing page. Read those pages. Do not tell the company they are missing a city or service landing page that is already listed, and do not recommend creating one. Suggest a change to that specific page instead.
 - An "Online booking link" on that list means booking is already live (including a Google Calendar appointment page). Do not recommend adding booking.
@@ -506,10 +542,10 @@ The action plan is the most important part. Give 8-12 actions ordered by priorit
 Keyword opportunities should be local search terms for ${input.inputs.location} that customers of this exact industry type (${input.inputs.industry}) actually search.
 
 ## Company
-${describeSite(input.company, presenceFor(input.company.url))}
+${describeSite(trimmed.company, presenceFor(input.company.url))}
 
 ## Competitors
-${input.competitors.map((c) => describeSite(c, presenceFor(c.url))).join("\n\n") || "(no competitors could be analysed)"}`,
+${trimmed.competitors.map((c) => describeSite(c, presenceFor(c.url))).join("\n\n") || "(no competitors could be analysed)"}`,
   });
 
   if (!result.output) throw new Error("Kaylev could not produce a report. Try again.");
