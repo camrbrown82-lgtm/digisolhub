@@ -19,10 +19,10 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T) {
 }
 
 const SETUP_STEPS = [
-  "Business Settings → Users → System users → Add a system user (Admin).",
-  "Assign assets to it: the ad account (full control), the Facebook Page, the Instagram account, and the Pixel.",
-  "Generate a token for your app with expiry Never and ads_read, ads_management, business_management, pages_show_list, pages_read_engagement, pages_manage_posts, read_insights, instagram_basic, instagram_content_publish.",
-  "Vercel → digisolhub → Environment Variables: set META_CAPI_ACCESS_TOKEN to that token (and keep META_AD_ACCOUNT_ID and META_PAGE_ID), then redeploy.",
+  "Business Settings → Users → System users → open DigiSol Hub.",
+  "Assign assets: ad account 1411615713754992 (full control), the Facebook Page, Instagram, and the dataset. Do this before generating the token.",
+  "Generate a new token on that system user, expiry Never, with ads_read and ads_management. A Graph API Explorer token will not clear this.",
+  "Replace META_CAPI_ACCESS_TOKEN in Vercel with that new token, then redeploy.",
 ];
 
 const ADVICE_STYLE = {
@@ -108,8 +108,12 @@ export default async function AdsPage() {
         <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm text-amber-100">
           <p className="font-medium text-amber-50">Connect the Meta ad account</p>
           <p className="mt-1 text-amber-100/80">
-            {account.error || (!metaPageId() ? "META_PAGE_ID is not set." : "Not connected.")} You can still write
-            drafts now; they&apos;ll be ready to send once this is fixed.
+            {account.error
+              ? `Meta rejected the saved token: ${account.error}`
+              : !metaPageId()
+                ? "META_PAGE_ID is not set."
+                : "Not connected."}{" "}
+            You can still write drafts now; they&apos;ll be ready to send once this is fixed.
           </p>
           <ol className="mt-3 list-inside list-decimal space-y-1 text-amber-100/80">
             {SETUP_STEPS.map((step) => (
