@@ -1,4 +1,5 @@
 import { AiImageForm } from "@/components/hub/AiImageForm";
+import { BusinessCardMaker } from "@/components/hub/BusinessCardMaker";
 import { PosterActions } from "@/components/hub/PosterActions";
 import { PosterExport } from "@/components/hub/PosterExport";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
@@ -6,8 +7,15 @@ import { getBrandLogoUrl } from "@/lib/brandLogo";
 import { brandFromClient } from "@/lib/branding";
 import { listPosterAssets } from "@/lib/posterArchive";
 import { groupPosterSeries, socialPackFromAsset } from "@/lib/posterSocial";
+import {
+  DIGISOL_EMAIL,
+  DIGISOL_FOUNDER,
+  DIGISOL_FOUNDER_TITLE,
+  DIGISOL_PHONE_DISPLAY,
+  isDigisolSiteUrl,
+} from "@/lib/site";
 import { createClient } from "@/lib/supabase/server";
-import { companySiteUrl, getActiveClient, getWorkspaceClient } from "@/lib/workspace";
+import { companySiteUrl, getActiveClient, getWorkspaceClient, isDigisolClient } from "@/lib/workspace";
 
 export default async function AiPage() {
   const supabase = await createClient();
@@ -51,6 +59,25 @@ export default async function AiPage() {
           brand.highlightColor,
           brand.primaryColor,
         ]}
+        canQr={Boolean(siteUrl)}
+      />
+      <BusinessCardMaker
+        key={brandSource?.id || companyName}
+        companyName={companyName}
+        siteReady={Boolean(siteUrl)}
+        siteHint="Add this company's domain on Brand first. The QR code needs a website to open."
+        scanNote={
+          siteUrl && isDigisolSiteUrl(siteUrl)
+            ? "On DigiSol's site, a scan opens Kaylev's free website audit."
+            : "A scan opens this company's website."
+        }
+        defaults={{
+          personName: isDigisolClient(brandSource) ? DIGISOL_FOUNDER : "",
+          personTitle: isDigisolClient(brandSource) ? DIGISOL_FOUNDER_TITLE : "",
+          phone: isDigisolClient(brandSource) ? DIGISOL_PHONE_DISPLAY : "",
+          email: isDigisolClient(brandSource) ? DIGISOL_EMAIL : "",
+          line: "",
+        }}
       />
       <div className="space-y-10">
         {groups.map((slides) => {

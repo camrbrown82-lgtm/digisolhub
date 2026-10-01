@@ -20,6 +20,7 @@ export function AiImageForm({
   colors,
   logoUrl,
   fonts,
+  canQr,
 }: {
   companyName: string;
   tagline: string;
@@ -27,10 +28,12 @@ export function AiImageForm({
   colors: string[];
   logoUrl?: string;
   fonts?: string;
+  canQr?: boolean;
 }) {
   const router = useRouter();
   const [prompt, setPrompt] = useState("");
   const [format, setFormat] = useState<PosterFormat>("portrait");
+  const [qr, setQr] = useState(false);
   const [status, setStatus] = useState("");
   const [urls, setUrls] = useState<string[]>([]);
   const [artDirection, setArtDirection] = useState("");
@@ -47,7 +50,7 @@ export function AiImageForm({
     const response = await fetch("/api/hub/ai/image", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, format }),
+      body: JSON.stringify({ prompt, format, qr }),
     });
     let result: {
       error?: string;
@@ -57,6 +60,7 @@ export function AiImageForm({
       prompt?: string;
       social?: PosterSocialPack;
       logoStamped?: boolean;
+      qrUrl?: string;
       slides?: { label: string }[];
       warning?: string;
     } = {};
@@ -93,6 +97,7 @@ export function AiImageForm({
         ? `Saved ${slideCount} branded slide${slideCount === 1 ? "" : "s"}. Official logo stamped from Brand.`
         : `Saved ${slideCount} slide${slideCount === 1 ? "" : "s"}. Add a logo on Brand so the real mark can be stamped on.`,
     );
+    if (result.qrUrl) setStatus((current) => `${current} QR opens ${result.qrUrl}.`);
     router.refresh();
   }
 
@@ -192,6 +197,20 @@ export function AiImageForm({
         card — LinkedIn, X, Facebook, Instagram, and a PDF when there are
         multiple slides.
       </p>
+      <label className="flex items-start gap-2 text-sm text-zinc-300">
+        <input
+          type="checkbox"
+          checked={qr}
+          disabled={!canQr || busy}
+          onChange={(event) => setQr(event.target.checked)}
+          className="mt-1"
+        />
+        <span>
+          Add a QR code on a band under the art. It opens this company&apos;s website,
+          and Kaylev is the source on the link.
+          {canQr ? "" : " Add a domain on Brand first."}
+        </span>
+      </label>
       <button type="submit" disabled={busy} className="hub-btn">
         {busy ? "Generating slides…" : "Generate poster"}
       </button>

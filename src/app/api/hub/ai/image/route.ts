@@ -23,6 +23,8 @@ import {
 import { posterSlidesToPdf } from "@/lib/posterPdf";
 import { renderBadgePng, resolvePosterBadge } from "@/lib/posterBadge";
 import { posterSocialPack } from "@/lib/posterSocial";
+import { renderQrPng } from "@/lib/qrMark";
+import { kaylevSourceUrl, siteHostLabel } from "@/lib/site";
 import { artFormatFor, badgeWidthFor, stampOfficialLogo } from "@/lib/stampLogo";
 import { companySiteUrl, getWorkspaceClient } from "@/lib/workspace";
 
@@ -107,10 +109,12 @@ export async function POST(request: Request) {
 
   let prompt = "";
   let format = parsePosterFormat(undefined);
+  let includeQr = false;
   try {
-    const body = (await request.json()) as { prompt?: string; format?: string };
+    const body = (await request.json()) as { prompt?: string; format?: string; qr?: boolean };
     prompt = body.prompt?.trim() || "";
     format = parsePosterFormat(body.format);
+    includeQr = body.qr === true;
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
@@ -122,6 +126,14 @@ export async function POST(request: Request) {
     const client = await getWorkspaceClient(supabase);
     const { companyName, brand } = brandFromClient(client);
     const siteUrl = companySiteUrl(client);
+    const qrUrl = includeQr ? kaylevSourceUrl(siteUrl, "poster") : "";
+    if (includeQr && !qrUrl) {
+      return NextResponse.json(
+        { error: "Add this company's domain on Brand first. The QR code needs a website to open." },
+        { status: 400 },
+      );
+    }
+    const qrPng = qrUrl ? await renderQrPng(qrUrl) : null;
     const parsed = parsePosterSlides(prompt);
     const slides: PosterSlide[] = parsed.slides.map((slide) =>
       withHouseCtaDetails(slide, companyName, siteUrl),
@@ -172,7 +184,10 @@ export async function POST(request: Request) {
         format,
         backgroundColor: brand.backgroundColor,
         accentColor: brand.highlightColor || brand.accentColor,
+        textColor: brand.textColor,
         badge: badgePng,
+        qr: qrPng,
+        qrHost: qrUrl ? siteHostLabel(siteUrl) : "",
       };
       const stamped = await stampOfficialLogo(buffer, logo?.buffer ?? null, canvas).catch((stampError) => {
         console.error("Could not stamp official logo", stampError);
@@ -300,6 +315,7 @@ export async function POST(request: Request) {
       })),
       prompt: directedSlides.join("\n\n---\n\n"),
       social,
+      qrUrl: qrUrl || undefined,
       logoStamped: Boolean(logo?.buffer.length),
       badgeAdded: Boolean(badgePng),
       warning: [saveWarning, badgeWarning].filter(Boolean).join(" ") || undefined,

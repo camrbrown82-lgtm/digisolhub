@@ -1,4 +1,5 @@
 import sharp, { type OverlayOptions } from "sharp";
+import { fitSize, textPath } from "@/lib/cardType";
 import type { PosterFormat } from "@/lib/poster";
 import { POSTER_CANVAS } from "@/lib/posterSizes";
 
@@ -56,11 +57,23 @@ export function artFormatFor(format: PosterFormat, withBadge: boolean): PosterFo
 export async function stampOfficialLogo(
   art: Buffer,
   logo: Buffer | null,
-  options: { format: PosterFormat; backgroundColor?: string; accentColor?: string; badge?: Buffer | null },
+  options: {
+    format: PosterFormat;
+    backgroundColor?: string;
+    accentColor?: string;
+    textColor?: string;
+    badge?: Buffer | null;
+    /** Real QR placed on its own band under the art, never drawn by the image model. */
+    qr?: Buffer | null;
+    qrHost?: string;
+  },
 ) {
   const { width, height } = POSTER_CANVAS[options.format];
   const background = hexToRgba(options.backgroundColor || "#09090b");
   const accent = hexToRgba(options.accentColor || "#4f46e5");
+  const text = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(options.textColor || "")
+    ? options.textColor!.trim()
+    : "#f4f4f5";
   const layers: OverlayOptions[] = [];
   let top = 0;
 
@@ -85,6 +98,31 @@ export async function stampOfficialLogo(
     top = headerH + ruleH;
   }
 
+  let stripH = 0;
+  if (options.qr?.length) {
+    stripH = Math.round(height * (options.format === "landscape" ? 0.2 : 0.16));
+    const qrSize = stripH - 36;
+    const qrImg = await sharp(options.qr).resize(qrSize, qrSize, { fit: "fill" }).png().toBuffer();
+    const host = (options.qrHost || "").slice(0, 42);
+    const hostSize = host ? fitSize(host, "regular", width - qrSize - 120, 28, 16) : 28;
+    const label = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${width - qrSize - 48}" height="${stripH}">
+  ${textPath("Scan", 40, Math.round(stripH * 0.42), 32, "semi", text)}
+  ${host ? textPath(host, 40, Math.round(stripH * 0.72), hostSize, "regular", text) : ""}
+</svg>`;
+    layers.push({
+      input: await sharp({ create: { width, height: 4, channels: 4, background: accent } }).png().toBuffer(),
+      top: height - stripH,
+      left: 0,
+    });
+    layers.push({ input: Buffer.from(label), top: height - stripH, left: 0 });
+    layers.push({
+      input: qrImg,
+      top: height - stripH + Math.round((stripH - qrSize) / 2),
+      left: width - qrSize - 24,
+    });
+  }
+
   let bandH = 0;
   if (options.badge?.length) {
     const badgeMeta = await sharp(options.badge).metadata();
@@ -92,12 +130,12 @@ export async function stampOfficialLogo(
     bandH = (badgeMeta.height || 0) + pad * 2;
     layers.push({
       input: options.badge,
-      top: height - bandH + pad,
+      top: height - stripH - bandH + pad,
       left: Math.round((width - (badgeMeta.width || 0)) / 2),
     });
   }
 
-  const artArea = await fitInto(art, width, height - top - bandH);
+  const artArea = await fitInto(art, width, height - top - bandH - stripH);
   layers.unshift({ input: artArea, top, left: 0 });
 
   return sharp({ create: { width, height, channels: 4, background } })

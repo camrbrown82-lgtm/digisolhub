@@ -15,6 +15,37 @@ export function isDigisolSiteUrl(url: string) {
   }
 }
 
+/** Host shown next to a QR code. The code itself carries the full tracked link. */
+export function siteHostLabel(url: string) {
+  try {
+    const withProtocol = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+    return new URL(withProtocol).hostname.replace(/^www\./, "");
+  } catch {
+    return url.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  }
+}
+
+/**
+ * QR destination for the Working-on company.
+ * DigiSol's own site opens Kaylev's free website audit. Every card and poster
+ * records Kaylev as the visit source.
+ */
+export function kaylevSourceUrl(siteUrl: string, campaign: "business-card" | "poster") {
+  const raw = siteUrl.trim();
+  if (!raw) return "";
+  const absolute = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  let url: URL;
+  try {
+    url = new URL(isDigisolSiteUrl(absolute) ? kaylevAuditUrl() : absolute);
+  } catch {
+    return "";
+  }
+  url.searchParams.set("utm_source", "kaylev");
+  url.searchParams.set("utm_medium", "qr");
+  url.searchParams.set("utm_campaign", campaign);
+  return url.toString();
+}
+
 export const DIGISOL_FOUNDER = "Cameron Brown";
 export const DIGISOL_FOUNDER_TITLE = "Founder & CEO";
 /** Public business inbox — use everywhere visitors / schema / Kaylev see email. */

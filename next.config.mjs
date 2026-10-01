@@ -6,6 +6,10 @@ const nextConfig = {
     staleTimes: {
       dynamic: 0,
     },
+    outputFileTracingIncludes: {
+      "/api/hub/business-card": ["./src/lib/fonts/**/*"],
+      "/api/hub/ai/image": ["./src/lib/fonts/**/*"],
+    },
   },
   transpilePackages: ["grapesjs", "grapesjs-preset-newsletter", "@xyflow/react"],
   images: {
