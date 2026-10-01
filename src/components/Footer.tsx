@@ -88,7 +88,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-indigo-500/20 pt-3">
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-indigo-500/20 pt-3">
           <p className="text-xs text-indigo-200/55">{t.rights(new Date().getFullYear(), DIGISOL_REGION)}</p>
           <a href="/privacy" className={linkClass}>
             {t.privacy}

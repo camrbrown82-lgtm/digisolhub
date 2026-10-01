@@ -243,6 +243,7 @@ export const en = {
       { href: "/about", label: "About" },
       { href: "/locations", label: "Locations" },
       { href: "/#contact", label: "Contact" },
+      { href: "/privacy", label: "Privacy Policy" },
     ],
     footerAria: "Footer",
     serviceCities: "Service cities",

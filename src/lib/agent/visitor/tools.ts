@@ -1,6 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { runWebsiteAudit } from "@/lib/agent/websiteAudit";
+import { runWebsiteAudit, type WebsiteAuditResult } from "@/lib/agent/websiteAudit";
 import { logAgentActivity } from "@/lib/agent/digisol/activityLog";
 import { DIGISOL_OPERATOR } from "@/lib/agent/digisol/scope";
 import { logAnalyticsEvent } from "@/lib/analyticsEvents";
@@ -14,6 +14,7 @@ import {
   isGoogleAdsTouch,
   type AttributionPayload,
 } from "@/lib/meta/attribution";
+import { sendLeadAlert } from "@/lib/leadAlert";
 import { sendAuditFollowUpEmail, sendConsultationFollowUpEmail } from "@/lib/prospectAudit/followUpEmail";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { ensureDigisolClient } from "@/lib/workspace";
@@ -119,6 +120,8 @@ export function createVisitorAgentTools(
             url: audit.url,
           },
         });
+
+        await notifyOwnerOfVisitorAudit(admin, clientId, audit, saved?.id ?? null);
 
         return {
           operator: DIGISOL_OPERATOR.name,
@@ -723,6 +726,59 @@ async function upsertVisitorPipelineLead(input: {
     );
   }
   return null;
+}
+
+/**
+ * Email DigiSol as soon as Kaylev audits a site, even when the visitor
+ * never leaves a name, email, or phone. Same host within two hours is one email.
+ */
+async function notifyOwnerOfVisitorAudit(
+  admin: ReturnType<typeof createAdminClient>,
+  clientId: string,
+  audit: WebsiteAuditResult,
+  savedId: string | null,
+) {
+  const site = (audit.finalUrl || audit.url || "").trim();
+  if (!site) return;
+
+  let host = site;
+  try {
+    host = new URL(site.startsWith("http") ? site : `https://${site}`).hostname.replace(
+      /^www\./i,
+      "",
+    );
+  } catch {
+    host = site;
+  }
+
+  if (savedId) {
+    const since = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    const { count } = await admin
+      .from("website_audits")
+      .select("id", { count: "exact", head: true })
+      .eq("client_id", clientId)
+      .gte("created_at", since)
+      .ilike("final_url", `%${host}%`);
+    if ((count ?? 0) > 1) return;
+  }
+
+  const score =
+    typeof audit.score === "number" ? `Score ${audit.score}/100 (${audit.report.scoreLabel}).` : "";
+
+  await sendLeadAlert({
+    sourceLabel: "Kaylev website audit",
+    name: host,
+    company: host,
+    service: score ? `Website audit · ${score}` : "Website audit",
+    website: site.startsWith("http") ? site : `https://${site}`,
+    note: "No name, email, or phone was left. This is the website Kaylev just audited.",
+    message: [score, audit.report.summary].filter(Boolean).join(" "),
+  }).catch((error) => {
+    console.warn(
+      "[visitor-agent] audit alert skipped",
+      error instanceof Error ? error.message : error,
+    );
+  });
 }
 
 /** A contact made in this chat (possibly by a sibling tool call a moment ago). */

@@ -10,6 +10,8 @@ export type LeadAlert = {
   phone?: string | null;
   company?: string | null;
   service?: string | null;
+  /** Site that was audited or discussed, even when no person left contact details. */
+  website?: string | null;
   message?: string | null;
   contactId?: string | null;
   /** Extra line under the heading, e.g. why this is worth a call. */
@@ -46,7 +48,8 @@ export async function sendLeadAlert(lead: LeadAlert) {
   const name = lead.name?.trim() || "";
   const email = lead.email?.trim() || "";
   const phone = lead.phone?.trim() || "";
-  const who = name || email || phone || "Someone";
+  const website = lead.website?.trim() || "";
+  const who = name || email || phone || website || "Someone";
   const hubUrl = lead.contactId ? `${DIGISOL_SITE_URL}/hub/contacts/${lead.contactId}` : "";
   const tel = phone ? telHref(phone) : "";
 
@@ -55,6 +58,7 @@ export async function sendLeadAlert(lead: LeadAlert) {
     ["Phone", phone || "Not given"],
     ["Email", email || "Not given"],
     ["Business", lead.company?.trim() || "-"],
+    ...(website ? ([["Website", website]] as Array<[string, string]>) : []),
     ["Service", lead.service?.trim() || "-"],
   ];
 
@@ -71,6 +75,7 @@ export async function sendLeadAlert(lead: LeadAlert) {
   <div style="margin:0 0 16px;">
     ${tel ? button(tel, `Call ${phone}`, true) : ""}
     ${email ? button(`mailto:${email}`, "Reply by email", !tel) : ""}
+    ${website ? button(website.startsWith("http") ? website : `https://${website}`, "Open website", !tel && !email) : ""}
     ${hubUrl ? button(hubUrl, "Open in Hub", false) : ""}
   </div>
   <table style="border-collapse:collapse;font-size:14px;margin:0 0 16px;">

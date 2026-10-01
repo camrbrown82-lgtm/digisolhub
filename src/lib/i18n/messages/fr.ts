@@ -494,6 +494,7 @@ export const fr: Messages = {
       { href: "/about", label: "À propos" },
       { href: "/locations", label: "Villes" },
       { href: "/#contact", label: "Contact" },
+      { href: "/privacy", label: "Politique de confidentialité (EN)" },
     ],
     footerAria: "Pied de page",
     serviceCities: "Villes desservies",
