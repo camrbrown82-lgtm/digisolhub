@@ -4,11 +4,8 @@ import { CompetitiveReport } from "@/components/hub/CompetitiveReport";
 import { CompetitiveRunForm } from "@/components/hub/CompetitiveRunForm";
 import { PrintButton } from "@/components/hub/PrintButton";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
-import type {
-  CompetitiveReport as Report,
-  MarketPresence,
-  SiteSnapshot,
-} from "@/lib/competitive/schema";
+import type { MarketPresence, SiteSnapshot } from "@/lib/competitive/schema";
+import type { StoredCompetitiveReport } from "@/lib/competitive/scoring";
 import { clientSignUpContact } from "@/lib/clientWins";
 import { ensureCompetitiveSchema } from "@/lib/ensureCompetitiveSchema";
 import { createClient } from "@/lib/supabase/server";
@@ -175,7 +172,7 @@ export default async function CompetitivePage({
       {selected?.result ? (
         <CompetitiveReport
           companyName={reportCompany}
-          report={selected.result as Report}
+          report={selected.result as StoredCompetitiveReport}
           inputs={selected.inputs as Inputs}
           sources={
             (selected.sources ?? {}) as {
