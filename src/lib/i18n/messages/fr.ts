@@ -505,6 +505,7 @@ export const fr: Messages = {
   },
 
   hero: {
+    freeAudit: "Obtenir un audit de site gratuit",
     bookConsultation: "Réserver une consultation gratuite",
     exploreServices: "Découvrir nos services",
   },

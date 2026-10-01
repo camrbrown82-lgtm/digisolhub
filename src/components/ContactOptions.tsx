@@ -15,9 +15,15 @@ import {
 
 /** Fired to open the Kaylev visitor chat from anywhere on the page. */
 export const OPEN_KAYLEV_EVENT = "kaylev:open";
+/** Opens Kaylev on the free website audit, including on a phone. */
+export const AUDIT_KAYLEV_EVENT = "kaylev:audit";
 
 export function openKaylevChat() {
   window.dispatchEvent(new Event(OPEN_KAYLEV_EVENT));
+}
+
+export function openKaylevAudit() {
+  window.dispatchEvent(new Event(AUDIT_KAYLEV_EVENT));
 }
 
 type Option = {

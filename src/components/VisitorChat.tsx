@@ -4,7 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { MessageCircle, Send, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { OPEN_KAYLEV_EVENT } from "@/components/ContactOptions";
+import { AUDIT_KAYLEV_EVENT, OPEN_KAYLEV_EVENT } from "@/components/ContactOptions";
 import { MicDictateButton, appendDictation } from "@/components/hub/MicDictateButton";
 import { fireAdsConversion } from "@/lib/ads";
 import { trackEvent } from "@/lib/analytics";
@@ -92,8 +92,16 @@ export function VisitorChat() {
 
   useEffect(() => {
     const openChat = () => setOpen(true);
+    const openAudit = () => {
+      setAuditOffer(true);
+      setOpen(true);
+    };
     window.addEventListener(OPEN_KAYLEV_EVENT, openChat);
-    return () => window.removeEventListener(OPEN_KAYLEV_EVENT, openChat);
+    window.addEventListener(AUDIT_KAYLEV_EVENT, openAudit);
+    return () => {
+      window.removeEventListener(OPEN_KAYLEV_EVENT, openChat);
+      window.removeEventListener(AUDIT_KAYLEV_EVENT, openAudit);
+    };
   }, []);
 
   const transport = useMemo(

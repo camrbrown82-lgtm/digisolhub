@@ -7,6 +7,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { BrandCard, brandAccent, type BrandAccent } from "@/components/BrandCard";
+import { OpenKaylevAuditButton } from "@/components/OpenKaylevAuditButton";
 import { TrackedLink } from "@/components/TrackedLink";
 import { localizePath } from "@/lib/i18n/config";
 import { getLocale } from "@/lib/i18n/server";
@@ -92,17 +93,12 @@ export function KaylevValueProp({
                   {advantageLine}
                 </p>
                 <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                  <TrackedLink
-                    href={contactHref}
-                    eventName="cta_click"
-                    eventParams={{
-                      cta_name: "kaylev_free_audit",
-                      location: analyticsLocation,
-                    }}
+                  <OpenKaylevAuditButton
+                    location={analyticsLocation}
                     className="inline-flex items-center justify-center rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
                   >
                     {t.freeAudit}
-                  </TrackedLink>
+                  </OpenKaylevAuditButton>
                   <TrackedLink
                     href={contactHref}
                     eventName="cta_click"

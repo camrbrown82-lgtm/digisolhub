@@ -1,5 +1,6 @@
 import { ArrowRight, Sparkles } from "lucide-react";
 import { ContactOptions } from "@/components/ContactOptions";
+import { OpenKaylevAuditButton } from "@/components/OpenKaylevAuditButton";
 import { GoogleRating, ListingLinks } from "@/components/LocalListings";
 import { QuickQuote } from "@/components/QuickQuote";
 import { TrackedLink } from "@/components/TrackedLink";
@@ -58,14 +59,20 @@ export function Hero({ copy }: { copy: HomeCopy }) {
           </a>
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <OpenKaylevAuditButton
+            location="hero"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 sm:w-auto"
+          >
+            {t.freeAudit}
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </OpenKaylevAuditButton>
           <TrackedLink
             href="#contact"
             eventName="cta_click"
             eventParams={{ cta_name: "book_consultation", location: "hero" }}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 sm:w-auto"
           >
             {t.bookConsultation}
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </TrackedLink>
           <TrackedLink
             href="#services"

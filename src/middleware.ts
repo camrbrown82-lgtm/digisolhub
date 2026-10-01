@@ -143,7 +143,6 @@ function albertaHomeGeoRedirect(
 
   const dest = request.nextUrl.clone();
   dest.pathname = localizePath(`/locations/${slug}`, locale);
-  dest.search = "";
   const response = NextResponse.redirect(dest, 307);
   applyGeoCookies(response, geo);
   response.cookies.set(GEO_SLUG_COOKIE, slug, COOKIE_BASE);

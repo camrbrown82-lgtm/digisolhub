@@ -254,6 +254,7 @@ export const en = {
   },
 
   hero: {
+    freeAudit: "Get a free website audit",
     bookConsultation: "Book a Free Consultation",
     exploreServices: "Explore Services",
   },

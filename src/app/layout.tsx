@@ -10,7 +10,6 @@ import { MobileContactBar } from "@/components/MobileContactBar";
 import { PublicKaylevChat } from "@/components/PublicKaylevChat";
 import { PublicSiteAnalytics } from "@/components/PublicSiteAnalytics";
 import { AttributionCaptureBoundary } from "@/components/AttributionCaptureBoundary";
-import { LanguageSuggestion } from "@/components/LanguageSuggestion";
 import { ADSENSE_SCRIPT_SRC, PAGE_PATH_HEADER, shouldLoadAdSense } from "@/lib/adsense";
 import { LOCALE_META } from "@/lib/i18n/config";
 import { INTERNAL_TRAFFIC_COOKIE } from "@/lib/internalTraffic";
@@ -178,8 +177,9 @@ export default function RootLayout({
     internal: cookies().get(INTERNAL_TRAFFIC_COOKIE)?.value === "1",
   });
   return (
-    <html lang={LOCALE_META[locale].intl} className={inter.variable}>
+    <html lang={LOCALE_META[locale].intl} translate="no" className={inter.variable}>
       <head>
+        <meta name="google" content="notranslate" />
         {showAds ? <script async src={ADSENSE_SCRIPT_SRC} crossOrigin="anonymous" /> : null}
       </head>
       <body className="font-sans min-h-screen bg-zinc-950 text-zinc-100">
@@ -209,7 +209,6 @@ export default function RootLayout({
           }}
         />
         <LocaleProvider locale={locale}>
-          <LanguageSuggestion />
           {children}
           <MobileContactBar />
           <PublicKaylevChat />
