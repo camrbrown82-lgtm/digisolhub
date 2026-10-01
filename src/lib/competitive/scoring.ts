@@ -1,6 +1,7 @@
 import {
   COMPETITIVE_DIMENSIONS,
   type CompetitiveReport,
+  type PriceComparisonRow,
   type CtaCount,
   type IndustryPlaybook,
   type MarketPresence,
@@ -55,9 +56,11 @@ export type Scorecard = {
   notScored?: string[];
 };
 
-export type StoredCompetitiveReport = CompetitiveReport & {
+export type StoredCompetitiveReport = Omit<CompetitiveReport, "priceComparison"> & {
   scorecard?: Scorecard;
   changes?: ScoreComparison | null;
+  /** Summary is written with the report. Rows are the prices read off each site. */
+  priceComparison?: CompetitiveReport["priceComparison"] & { rows: PriceComparisonRow[] };
 };
 
 type Signals = {

@@ -1,4 +1,4 @@
-import type { CtaCount, SitePage } from "@/lib/competitive/schema";
+import type { CtaCount, PriceOffer, SitePage } from "@/lib/competitive/schema";
 
 const USER_AGENT = "DigiSolHubBot/1.0 (+https://wwwdigisol.com; competitive-analysis)";
 const FETCH_TIMEOUT_MS = 8000;
@@ -196,10 +196,8 @@ function detectFeatures(pages: Array<{ url: string; html: string }>) {
     if (ok) features.push(label);
   };
 
-  const prices = Array.from(new Set(text.match(/\$\s?\d{1,3}(?:,\d{3})+(?:\.\d{2})?|\$\s?\d{3,}/g) ?? [])).slice(0, 8);
   const pricingPath = paths.find((p) => /pric|package|plans?\b|rates/i.test(p));
   add(pricingPath, `Pricing/packages page (${pricingPath})`);
-  add(prices.length, `Prices published on the site: ${prices.join(", ")}`);
   add(
     /\bid=["']services["']|href=["'][^"']*[/#]services?\b/i.test(html) ||
       paths.some((p) => /service|what-we-do|solutions/i.test(p)) ||
@@ -263,6 +261,141 @@ function detectFeatures(pages: Array<{ url: string; html: string }>) {
   return features;
 }
 
+const PRICE_TOKEN =
+  /(?:\$\s?\d{1,3}(?:,\d{3})+(?:\.\d{2})?|\$\s?\d{2,}(?:\.\d{2})?|\d{1,3}(?:[ \u00a0]\d{3})+(?:[.,]\d{2})?\s*\$|\d{2,}(?:[.,]\d{2})?\s*\$)(?:\s?(?:\/|per)\s?(?:month|year|hour|week|mo|yr|hr))?/gi;
+
+const RANGE_GAP = /^[\s–—-]*(?:to|and)?[\s–—-]*$/i;
+
+function cleanOfferLabel(raw: string) {
+  return raw
+    .replace(/^[-•#\s]+/, "")
+    .replace(/[:|–—-]\s*$/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function skipYearPrice(line: string, price: string) {
+  const digits = price.replace(/\D/g, "");
+  const year = Number(digits);
+  return year >= 1900 && year <= 2099 && digits.length === 4 && /©|copyright|\bsince\b|\bestablished\b/i.test(line);
+}
+
+/** Package or service prices printed on the pages, newest pricing page first. */
+export function extractPriceOffers(pages: Array<{ url: string; text: string; html?: string }>): PriceOffer[] {
+  const offers: PriceOffer[] = [];
+  const seen = new Set<string>();
+  const add = (offer: PriceOffer) => {
+    const label = cleanOfferLabel(offer.label).slice(0, 80);
+    const price = offer.price.replace(/\s+/g, " ").trim();
+    if (label.length < 2 || !price) return;
+    const key = `${label.toLowerCase()}|${price.toLowerCase()}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    offers.push({ label, price, note: offer.note.replace(/\s+/g, " ").trim().slice(0, 140), url: offer.url });
+  };
+
+  for (const page of pages) {
+    if (page.html) {
+      for (const block of Array.from(page.html.matchAll(/<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi))) {
+        try {
+          walkJsonLdPrices(JSON.parse(block[1]) as unknown, page.url, add, 0);
+        } catch {
+          /* invalid JSON-LD */
+        }
+      }
+    }
+    const lines = page.text.split("\n");
+    let heading = "";
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^#{1,3}\s+\S/.test(line)) {
+        heading = cleanOfferLabel(line.replace(/^#+\s+/, ""));
+        continue;
+      }
+      const found = Array.from(line.matchAll(PRICE_TOKEN), (match) => ({
+        price: match[0],
+        index: match.index ?? 0,
+      })).filter((match) => !skipYearPrice(line, match.price));
+      const groups: Array<{ price: string; index: number; end: number }> = [];
+      for (let n = 0; n < found.length; n++) {
+        const current = found[n];
+        const next = found[n + 1];
+        const between = next ? line.slice(current.index + current.price.length, next.index) : "";
+        if (next && between.trim() && RANGE_GAP.test(between) && /[–—-]|to|and/i.test(between)) {
+          groups.push({
+            price: `${current.price.trim()}–${next.price.trim()}`,
+            index: current.index,
+            end: next.index + next.price.length,
+          });
+          n += 1;
+        } else {
+          groups.push({
+            price: current.price.trim(),
+            index: current.index,
+            end: current.index + current.price.length,
+          });
+        }
+      }
+      for (const group of groups) {
+        const before = cleanOfferLabel(line.slice(0, group.index));
+        const after = cleanOfferLabel(line.slice(group.end));
+        const nextLine = lines[i + 1] ?? "";
+        PRICE_TOKEN.lastIndex = 0;
+        const nextHasPrice = PRICE_TOKEN.test(nextLine);
+        PRICE_TOKEN.lastIndex = 0;
+        const note =
+          after.length >= 8 ? after : !nextHasPrice && !/^#{1,3}\s/.test(nextLine) ? cleanOfferLabel(nextLine) : "";
+        add({
+          label: before.length >= 2 && before.length <= 80 ? before : heading || "Published price",
+          price: group.price,
+          note,
+          url: page.url,
+        });
+      }
+    }
+  }
+
+  const pricingFirst = (url: string) => {
+    try {
+      return /pric|package|plans?\b|rates|cost/i.test(new URL(url).pathname) ? 0 : 1;
+    } catch {
+      return 1;
+    }
+  };
+  const labeled = offers.filter((offer) => offer.label !== "Published price");
+  const pool = labeled.length ? labeled : offers;
+  return pool.sort((a, b) => pricingFirst(a.url) - pricingFirst(b.url)).slice(0, 6);
+}
+
+function walkJsonLdPrices(
+  node: unknown,
+  url: string,
+  add: (offer: PriceOffer) => void,
+  depth: number,
+  parentName = "",
+) {
+  if (!node || depth > 6) return;
+  if (Array.isArray(node)) {
+    for (const item of node) walkJsonLdPrices(item, url, add, depth + 1, parentName);
+    return;
+  }
+  if (typeof node !== "object") return;
+  const obj = node as Record<string, unknown>;
+  const name = typeof obj.name === "string" && obj.name.trim() ? obj.name : parentName;
+  const low = obj.lowPrice;
+  const high = obj.highPrice;
+  const raw = obj.price ?? (low != null && high != null ? `${low}–${high}` : low ?? high);
+  if ((typeof raw === "string" || typeof raw === "number") && name) {
+    const amount = String(raw).trim();
+    const currency = typeof obj.priceCurrency === "string" ? obj.priceCurrency : "";
+    const price = amount.includes("$") || /[a-z]/i.test(amount) ? amount : currency ? `${amount} ${currency}` : `$${amount}`;
+    add({ label: name, price, note: "", url });
+  }
+  for (const value of Object.values(obj)) {
+    if (value && typeof value === "object") walkJsonLdPrices(value, url, add, depth + 1, name);
+  }
+}
+
 /**
  * Reads the homepage plus the site's key pages (pricing, services, contact, about, reviews,
  * FAQ, blog, locations). `full` is for the company being analysed; `light` for competitors.
@@ -270,7 +403,7 @@ function detectFeatures(pages: Array<{ url: string; html: string }>) {
 export async function crawlSiteContent(
   homepage: { url: string; html: string },
   depth: "full" | "light",
-): Promise<{ pages: SitePage[]; features: string[]; ctas: CtaCount[]; sections: string[] }> {
+): Promise<{ pages: SitePage[]; features: string[]; ctas: CtaCount[]; sections: string[]; prices: PriceOffer[] }> {
   const limits =
     depth === "full"
       ? { extraPages: 10, homeChars: 14000, pageChars: 6000, totalChars: 80000 }
@@ -344,6 +477,11 @@ export async function crawlSiteContent(
   let budget = limits.totalChars;
   const pages: SitePage[] = [];
   const ordered = [{ ...homepage, key: true }, ...landings, ...rest];
+  const pricePages = ordered.map((page, i) => ({
+    url: page.url,
+    text: htmlToReadableText(page.html, { stripChrome: i > 0 }).slice(0, 20_000),
+    html: page.html,
+  }));
   for (let i = 0; i < ordered.length && budget > 0; i++) {
     const page = ordered[i];
     const landing = i > 0 && isLanding(page.url);
@@ -353,7 +491,7 @@ export async function crawlSiteContent(
         ? Math.round(limits.pageChars * 1.7)
         : limits.pageChars;
     const cap = Math.min(budget, i === 0 ? limits.homeChars : pageCap);
-    const text = htmlToReadableText(page.html, { stripChrome: i > 0 }).slice(0, cap);
+    const text = pricePages[i]?.text.slice(0, cap) ?? "";
     if (!text) continue;
     budget -= text.length;
     pages.push({ url: page.url, title: titleOf(page.html), text });
@@ -362,6 +500,12 @@ export async function crawlSiteContent(
   const ctas = callsToAction(read);
   const sections = siteSections(read);
   const features = detectFeatures(read);
+  const prices = extractPriceOffers(pricePages);
+  if (prices.length) {
+    features.push(
+      `Prices published on the site: ${prices.map((offer) => `${offer.label} ${offer.price}`).join("; ")}`,
+    );
+  }
   if (ctas.length) {
     features.push(
       `Calls to action on the ${read.length} page(s) read: ${ctas
@@ -371,7 +515,7 @@ export async function crawlSiteContent(
     );
   }
   if (sections.length) features.push(`Site sections linked: ${sections.join(", ")}`);
-  return { pages, features, ctas, sections };
+  return { pages, features, ctas, sections, prices };
 }
 
 /** Every action button or link on the pages read, with how often and where it appears. */

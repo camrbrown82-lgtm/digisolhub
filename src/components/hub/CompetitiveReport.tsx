@@ -227,6 +227,54 @@ export function CompetitiveReport({ companyName, report, inputs, sources, comple
         </div>
       </Section>
 
+      {report.priceComparison?.rows.length ? (
+        <Section
+          title="Price comparison"
+          subtitle="Only prices printed on each public website. Nothing here is estimated."
+        >
+          <p className="text-sm leading-relaxed text-zinc-200">{report.priceComparison.summary}</p>
+          <div className="mt-4 overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="text-zinc-500">
+                <tr>
+                  <th className="py-2 pr-4 font-medium">Company</th>
+                  <th className="py-2 pr-4 font-medium">Offer</th>
+                  <th className="py-2 pr-4 font-medium">Price</th>
+                  <th className="py-2 pr-4 font-medium">What it covers</th>
+                  <th className="py-2 font-medium">Source</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.priceComparison.rows.map((row) => (
+                  <tr key={`${row.siteUrl}-${row.offer}-${row.price}`} className="border-t border-zinc-800 align-top">
+                    <td className="py-2 pr-4 text-white">
+                      {row.company}
+                      {row.role === "you" ? (
+                        <span className="ml-2 rounded-full bg-indigo-500/20 px-2 py-0.5 text-xs text-indigo-100">
+                          You
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="py-2 pr-4 text-zinc-300">{row.offer}</td>
+                    <td className="py-2 pr-4 font-medium text-zinc-100">{row.price}</td>
+                    <td className="py-2 pr-4 text-zinc-400">{row.note || "—"}</td>
+                    <td className="py-2 text-zinc-400">
+                      {row.source ? (
+                        <a href={row.source} target="_blank" rel="noreferrer" className="text-indigo-300 hover:text-indigo-200">
+                          {row.source.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Section>
+      ) : null}
+
       <Section title="Strengths, weaknesses, opportunities, threats">
         <div className="grid gap-4 md:grid-cols-2">
           {(

@@ -81,6 +81,15 @@ export const competitiveReportSchema = z.object({
       }),
     )
     .describe("5-10 local search terms worth targeting."),
+  priceComparison: z
+    .object({
+      summary: z
+        .string()
+        .describe(
+          "3-5 sentences comparing only the published prices listed in the data. Name who is higher or lower on comparable offers. If a company published no price, say so. Never invent a dollar amount.",
+        ),
+    })
+    .describe("Narrative for the price table. The table itself is filled from the crawl."),
   dataGaps: z
     .array(z.string())
     .describe("What could not be verified from public data and should be checked by hand."),
@@ -130,6 +139,24 @@ export type CompetitiveInputs = {
 
 export type CtaCount = { label: string; count: number; pages: string[] };
 
+/** A price printed on a public page. The label is the package or service named beside it. */
+export type PriceOffer = {
+  label: string;
+  price: string;
+  note: string;
+  url: string;
+};
+
+export type PriceComparisonRow = {
+  company: string;
+  siteUrl: string;
+  role: "you" | "competitor";
+  offer: string;
+  price: string;
+  note: string;
+  source: string;
+};
+
 export type SiteSnapshot = {
   name: string;
   url: string;
@@ -149,6 +176,8 @@ export type SiteSnapshot = {
   features?: string[];
   /** Action buttons and links on the pages read, e.g. "Bid now" ×23. */
   ctas?: CtaCount[];
+  /** Prices read from the public pages, with the offer they belong to. */
+  prices?: PriceOffer[];
   /** First path segment of every internal link, e.g. "/auctions". */
   sections?: string[];
   error?: string;

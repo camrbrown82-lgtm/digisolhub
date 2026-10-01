@@ -15,6 +15,7 @@ import {
   type IndustryPlaybook,
   type MarketPresence,
   type OptionalCheck,
+  type PriceComparisonRow,
   type SiteSnapshot,
 } from "@/lib/competitive/schema";
 import {
@@ -148,6 +149,7 @@ export async function snapshotSite(
       pages: content?.pages,
       features: content?.features,
       ctas: content?.ctas,
+      prices: content?.prices,
       sections: content?.sections,
       error: audit.error,
     };
@@ -539,6 +541,10 @@ ${scorecardPromptBlock(input.scorecard, input.changes, { checklistUpdated: input
 
 The action plan is the most important part. Give 8-12 actions ordered by priority (highest impact for the least effort first, and close the biggest competitor gaps first). Each needs 4-8 concrete steps someone can follow, practical "how to achieve" recommendations (tools, examples, sample wording, what good looks like), a timeframe, an owner (DigiSol for web/SEO/automation work, Client for things only the business can do such as asking for reviews or photos, Kaylev for automated audits, follow-ups and monitoring), and a measurable KPI with a target.
 
+## Published prices
+These are the only prices that were printed on the public pages. priceComparison.summary compares them in 3-5 sentences. Use these figures exactly. Never add a price that is not listed here. When a company has no line, say their prices are not published.
+${publishedPricesBlock(input.company, input.competitors)}
+
 Keyword opportunities should be local search terms for ${input.inputs.location} that customers of this exact industry type (${input.inputs.industry}) actually search.
 
 ## Company
@@ -552,9 +558,58 @@ ${trimmed.competitors.map((c) => describeSite(c, presenceFor(c.url))).join("\n\n
   return {
     report: {
       ...applyScorecard(result.output, input.scorecard),
+      priceComparison: {
+        summary: result.output.priceComparison.summary,
+        rows: priceComparisonRows(input.company, input.competitors),
+      },
       scorecard: input.scorecard,
       changes: input.changes,
     },
     tokens: tokensOf(result.usage),
   };
+}
+
+function publishedPricesBlock(company: SiteSnapshot, competitors: SiteSnapshot[]) {
+  return [company, ...competitors]
+    .map((site) => {
+      const offers = site.prices ?? [];
+      if (!offers.length) return `- ${site.name}: no prices published on the pages read`;
+      return `- ${site.name}: ${offers
+        .map((offer) => `${offer.label} ${offer.price}${offer.note ? ` (${offer.note})` : ""}`)
+        .join("; ")}`;
+    })
+    .join("\n");
+}
+
+function priceComparisonRows(company: SiteSnapshot, competitors: SiteSnapshot[]) {
+  const rows: PriceComparisonRow[] = [];
+  const add = (site: SiteSnapshot, role: "you" | "competitor") => {
+    const offers = site.prices ?? [];
+    if (!offers.length) {
+      rows.push({
+        company: site.name,
+        siteUrl: site.url,
+        role,
+        offer: "Not published",
+        price: "Not published",
+        note: "",
+        source: "",
+      });
+      return;
+    }
+    for (const offer of offers) {
+      rows.push({
+        company: site.name,
+        siteUrl: site.url,
+        role,
+        offer: offer.label,
+        price: offer.price,
+        note: offer.note,
+        source: offer.url,
+      });
+    }
+  };
+  add(company, "you");
+  for (const competitor of competitors) add(competitor, "competitor");
+  return rows;
 }

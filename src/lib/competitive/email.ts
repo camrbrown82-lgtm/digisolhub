@@ -48,6 +48,33 @@ export type CompetitiveEmailInput = {
   completedAt: string | null;
 };
 
+function priceTable(report: Report) {
+  const comparison = report.priceComparison;
+  if (!comparison?.rows.length) return "";
+  const rows = comparison.rows
+    .map(
+      (row) => `<tr style="border-top:1px solid #e2e8f0">
+  <td style="padding:8px 8px 8px 0;color:#0f172a">${esc(row.company)}${row.role === "you" ? " (you)" : ""}</td>
+  <td style="padding:8px;color:#334155">${esc(row.offer)}</td>
+  <td style="padding:8px;font-weight:700;color:#0f172a">${esc(row.price)}</td>
+  <td style="padding:8px 0 8px 8px;color:#475569">${esc(row.note || "—")}</td>
+</tr>`,
+    )
+    .join("");
+  return `${h2("Price comparison")}
+<p>${esc(comparison.summary)}</p>
+<p style="margin:0 0 8px;font-size:13px;color:#64748b">Only prices printed on each public website. Nothing here is estimated.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;font-size:14px">
+<tr style="color:#64748b;text-align:left">
+  <th style="padding:6px 8px 6px 0;font-weight:600">Company</th>
+  <th style="padding:6px 8px;font-weight:600">Offer</th>
+  <th style="padding:6px 8px;font-weight:600">Price</th>
+  <th style="padding:6px 0 6px 8px;font-weight:600">What it covers</th>
+</tr>
+${rows}
+</table>`;
+}
+
 /** The competitive analysis as an email from DigiSol to the company it analysed. */
 export function competitiveReportEmail(input: CompetitiveEmailInput) {
   const { report } = input;
@@ -146,6 +173,7 @@ ${note ? `<p style="white-space:pre-line">${esc(note)}</p>` : ""}
 <p>${esc(report.executiveSummary)}</p>
 ${h2("Scorecard")}
 ${scorecard}
+${priceTable(report)}
 ${report.quickWins.length ? `${h2("Quick wins (each takes less than a day)")}${list(report.quickWins)}` : ""}
 ${h2("Where you stand")}
 ${swotBlock("Strengths", report.swot.strengths, "#047857")}
