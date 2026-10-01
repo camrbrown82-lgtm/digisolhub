@@ -329,7 +329,7 @@ function DraftCard({
                 className={inputClass}
                 value={locations}
                 onChange={(e) => setLocations(e.target.value)}
-                placeholder="Calgary, Edmonton, Alberta"
+                placeholder="Airdrie, Calgary, Edmonton"
               />
             </label>
             <div className="sm:col-span-2">

@@ -47,7 +47,7 @@ primary_text: 1-3 short sentences, at most 220 characters, ending on one clear n
 description: at most 30 characters
 cta: one of ${Object.keys(AD_CTAS).join(", ")}
 link_path: the page path on ${site || "the website"} to send people to, e.g. "/" or "/contact"
-locations: array of 1-5 place names (cities, provinces, or countries) the brief targets; default to where the company works
+locations: array of 1-5 place names the brief targets, defaulting to where the company works. List the cities, or one province, or one country — not a city together with the province or country that contains it
 age_min, age_max: integers between 18 and 65
 
 Use only facts from the brief and the brand kit. No invented stats, prices, guarantees, or refunds.

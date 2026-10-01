@@ -84,32 +84,82 @@ export async function adAccountInfo(): Promise<AdAccountInfo> {
   }
 }
 
-type GeoHit = { key: string; type: string; name: string; country_code?: string };
+type GeoHit = {
+  key: string;
+  type: string;
+  name: string;
+  country_code?: string;
+  region?: string;
+  region_id?: string | number;
+};
+
+/**
+ * Meta rejects an audience that includes a place and a broader place around it
+ * ("Some locations conflict with each other"). Calgary inside Alberta, or
+ * Alberta inside Canada, is that conflict. A radius around a city does the
+ * same when two nearby cities overlap, so cities are targeted on their own boundary.
+ */
+function geoLocationsWithoutConflicts(hits: GeoHit[]) {
+  const seen = new Set<string>();
+  const unique = hits.filter((hit) => {
+    const id = `${hit.type}:${hit.key}`;
+    if (!hit.key || seen.has(id)) return false;
+    seen.add(id);
+    return hit.type === "country" || hit.type === "region" || hit.type === "city";
+  });
+  const cities = unique.filter((hit) => hit.type === "city");
+  const regions = unique.filter((hit) => hit.type === "region");
+  const countries = unique.filter((hit) => hit.type === "country");
+
+  const cityRegionKeys = new Set(
+    cities
+      .flatMap((city) => [
+        city.region_id != null ? String(city.region_id) : "",
+        city.region?.trim().toLowerCase() || "",
+      ])
+      .filter(Boolean),
+  );
+  const coveredCountries = new Set(
+    [...cities, ...regions]
+      .map((hit) => hit.country_code?.trim().toUpperCase())
+      .filter((code): code is string => Boolean(code)),
+  );
+  const keptRegions = regions.filter((region) => {
+    const key = String(region.key);
+    const name = region.name.trim().toLowerCase();
+    return !cityRegionKeys.has(key) && !cityRegionKeys.has(name);
+  });
+  const keptCountries = countries.filter((country) => {
+    const key = country.key.trim().toUpperCase();
+    const code = country.country_code?.trim().toUpperCase();
+    return !coveredCountries.has(key) && !(code && coveredCountries.has(code));
+  });
+
+  return {
+    ...(keptCountries.length ? { countries: keptCountries.map((country) => country.key) } : {}),
+    ...(keptRegions.length ? { regions: keptRegions.map((region) => ({ key: String(region.key) })) } : {}),
+    ...(cities.length ? { cities: cities.map((city) => ({ key: String(city.key) })) } : {}),
+  };
+}
 
 /** Turns place names ("Calgary", "Alberta", "Canada") into Meta geo targeting. Unknown names are skipped. */
 async function geoTargeting(locations: string[]) {
-  const countries = new Set<string>();
-  const regions: { key: string }[] = [];
-  const cities: { key: string; radius: number; distance_unit: "kilometer" }[] = [];
+  const hits: GeoHit[] = [];
   for (const place of locations.map((l) => l.trim()).filter(Boolean).slice(0, 10)) {
     const found = await graph<{ data?: GeoHit[] }>("GET", "search", {
       type: "adgeolocation",
       q: place,
       location_types: ["country", "region", "city"],
-      limit: 1,
+      limit: 5,
     }).catch(() => ({ data: [] as GeoHit[] }));
-    const hit = found.data?.[0];
-    if (!hit) continue;
-    if (hit.type === "country") countries.add(hit.key);
-    else if (hit.type === "region") regions.push({ key: hit.key });
-    else if (hit.type === "city") cities.push({ key: hit.key, radius: 25, distance_unit: "kilometer" });
+    const list = found.data ?? [];
+    const query = place.toLowerCase();
+    const hit = list.find((item) => item.name?.trim().toLowerCase() === query) ?? list[0];
+    if (hit) hits.push(hit);
   }
-  if (!countries.size && !regions.length && !cities.length) countries.add("CA");
-  return {
-    ...(countries.size ? { countries: Array.from(countries) } : {}),
-    ...(regions.length ? { regions } : {}),
-    ...(cities.length ? { cities } : {}),
-  };
+  const geo = geoLocationsWithoutConflicts(hits);
+  if (!geo.countries?.length && !geo.regions?.length && !geo.cities?.length) return { countries: ["CA"] };
+  return geo;
 }
 
 /** Minor units (cents) for Meta budgets; a few currencies have none. */
