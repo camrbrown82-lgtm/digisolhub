@@ -25,7 +25,13 @@ export function seriesIdFromAsset(asset: {
   return asset.series_id || parsePosterMeta(asset.notes)?.seriesId || asset.id || "";
 }
 
-export async function listPosterAssets(
+export function isBusinessCardAsset(row: { notes?: string | null; filename?: string | null }) {
+  if (row.notes === "business-card") return true;
+  if (/business-card/i.test(row.filename || "")) return true;
+  return parsePosterMeta(row.notes)?.kind === "business-card";
+}
+
+async function listBucketImages(
   supabase: SupabaseClient,
   input: { clientId?: string | null; archived: boolean; limit?: number },
 ) {
@@ -42,6 +48,22 @@ export async function listPosterAssets(
     const archived = Boolean(row.archived_at || parsePosterMeta(row.notes)?.archivedAt);
     return input.archived ? archived : !archived;
   });
+}
+
+export async function listPosterAssets(
+  supabase: SupabaseClient,
+  input: { clientId?: string | null; archived: boolean; limit?: number },
+) {
+  const rows = await listBucketImages(supabase, input);
+  return rows.filter((row) => !isBusinessCardAsset(row));
+}
+
+export async function listBusinessCardAssets(
+  supabase: SupabaseClient,
+  input: { clientId?: string | null; archived: boolean; limit?: number },
+) {
+  const rows = await listBucketImages(supabase, input);
+  return rows.filter((row) => isBusinessCardAsset(row));
 }
 
 export async function seriesAssets(

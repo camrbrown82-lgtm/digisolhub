@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import sharp from "sharp";
+
+sharp.cache(false);
+sharp.concurrency(1);
 import { PDFDocument } from "pdf-lib";
 import { requireHubSession } from "@/lib/auth";
 import { brandFromClient, brandKitPrompt } from "@/lib/branding";

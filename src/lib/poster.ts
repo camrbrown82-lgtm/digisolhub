@@ -168,6 +168,7 @@ ${posterLook(input.companyName, input.brand)}
 - Fill the whole canvas with the layout. Do not leave a logo hole and do not draw a logo — a separate brand bar is added after generation so the mark never covers copy.
 - Closing slides: a solid highlight-colored button shape containing the exact URL from the copy.
 - Carousel slides must match each other: same background, same margins, same type style.
+- This is a social poster or carousel slide, never a business card, contact card, or name-and-title card.
 - No photos of real people, no QR codes, no watermarks, no unreadably small type.
 - The only website address allowed is the one given in the job. Never write any other domain.${badgeRule}`,
         },

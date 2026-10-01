@@ -3,8 +3,8 @@ import { PosterExport } from "@/components/hub/PosterExport";
 import { HubBackButton } from "@/components/hub/HubBackButton";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { brandFromClient } from "@/lib/branding";
-import { listPosterAssets } from "@/lib/posterArchive";
-import { groupPosterSeries, socialPackFromAsset } from "@/lib/posterSocial";
+import { listBusinessCardAssets, listPosterAssets } from "@/lib/posterArchive";
+import { groupPosterSeries, parsePosterMeta, socialPackFromAsset } from "@/lib/posterSocial";
 import { createClient } from "@/lib/supabase/server";
 import { companySiteUrl, getActiveClient, getWorkspaceClient } from "@/lib/workspace";
 
@@ -13,11 +13,15 @@ export default async function ArchivesPage() {
   const selected = await getActiveClient(supabase);
   const brandSource = await getWorkspaceClient(supabase);
   const { companyName, brand } = brandFromClient(brandSource);
+  const clientId = selected?.id || brandSource?.id;
   const posters = await listPosterAssets(supabase, {
-    clientId: selected?.id || brandSource?.id,
+    clientId,
     archived: true,
     limit: 60,
   });
+  const cards = groupPosterSeries(
+    await listBusinessCardAssets(supabase, { clientId, archived: true, limit: 40 }),
+  );
   const siteUrl = companySiteUrl(brandSource);
   const groups = groupPosterSeries(posters);
 
@@ -32,11 +36,40 @@ export default async function ArchivesPage() {
           delete them for good.
         </p>
       </div>
-      {groups.length === 0 ? (
+      {cards.length > 0 ? (
+        <section className="space-y-6">
+          <h2 className="text-lg font-semibold text-white">Archived business cards</h2>
+          {cards.map((sides) => (
+            <div key={sides[0].id} className="space-y-3">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {sides.map((side) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    key={side.id}
+                    src={side.public_url ?? ""}
+                    alt={side.filename ?? "Business card"}
+                    className="rounded-xl border border-zinc-800"
+                  />
+                ))}
+              </div>
+              <PosterActions id={sides[0].id} archived noun="business card" />
+              {parsePosterMeta(sides[0].notes)?.pdfUrl ? (
+                <a
+                  href={parsePosterMeta(sides[0].notes)?.pdfUrl}
+                  className="text-sm text-indigo-300 hover:text-indigo-200"
+                >
+                  Open print PDF
+                </a>
+              ) : null}
+            </div>
+          ))}
+        </section>
+      ) : null}
+      {groups.length === 0 && cards.length === 0 ? (
         <p className="rounded-2xl border border-zinc-800 px-4 py-8 text-sm text-zinc-500">
           Nothing archived yet. On AI posters, use Archive to move a generation here.
         </p>
-      ) : (
+      ) : groups.length > 0 ? (
         <div className="space-y-10">
           {groups.map((slides) => {
             const pack = socialPackFromAsset(slides[0], {
@@ -69,7 +102,7 @@ export default async function ArchivesPage() {
             );
           })}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

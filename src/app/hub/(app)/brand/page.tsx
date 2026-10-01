@@ -1,8 +1,11 @@
 import { BrandForm } from "@/components/hub/BrandForm";
 import { BusinessCardMaker } from "@/components/hub/BusinessCardMaker";
+import { PosterActions } from "@/components/hub/PosterActions";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { getBrandLogoUrl } from "@/lib/brandLogo";
 import { brandFromClient } from "@/lib/branding";
+import { listBusinessCardAssets } from "@/lib/posterArchive";
+import { groupPosterSeries, parsePosterMeta } from "@/lib/posterSocial";
 import {
   DIGISOL_EMAIL,
   DIGISOL_FOUNDER,
@@ -20,6 +23,9 @@ export default async function BrandPage() {
   const logoUrl = active ? await getBrandLogoUrl(supabase, active) : "";
   const siteUrl = companySiteUrl(active);
   const house = isDigisolClient(active);
+  const cards = groupPosterSeries(
+    await listBusinessCardAssets(supabase, { clientId: active?.id, archived: false }),
+  );
 
   return (
     <div className="space-y-6">
@@ -60,6 +66,35 @@ export default async function BrandPage() {
               line: "",
             }}
           />
+          {cards.length > 0 ? (
+            <section className="space-y-6">
+              <h2 className="text-lg font-semibold text-white">Saved cards</h2>
+              {cards.map((sides) => {
+                const pdfUrl = parsePosterMeta(sides[0].notes)?.pdfUrl;
+                return (
+                  <div key={sides[0].id} className="space-y-3">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {sides.map((side, index) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          key={side.id}
+                          src={side.public_url ?? ""}
+                          alt={index === 0 ? `${companyName} business card front` : `${companyName} business card back`}
+                          className="rounded-xl border border-zinc-800"
+                        />
+                      ))}
+                    </div>
+                    <PosterActions id={sides[0].id} noun="business card" />
+                    {pdfUrl ? (
+                      <a href={pdfUrl} className="text-sm text-indigo-300 hover:text-indigo-200">
+                        Open print PDF
+                      </a>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </section>
+          ) : null}
         </>
       ) : (
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 text-sm text-zinc-400">

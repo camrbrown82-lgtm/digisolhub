@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import sharp from "sharp";
+
+sharp.cache(false);
+sharp.concurrency(1);
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireHubSession } from "@/lib/auth";
 import { brandFromClient } from "@/lib/branding";
@@ -196,7 +200,7 @@ export async function POST(request: Request) {
       images.push({ buffer: stamped, directed, slide: slides[index] });
     }
 
-    const uploaded: { path: string; publicUrl: string; directed: string; slide: PosterSlide; buffer: Buffer }[] = [];
+    const uploaded: { path: string; publicUrl: string; directed: string; slide: PosterSlide; byteSize: number }[] = [];
     for (let index = 0; index < images.length; index += 1) {
       const image = images[index];
       const path = `${Date.now()}-${seriesId}-s${index + 1}.png`;
@@ -212,7 +216,13 @@ export async function POST(request: Request) {
       const {
         data: { publicUrl },
       } = supabase.storage.from("ai-posters").getPublicUrl(path);
-      uploaded.push({ ...image, path, publicUrl });
+      uploaded.push({
+        path,
+        publicUrl,
+        directed: image.directed,
+        slide: image.slide,
+        byteSize: image.buffer.length,
+      });
     }
 
     const publicUrls = uploaded.map((item) => item.publicUrl);
@@ -233,6 +243,9 @@ export async function POST(request: Request) {
         console.error("Could not build poster PDF", pdfError);
       }
     }
+    images.forEach((image) => {
+      image.buffer = Buffer.alloc(0);
+    });
 
     const social = posterSocialPack({
       companyName,
@@ -279,7 +292,7 @@ export async function POST(request: Request) {
         filename: `poster-${seriesId}-slide-${index + 1}.png`,
         mime_type: "image/png",
         kind: "image",
-        byte_size: image.buffer.length,
+        byte_size: image.byteSize,
         notes,
         client_id: client?.id || null,
         caption: social.instagram,

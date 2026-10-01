@@ -1,4 +1,9 @@
 import sharp, { type OverlayOptions } from "sharp";
+
+// Serverless isolates reuse this module. Drop Sharp's decoded-image cache so
+// poster and card renders do not keep previous jobs in memory.
+sharp.cache(false);
+sharp.concurrency(1);
 import { fitSize, textPath } from "@/lib/cardType";
 import type { PosterFormat } from "@/lib/poster";
 import { POSTER_CANVAS } from "@/lib/posterSizes";
