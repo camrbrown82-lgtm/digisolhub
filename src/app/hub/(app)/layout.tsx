@@ -47,7 +47,9 @@ export default async function HubAppLayout({
         />
       }
     >
-      {children}
+      <div key={workspace?.id || "none"} className="contents">
+        {children}
+      </div>
     </HubShell>
   );
 }

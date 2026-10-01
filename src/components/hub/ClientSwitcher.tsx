@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export type HubClient = {
@@ -18,7 +17,6 @@ export function ClientSwitcher({
   activeClientId: string;
   compact?: boolean;
 }) {
-  const router = useRouter();
   const [value, setValue] = useState(activeClientId);
   const active = clients.find((client) => client.id === value);
 
@@ -31,22 +29,28 @@ export function ClientSwitcher({
     void fetch("/api/hub/workspace")
       .then((response) => (response.ok ? response.json() : null))
       .then((json: { clientId?: string; repaired?: boolean } | null) => {
-        if (json?.repaired && json.clientId) {
-          setValue(json.clientId);
-          router.refresh();
+        if (json?.repaired && json.clientId && json.clientId !== activeClientId) {
+          window.location.reload();
         }
       })
       .catch(() => null);
-  }, [router]);
+  }, [activeClientId]);
 
   async function onChange(next: string) {
+    if (next === value) return;
     setValue(next);
-    await fetch("/api/hub/workspace", {
+    const response = await fetch("/api/hub/workspace", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ clientId: next }),
     });
-    router.refresh();
+    if (!response.ok) {
+      setValue(activeClientId);
+      return;
+    }
+    // A soft refresh keeps the previous company's pages in memory. A full load
+    // applies the new company on this page and on every page opened after it.
+    window.location.reload();
   }
 
   return (

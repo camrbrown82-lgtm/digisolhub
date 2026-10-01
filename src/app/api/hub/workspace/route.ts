@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import {
@@ -60,6 +61,7 @@ export async function POST(request: Request) {
     }
   }
 
+  revalidatePath("/hub", "layout");
   const response = NextResponse.json({ ok: true, clientId });
   if (!clientId) {
     response.cookies.delete(HUB_CLIENT_COOKIE);

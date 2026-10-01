@@ -1,5 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Hub pages depend on the Working-on cookie. Don't reuse a page from a few
+  // seconds ago after the company changes.
+  experimental: {
+    staleTimes: {
+      dynamic: 0,
+    },
+  },
   transpilePackages: ["grapesjs", "grapesjs-preset-newsletter", "@xyflow/react"],
   images: {
     unoptimized: true,

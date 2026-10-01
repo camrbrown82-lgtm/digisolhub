@@ -1,7 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-
 export function OpenClientButton({
   clientId,
   href = "/hub/contacts",
@@ -11,16 +9,14 @@ export function OpenClientButton({
   href?: string;
   label?: string;
 }) {
-  const router = useRouter();
-
   async function open() {
-    await fetch("/api/hub/workspace", {
+    const response = await fetch("/api/hub/workspace", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ clientId }),
     });
-    router.push(href);
-    router.refresh();
+    if (!response.ok) return;
+    window.location.assign(href);
   }
 
   return (

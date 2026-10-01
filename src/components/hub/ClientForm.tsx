@@ -1,10 +1,8 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
 
 export function ClientForm() {
-  const router = useRouter();
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -32,13 +30,16 @@ export function ClientForm() {
       return;
     }
     if (result.warning) window.alert(result.warning);
-    await fetch("/api/hub/workspace", {
+    const workspace = await fetch("/api/hub/workspace", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ clientId: result.id }),
     });
-    router.push("/hub/brand");
-    router.refresh();
+    if (!workspace.ok) {
+      setError("Company was created, but Working on did not switch. Pick it from the menu.");
+      return;
+    }
+    window.location.assign("/hub/brand");
   }
 
   return (
