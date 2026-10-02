@@ -1,5 +1,5 @@
 import type { SocialCampaignChannel } from "@/lib/campaignChannels";
-import { isStoredPosterUrl, posterExportUrl } from "@/lib/posterSizes";
+import { isWorkspaceMediaUrl, posterExportUrl } from "@/lib/posterSizes";
 import { DIGISOL_SITE_URL, LINKEDIN_ENABLED } from "@/lib/site";
 
 export type SocialPublishResult = {
@@ -61,9 +61,10 @@ export async function publishSocialPost(input: {
     };
   }
 
-  // Hub posters go out as a JPEG at the platform's size; Instagram rejects PNGs and anything outside 4:5–1.91:1.
-  const mediaUrl = isStoredPosterUrl(input.mediaUrl)
-    ? posterExportUrl(input.mediaUrl!, input.channel === "linkedin" ? "link" : "feed", { base: DIGISOL_SITE_URL })
+  // One JPEG for both feeds: 1080×1080. That ratio sits inside Instagram (4:5 through 1.91:1)
+  // and Facebook's feed photo sizes. Instagram also rejects PNG.
+  const mediaUrl = isWorkspaceMediaUrl(input.mediaUrl)
+    ? posterExportUrl(input.mediaUrl!, input.channel === "linkedin" ? "link" : "square", { base: DIGISOL_SITE_URL })
     : input.mediaUrl;
 
   if (input.channel === "linkedin") {
@@ -195,6 +196,11 @@ async function publishInstagram(input: {
       };
     }
 
+    const pending = await waitForInstagramMedia(createJson.id, token);
+    if (pending) {
+      return { ok: false, provider: "meta", error: pending };
+    }
+
     const publishParams = new URLSearchParams({
       access_token: token,
       creation_id: createJson.id,
@@ -218,13 +224,12 @@ async function publishInstagram(input: {
         error: publishJson.error?.message || "Instagram publish failed",
       };
     }
+    const permalink = publishJson.id ? await instagramPermalink(publishJson.id, token) : "";
     return {
       ok: true,
       provider: "meta",
       externalId: publishJson.id,
-      externalUrl: publishJson.id
-        ? `https://www.instagram.com/p/${publishJson.id}/`
-        : undefined,
+      externalUrl: permalink || undefined,
     };
   } catch (err) {
     return {
@@ -233,6 +238,35 @@ async function publishInstagram(input: {
       error: err instanceof Error ? err.message : "Instagram publish failed",
     };
   }
+}
+
+async function instagramPermalink(mediaId: string, token: string) {
+  const params = new URLSearchParams({ fields: "permalink", access_token: token });
+  const response = await fetch(`https://graph.facebook.com/v21.0/${mediaId}?${params}`);
+  const json = (await response.json()) as { permalink?: string };
+  return json.permalink || "";
+}
+
+/** Instagram will not publish a container until it has finished fetching the image. */
+async function waitForInstagramMedia(containerId: string, token: string) {
+  const deadline = Date.now() + 40_000;
+  while (Date.now() < deadline) {
+    const params = new URLSearchParams({ fields: "status_code,status", access_token: token });
+    const response = await fetch(`https://graph.facebook.com/v21.0/${containerId}?${params}`);
+    const json = (await response.json()) as {
+      status_code?: string;
+      status?: string;
+      error?: { message?: string };
+    };
+    if (!response.ok) return json.error?.message || "Could not check the Instagram image.";
+    if (json.status_code === "FINISHED") return "";
+    if (json.status_code === "ERROR" || json.status_code === "EXPIRED") {
+      const detail = (json.status || "").replace(/^ERROR:\s*/i, "").trim();
+      return detail || "Instagram could not use this image.";
+    }
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+  return "Instagram is still preparing the image. Post it again in a moment.";
 }
 
 async function publishLinkedIn(input: {

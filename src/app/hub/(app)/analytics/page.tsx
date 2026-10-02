@@ -235,7 +235,10 @@ export default async function AnalyticsPage({
       ),
       // Meta and Instagram tokens are DigiSol's accounts.
       isDigisol
-        ? withTimeout(fetchMetaAdsSummary(14), 8000, emptyMetaAdsSummary(14))
+        ? withTimeout(fetchMetaAdsSummary(14), 12000, {
+            ...emptyMetaAdsSummary(14),
+            error: "Meta Insights timed out. Refresh to try again.",
+          })
         : Promise.resolve(emptyMetaAdsSummary(14)),
       isDigisol
         ? withTimeout(fetchInstagramInsights(), 8000, emptyInstagramInsights())

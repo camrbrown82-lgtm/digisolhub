@@ -7,6 +7,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { DigiSolSiteBeacon } from "@/components/DigiSolSiteBeacon";
 import { MetaPixel } from "@/components/MetaPixel";
 import { MobileContactBar } from "@/components/MobileContactBar";
+import { LaunchPromoBar } from "@/components/LaunchPromoBar";
 import { PublicKaylevChat } from "@/components/PublicKaylevChat";
 import { PublicSiteAnalytics } from "@/components/PublicSiteAnalytics";
 import { AttributionCaptureBoundary } from "@/components/AttributionCaptureBoundary";
@@ -209,6 +210,7 @@ export default function RootLayout({
           }}
         />
         <LocaleProvider locale={locale}>
+          <LaunchPromoBar />
           {children}
           <MobileContactBar />
           <PublicKaylevChat />

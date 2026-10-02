@@ -23,9 +23,20 @@ export function isPosterExportSize(value: unknown): value is PosterExportSize {
 }
 
 const POSTER_BUCKET_PATH = "/storage/v1/object/public/ai-posters/";
+const WORKSPACE_MEDIA_PATH = "/storage/v1/object/public/";
 
 export function isStoredPosterUrl(url: string | null | undefined) {
   return Boolean(url && url.includes(POSTER_BUCKET_PATH));
+}
+
+/** A public file already stored for a company: posters, logos, uploads. */
+export function isWorkspaceMediaUrl(url: string | null | undefined) {
+  if (!url) return false;
+  try {
+    return new URL(url).pathname.includes(WORKSPACE_MEDIA_PATH);
+  } catch {
+    return false;
+  }
 }
 
 /** Link to a stored poster resized for a platform. `base` makes it absolute for Meta and other fetchers. */

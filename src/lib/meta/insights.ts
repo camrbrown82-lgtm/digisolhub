@@ -39,6 +39,20 @@ function num(value: unknown) {
   return Number.isFinite(n) ? n : 0;
 }
 
+/** Last N days through today. Meta's last_Nd presets leave out today. */
+function insightWindow(days: number) {
+  const until = new Date();
+  const since = new Date(until.getTime() - Math.max(0, days - 1) * 24 * 60 * 60 * 1000);
+  const day = (date: Date) =>
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Edmonton",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(date);
+  return { since: day(since), until: day(until) };
+}
+
 function actionCount(
   actions: Array<{ action_type?: string; value?: string }> | undefined,
   types: string[],
@@ -74,8 +88,6 @@ export async function syncMetaAdsInsights(days = 14): Promise<MetaAdsSummary> {
     return summary;
   }
 
-  await ensureMetaSchema().catch(() => null);
-
   const accountId = metaAdAccountId();
   const token = metaAccessToken();
   const fields = [
@@ -95,7 +107,7 @@ export async function syncMetaAdsInsights(days = 14): Promise<MetaAdsSummary> {
     `https://graph.facebook.com/${metaGraphVersion()}/${accountId}/insights`,
   );
   url.searchParams.set("level", "campaign");
-  url.searchParams.set("date_preset", days <= 7 ? "last_7d" : "last_14d");
+  url.searchParams.set("time_range", JSON.stringify(insightWindow(days)));
   url.searchParams.set("fields", fields);
   url.searchParams.set("limit", "100");
   url.searchParams.set("access_token", token);
@@ -147,6 +159,11 @@ export async function syncMetaAdsInsights(days = 14): Promise<MetaAdsSummary> {
     summary.leads = campaigns.reduce((s, c) => s + c.leads, 0);
     summary.cpl = summary.leads > 0 ? summary.spend / summary.leads : null;
     summary.synced = true;
+
+    await Promise.race([
+      ensureMetaSchema().catch(() => null),
+      new Promise((resolve) => setTimeout(resolve, 2000)),
+    ]);
 
     if (hasAdminClient()) {
       const admin = createAdminClient();

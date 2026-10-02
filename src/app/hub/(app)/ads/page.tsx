@@ -20,8 +20,8 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T) {
 }
 
 const SETUP_STEPS = [
-  "Business Settings → Users → System users → open DigiSol Hub.",
-  "Assign assets: ad account 1411615713754992 (full control), the Facebook Page, Instagram, and the dataset. Do this before generating the token.",
+  "Business Settings → Users → System users → open Conversions API System User.",
+  "Assign assets: ad account 1576410710460508 (full control), the Facebook Page, Instagram, and the dataset. Do this before generating the token.",
   "Generate a new token on that system user, expiry Never, with ads_read and ads_management. A Graph API Explorer token will not clear this.",
   "Replace META_CAPI_ACCESS_TOKEN in Vercel with that new token, then redeploy.",
 ];
@@ -56,7 +56,10 @@ export default async function AdsPage() {
   const clientId = (await resolveClientId(supabase)) || active?.id || "";
   const [account, summary, opportunity, draftsResult, postersResult] = await Promise.all([
     withTimeout<AdAccountInfo>(adAccountInfo(), 6000, { ok: false, error: "Meta did not answer in time." }),
-    withTimeout(fetchMetaAdsSummary(14), 8000, emptyMetaAdsSummary(14)),
+    withTimeout(fetchMetaAdsSummary(14), 12000, {
+      ...emptyMetaAdsSummary(14),
+      error: "Meta Insights timed out. Refresh to try again.",
+    }),
     withTimeout(opportunityStatus(), 12000, {
       ...emptyOpportunity(),
       error: "Meta did not answer in time. Refresh to try again.",

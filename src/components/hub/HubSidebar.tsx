@@ -17,6 +17,7 @@ import {
   Plug,
   Radar,
   SearchCheck,
+  Share2,
   Swords,
   Workflow,
 } from "lucide-react";
@@ -33,6 +34,7 @@ const nav = [
   { href: "/hub/competitive", label: "Competitive analysis", icon: Swords },
   { href: "/hub/email", label: "Email", icon: Mail },
   { href: "/hub/campaigns", label: "Campaigns", icon: Workflow },
+  { href: "/hub/social", label: "Social", icon: Share2 },
   { href: "/hub/ads", label: "Ads robot", icon: Megaphone },
   { href: "/hub/assets", label: "Files", icon: Files },
   { href: "/hub/ai", label: "AI posters", icon: Bot },

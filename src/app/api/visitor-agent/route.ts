@@ -16,6 +16,7 @@ import { getOpenAIApiKey } from "@/lib/openai";
 import { clientIp, rateLimit } from "@/lib/security";
 import { hasAdminClient } from "@/lib/supabase/admin";
 import { LOCATION_PAGES, locationPath } from "@/lib/locations";
+import { LAUNCH_PROMO } from "@/lib/pricing";
 import { PUBLIC_PROJECTS } from "@/lib/projects";
 import { TESTIMONIALS } from "@/lib/testimonials";
 import {
@@ -289,6 +290,9 @@ ${marketBlock}
 
 ${languageBlock}
 
+## Launch promo (published; mention it when they ask about price, a discount, or a code, and you may mention it once when a conversation turns to buying)
+Code ${LAUNCH_PROMO.code}: ${LAUNCH_PROMO.buildPercent}% off website build and design, ${LAUNCH_PROMO.otherPercent}% off the Hub, add-ons, and the first month of any retainer. ${LAUNCH_PROMO.startLabel} through ${LAUNCH_PROMO.endLabel}. Pricing page: ${DIGISOL_SITE_URL}/pricing. The same offer is on that page on every visit while the window is open.
+
 ## What DigiSol does (answer from this — do not invent packages or prices)
 ${offerings}
 - Free website audits (SEO + performance) when they share a URL
@@ -317,7 +321,7 @@ ${offerings}
 
 ## Hard rules
 - DigiSol is the only brand. Never offer to manage another agency's multi-tenant clients.
-- Never invent prices, contracts, or guarantee rankings. Soft product ideas only — no dollar amounts.
+- Never invent prices, contracts, or guarantee rankings. You may quote the published launch promo below and send people to ${DIGISOL_SITE_URL}/pricing. Do not make up any other dollar amount.
 - Never ask for passwords or payment card details.
 - Ask for email naturally in chat; skip only if they explicitly decline.
 - Prefer tools over guessing live audit or CRM results.

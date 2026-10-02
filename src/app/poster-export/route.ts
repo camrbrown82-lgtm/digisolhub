@@ -1,5 +1,5 @@
 import sharp from "sharp";
-import { isPosterExportSize, isStoredPosterUrl, POSTER_EXPORT_SIZES } from "@/lib/posterSizes";
+import { isPosterExportSize, isWorkspaceMediaUrl, POSTER_EXPORT_SIZES } from "@/lib/posterSizes";
 import { fitInto } from "@/lib/stampLogo";
 
 export const runtime = "nodejs";
@@ -30,8 +30,8 @@ export async function GET(request: Request) {
   } catch {
     return new Response("Bad poster URL", { status: 400 });
   }
-  if (url.origin !== storageOrigin() || !isStoredPosterUrl(url.href)) {
-    return new Response("Only Hub posters can be exported", { status: 400 });
+  if (url.origin !== storageOrigin() || !isWorkspaceMediaUrl(url.href)) {
+    return new Response("Only files stored for this company can be exported", { status: 400 });
   }
 
   const upstream = await fetch(url.href);
