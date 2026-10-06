@@ -38,6 +38,11 @@ export const PRICING_HUB: PricingItem[] = [
       "Email / nurture workflows",
       "Audit follow-ups & campaign monitoring",
       "Tracking snippet for your existing site",
+      "Business card maker",
+      "Social automations for Facebook and Instagram",
+      "AI posters with layout and text editing",
+      "Competitive analysis and prospect audits",
+      "Unlocks every badge the site has earned",
     ],
   },
 ];
@@ -60,6 +65,8 @@ export const PRICING_PACKAGES: PricingItem[] = [
       "Contact forms + lead capture into DigiSol Hub",
       "GA4 + first-party tracking setup",
       "NAP-consistent local business schema",
+      "Print-ready business cards",
+      "Unlocks every badge the site has earned",
     ],
   },
   {
@@ -79,6 +86,8 @@ export const PRICING_PACKAGES: PricingItem[] = [
       "Conversion paths (CTAs, forms, thank-you)",
       "Email / nurture workflow in DigiSol Hub",
       "City / service landing page starter set",
+      "Print-ready business cards",
+      "Unlocks every badge the site has earned",
     ],
   },
   {
@@ -97,6 +106,8 @@ export const PRICING_PACKAGES: PricingItem[] = [
       "Campaign monitoring dashboard in Hub",
       "Monthly Dispatch-style content kickoff",
       "Quarterly strategy review",
+      "Print-ready business cards",
+      "Unlocks every badge the site has earned",
     ],
   },
 ];
@@ -142,7 +153,7 @@ export const PRICING_RETAINERS: PricingItem[] = [
     badge: "Best scale",
     includes: [
       "Everything in Local + Paid retainers",
-      "AI posters / social export pack",
+      "AI posters, social automations, and export pack",
       "Dispatch-style off-page content",
       "Priority Hub support",
     ],

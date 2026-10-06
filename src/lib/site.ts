@@ -1,8 +1,13 @@
 export const DIGISOL_SITE_URL = "https://wwwdigisol.com";
 
-/** Facebook and Instagram ads land here so Kaylev opens on the free website audit. */
+/** Opens Kaylev on the free website audit. Used by cards and posters, not by ads. */
 export function kaylevAuditUrl() {
   return `${DIGISOL_SITE_URL}/?kaylev=audit`;
+}
+
+/** Facebook and Instagram ads land on the site. The visitor then clicks Free audit or asks Kaylev. */
+export function digisolAdsLandingUrl() {
+  return `${DIGISOL_SITE_URL}/`;
 }
 
 export function isDigisolSiteUrl(url: string) {
@@ -65,8 +70,16 @@ export const DIGISOL_LINKEDIN_URL =
   process.env.NEXT_PUBLIC_DIGISOL_LINKEDIN_URL?.trim() || "";
 export const LINKEDIN_ENABLED = Boolean(DIGISOL_LINKEDIN_URL);
 export const SOCIAL_NETWORKS_LABEL = LINKEDIN_ENABLED
-  ? "Facebook, LinkedIn, and Instagram"
-  : "Facebook and Instagram";
+  ? "Facebook, LinkedIn, Instagram, and X"
+  : "Facebook, Instagram, and X";
+export const DIGISOL_X_HANDLE =
+  process.env.NEXT_PUBLIC_DIGISOL_X_HANDLE?.trim().replace(/^@/, "") || "CBrown0169";
+export const DIGISOL_X_URL = `https://x.com/${DIGISOL_X_HANDLE}`;
+/** X card attribution. Spread into every page twitter block so it is not dropped. */
+export const DIGISOL_X_CARD = {
+  site: `@${DIGISOL_X_HANDLE}`,
+  creator: `@${DIGISOL_X_HANDLE}`,
+} as const;
 export const DIGISOL_INSTAGRAM_HANDLE =
   process.env.NEXT_PUBLIC_DIGISOL_INSTAGRAM_HANDLE?.trim() || "digi.sol20269";
 export const DIGISOL_INSTAGRAM_URL =
@@ -91,6 +104,7 @@ export const DIGISOL_SAME_AS: readonly string[] = [
   DIGISOL_FACEBOOK_URL,
   ...(LINKEDIN_ENABLED ? [DIGISOL_LINKEDIN_URL] : []),
   DIGISOL_INSTAGRAM_URL,
+  DIGISOL_X_URL,
   DIGISOL_YOUTUBE_URL,
   DIGISOL_TIKTOK_URL,
   DIGISOL_GOOGLE_LISTING_URL,

@@ -56,7 +56,7 @@ export function MarketingHomeStack({
       <OurWork />
       <Testimonials />
       <TechStackSection />
-      <WebsiteAudit copy={copy} />
+      <WebsiteAudit />
       <Audience copy={copy} />
       <BlogHighlights />
       <DispatchArchive market={market} />

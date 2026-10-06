@@ -7,6 +7,8 @@ import {
 } from "@/lib/openai";
 import { routeAgentModel } from "@/lib/agent/modelRouter";
 import type { AgentToolDefinition } from "@/lib/agent/types";
+import { companyPublishedFacts } from "@/lib/publishedFacts";
+import { isDigisolClient } from "@/lib/workspace";
 import {
   WORKFLOW_BUILDER_SYSTEM_PROMPT,
   buildWorkflowUserPrompt,
@@ -27,6 +29,7 @@ async function draftAbVariants(input: {
   goal: string;
   audience: string;
   offer?: string;
+  published?: string;
 }): Promise<AbCopy> {
   if (!getOpenAIApiKey()) {
     throw new Error("OPENAI_API_KEY is not configured");
@@ -52,7 +55,8 @@ Return JSON only:
   "bodyB":"...",
   "hypothesis":"one sentence on what differs between A and B"
 }
-Rules: subjects 4–8 words; bodies 80–140 words plain text; soft CTA; start with "Hey {{name}}," when it fits; never invent prices or fake urgency.`,
+Rules: subjects 4–8 words; bodies 80–140 words plain text; soft CTA; start with "Hey {{name}}," when it fits; never invent prices or fake urgency. You may quote the published offer below when the goal is about that promotion.
+${input.published || ""}`,
       },
       {
         role: "user",
@@ -174,6 +178,16 @@ export const generateCampaignWorkflow: AgentToolDefinition = {
 
     const openai = createOpenAIClient();
     const brandPrompt = brandKitPrompt(ctx.companyName, ctx.brand, "copy");
+    let factsClient: { name?: string | null; domain?: string | null } = { name: ctx.companyName };
+    if (!isDigisolClient(factsClient)) {
+      const { data } = await ctx.supabase
+        .from("clients")
+        .select("name, domain")
+        .eq("id", ctx.clientId)
+        .maybeSingle();
+      if (data) factsClient = { name: data.name as string, domain: data.domain as string | null };
+    }
+    const published = await companyPublishedFacts(factsClient);
 
     const [workflowCompletion, abCopy] = await Promise.all([
       openai.chat.completions.create({
@@ -207,6 +221,7 @@ export const generateCampaignWorkflow: AgentToolDefinition = {
         goal,
         audience: audienceHint,
         offer: typeof args.offer === "string" ? args.offer.trim() : undefined,
+        published,
       }),
     ]);
 

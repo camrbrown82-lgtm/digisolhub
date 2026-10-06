@@ -14,6 +14,7 @@ import {
   publishSocialPost,
   socialProviderConfigured,
 } from "@/lib/social/providers";
+import { digisolPublishedFacts } from "@/lib/publishedFacts";
 import { ensureDigisolClient } from "@/lib/workspace";
 
 export type SocialAbCopy = {
@@ -176,7 +177,8 @@ Return JSON only:
   "bodyB":"...",
   "hypothesis":"one sentence on A vs B"
 }
-Rules: 1–3 short paragraphs or lines; no hashtag spam (max 3); no invented prices; soft CTA; platform-aware tone (${input.channel}).`,
+Rules: 1–3 short paragraphs or lines; no hashtag spam (max 3); no invented prices beyond the published offer below; soft CTA; platform-aware tone (${input.channel}).
+${digisolPublishedFacts()}`,
       },
       {
         role: "user",

@@ -3,6 +3,8 @@ import {
   DIGISOL_INSTAGRAM_URL,
   DIGISOL_SITE_URL,
   DIGISOL_TIKTOK_URL,
+  DIGISOL_X_HANDLE,
+  DIGISOL_X_URL,
   DIGISOL_YOUTUBE_URL,
   LINKEDIN_ENABLED,
 } from "@/lib/site";
@@ -24,10 +26,80 @@ export const WEBSITE_AUDIT_THUMBNAIL_URL = `${DIGISOL_SITE_URL}${WEBSITE_AUDIT_T
 export const WEBSITE_AUDIT_DURATION_SECONDS = 192;
 export const WEBSITE_AUDIT_DURATION_ISO = "PT3M12S";
 
+/** Hub analytics walkthrough — how DigiSol reads a client's numbers with them. */
+export const HUB_ANALYTICS_TITLE = "How DigiSol Hub analytics helps your business";
+export const HUB_ANALYTICS_DESCRIPTION =
+  "A walkthrough of the DigiSol Hub analytics page. See how we help you read visits, leads, and what to follow up on next.";
+export const HUB_ANALYTICS_PAGE_PATH = "/media/hub-analytics";
+export const HUB_ANALYTICS_VIDEO_PATH = "/media/hub-analytics.mp4";
+export const HUB_ANALYTICS_THUMBNAIL_URL = `${DIGISOL_SITE_URL}/og.jpg?page=video`;
+export const HUB_ANALYTICS_DURATION_ISO = "PT6M9S";
+export const HUB_ANALYTICS_DURATION_SECONDS = 369;
+export const HUB_ANALYTICS_UPLOAD_DATE = "2026-10-05";
+export const HUB_ANALYTICS_UPLOAD_DATETIME = `${HUB_ANALYTICS_UPLOAD_DATE}T00:00:00-06:00`;
+
+export const HUB_ANALYTICS_PAGE_URL = `${DIGISOL_SITE_URL}${HUB_ANALYTICS_PAGE_PATH}`;
+export const HUB_ANALYTICS_VIDEO_URL = `${DIGISOL_SITE_URL}${HUB_ANALYTICS_VIDEO_PATH}`;
+
+export const DEALFINDER_TITLE = "DealFinder Auctions — a look at the website";
+export const DEALFINDER_DESCRIPTION =
+  "A look at the DealFinder Auctions website DigiSol is building. The site is in beta, with live testing before the full launch.";
+export const DEALFINDER_PAGE_PATH = "/media/dealfinder";
+export const DEALFINDER_VIDEO_PATH = "/media/dealfinder-auctions.mp4";
+
+/** Ads robot walkthrough — how a brief becomes a campaign the client reviews. */
+export const ADS_ROBOT_TITLE = "Watch the ads robot write your campaign";
+export const ADS_ROBOT_DESCRIPTION =
+  "This is how we help you run ads. Press play and watch the robot turn a short brief into a Facebook and Instagram campaign you review before anything goes live.";
+export const ADS_ROBOT_PAGE_PATH = "/media/ads-robot";
+export const ADS_ROBOT_VIDEO_PATH = "/media/ads-robot.mp4";
+export const ADS_ROBOT_THUMBNAIL_URL = `${DIGISOL_SITE_URL}/og.jpg?page=video`;
+export const ADS_ROBOT_DURATION_ISO = "PT2M25S";
+export const ADS_ROBOT_DURATION_SECONDS = 145;
+export const ADS_ROBOT_UPLOAD_DATE = "2026-10-05";
+export const ADS_ROBOT_UPLOAD_DATETIME = `${ADS_ROBOT_UPLOAD_DATE}T00:00:00-06:00`;
+export const ADS_ROBOT_PAGE_URL = `${DIGISOL_SITE_URL}${ADS_ROBOT_PAGE_PATH}`;
+export const ADS_ROBOT_VIDEO_URL = `${DIGISOL_SITE_URL}${ADS_ROBOT_VIDEO_PATH}`;
+
 export const WEBSITE_AUDIT_TITLE =
   "DigiSol Website Audit — How Alberta Businesses Win Online";
 export const WEBSITE_AUDIT_DESCRIPTION =
   "A DigiSol presentation on website audits for Alberta businesses: what we look for in design, speed, local SEO, and conversion paths — and how a clear audit turns into more booked work in Airdrie, Calgary, Edmonton, and across Alberta.";
+
+/** Collection page for every public DigiSol video. Home only links here. */
+export const MEDIA_INDEX_PATH = "/media";
+
+export const MEDIA_COLLECTION = [
+  {
+    href: ADS_ROBOT_PAGE_PATH,
+    title: ADS_ROBOT_TITLE,
+    description: ADS_ROBOT_DESCRIPTION,
+    videoPath: ADS_ROBOT_VIDEO_PATH,
+    label: ADS_ROBOT_TITLE,
+  },
+  {
+    href: HUB_ANALYTICS_PAGE_PATH,
+    title: HUB_ANALYTICS_TITLE,
+    description: HUB_ANALYTICS_DESCRIPTION,
+    videoPath: HUB_ANALYTICS_VIDEO_PATH,
+    label: HUB_ANALYTICS_TITLE,
+  },
+  {
+    href: WEBSITE_AUDIT_PAGE_PATH,
+    title: WEBSITE_AUDIT_TITLE,
+    description: WEBSITE_AUDIT_DESCRIPTION,
+    videoPath: WEBSITE_AUDIT_VIDEO_PATH,
+    poster: WEBSITE_AUDIT_THUMBNAIL_PATH,
+    label: WEBSITE_AUDIT_TITLE,
+  },
+  {
+    href: DEALFINDER_PAGE_PATH,
+    title: DEALFINDER_TITLE,
+    description: DEALFINDER_DESCRIPTION,
+    videoPath: DEALFINDER_VIDEO_PATH,
+    label: DEALFINDER_TITLE,
+  },
+] as const;
 
 export const WEBSITE_AUDIT_SUMMARY =
   "In this DigiSol website audit presentation, Cameron Brown walks through how Alberta companies can evaluate their site for clarity, mobile experience, local search visibility, and lead conversion. The audit covers design and messaging, technical performance, Google Business Profile alignment, and the next steps DigiSol takes to turn findings into a site that books work.";
@@ -90,6 +162,7 @@ export function websiteAuditSocialPack() {
     "",
     url,
     "",
+    `@${DIGISOL_X_HANDLE}`,
     "#DigiSol #WebsiteAudit #AlbertaSEO",
   ].join("\n");
 
@@ -104,6 +177,7 @@ export function websiteAuditSocialPack() {
     `Instagram: ${DIGISOL_INSTAGRAM_URL}`,
     `YouTube: ${DIGISOL_YOUTUBE_URL}`,
     `TikTok: ${DIGISOL_TIKTOK_URL}`,
+    `X: ${DIGISOL_X_URL}`,
     "",
     "FACEBOOK / THREADS",
     facebook,

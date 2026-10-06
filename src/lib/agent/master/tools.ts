@@ -26,6 +26,7 @@ import {
 } from "@/lib/agent/master/companyScope";
 import type { MasterToolName } from "@/lib/agent/master/schemas";
 import { summarizeSiteEvents } from "@/lib/site-analytics";
+import { companyPublishedFacts } from "@/lib/publishedFacts";
 import { contactIdsForClient } from "@/lib/workspace";
 import { reconcileHubEmailStats } from "@/lib/resendStats";
 import {
@@ -266,6 +267,7 @@ export async function generateCampaignWorkflowTool(
   const sample = contacts ?? [];
   const assignment = assignAbVariants(sample, audiencePercentA);
   const brandPrompt = companyBrandPrompt(scope);
+  const published = await companyPublishedFacts({ name: scope.companyName, domain: scope.domain });
   const openai = createOpenAIClient();
 
   const [workflowCompletion, abCompletion] = await Promise.all([
@@ -295,7 +297,7 @@ export async function generateCampaignWorkflowTool(
       messages: [
         {
           role: "system",
-          content: `Write A/B email variants inside this brand kit:\n${brandPrompt}\nReturn JSON: {"subjectA","bodyA","subjectB","bodyB","hypothesis"}. Soft CTA, 80–140 word bodies.`,
+          content: `Write A/B email variants inside this brand kit:\n${brandPrompt}\n${published}\nReturn JSON: {"subjectA","bodyA","subjectB","bodyB","hypothesis"}. Soft CTA, 80–140 word bodies. Quote the published offer only. Do not invent another price.`,
         },
         {
           role: "user",

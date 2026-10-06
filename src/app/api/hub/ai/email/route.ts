@@ -8,6 +8,7 @@ import {
   getOpenAIApiKey,
   getOpenAITextModel,
 } from "@/lib/openai";
+import { companyPublishedFacts } from "@/lib/publishedFacts";
 import { getWorkspaceClient } from "@/lib/workspace";
 
 type Mode = "generate" | "flare";
@@ -55,6 +56,7 @@ export async function POST(request: Request) {
   const company = body.companyName?.trim() || companyName;
   const openai = createOpenAIClient();
   const kit = brandKitPrompt(company, brand, "copy");
+  const published = await companyPublishedFacts(active);
 
   const completion = await openai.chat.completions.create({
     model: getOpenAITextModel(),
@@ -73,7 +75,9 @@ Body rules: 80-140 words, plain text with blank lines, one idea, one soft CTA. M
 Start the body with "Hey {{name}}," when it fits.
 You may use these merge tags only, written exactly: ${TEMPLATE_VARIABLES.join(", ")}.
 If a logo belongs in the body, insert {{logo}} on its own line. Never describe a fake mark.
-Do not invent invoices, prices, legal claims, or another company's branding.`,
+Do not invent invoices, prices, legal claims, or another company's branding. You may quote a current offer only when it is in the published facts below, or the operator named it.
+
+${published}`,
       },
       {
         role: "user",

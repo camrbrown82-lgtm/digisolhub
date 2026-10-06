@@ -4,6 +4,7 @@ import { requireHubSession } from "@/lib/auth";
 import { brandFromClient } from "@/lib/branding";
 import { adsWorkspace } from "@/lib/meta/adDrafts";
 import { createOpenAIClient, getOpenAIApiKey, openaiErrorMessage } from "@/lib/openai";
+import { companyPublishedFacts } from "@/lib/publishedFacts";
 import { DIGISOL_SITE_URL, kaylevAuditUrl } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
@@ -52,6 +53,7 @@ export async function POST(request: Request) {
 
   const { companyName, brand } = brandFromClient(workspace.client);
   const pricingUrl = `${DIGISOL_SITE_URL}/pricing`;
+  const published = await companyPublishedFacts(workspace.client);
   let written: { reply?: unknown; drafts?: unknown } = {};
   try {
     const completion = await createOpenAIClient().chat.completions.create({
@@ -70,7 +72,9 @@ drafts: when they want a post, this array must contain the posts. Each has chann
 visual: a short art brief for one square image, or an empty string. Set it whenever they ask for a picture, poster, logo, or badge, and also whenever a new post would be clearer with an image. Describe the headline and offer to print. Do not ask the image model to draw a logo or badge. The official logo and the award badge are stamped on after the art is made.
 Facebook: a hook, then the offer in their words, then the link they asked for on its own line. If they ask for the pricing page, use ${pricingUrl}. If they name another page, use that. If they name no link, use ${kaylevAuditUrl()}. At most 2 hashtags.
 Instagram: no URL in the caption. Include the offer and code. End with "Link in bio." and 4 relevant hashtags.
-Do not invent prices, codes, or dates they did not give you. Do not drop ones they did give you.
+If they ask for the discount, promo, or offer on the site, use the published facts below even when they did not restate the code or dates. Do not invent any other price, code, or date. Do not drop ones they did give you.
+
+${published}
 Voice: ${brand.voice}
 Audience: ${brand.audience}
 Lean on: ${brand.doSay}

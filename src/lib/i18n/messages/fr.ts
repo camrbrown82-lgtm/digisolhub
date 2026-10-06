@@ -9,7 +9,7 @@ import {
   formatCad,
   getPricingItem,
 } from "@/lib/pricing";
-import { SOCIAL_NETWORKS_LABEL } from "@/lib/site";
+import { DIGISOL_X_HANDLE, SOCIAL_NETWORKS_LABEL } from "@/lib/site";
 import type { HomeCopy } from "@/lib/visitorRegion";
 import { frEmails } from "@/lib/i18n/messages/frEmails";
 
@@ -31,6 +31,11 @@ const pricingItems: Record<string, PricingItemCopy> = {
       "Séquences de courriels et de suivi",
       "Relances après audit et suivi des campagnes",
       "Code de suivi pour votre site existant",
+      "Créateur de cartes professionnelles",
+      "Automatisations sociales pour Facebook et Instagram",
+      "Affiches IA avec mise en page et édition du texte",
+      "Analyse concurrentielle et audits de prospects",
+      "Débloque tous les badges obtenus par le site",
     ],
   },
   foundation: {
@@ -46,6 +51,8 @@ const pricingItems: Record<string, PricingItemCopy> = {
       "Formulaires de contact et capture de prospects dans DigiSol Hub",
       "Configuration de GA4 et du suivi interne",
       "Données structurées d’entreprise locale aux coordonnées cohérentes",
+      "Cartes professionnelles prêtes à imprimer",
+      "Débloque tous les badges obtenus par le site",
     ],
   },
   growth: {
@@ -61,6 +68,8 @@ const pricingItems: Record<string, PricingItemCopy> = {
       "Parcours de conversion (appels à l’action, formulaires, pages de remerciement)",
       "Séquence de courriels de suivi dans DigiSol Hub",
       "Ensemble de départ de pages par ville ou par service",
+      "Cartes professionnelles prêtes à imprimer",
+      "Débloque tous les badges obtenus par le site",
     ],
   },
   full_funnel: {
@@ -76,6 +85,8 @@ const pricingItems: Record<string, PricingItemCopy> = {
       "Tableau de bord de suivi des campagnes dans le Hub",
       "Lancement de contenu mensuel façon Dispatch",
       "Revue stratégique trimestrielle",
+      "Cartes professionnelles prêtes à imprimer",
+      "Débloque tous les badges obtenus par le site",
     ],
   },
   retainer_local: {
@@ -104,7 +115,7 @@ const pricingItems: Record<string, PricingItemCopy> = {
     badge: "Idéal pour croître",
     includes: [
       "Tout ce qui est inclus dans les forfaits Local et Publicité",
-      "Affiches IA et contenu à exporter pour les réseaux sociaux",
+      "Affiches IA, automatisations sociales et contenu à exporter",
       "Contenu hors page façon Dispatch",
       "Soutien prioritaire dans le Hub",
     ],
@@ -474,7 +485,7 @@ export const fr: Messages = {
       { href: "/#why-us", label: "Pourquoi nous" },
       { href: "/blog", label: "Guides (EN)" },
       { href: "/#dispatch", label: "Dispatch" },
-      { href: "/media/website-audit", label: "Médias" },
+      { href: "/media", label: "Médias" },
       { href: "/locations/airdrie", label: "Airdrie" },
       { href: "/about", label: "À propos" },
     ],
@@ -490,7 +501,7 @@ export const fr: Messages = {
       { href: "/#audience", label: "Qui nous aidons" },
       { href: "/blog", label: "Guides (EN)" },
       { href: "/#dispatch", label: "Dispatch" },
-      { href: "/media/website-audit", label: "Médias" },
+      { href: "/media", label: "Médias" },
       { href: "/about", label: "À propos" },
       { href: "/locations", label: "Villes" },
       { href: "/#contact", label: "Contact" },
@@ -499,9 +510,12 @@ export const fr: Messages = {
     footerAria: "Pied de page",
     serviceCities: "Villes desservies",
     contact: "Contact",
+    badges: "Badges",
     tagline: (region) =>
       `Conception Web, développement, SEO et marketing pour les entreprises en croissance, avec siège social en ${region}.`,
     rights: (year, region) => `© ${year} DigiSol. ${region}. Tous droits réservés.`,
+    copyrightWarning:
+      "Les textes, images, logos et la conception de ce site appartiennent à DigiSol. Ne les copiez pas et ne les réutilisez pas sans permission écrite.",
     privacy: "Politique de confidentialité (EN)",
   },
 
@@ -563,7 +577,7 @@ export const fr: Messages = {
     freeAudit: "Obtenir un audit de site gratuit",
     bookConsult: "Réserver une consultation",
     chatHint:
-      "Vous préférez écrire? Ouvrez Kaylev sur cette page et donnez-lui votre adresse Web pour un audit instantané.",
+      "Vous préférez écrire? Ouvrez Kaylev sur cette page. Donnez-lui votre site et votre courriel, et l’audit arrive dans votre boîte.",
   },
 
   services: {
@@ -655,6 +669,7 @@ export const fr: Messages = {
     roleLabel: "Le rôle de DigiSol",
     status: { beta: "Bêta", launched: "En ligne" },
     visitSite: "Visiter le site",
+    watchMedia: "Ouvrir dans Médias",
     projects: {
       "campaign-builder": {
         summary:
@@ -712,7 +727,16 @@ export const fr: Messages = {
 
   websiteAudit: {
     eyebrow: "Médias",
-    title: "Voyez comment DigiSol fait l’audit de votre site",
+    title: "Voyez comment DigiSol peut vous aider",
+    intro:
+      "Regardez le robot publicitaire écrire une campagne Facebook et Instagram. Vous la révisez avant qu’elle soit en ligne. Les autres vidéos sont sur la même page.",
+    watchVideos: "Voir le robot publicitaire",
+    analyticsTitle: "Analytique du Hub",
+    analyticsBody:
+      "Voici comment nous vous aidons à voir ce qui fonctionne. La vidéo parcourt la page Analytique : quelles visites deviennent des prospects, d’où elles viennent, et quoi faire ensuite.",
+    analyticsPage: "Vidéo analytique complète",
+    analyticsFallback: "Télécharger la vidéo d’analytique du Hub DigiSol",
+    auditTitle: "Audit de site",
     bookConsult: "Réserver une consultation",
     fullPage: "Page média complète et transcription (en anglais)",
     videoFallback: "Télécharger la vidéo d’audit de site DigiSol",
@@ -721,10 +745,12 @@ export const fr: Messages = {
   auditExport: {
     title: "Exporter vers les réseaux sociaux",
     body: (linkedin, handle) =>
-      `Des légendes prêtes pour cette vidéo d’audit (en anglais) : Facebook, ${linkedin ? "LinkedIn, " : ""}Instagram (@${handle}), ou téléchargez la trousse complète. Les liens mènent à wwwdigisol.com.`,
+      `Des légendes prêtes pour cette vidéo d’audit (en anglais) : Facebook, ${linkedin ? "LinkedIn, " : ""}Instagram (@${handle}) et X (@${DIGISOL_X_HANDLE}), ou téléchargez la trousse complète. Les liens mènent à wwwdigisol.com.`,
     copyFacebook: "Copier la publication Facebook",
     copyLinkedin: "Copier la publication LinkedIn",
     copyInstagram: "Copier la légende Instagram",
+    copyX: "Copier la publication X",
+    shareX: "Partager sur X",
     shareFacebook: "Partager sur Facebook",
     shareLinkedin: "Partager sur LinkedIn",
     shareInstagram: "Partager sur Instagram",
@@ -920,12 +946,12 @@ export const fr: Messages = {
   chat: {
     greetingAlberta: (name) => `Bonjour! Ici ${name}, l’IA de DigiSol. J’aide les entreprises de l’Alberta, et celles qui grandissent ailleurs, à colmater leurs fuites de conversion et à croître en ligne.
 
-Vous avez un site Web? Donnez-moi l’adresse et je ferai un audit gratuit. Pas encore de site, ou des questions sur les coûts ou vos besoins? Je peux vous réserver une consultation gratuite avec Cameron : donnez-moi simplement votre courriel.`,
+Vous avez un site Web? Envoyez-moi l’adresse et le courriel où envoyer les résultats, et je ferai un audit gratuit. Pas encore de site, ou des questions sur les coûts ou vos besoins? Je peux vous réserver une consultation gratuite avec Cameron : donnez-moi simplement votre courriel.`,
     greetingGeneral: (name) => `Bonjour! Ici ${name}, l’IA de DigiSol. Que vous soyez tout près ou loin d’ici, nous aidons les entreprises à colmater leurs fuites de conversion et à croître en ligne.
 
-Vous avez un site Web? Donnez-moi l’adresse et je ferai un audit gratuit. Pas encore de site, ou des questions sur les coûts ou vos besoins? Je peux vous réserver une consultation gratuite avec Cameron : donnez-moi simplement votre courriel.`,
+Vous avez un site Web? Envoyez-moi l’adresse et le courriel où envoyer les résultats, et je ferai un audit gratuit. Pas encore de site, ou des questions sur les coûts ou vos besoins? Je peux vous réserver une consultation gratuite avec Cameron : donnez-moi simplement votre courriel.`,
     greetingAudit: (name) =>
-      `Bonjour, ici ${name}. Je peux faire un audit de site gratuit pour vous, ici même. Collez l’adresse de votre site et je vais le noter, puis vous envoyer le compte rendu par courriel.`,
+      `Bonjour, ici ${name}. Je fais un audit de site gratuit et je vous envoie les résultats par courriel. Donnez-moi l’adresse du site et le courriel où les envoyer.`,
     panelAria: (name) => `Discussion avec ${name} de DigiSol`,
     subtitle: "Audit de site gratuit",
     close: "Fermer la discussion",
@@ -1070,6 +1096,8 @@ Vous avez un site Web? Donnez-moi l’adresse et je ferai un audit gratuit. Pas 
       { label: "Formulaires et capture de prospects dans DigiSol Hub", cells: [true, true, true] },
       { label: "Google Analytics et suivi des conversions", cells: [true, true, true] },
       { label: "Données structurées d’entreprise locale", cells: [true, true, true] },
+      { label: "Débloque tous les badges obtenus par le site", cells: [true, true, true] },
+      { label: "Cartes professionnelles prêtes à imprimer", cells: [true, true, true] },
       { label: "Pages par ville ou par service", cells: [false, "Ensemble de départ", "Ensemble de départ"] },
       { label: "Profil d’entreprise Google et citations", cells: [false, true, true] },
       { label: "SEO local de départ", cells: [false, true, true] },

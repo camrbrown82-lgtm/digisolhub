@@ -103,6 +103,8 @@ export async function writePosterArtDirection(
     siteUrl?: string;
     /** An official badge is added under the art after generation. */
     badgeFacts?: string;
+    /** This company's published pages. Never another company's offer. */
+    publishedFacts?: string;
   },
 ) {
   const slide = input.slide;
@@ -117,6 +119,7 @@ export async function writePosterArtDirection(
         "- one supporting line of at most 14 words",
         `- one button${site ? ` whose label or the line under it is exactly "${site}"` : ""}`,
         "Use only facts from the brief, the brand kit, and the facts below. No invented stats or claims.",
+        input.publishedFacts || "",
         input.badgeFacts ? `Facts: ${input.badgeFacts}` : "",
       ]
         .filter(Boolean)
@@ -129,6 +132,9 @@ export async function writePosterArtDirection(
           mustPrintBlock(slide),
           input.context ? `Series notes: ${input.context}` : "",
           input.siteUrl ? `Canonical site URL if a button is needed: ${input.siteUrl}` : "",
+          input.publishedFacts
+            ? `Published site facts are context only. Do not replace copy that must be printed exactly.\n${input.publishedFacts}`
+            : "",
           input.badgeFacts ? `Facts: ${input.badgeFacts}` : "",
         ]
           .filter(Boolean)

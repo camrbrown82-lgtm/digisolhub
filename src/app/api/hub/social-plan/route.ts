@@ -13,6 +13,7 @@ import { createOpenAIClient, getOpenAIApiKey, openaiErrorMessage } from "@/lib/o
 import { isStoredPosterUrl } from "@/lib/posterSizes";
 import { isDigisolSiteUrl, kaylevAuditUrl } from "@/lib/site";
 import { dailyFromWeekly, planItems } from "@/lib/social/weekPlan";
+import { companyPublishedFacts } from "@/lib/publishedFacts";
 import { companySiteUrl } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
@@ -44,6 +45,7 @@ export async function POST(request: Request) {
   const posters = (posterRows ?? []).map((row) => row.public_url as string).filter(isStoredPosterUrl);
   const { companyName, brand } = brandFromClient(workspace.client);
   const site = companySiteUrl(workspace.client);
+  const published = await companyPublishedFacts(workspace.client);
   const leadsOk = Boolean(metaPixelId());
   const channels = ACTIVE_SOCIAL_CHANNELS.join(", ");
 
@@ -64,7 +66,9 @@ posts: exactly 3 objects, each with channel (one of ${channels}), dayOffset (0, 
 ad: one object with name, objective (${leadsOk ? Object.keys(AD_OBJECTIVES).join(" or ") : "OUTCOME_TRAFFIC only"}), headline (max 40 characters), primaryText${site && isDigisolSiteUrl(site) ? " (mention the free website audit — the click opens Kaylev)" : ""}, description (max 30 characters), cta (one of ${Object.keys(AD_CTAS).join(", ")}), linkPath (a path on ${site || "the site"}), locations (1-4 city names, or one province, not a city plus the province that contains it), ageMin, ageMax, posterIndex, reason
 
 Posts publish to the company's Facebook Page and Instagram feed. Ads run on Facebook and Instagram in the cities you name. Do not plan Groups, Stories, TikTok, or LinkedIn ads.
-Offers, codes, dates, prices, and links in the brief are required. Write them. Do not drop them because they are not in the brand kit. Do not invent stats or prices the brief did not give you.
+Offers, codes, dates, prices, and links in the brief are required. Write them. If the brief asks for the discount or offer on the site, use the published facts below. Do not drop them because they are not in the brand kit. Do not invent any other stat or price.
+
+${published}
 
 ${brandKitPrompt(companyName, brand, "copy")}`,
         },

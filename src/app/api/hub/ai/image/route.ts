@@ -30,6 +30,7 @@ import { posterSocialPack } from "@/lib/posterSocial";
 import { renderQrPng } from "@/lib/qrMark";
 import { kaylevSourceUrl, siteHostLabel } from "@/lib/site";
 import { artFormatFor, badgeWidthFor, stampOfficialLogo } from "@/lib/stampLogo";
+import { companyPublishedFacts } from "@/lib/publishedFacts";
 import { companySiteUrl, getWorkspaceClient } from "@/lib/workspace";
 
 export const runtime = "nodejs";
@@ -130,6 +131,7 @@ export async function POST(request: Request) {
     const client = await getWorkspaceClient(supabase);
     const { companyName, brand } = brandFromClient(client);
     const siteUrl = companySiteUrl(client);
+    const publishedFacts = await companyPublishedFacts(client);
     const qrUrl = includeQr ? kaylevSourceUrl(siteUrl, "poster") : "";
     if (includeQr && !qrUrl) {
       return NextResponse.json(
@@ -170,6 +172,7 @@ export async function POST(request: Request) {
           context: parsed.context,
           siteUrl,
           badgeFacts: badgePng ? badge?.facts : undefined,
+          publishedFacts,
         }),
       ),
     );

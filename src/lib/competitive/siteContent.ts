@@ -569,3 +569,22 @@ function siteSections(pages: Array<{ url: string; html: string }>) {
   }
   return Array.from(found).sort().slice(0, 30);
 }
+
+/** Homepage plus pricing, services, and other key pages, as plain text for copy tools. */
+export async function publishedSiteExcerpt(startUrl: string) {
+  const home = await fetchHtml(startUrl);
+  if (!home) return "";
+  const content = await crawlSiteContent(home, "light").catch(() => null);
+  const homeText = htmlToReadableText(home.html).slice(0, 1600);
+  const pages = (content?.pages ?? [])
+    .filter((page) => page.url.replace(/\/$/, "") !== home.url.replace(/\/$/, ""))
+    .slice(0, 4)
+    .map((page) => `${page.title} (${page.url})\n${page.text.slice(0, 700)}`);
+  const prices = (content?.prices ?? [])
+    .slice(0, 12)
+    .map((price) => `${price.label}: ${price.price}${price.note ? ` (${price.note})` : ""}`);
+  return [homeText, prices.length ? `Prices found:\n${prices.join("\n")}` : "", ...pages]
+    .filter(Boolean)
+    .join("\n\n")
+    .slice(0, 4500);
+}

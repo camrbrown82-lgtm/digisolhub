@@ -10,6 +10,7 @@ import { dispatchUrl, getDispatchIssue } from "@/lib/dispatch";
 import { ensureContentTestSchema } from "@/lib/ensureContentTestSchema";
 import { getOpenAIApiKey } from "@/lib/openai";
 import { parsePosterMeta } from "@/lib/posterSocial";
+import { companyPublishedFacts } from "@/lib/publishedFacts";
 import { getWorkspaceClient, resolveClientId } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
@@ -71,11 +72,14 @@ export async function POST(request: Request) {
   const { companyName, brand } = brandFromClient(active);
   const isDigisol = companyName.toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase();
   const brandPrompt = brandKitPrompt(companyName, brand, "copy");
+  const siteFacts = await companyPublishedFacts(active);
 
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   try {
-    if (body?.mode === "analyze") return await analyze(body, { supabase, clientId, companyName, brandPrompt, isDigisol });
-    return await plan(body ?? {}, { supabase, clientId, companyName, brandPrompt, isDigisol });
+    if (body?.mode === "analyze") {
+      return await analyze(body, { supabase, clientId, companyName, brandPrompt, isDigisol, siteFacts });
+    }
+    return await plan(body ?? {}, { supabase, clientId, companyName, brandPrompt, isDigisol, siteFacts });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Kaylev couldn't finish that." },
@@ -90,6 +94,7 @@ type Ctx = {
   companyName: string;
   brandPrompt: string;
   isDigisol: boolean;
+  siteFacts: string;
 };
 
 async function plan(body: Record<string, unknown>, ctx: Ctx) {
@@ -145,7 +150,8 @@ This test belongs to ${ctx.companyName} only. Use only its brand kit, voice, and
 ${ctx.brandPrompt}
 Rules:
 - A and B must differ in ONE clear variable (hook, offer framing, proof, format, or visual) so the result teaches something.
-- Copy is ready to post: short, platform-aware, max 3 hashtags, one clear call to action, no links (the Hub adds a tracking link per channel), no invented prices, stats, or claims beyond the source material.
+- Copy is ready to post: short, platform-aware, max 3 hashtags, one clear call to action, no links (the Hub adds a tracking link per channel), no invented prices, stats, or claims beyond the source material and the published site facts.
+${ctx.siteFacts}
 - Only use assetId values from the provided asset list, and only when the asset is about the same thing being promoted. Never attach an asset about a different topic, issue, or offer; use null instead.
 - Always write visualIdea for the poster/image each variant should use, based on the source material. If testing copy, both variants use the same visual.
 - Plain, confident Canadian English.`,

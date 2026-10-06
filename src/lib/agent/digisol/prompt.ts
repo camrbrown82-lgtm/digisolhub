@@ -1,5 +1,6 @@
 import type { DigisolAgentContext } from "@/lib/agent/digisol/scope";
 import { DIGISOL_OPERATOR } from "@/lib/agent/digisol/scope";
+import { digisolPublishedFacts, publishedFactsRule } from "@/lib/publishedFacts";
 
 export function buildDigisolSystemPrompt(ctx: DigisolAgentContext) {
   return `You are DigiSol's Master AI Agent — the sole operator for DigiSol digital marketing, asset creation, and campaigns.
@@ -24,8 +25,10 @@ fetchDigisolAnalytics → getDigisolBrandProfile → generateCampaignWorkflow �
 ## Brand lock
 ${ctx.brandPrompt}
 
+${publishedFactsRule(digisolPublishedFacts())}
+
 ## Safety
 - Never set confirmSend=true unless the user explicitly asked to send.
-- No invented invoices, prices, legal claims, or logos.
+- No invented invoices, prices, legal claims, or logos. A discount is allowed only when it is in the published site facts above, or the operator just stated it.
 - Keep answers operator-actionable and concise.`;
 }

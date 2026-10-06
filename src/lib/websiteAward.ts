@@ -154,6 +154,58 @@ async function loadProspectAward(db: SupabaseClient, id: string): Promise<AwardS
   };
 }
 
+/** A homepage chat audit of someone else's site. 90+ earns the badge; DigiSol's own site does not. */
+async function loadVisitorChatAward(
+  db: SupabaseClient,
+  audit: {
+    id: unknown;
+    client_id: unknown;
+    url: unknown;
+    final_url: unknown;
+    score: unknown;
+    created_at: unknown;
+  },
+  raw: { companyName?: string },
+): Promise<AwardStatus> {
+  const site = hostKey(String(audit.final_url || audit.url));
+  const companyName = String(raw.companyName || "").trim() || site;
+  const score = Number(audit.score) || 0;
+  const base = {
+    auditId: String(audit.id),
+    companyName,
+    site,
+    score,
+    auditedAt: String(audit.created_at),
+  };
+  if (!site || site === "wwwdigisol.com" || score < AWARD_MIN_SCORE) {
+    return { state: "not_eligible", ...base, latest: null };
+  }
+
+  const { data: newer } = await db
+    .from("website_audits")
+    .select("id, url, final_url, score, created_at, raw")
+    .eq("client_id", audit.client_id as string)
+    .gt("created_at", audit.created_at as string)
+    .order("created_at", { ascending: false })
+    .limit(30);
+  const latestOwn = (newer ?? []).find((row) => {
+    const same = hostKey(String(row.final_url || row.url)) === site;
+    const rawRow = row.raw as { source?: string; status?: unknown } | null;
+    const score = Number(row.score) || 0;
+    // A fetch that never completed (no HTTP status, score 0) is not a new audit.
+    const completed = score > 0 || typeof rawRow?.status === "number";
+    return same && rawRow?.source === "visitor_chat" && completed;
+  });
+  const latest = latestOwn
+    ? { score: Number(latestOwn.score) || 0, auditedAt: String(latestOwn.created_at) }
+    : null;
+  return {
+    state: latest && latest.score < AWARD_MIN_SCORE ? "superseded" : "valid",
+    ...base,
+    latest,
+  };
+}
+
 /**
  * Looks up an award by id and checks it against the latest audit of the same site. Hub companies are
  * keyed by `website_audits.id`; audited prospects by `prospects.id`.
@@ -163,15 +215,30 @@ export async function loadAward(db: SupabaseClient, auditId: string): Promise<Aw
   if (!UUID.test(auditId)) return { state: "missing" };
   const { data: audit } = await db
     .from("website_audits")
-    .select("id, client_id, url, final_url, score, created_at, clients(name, domain)")
+    .select("id, client_id, url, final_url, score, created_at, raw, clients(name, domain)")
     .eq("id", auditId)
     .maybeSingle();
   if (!audit) return loadProspectAward(db, auditId);
   if (!audit.client_id) return { state: "missing" };
+  const raw = (audit.raw ?? null) as { source?: string; companyName?: string } | null;
+  if (raw?.source === "visitor_chat") return loadVisitorChatAward(db, audit, raw);
   const client = (Array.isArray(audit.clients) ? audit.clients[0] : audit.clients) as
     | { name?: string | null; domain?: string | null }
     | null;
   if (!client?.name) return { state: "missing" };
+
+  // Hub audits are not the Excellence Award. That award is only for a free audit
+  // (visitor chat or prospect outreach). Signed-up companies earn competitive-analysis badges instead.
+  const baseDenied = {
+    auditId: String(audit.id),
+    companyName: client.name,
+    site: hostKey(String(audit.final_url || audit.url)),
+    score: Number(audit.score) || 0,
+    auditedAt: String(audit.created_at),
+  };
+  if (client.name.trim().toLowerCase() !== "digisol") {
+    return { state: "not_eligible", ...baseDenied, latest: null };
+  }
 
   const row = {
     score: Number(audit.score) || 0,

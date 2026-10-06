@@ -9,7 +9,7 @@ import {
   PRICING_FAQ,
   PRICING_VALUE_POINTS,
 } from "@/lib/pricingContent";
-import { SOCIAL_NETWORKS_LABEL } from "@/lib/site";
+import { DIGISOL_X_HANDLE, SOCIAL_NETWORKS_LABEL } from "@/lib/site";
 import type { HomeCopy } from "@/lib/visitorRegion";
 import { enEmails } from "@/lib/i18n/messages/enEmails";
 
@@ -223,7 +223,7 @@ export const en = {
       { href: "/#why-us", label: "Why Us" },
       { href: "/blog", label: "Guides" },
       { href: "/#dispatch", label: "Dispatch" },
-      { href: "/media/website-audit", label: "Media" },
+      { href: "/media", label: "Media" },
       { href: "/locations/airdrie", label: "Airdrie" },
       { href: "/about", label: "About" },
     ],
@@ -239,7 +239,7 @@ export const en = {
       { href: "/#audience", label: "Who We Help" },
       { href: "/blog", label: "Guides" },
       { href: "/#dispatch", label: "Dispatch" },
-      { href: "/media/website-audit", label: "Media" },
+      { href: "/media", label: "Media" },
       { href: "/about", label: "About" },
       { href: "/locations", label: "Locations" },
       { href: "/#contact", label: "Contact" },
@@ -248,9 +248,12 @@ export const en = {
     footerAria: "Footer",
     serviceCities: "Service cities",
     contact: "Contact",
+    badges: "Badges",
     tagline: (region: string) =>
       `Website design, development, SEO & marketing for growing companies — headquarters in ${region}.`,
     rights: (year: number, region: string) => `© ${year} DigiSol. ${region}. All rights reserved.`,
+    copyrightWarning:
+      "The words, images, logos, and design on this site belong to DigiSol. Don't copy or reuse them without written permission.",
     privacy: "Privacy Policy",
   },
 
@@ -312,7 +315,7 @@ export const en = {
     freeAudit: "Get a free website audit",
     bookConsult: "Book a consultation",
     chatHint:
-      "Prefer chat? Open Kaylev on this page and drop your URL for an instant audit walkthrough.",
+      "Prefer chat? Open Kaylev on this page. Share your site and email, and the audit arrives in your inbox.",
   },
 
   services: {
@@ -378,6 +381,7 @@ export const en = {
     roleLabel: "What DigiSol does",
     status: { beta: "Beta", launched: "Live" },
     visitSite: "Visit site",
+    watchMedia: "Open in Media",
     /** Translations of `PROJECTS` copy; English shows the originals. */
     projects: {} as Partial<Record<string, { summary: string; role: string }>>,
   },
@@ -426,7 +430,16 @@ export const en = {
 
   websiteAudit: {
     eyebrow: "Media",
-    title: "See How DigiSol Audits Your Website",
+    title: "See how DigiSol can help you",
+    intro:
+      "Watch the ads robot write a Facebook and Instagram campaign. You review it before anything goes live. The rest of the videos are on the same page.",
+    watchVideos: "Watch the ads robot",
+    analyticsTitle: "Hub analytics",
+    analyticsBody:
+      "This is how we help you see what's working. The walkthrough covers the analytics page: which visits turn into leads, where they come from, and what to follow up on next.",
+    analyticsPage: "Full analytics video",
+    analyticsFallback: "Download the DigiSol Hub analytics video",
+    auditTitle: "Website audit",
     bookConsult: "Book a consultation",
     fullPage: "Full media page & transcript",
     videoFallback: "Download the DigiSol website audit video",
@@ -435,10 +448,12 @@ export const en = {
   auditExport: {
     title: "Export to socials",
     body: (linkedin: boolean, handle: string) =>
-      `Ready captions for this website audit video — Facebook, ${linkedin ? "LinkedIn, " : ""}Instagram (@${handle}), or download the full social pack. Links point to wwwdigisol.com.`,
+      `Ready captions for this website audit video — Facebook, ${linkedin ? "LinkedIn, " : ""}Instagram (@${handle}), and X (@${DIGISOL_X_HANDLE}), or download the full social pack. Links point to wwwdigisol.com.`,
     copyFacebook: "Copy Facebook post",
     copyLinkedin: "Copy LinkedIn post",
     copyInstagram: "Copy Instagram caption",
+    copyX: "Copy X post",
+    shareX: "Share on X",
     shareFacebook: "Share on Facebook",
     shareLinkedin: "Share on LinkedIn",
     shareInstagram: "Share to Instagram",
@@ -634,12 +649,12 @@ export const en = {
   chat: {
     greetingAlberta: (name: string) => `Hey there! I'm ${name}, DigiSol's digital assistant. Happy to help Alberta teams and anyone scaling from farther afield fix conversion leaks and grow online.
 
-Got a website? Share the URL and I'll run a free audit. No site yet, or curious about cost / what you'd need? I can set you up with a free consultation with Cameron — just tell me your email.`,
+Got a website? Send me the address and the email you want the results sent to, and I'll run a free audit and email you the breakdown. No site yet, or curious about cost / what you'd need? I can set you up with a free consultation with Cameron — just tell me your email.`,
     greetingGeneral: (name: string) => `Hey there! I'm ${name}, DigiSol's digital assistant. Whether you're local or scaling from afar, we help businesses fix conversion leaks and grow online.
 
-Got a website? Share the URL and I'll run a free audit. No site yet, or curious about cost / what you'd need? I can set you up with a free consultation with Cameron — just tell me your email.`,
+Got a website? Send me the address and the email you want the results sent to, and I'll run a free audit and email you the breakdown. No site yet, or curious about cost / what you'd need? I can set you up with a free consultation with Cameron — just tell me your email.`,
     greetingAudit: (name: string) =>
-      `Hey, I'm ${name}. I can run a free website audit for you right here. Paste your site address and I'll score it and email you the breakdown.`,
+      `Hey, I'm ${name}. I'll run a free website audit and email you the full results. Send me your site address and the email you want them sent to.`,
     panelAria: (name: string) => `${name} DigiSol chat`,
     subtitle: "Free website audit",
     close: "Close chat",

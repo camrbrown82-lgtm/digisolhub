@@ -43,10 +43,34 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      url: `${DIGISOL_SITE_URL}/media`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
       url: `${DIGISOL_SITE_URL}/media/website-audit`,
       lastModified: now,
       changeFrequency: "monthly",
       priority: 0.75,
+    },
+    {
+      url: `${DIGISOL_SITE_URL}/media/ads-robot`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.75,
+    },
+    {
+      url: `${DIGISOL_SITE_URL}/media/hub-analytics`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.75,
+    },
+    {
+      url: `${DIGISOL_SITE_URL}/media/dealfinder`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.6,
     },
     ...LOCATION_PAGES.filter((page) => page.slug !== "airdrie").flatMap((page) =>
       translated(`/locations/${page.slug}`, {

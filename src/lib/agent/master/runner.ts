@@ -21,6 +21,7 @@ import {
   type MasterToolContext,
 } from "@/lib/agent/master/tools";
 import { resolveCompanyScope } from "@/lib/agent/master/companyScope";
+import { companyPublishedFacts } from "@/lib/publishedFacts";
 import {
   checkAgentBudget,
   estimateToolCost,
@@ -63,6 +64,7 @@ function buildSystemPrompt(
   brandPrompt: string,
   companyId: string,
   access: AgentAccessScope,
+  published: string,
 ) {
   return `You are DigiSol Hub's Master AI Agent. You govern a multi-company digital hub.
 
@@ -84,11 +86,13 @@ fetchCompanyAnalytics → getCompanyProfile → generateCampaignWorkflow → opt
 ## Brand lock for default company
 ${brandPrompt}
 
+${published}
+
 ## Hard rules
 - Pass the correct companyId for multi-company ops; do not mix brands.
 - In company_locked mode, never request another company's data.
 - Never set confirmSend=true unless the user explicitly asked to send.
-- No invented invoices, prices, legal claims, or logos.
+- No invented invoices, prices, legal claims, or logos. A discount is allowed only when it is in the published site facts above, or the operator just stated it.
 - Keep answers operator-actionable and concise.`;
 }
 
@@ -126,6 +130,7 @@ export async function runMasterAgent(
     ctx.access,
   );
   const brandPrompt = brandKitPrompt(scope.companyName, scope.brand, "copy");
+  const published = await companyPublishedFacts({ name: scope.companyName, domain: scope.domain });
 
   const maxTokens = clampMasterMaxTokens(body.maxTokens);
   const helperMaxTokens = clampMasterMaxTokens(body.maxTokens, true);
@@ -157,6 +162,7 @@ export async function runMasterAgent(
         brandPrompt,
         scope.companyId,
         ctx.access,
+        published,
       ),
     },
     ...history,

@@ -1,21 +1,27 @@
+import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { DEFAULT_LOCALE, isLocale, localizePath } from "@/lib/i18n/config";
-import { localizePricingItem } from "@/lib/i18n/pricing";
 import {
-  LAUNCH_PROMO,
   getPricingItem,
   normalizePromoCode,
   promoCodeError,
-  promoDiscountCents,
-  promoPercentFor,
   summarizeSelection,
 } from "@/lib/pricing";
+import { ensureStripePrice } from "@/lib/stripeCatalog";
 import {
   createStripeClient,
   getAlbertaGstTaxRateId,
   siteOrigin,
   stripeConfigured,
 } from "@/lib/stripe";
+
+function checkoutIntegrationId() {
+  const alphabet = "abcdefghijklmnopqrstuvwxyz";
+  const bytes = randomBytes(8);
+  let suffix = "";
+  for (let i = 0; i < bytes.length; i++) suffix += alphabet[bytes[i] % 26];
+  return `digisol_pricing_${suffix}`;
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,7 +68,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { items, firstMonthDiscount } = summarizeSelection(unique, promo);
+  const { items, oneTimeDiscount, firstMonthDiscount } = summarizeSelection(unique, promo);
   if (items.length === 0) {
     return NextResponse.json({ error: "Unknown pricing selection." }, { status: 400 });
   }
@@ -82,71 +88,83 @@ export async function POST(request: Request) {
   const stripe = createStripeClient();
   const origin = siteOrigin();
   const gstTaxRateId = await getAlbertaGstTaxRateId(stripe);
-  const line_items = items.map((item) => {
-    const oneTimePromo = item.kind === "one_time" ? promoPercentFor(item, promo) : 0;
-    const copy = localizePricingItem(item, locale);
-    const promoLabel = french ? `${promo} ${oneTimePromo} % de rabais` : `${promo} ${oneTimePromo}% off`;
-    return {
+  const line_items = await Promise.all(
+    items.map(async (item) => ({
       quantity: 1,
       tax_rates: [gstTaxRateId],
-      price_data: {
-        currency: "cad",
-        tax_behavior: "exclusive" as const,
-        product_data: {
-          name: oneTimePromo ? `${copy.name} (${promoLabel})` : copy.name,
-          description: copy.blurb.slice(0, 450),
-          metadata: { digisol_id: item.id },
-        },
-        unit_amount:
-          item.kind === "one_time" ? item.amount - promoDiscountCents(item, promo) : item.amount,
-        ...(item.kind === "recurring"
-          ? { recurring: { interval: "month" as const } }
-          : {}),
-      },
-    };
-  });
+      price: await ensureStripePrice(stripe, item),
+    })),
+  );
 
-  // Checkout allows one discount per session, so retainers' first-month promo
-  // is a single-use fixed-amount coupon; one-time items are discounted above.
-  const firstMonthCoupon =
-    promo && firstMonthDiscount > 0
+  const discountCents = oneTimeDiscount + firstMonthDiscount;
+  // One coupon per Checkout. A once amount-off covers the package discount and
+  // the retainer's first month; later retainer invoices bill the full price.
+  const promoCoupon =
+    promo && discountCents > 0
       ? await stripe.coupons.create({
-          name: french
-            ? `${promo} : ${LAUNCH_PROMO.otherPercent} % sur le premier mois`
-            : `${promo}: ${LAUNCH_PROMO.otherPercent}% off first month`,
-          amount_off: firstMonthDiscount,
+          name: (french ? `Rabais ${promo}` : `${promo} discount`).slice(0, 40),
+          amount_off: discountCents,
           currency: "cad",
           duration: "once",
           max_redemptions: 1,
           redeem_by: Math.floor(Date.now() / 1000) + 2 * 24 * 60 * 60,
-          metadata: { promo_code: promo, digisol_items: unique.join(",") },
+          metadata: {
+            promo_code: promo,
+            digisol_items: unique.join(","),
+            one_time_discount: String(oneTimeDiscount),
+            first_month_discount: String(firstMonthDiscount),
+          },
         })
       : null;
 
+  const subscription = items.some((item) => item.kind === "recurring");
+  const company = (body?.company || "").slice(0, 120);
+  const metadata = {
+    digisol_items: unique.join(","),
+    digisol_names: items.map((item) => item.name).join(", ").slice(0, 450),
+    company,
+    industry: (body?.industry || "").slice(0, 80),
+    notes: (body?.notes || "").slice(0, 400),
+    source: "wwwdigisol.com",
+    tax: "alberta_gst_5",
+    promo_code: promo || "",
+    language: locale,
+  };
+
   const session = await stripe.checkout.sessions.create({
-    mode: items.some((item) => item.kind === "recurring") ? "subscription" : "payment",
+    mode: subscription ? "subscription" : "payment",
     line_items,
+    integration_identifier: checkoutIntegrationId(),
     success_url: `${origin}${localizePath("/pricing/success", locale)}?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}${localizePath("/pricing", locale)}?cancelled=1${promo ? `&promo=${promo}` : ""}`,
     customer_email: body?.email?.trim() || undefined,
     locale: french ? "fr-CA" : "en",
-    ...(firstMonthCoupon
-      ? { discounts: [{ coupon: firstMonthCoupon.id }] }
-      : promo
-        ? {}
-        : { allow_promotion_codes: true }),
+    ...(promoCoupon
+      ? { discounts: [{ coupon: promoCoupon.id }] }
+      : { allow_promotion_codes: true }),
+    ...(subscription
+      ? {
+          subscription_data: {
+            description: items
+              .filter((item) => item.kind === "recurring")
+              .map((item) => item.name)
+              .join(", ")
+              .slice(0, 500),
+            metadata: {
+              digisol_items: metadata.digisol_items,
+              company,
+              source: metadata.source,
+              promo_code: metadata.promo_code,
+            },
+          },
+        }
+      : {
+          customer_creation: "always",
+          invoice_creation: { enabled: true },
+        }),
     billing_address_collection: "required",
     phone_number_collection: { enabled: true },
-    metadata: {
-      digisol_items: unique.join(","),
-      company: (body?.company || "").slice(0, 120),
-      industry: (body?.industry || "").slice(0, 80),
-      notes: (body?.notes || "").slice(0, 400),
-      source: "wwwdigisol.com",
-      tax: "alberta_gst_5",
-      promo_code: promo || "",
-      language: locale,
-    },
+    metadata,
     custom_text: {
       submit: {
         message: french

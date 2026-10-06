@@ -1,8 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
 import { ensureWebsiteAwardsSchema } from "@/lib/ensureWebsiteAwardsSchema";
 import { DIGISOL_SITE_URL } from "@/lib/site";
-import { AWARD_MIN_SCORE, awardEligible, awardLinks, type ProspectAward } from "@/lib/websiteAward";
+import { AWARD_MIN_SCORE, awardLinks, type ProspectAward } from "@/lib/websiteAward";
 
 export const AWARD_CATEGORY = "DigiSol Excellence Award";
 
@@ -93,15 +92,14 @@ export async function recordAward(db: SupabaseClient, input: RecordInput) {
 }
 
 /**
- * Registers awards that exist but aren't in the table yet: prospects handed one in outreach, and each
- * Hub company's latest 90+ audit of its own site. DigiSol doesn't award itself.
+ * Registers free-audit awards that exist but aren't in the table yet: prospect outreach and
+ * visitor-chat audits scoring 90+. Hub audits of a signed-up company are not the Excellence Award.
  */
 export async function syncAwards(db: SupabaseClient) {
   const schema = await ensureWebsiteAwardsSchema();
   if (!schema.ok) throw new Error(schema.error);
-  const { data: rows } = await db.from("website_awards").select("id, client_id");
+  const { data: rows } = await db.from("website_awards").select("id");
   const known = new Set((rows ?? []).map((r) => r.id as string));
-  const clientsWithAward = new Set((rows ?? []).map((r) => r.client_id as string | null).filter(Boolean));
   const inserts: Record<string, unknown>[] = [];
 
   const { data: prospects } = await db
@@ -128,34 +126,29 @@ export async function syncAwards(db: SupabaseClient) {
     );
   }
 
-  const { data: audits } = await db
+  const { data: chats } = await db
     .from("website_audits")
-    .select("id, client_id, url, final_url, score, created_at, clients(name, domain)")
+    .select("id, url, final_url, score, created_at, client_id, raw")
     .gte("score", AWARD_MIN_SCORE)
     .order("created_at", { ascending: false })
-    .limit(500);
-  const latestPerClient = new Set<string>();
-  for (const a of audits ?? []) {
-    const clientId = a.client_id as string | null;
-    const client = (Array.isArray(a.clients) ? a.clients[0] : a.clients) as
-      | { name?: string | null; domain?: string | null }
-      | null;
-    if (!clientId || !client?.name || latestPerClient.has(clientId)) continue;
-    if (client.name.trim().toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase()) continue;
-    const row = { score: Number(a.score) || 0, url: String(a.url), final_url: (a.final_url as string | null) ?? null };
-    if (!awardEligible(row, client.domain)) continue;
-    latestPerClient.add(clientId);
-    if (clientsWithAward.has(clientId) || known.has(a.id as string)) continue;
+    .limit(200);
+  for (const audit of chats ?? []) {
+    const raw = audit.raw as { source?: string; companyName?: string } | null;
+    if (raw?.source !== "visitor_chat" || known.has(audit.id as string)) continue;
+    const url = String(audit.final_url || audit.url || "");
+    const host = siteHost(url);
+    if (!host || OWN_HOSTS.test(host)) continue;
+    known.add(audit.id as string);
     inserts.push(
       rowFor({
-        id: a.id as string,
+        id: audit.id as string,
         source: "hub",
-        companyName: client.name,
-        url: row.final_url || row.url,
-        score: row.score,
-        auditId: a.id as string,
-        clientId,
-        awardedAt: String(a.created_at),
+        companyName: String(raw.companyName || "").trim() || host,
+        url,
+        score: Number(audit.score),
+        auditId: audit.id as string,
+        clientId: (audit.client_id as string | null) ?? undefined,
+        awardedAt: String(audit.created_at),
       }),
     );
   }

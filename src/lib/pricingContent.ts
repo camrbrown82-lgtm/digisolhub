@@ -48,6 +48,8 @@ export const PACKAGE_COMPARISON: { label: string; cells: [Cell, Cell, Cell] }[] 
   { label: "Forms and lead capture into DigiSol Hub", cells: [true, true, true] },
   { label: "Google Analytics and conversion tracking", cells: [true, true, true] },
   { label: "Local business schema", cells: [true, true, true] },
+  { label: "Unlocks every badge the site has earned", cells: [true, true, true] },
+  { label: "Print-ready business cards", cells: [true, true, true] },
   { label: "City or service landing pages", cells: [false, "Starter set", "Starter set"] },
   { label: "Google Business Profile and citations", cells: [false, true, true] },
   { label: "Local SEO starter", cells: [false, true, true] },
