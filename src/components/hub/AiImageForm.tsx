@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { MicDictateButton, appendDictation } from "@/components/hub/MicDictateButton";
 import { ImageTextEditor } from "@/components/hub/ImageTextEditor";
 import { PosterExport } from "@/components/hub/PosterExport";
-import { type LayoutPiece } from "@/lib/layoutPieces";
+import { backgroundPiece, type LayoutPiece } from "@/lib/layoutPieces";
 import { type PosterFormat } from "@/lib/poster";
 import { type PosterSocialPack } from "@/lib/posterSocial";
+import { uploadHubFile } from "@/lib/hubUpload";
 
 const FORMATS: { id: PosterFormat; label: string; hint: string }[] = [
   { id: "portrait", label: "Portrait", hint: "Stories, carousels, print" },
@@ -46,6 +47,27 @@ export function AiImageForm({
   const [artDirection, setArtDirection] = useState("");
   const [social, setSocial] = useState<PosterSocialPack | null>(null);
   const [busy, setBusy] = useState(false);
+  const [backgroundUrl, setBackgroundUrl] = useState("");
+  const posterHeight = format === "portrait" ? 1350 : 1080;
+  const posterWidth = format === "landscape" ? 1920 : 1080;
+
+  async function uploadBackground(file: File | undefined) {
+    if (!file || !file.type.startsWith("image/")) {
+      setStatus("Choose an image to use as the background.");
+      return;
+    }
+    setBusy(true);
+    setStatus("Uploading that image…");
+    try {
+      const saved = await uploadHubFile(file, "image");
+      setBackgroundUrl(saved.url);
+      setStatus("That photo is the poster background. Add words on it, then save.");
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : "Could not upload that image.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -55,6 +77,7 @@ export function AiImageForm({
     setSlides([]);
     setArtDirection("");
     setSocial(null);
+    setBackgroundUrl("");
     const response = await fetch("/api/hub/ai/image", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -205,7 +228,7 @@ export function AiImageForm({
         The prompt is the design. Words you want on the poster go on their own
         lines. Notes like “add a rocket” are the picture, not the type. Logo,
         award badge, and each line can be removed from the Images and text lists.
-        Use [SLIDE n] when you want a carousel.
+        Use [SLIDE n] when you want a carousel. Or upload a photo and use it as the background, then put the words on top.
       </p>
       <label className="flex items-start gap-2 text-sm text-zinc-300">
         <input
@@ -221,9 +244,24 @@ export function AiImageForm({
           {canQr ? "" : " Add a domain on Brand first."}
         </span>
       </label>
-      <button type="submit" disabled={busy} className="hub-btn">
-        {busy ? "Generating slides…" : "Generate poster"}
-      </button>
+      <div className="flex flex-wrap gap-3">
+        <button type="submit" disabled={busy} className="hub-btn">
+          {busy ? "Working…" : "Generate poster"}
+        </button>
+        <label className={`inline-flex cursor-pointer items-center rounded-full border border-zinc-600 px-4 py-2 text-sm text-zinc-200 hover:border-zinc-400 ${busy ? "pointer-events-none opacity-60" : ""}`}>
+          Upload background
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            className="sr-only"
+            disabled={busy}
+            onChange={(event) => {
+              void uploadBackground(event.target.files?.[0]);
+              event.target.value = "";
+            }}
+          />
+        </label>
+      </div>
       {status ? <p className="text-sm text-zinc-400">{status}</p> : null}
       {urls.length ? (
         <div className="space-y-6">
@@ -233,8 +271,8 @@ export function AiImageForm({
               imageUrl={slides[index]?.artUrl || url}
               replaceUrl={url}
               initialPieces={slides[index]?.pieces}
-              designWidth={format === "landscape" ? 1920 : 1080}
-              designHeight={format === "portrait" ? 1350 : 1080}
+              designWidth={posterWidth}
+              designHeight={posterHeight}
               color={colors[1]}
               background={colors[0]}
               highlight={colors[2]}
@@ -244,6 +282,22 @@ export function AiImageForm({
             />
           ))}
         </div>
+      ) : backgroundUrl ? (
+        <ImageTextEditor
+          key={`${backgroundUrl}-${format}`}
+          imageUrl={backgroundUrl}
+          initialPieces={[backgroundPiece(backgroundUrl, posterHeight)]}
+          placeArtwork={false}
+          designWidth={posterWidth}
+          designHeight={posterHeight}
+          color={colors[1]}
+          background={colors[0]}
+          highlight={colors[2]}
+          palette={palette}
+          siteUrl={siteUrl}
+          logoUrl={logoUrl}
+          onSaved={() => router.refresh()}
+        />
       ) : null}
       {social ? <PosterExport pack={social} companyName={companyName} /> : null}
       {artDirection ? (

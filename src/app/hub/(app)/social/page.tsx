@@ -7,6 +7,7 @@ import { ensureAnalyticsSocialSchema } from "@/lib/ensureAnalyticsSocialSchema";
 import { maxDailyBudget } from "@/lib/meta/ads";
 import { socialProviderConfigured } from "@/lib/social/providers";
 import type { SocialPlan } from "@/lib/social/weekPlan";
+import { mediaLibraryVideos } from "@/lib/media";
 import { companySiteUrl, getWorkspaceClient, isDigisolClient } from "@/lib/workspace";
 import { createClient } from "@/lib/supabase/server";
 
@@ -68,6 +69,9 @@ export default async function SocialPage() {
       new Date(row.created_at as string).toLocaleDateString("en-CA");
     return [{ url, label: video ? `Video · ${name}` : name, kind: video ? ("video" as const) : ("image" as const) }];
   });
+  const known = new Set(posters.map((file) => file.url));
+  const library = mediaLibraryVideos().filter((file) => !known.has(file.url));
+  const files = [...posters, ...library];
   const recent = (postsResult.data ?? []).filter(
     (row) => (row.metadata as { publishMode?: string } | null)?.publishMode !== "manual_facebook_group",
   );
@@ -80,8 +84,8 @@ export default async function SocialPage() {
         <WorkspaceScope companyName={active.name} noun="posts" />
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">
           Kaylev writes both captions and builds the image, with this company&apos;s logo and badge, from what you tell
-          him. Upload an MP4 or MOV here and post it to Facebook and Instagram, or swap in any image from this
-          workspace. Nothing publishes until you approve it.
+          him. Pick a video from DigiSol media or upload an MP4 or MOV, then post it to Facebook and Instagram.
+          Nothing publishes until you approve it.
         </p>
       </div>
       {connected ? null : (
@@ -91,7 +95,7 @@ export default async function SocialPage() {
         </p>
       )}
       <SocialStudio
-        posters={posters}
+        posters={files}
         recent={recent}
         companyName={active.name}
         logoUrl={await getBrandLogoUrl(supabase, active)}

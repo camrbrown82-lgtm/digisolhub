@@ -14,7 +14,7 @@ type Draft = { channel: Channel; body: string };
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
-type MediaFile = { url: string; label: string; kind: "image" | "video" };
+type MediaFile = { url: string; label: string; kind: "image" | "video"; source?: "media" };
 
 function kindFor(url: string, files: MediaFile[]) {
   const known = files.find((file) => file.url === url);
@@ -155,7 +155,9 @@ export function SocialStudio({
   const [piecesByUrl, setPiecesByUrl] = useState<Record<string, LayoutPiece[]>>({});
   const [editGen, setEditGen] = useState(0);
   const [imageRev, setImageRev] = useState(0);
-  const [videoUrl, setVideoUrl] = useState(posters.find((file) => file.kind === "video")?.url || "");
+  const [videoUrl, setVideoUrl] = useState(
+    posters.find((file) => file.kind === "video" && file.source !== "media")?.url || "",
+  );
   const [videoCaption, setVideoCaption] = useState("");
   const [videoChannels, setVideoChannels] = useState<Record<Channel, boolean>>({ facebook: true, instagram: true });
   const [day, setDay] = useState(tomorrowMountain);
@@ -342,6 +344,8 @@ export function SocialStudio({
   }
 
   const savedVideos = files.filter((file) => file.kind === "video");
+  const mediaVideos = savedVideos.filter((file) => file.source === "media");
+  const uploadedVideos = savedVideos.filter((file) => file.source !== "media");
 
   return (
     <div className="space-y-8">
@@ -400,10 +404,10 @@ export function SocialStudio({
             </p>
           </div>
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
-            <h3 className="text-sm font-semibold text-white">Upload a video</h3>
+            <h3 className="text-sm font-semibold text-white">Post a video</h3>
             <p className="mt-1 text-sm text-zinc-400">
-              MP4 or MOV, up to {MAX_FILE_MB}MB. It is saved with this company, then you can post it to Facebook and
-              Instagram from here.
+              Choose a video from DigiSol media, or upload an MP4 or MOV up to {MAX_FILE_MB}MB. Uploads are saved with
+              this company. Then post it to Facebook and Instagram from here.
             </p>
             <label className="mt-3 flex w-full cursor-pointer flex-col gap-2 text-xs text-zinc-400 sm:flex-row sm:items-center">
               <span className="inline-flex w-full items-center justify-center rounded-full border border-zinc-600 px-4 py-2 text-sm text-zinc-200 sm:w-auto">
@@ -420,7 +424,7 @@ export function SocialStudio({
             </label>
             {savedVideos.length > 0 ? (
               <label className="mt-3 block text-xs text-zinc-400">
-                Saved videos
+                Videos
                 <select
                   className={`${inputClass} mt-1`}
                   value={videoUrl}
@@ -431,11 +435,24 @@ export function SocialStudio({
                   }}
                 >
                   <option value="">Choose a video</option>
-                  {savedVideos.map((file) => (
-                    <option key={file.url} value={file.url}>
-                      {file.label}
-                    </option>
-                  ))}
+                  {mediaVideos.length > 0 ? (
+                    <optgroup label="DigiSol media">
+                      {mediaVideos.map((file) => (
+                        <option key={file.url} value={file.url}>
+                          {file.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ) : null}
+                  {uploadedVideos.length > 0 ? (
+                    <optgroup label="Uploaded">
+                      {uploadedVideos.map((file) => (
+                        <option key={file.url} value={file.url}>
+                          {file.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ) : null}
                 </select>
               </label>
             ) : null}

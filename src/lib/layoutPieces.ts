@@ -19,6 +19,8 @@ export type LayoutPiece = {
   fill?: string;
   /** Label colour on a button. */
   ink?: string;
+  /** Fill the whole poster, behind the words. */
+  cover?: boolean;
 };
 
 export function pieceHex(value: string | undefined, fallback: string) {
@@ -167,6 +169,22 @@ export function imagePiece(id: string, label: string, src: string, size: number,
   };
 }
 
+/** A photo that fills the poster behind the words. */
+export function backgroundPiece(src: string, height: number, label = "Background"): LayoutPiece {
+  return {
+    id: "background",
+    label,
+    text: "Background",
+    kind: "image",
+    src,
+    cover: true,
+    size: Math.min(1600, Math.max(24, Math.round(height) || 1080)),
+    x: 0,
+    y: 0,
+    weight: "regular",
+  };
+}
+
 /** The generated picture, as a layer that can be resized or removed. */
 export function artworkPiece(src: string, height: number): LayoutPiece {
   return {
@@ -247,6 +265,7 @@ export function parseLayoutPieces(raw: unknown, max = 16): LayoutPiece[] {
       href: kind === "button" ? href || undefined : undefined,
       fill: pieceHex(clip(row.fill, 7), "") || undefined,
       ink: pieceHex(clip(row.ink, 7), "") || undefined,
+      cover: kind === "image" && row.cover === true ? true : undefined,
     });
   }
   return pieces;

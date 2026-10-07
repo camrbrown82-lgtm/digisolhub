@@ -105,6 +105,7 @@ export function ImageTextEditor({
         alt=""
         className="hidden"
         onLoad={(event) => {
+          if (pieces.some((piece) => piece.cover)) return;
           const width = event.currentTarget.naturalWidth;
           const height = event.currentTarget.naturalHeight;
           if (width > 0 && height > 0) {
@@ -140,6 +141,7 @@ export function ImageTextEditor({
           imageUrl ? { url: imageUrl, label: "Artwork" } : null,
         ].filter((item): item is { url: string; label: string } => Boolean(item))}
         background={background || "#09090b"}
+        backgrounds
         scales={
           logoUrl
             ? [{ id: "logo", label: showLogo ? "Logo size" : "Logo size (slide to place it)", value: logoSize, min: 36, max: 280 }]

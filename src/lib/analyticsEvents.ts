@@ -92,10 +92,13 @@ export function summarizeAnalyticsEvents(
   const byChannel = new Map<string, number>();
   const byDay = new Map<string, number>();
   const failures = new Map<string, number>();
+  let total = 0;
   let successCount = 0;
   let tokenCost = 0;
 
   for (const row of rows) {
+    if (row.event_type === "social_post_failed") continue;
+    total += 1;
     byType.set(row.event_type, (byType.get(row.event_type) || 0) + 1);
     if (row.channel) {
       byChannel.set(row.channel, (byChannel.get(row.channel) || 0) + 1);
@@ -107,7 +110,6 @@ export function summarizeAnalyticsEvents(
     else failures.set(row.event_type, (failures.get(row.event_type) || 0) + 1);
   }
 
-  const total = rows.length;
   const rank = (map: Map<string, number>) =>
     Array.from(map.entries())
       .map(([label, value]) => ({ label, value }))

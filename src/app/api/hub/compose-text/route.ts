@@ -82,11 +82,11 @@ export async function POST(request: Request) {
   const highlight = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(clip(body?.highlight, 7)) ? clip(body?.highlight, 7) : "";
   const stamped = await stampLayoutText(source, width, height, pieces, color, { logo, images, highlight });
   const replacePath = aiPosterObjectPath(clip(body?.replaceUrl, 800));
+  const client = await getWorkspaceClient(supabase);
   let filePath = replacePath;
   let existingNotes = "";
   let existingId = "";
   if (replacePath) {
-    const client = await getWorkspaceClient(supabase);
     const { data: existing } = await supabase
       .from("assets")
       .select("id, client_id, notes")
@@ -124,5 +124,37 @@ export async function POST(request: Request) {
     }
   }
   const url = supabase.storage.from("ai-posters").getPublicUrl(filePath).data.publicUrl;
+  if (!replaced) {
+    const notes = JSON.stringify({
+      kind: "poster",
+      pieces,
+      artworkPlaced: true,
+      artUrl: pictures.find((piece) => piece.cover)?.src || imageUrl || "",
+    });
+    const row = {
+      bucket: "ai-posters",
+      path: filePath,
+      public_url: url,
+      filename: "poster.png",
+      mime_type: "image/png",
+      kind: "image",
+      client_id: client?.id ?? null,
+      notes,
+      byte_size: stamped.length,
+    };
+    const inserted = await supabase.from("assets").insert(row).select("id").maybeSingle();
+    if (inserted.error) {
+      await supabase.from("assets").insert({
+        bucket: row.bucket,
+        path: row.path,
+        public_url: row.public_url,
+        filename: row.filename,
+        mime_type: row.mime_type,
+        kind: row.kind,
+        client_id: row.client_id,
+        notes: "ai-poster",
+      });
+    }
+  }
   return NextResponse.json({ url, replaced });
 }

@@ -122,6 +122,41 @@ export const MEDIA_COLLECTION = [
   },
 ] as const;
 
+function publicMediaPath(url: string) {
+  try {
+    const parsed = new URL(url, DIGISOL_SITE_URL);
+    const site = new URL(DIGISOL_SITE_URL);
+    if (parsed.origin !== site.origin) return "";
+    return parsed.pathname;
+  } catch {
+    return "";
+  }
+}
+
+/** Public media videos, ready to pick in DigiSol social video posting. */
+export function mediaLibraryVideos() {
+  return MEDIA_COLLECTION.map((item) => ({
+    url: item.videoPath,
+    label: item.title,
+    kind: "video" as const,
+    source: "media" as const,
+  }));
+}
+
+/** True only for a video already listed on the public media pages. */
+export function isPublicMediaVideoUrl(url: string | null | undefined) {
+  if (!url) return false;
+  const path = publicMediaPath(url);
+  return MEDIA_COLLECTION.some((item) => item.videoPath === path);
+}
+
+/** Absolute address Meta can fetch. Relative Hub picks stay on this site. */
+export function absolutePublicMediaUrl(url: string) {
+  const path = publicMediaPath(url);
+  if (!MEDIA_COLLECTION.some((item) => item.videoPath === path)) return "";
+  return `${DIGISOL_SITE_URL}${path}`;
+}
+
 export const WEBSITE_AUDIT_SUMMARY =
   "In this DigiSol website audit presentation, Cameron Brown walks through how Alberta companies can evaluate their site for clarity, mobile experience, local search visibility, and lead conversion. The audit covers design and messaging, technical performance, Google Business Profile alignment, and the next steps DigiSol takes to turn findings into a site that books work.";
 

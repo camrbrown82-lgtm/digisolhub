@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { adsWorkspace } from "@/lib/meta/adDrafts";
+import { absolutePublicMediaUrl, isPublicMediaVideoUrl } from "@/lib/media";
 import { isWorkspaceMediaUrl } from "@/lib/posterSizes";
 import { isSocialVideoUrl } from "@/lib/social/providers";
 import { processSocialPostQueue } from "@/lib/social/dispatchSocialCampaign";
@@ -34,9 +35,10 @@ export async function POST(request: Request) {
   if (copy.length < 8) {
     return NextResponse.json({ error: "The post is too short." }, { status: 400 });
   }
-  const mediaUrl = body?.mediaUrl?.trim() || "";
-  if (mediaUrl && !isWorkspaceMediaUrl(mediaUrl)) {
-    return NextResponse.json({ error: "Pick a file from this company's workspace." }, { status: 400 });
+  const pickedUrl = body?.mediaUrl?.trim() || "";
+  const mediaUrl = isPublicMediaVideoUrl(pickedUrl) ? absolutePublicMediaUrl(pickedUrl) : pickedUrl;
+  if (mediaUrl && !isWorkspaceMediaUrl(mediaUrl) && !isPublicMediaVideoUrl(mediaUrl)) {
+    return NextResponse.json({ error: "Pick a file from this company's workspace or from DigiSol media." }, { status: 400 });
   }
   if (mediaUrl && /\.(webm|avi|mkv)(\?|$)/i.test(mediaUrl) && !isSocialVideoUrl(mediaUrl)) {
     return NextResponse.json({ error: "Facebook and Instagram need an MP4 or MOV." }, { status: 400 });

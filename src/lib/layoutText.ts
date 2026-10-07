@@ -29,8 +29,12 @@ export async function pieceOverlay(
   file: Buffer,
   canvasWidth: number,
   canvasHeight: number,
-  piece: { x: number; y: number; size: number },
+  piece: { x: number; y: number; size: number; cover?: boolean },
 ) {
+  if (piece.cover) {
+    const image = await sharp(file).resize(canvasWidth, canvasHeight, { fit: "cover", position: "centre" }).png().toBuffer();
+    return { input: image, left: 0, top: 0 };
+  }
   const target = Math.max(8, Math.round(piece.size));
   let image = await sharp(file).resize({ height: target, fit: "inside" }).png().toBuffer();
   let meta = await sharp(image).metadata();
@@ -95,7 +99,10 @@ export async function stampLayoutText(
   ${buttons.join("\n  ")}
 </svg>`;
   const photos: { input: Buffer; left: number; top: number }[] = [];
-  for (const piece of pieces) {
+  const imagePieces = pieces
+    .filter((piece) => piece.kind === "image" && piece.src)
+    .sort((a, b) => Number(Boolean(b.cover)) - Number(Boolean(a.cover)));
+  for (const piece of imagePieces) {
     if (piece.kind !== "image" || !piece.src) continue;
     const file = logos?.images?.get(piece.src);
     if (!file?.length) continue;

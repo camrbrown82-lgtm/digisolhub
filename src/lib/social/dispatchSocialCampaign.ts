@@ -345,22 +345,6 @@ export async function processSocialPostQueue(
         })
         .eq("id", row.id);
 
-      await logAnalyticsEvent(db, {
-        companyId: row.client_id,
-        eventType: "social_post_failed",
-        channel: row.channel,
-        success: false,
-        tokenCost: row.token_cost || 0,
-        campaignId: row.campaign_id,
-        source: "social-cron",
-        metadata: {
-          postId: row.id,
-          variant: row.variant,
-          skipped: Boolean(published.skipped),
-          error: published.error,
-        },
-      });
-
       results.push({
         id: row.id,
         channel: row.channel,

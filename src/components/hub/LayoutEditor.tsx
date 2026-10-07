@@ -1,8 +1,21 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Monitor, Redo2, Smartphone, Tablet, Undo2 } from "lucide-react";
 import { uploadHubFile } from "@/lib/hubUpload";
-import { pieceHex, type LayoutPiece } from "@/lib/layoutPieces";
+import { backgroundPiece, pieceHex, type LayoutPiece } from "@/lib/layoutPieces";
+
+type DeviceView = "desktop" | "tablet" | "mobile";
+
+const DEVICE_WIDTH: Record<DeviceView, string> = {
+  desktop: "36rem",
+  tablet: "24rem",
+  mobile: "18rem",
+};
+
+function snapshot(list: LayoutPiece[]) {
+  return JSON.stringify(list);
+}
 
 function isPicture(piece: LayoutPiece) {
   return piece.kind === "image" || piece.kind === "logo" || piece.kind === "emblem";
@@ -27,6 +40,7 @@ export function LayoutEditor({
   library,
   scales,
   onScale,
+  backgrounds,
 }: {
   pieces: LayoutPiece[];
   onChange: (next: LayoutPiece[]) => void;
@@ -45,9 +59,12 @@ export function LayoutEditor({
   library?: { url: string; label: string }[];
   scales?: { id: string; label: string; value: number; min: number; max: number }[];
   onScale?: (id: string, value: number) => void;
+  /** Upload a photo that fills the poster behind the words. */
+  backgrounds?: boolean;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const backgroundRef = useRef<HTMLInputElement>(null);
   const [face, setFace] = useState(faces?.[0] || "");
   const [selected, setSelected] = useState(pieces[0]?.id || "");
   const [guide, setGuide] = useState<{ x: number | null; y: number | null }>({ x: null, y: null });
@@ -59,6 +76,121 @@ export function LayoutEditor({
   const [imageUrlDraft, setImageUrlDraft] = useState("");
   const [customColour, setCustomColour] = useState("#4f46e5");
   const [editing, setEditing] = useState("");
+  const [device, setDevice] = useState<DeviceView>("desktop");
+  const [historyTick, setHistoryTick] = useState(0);
+  const latestPieces = useRef(pieces);
+  const livePieces = useRef(pieces);
+  const history = useRef({
+    past: [] as string[],
+    future: [] as string[],
+    current: snapshot(pieces),
+    gesture: false,
+    gestureStart: snapshot(pieces),
+    applying: false,
+  });
+  latestPieces.current = pieces;
+  if (!history.current.gesture) livePieces.current = pieces;
+  const undoRef = useRef<() => void>(() => {});
+  const redoRef = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    const book = history.current;
+    const next = snapshot(pieces);
+    if (next === book.current || book.gesture) return;
+    if (book.applying) {
+      book.current = next;
+      book.applying = false;
+      return;
+    }
+    book.past.push(book.current);
+    if (book.past.length > 50) book.past.shift();
+    book.future = [];
+    book.current = next;
+    setHistoryTick((tick) => tick + 1);
+  }, [pieces]);
+
+  function beginGesture() {
+    const book = history.current;
+    if (book.gesture) return;
+    book.gesture = true;
+    book.gestureStart = book.current;
+  }
+
+  function endGesture() {
+    const book = history.current;
+    if (!book.gesture) return;
+    book.gesture = false;
+    const next = snapshot(livePieces.current);
+    if (next === book.gestureStart) return;
+    book.past.push(book.gestureStart);
+    if (book.past.length > 50) book.past.shift();
+    book.future = [];
+    book.current = next;
+    setHistoryTick((tick) => tick + 1);
+  }
+
+  function undo() {
+    const book = history.current;
+    if (book.gesture) endGesture();
+    const previous = book.past.pop();
+    if (!previous) return;
+    book.future.push(snapshot(livePieces.current));
+    const restored = JSON.parse(previous) as LayoutPiece[];
+    livePieces.current = restored;
+    book.applying = true;
+    book.current = previous;
+    onChange(restored);
+    setHistoryTick((tick) => tick + 1);
+  }
+
+  function redo() {
+    const book = history.current;
+    if (book.gesture) endGesture();
+    const next = book.future.pop();
+    if (!next) return;
+    book.past.push(snapshot(livePieces.current));
+    const restored = JSON.parse(next) as LayoutPiece[];
+    livePieces.current = restored;
+    book.applying = true;
+    book.current = next;
+    onChange(restored);
+    setHistoryTick((tick) => tick + 1);
+  }
+
+  undoRef.current = undo;
+  redoRef.current = redo;
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
+      const target = event.target;
+      if (target instanceof HTMLElement) {
+        const tag = target.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) return;
+      }
+      const key = event.key.toLowerCase();
+      if (key === "z" && !event.shiftKey) {
+        event.preventDefault();
+        undoRef.current();
+      } else if ((key === "z" && event.shiftKey) || key === "y") {
+        event.preventDefault();
+        redoRef.current();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const canUndo = history.current.past.length > 0 || historyTick < 0;
+  const canRedo = history.current.future.length > 0;
+  const textGesture = { onFocus: beginGesture, onBlur: endGesture };
+  const slideGesture = {
+    onPointerDown: beginGesture,
+    onPointerUp: endGesture,
+    onKeyDown: beginGesture,
+    onKeyUp: endGesture,
+    onBlur: endGesture,
+  };
   const shown = face ? pieces.filter((piece) => (piece.face || "") === face) : pieces;
   const active = pieces.find((piece) => piece.id === selected) || shown[0];
   const textColour = color || "#f4f4f5";
@@ -76,8 +208,13 @@ export function LayoutEditor({
     return piece.y + (piece.size / designHeight) * 100;
   }
 
+  function change(next: LayoutPiece[]) {
+    livePieces.current = next;
+    onChange(next);
+  }
+
   function update(id: string, patch: Partial<LayoutPiece>) {
-    onChange(pieces.map((piece) => (piece.id === id ? { ...piece, ...patch } : piece)));
+    change(pieces.map((piece) => (piece.id === id ? { ...piece, ...patch } : piece)));
   }
 
   function drag(id: string, event: React.PointerEvent) {
@@ -85,6 +222,7 @@ export function LayoutEditor({
     const frame = frameRef.current?.getBoundingClientRect();
     const piece = pieces.find((item) => item.id === id);
     if (!frame || !piece) return;
+    beginGesture();
     const bounds = frame;
     const dragging = piece;
     event.preventDefault();
@@ -111,7 +249,7 @@ export function LayoutEditor({
         }
       }
       setGuide({ x: snapX, y: snapY });
-      onChange(
+      change(
         pieces.map((item) =>
           item.id === id ? { ...item, x: Math.round(x * 10) / 10, y: Math.round(Math.max(0, y) * 10) / 10 } : item,
         ),
@@ -120,6 +258,7 @@ export function LayoutEditor({
     function up() {
       setGuide({ x: null, y: null });
       window.removeEventListener("pointermove", move);
+      endGesture();
       if (!moved && dragging.href && dragging.kind === "button") window.open(dragging.href, "_blank", "noopener,noreferrer");
     }
     window.addEventListener("pointermove", move);
@@ -143,7 +282,7 @@ export function LayoutEditor({
       fill: kind === "button" ? buttonColour : kind === "divider" ? textColour : undefined,
       ink: kind === "button" ? "#ffffff" : undefined,
     };
-    onChange([...pieces, piece]);
+    change([...pieces, piece]);
     setSelected(id);
     setPanel(kind === "button" ? "settings" : "type");
     if (kind === "image") setPicker(true);
@@ -182,7 +321,7 @@ export function LayoutEditor({
         added.push(imagePiece(saved.url, saved.filename, added.length));
       }
       const withoutBlank = pieces.filter((piece) => !(piece.id === selected && piece.kind === "image" && !piece.src));
-      onChange([...withoutBlank, ...added]);
+      change([...withoutBlank, ...added]);
       setSelected(added[0]?.id || "");
       setPicker(false);
     } catch (err) {
@@ -190,6 +329,31 @@ export function LayoutEditor({
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  function setBackground(src: string, label: string) {
+    const rest = pieces.filter((piece) => piece.id !== "background" && piece.id !== "artwork" && !piece.cover);
+    change([backgroundPiece(src, designHeight, label), ...rest]);
+    setUploadNote("That image fills the poster behind the words.");
+  }
+
+  async function uploadBackground(list: FileList | null) {
+    const file = Array.from(list ?? []).find((item) => item.type.startsWith("image/"));
+    if (!file) {
+      setUploadNote("Choose an image.");
+      return;
+    }
+    setUploading(true);
+    setUploadNote("");
+    try {
+      const saved = await uploadHubFile(file, "image");
+      setBackground(saved.url, saved.filename);
+    } catch (err) {
+      setUploadNote(err instanceof Error ? err.message : "Could not add that image.");
+    } finally {
+      setUploading(false);
+      if (backgroundRef.current) backgroundRef.current.value = "";
     }
   }
 
@@ -213,12 +377,12 @@ export function LayoutEditor({
     const next = blank
       ? pieces.map((piece) => (piece.id === blank ? { ...piece, src, label, text: label } : piece))
       : [...pieces, imagePiece(src, label, 0)];
-    onChange(next);
+    change(next);
     setPicker(false);
   }
 
   function removePiece(id: string) {
-    onChange(pieces.filter((piece) => piece.id !== id));
+    change(pieces.filter((piece) => piece.id !== id));
     setSelected("");
   }
 
@@ -259,6 +423,7 @@ export function LayoutEditor({
               setCustomColour(event.target.value);
               paint(event.target.value);
             }}
+            {...slideGesture}
             className="h-7 w-7 cursor-pointer rounded-full border border-zinc-300 bg-transparent p-0"
           />
           Other
@@ -268,6 +433,77 @@ export function LayoutEditor({
 
       <div className="flex min-h-[28rem]">
         <div className="relative min-w-0 flex-1 bg-zinc-200/80 p-6">
+          <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
+            <div className="flex overflow-hidden rounded-full border border-zinc-300 bg-white">
+              <button
+                type="button"
+                aria-label="Undo"
+                title="Undo"
+                disabled={!canUndo}
+                onClick={undo}
+                className="px-3 py-1.5 text-zinc-700 hover:bg-zinc-100 disabled:opacity-30"
+              >
+                <Undo2 className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                aria-label="Redo"
+                title="Redo"
+                disabled={!canRedo}
+                onClick={redo}
+                className="border-l border-zinc-200 px-3 py-1.5 text-zinc-700 hover:bg-zinc-100 disabled:opacity-30"
+              >
+                <Redo2 className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex overflow-hidden rounded-full border border-zinc-300 bg-white">
+              {(
+                [
+                  ["desktop", "Desktop", Monitor],
+                  ["tablet", "Tablet", Tablet],
+                  ["mobile", "Mobile", Smartphone],
+                ] as const
+              ).map(([id, label, Icon]) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={device === id}
+                  onClick={() => setDevice(id)}
+                  className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold ${
+                    device === id ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {backgrounds ? (
+            <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={() => backgroundRef.current?.click()}
+                className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
+              >
+                {uploading ? "Uploading…" : "Upload background"}
+              </button>
+              {pieces.some((piece) => piece.cover) ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const current = pieces.find((piece) => piece.cover);
+                    if (current) removePiece(current.id);
+                    setUploadNote("");
+                  }}
+                  className="rounded-full border border-zinc-300 bg-white px-3 py-1.5 text-xs text-zinc-600 hover:bg-zinc-50"
+                >
+                  Remove background
+                </button>
+              ) : null}
+            </div>
+          ) : null}
           {faces && faces.length > 1 ? (
             <div className="mb-3 flex gap-2">
               {faces.map((item) => (
@@ -284,11 +520,13 @@ export function LayoutEditor({
           ) : null}
           <div
             ref={frameRef}
-            className="relative mx-auto max-w-xl overflow-hidden border border-dashed border-zinc-400 bg-white shadow-sm"
+            className="relative mx-auto overflow-hidden border border-dashed border-zinc-400 bg-white shadow-sm"
             style={{
               background: background || "#09090b",
               aspectRatio: `${designWidth} / ${designHeight}`,
               containerType: "size",
+              width: DEVICE_WIDTH[device],
+              maxWidth: "100%",
             }}
             onPointerDown={() => setSelected("")}
           >
@@ -296,13 +534,24 @@ export function LayoutEditor({
               // eslint-disable-next-line @next/next/no-img-element
               <img src={imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
             ) : null}
+            {shown
+              .filter((piece) => piece.cover && piece.src)
+              .map((piece) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={piece.id}
+                  src={piece.src}
+                  alt=""
+                  className="pointer-events-none absolute inset-0 z-10 h-full w-full object-cover"
+                />
+              ))}
             {guide.y != null ? (
               <div className="pointer-events-none absolute left-0 right-0 z-20 border-t-2 border-indigo-500" style={{ top: `${guide.y}%` }} />
             ) : null}
             {guide.x != null ? (
               <div className="pointer-events-none absolute bottom-0 top-0 z-20 border-l-2 border-indigo-500" style={{ left: `${guide.x}%` }} />
             ) : null}
-            {shown.map((piece) => {
+            {shown.filter((piece) => !piece.cover).map((piece) => {
               const chosen = active?.id === piece.id;
               return (
                 <button
@@ -346,7 +595,11 @@ export function LayoutEditor({
                           autoFocus
                           value={piece.text}
                           onChange={(event) => update(piece.id, { text: event.target.value })}
-                          onBlur={() => setEditing("")}
+                          onBlur={() => {
+                            setEditing("");
+                            endGesture();
+                          }}
+                          onFocus={beginGesture}
                           onPointerDown={(event) => event.stopPropagation()}
                           className="w-32 bg-transparent text-inherit outline-none"
                         />
@@ -361,7 +614,11 @@ export function LayoutEditor({
                       autoFocus
                       value={piece.text}
                       onChange={(event) => update(piece.id, { text: event.target.value })}
-                      onBlur={() => setEditing("")}
+                      onBlur={() => {
+                        setEditing("");
+                        endGesture();
+                      }}
+                      onFocus={beginGesture}
                       onPointerDown={(event) => event.stopPropagation()}
                       className="w-48 bg-white/90 text-inherit outline outline-1 outline-sky-500"
                     />
@@ -426,6 +683,7 @@ export function LayoutEditor({
                     value={active.text}
                     rows={3}
                     onChange={(event) => update(active.id, { text: event.target.value })}
+                    {...textGesture}
                     className="mt-1 w-full rounded border border-zinc-600 bg-zinc-900 px-2 py-1 text-sm text-white"
                   />
                 </label>
@@ -437,6 +695,7 @@ export function LayoutEditor({
                     max={96}
                     value={active.size}
                     onChange={(event) => update(active.id, { size: Number(event.target.value) })}
+                    {...slideGesture}
                     className="mt-1 w-full"
                   />
                 </label>
@@ -470,6 +729,7 @@ export function LayoutEditor({
                     <input
                       value={active.href || ""}
                       onChange={(event) => update(active.id, { href: event.target.value })}
+                      {...textGesture}
                       className="mt-1 w-full rounded border border-zinc-600 bg-zinc-900 px-2 py-1 text-sm"
                     />
                   </label>
@@ -483,6 +743,7 @@ export function LayoutEditor({
                       max={Math.max(designWidth, designHeight, 160)}
                       value={active.size}
                       onChange={(event) => update(active.id, { size: Number(event.target.value) })}
+                      {...slideGesture}
                       className="mt-1 w-full"
                     />
                   </label>
@@ -504,6 +765,7 @@ export function LayoutEditor({
                       max={scale.max}
                       value={scale.value}
                       onChange={(event) => onScale?.(scale.id, Number(event.target.value))}
+                      {...slideGesture}
                       className="mt-1 w-full"
                     />
                   </label>
@@ -570,6 +832,15 @@ export function LayoutEditor({
         className="sr-only"
         onChange={(event) => void addImages(event.target.files)}
       />
+      {backgrounds ? (
+        <input
+          ref={backgroundRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          className="sr-only"
+          onChange={(event) => void uploadBackground(event.target.files)}
+        />
+      ) : null}
     </div>
   );
 }
