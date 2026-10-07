@@ -20,6 +20,7 @@ export function AiImageForm({
   tagline,
   voice,
   colors,
+  palette,
   logoUrl,
   fonts,
   canQr,
@@ -29,6 +30,7 @@ export function AiImageForm({
   tagline: string;
   voice: string;
   colors: string[];
+  palette?: { name: string; value: string }[];
   logoUrl?: string;
   fonts?: string;
   canQr?: boolean;
@@ -236,6 +238,7 @@ export function AiImageForm({
               color={colors[1]}
               background={colors[0]}
               highlight={colors[2]}
+              palette={palette}
               siteUrl={siteUrl}
               logoUrl={logoUrl}
             />

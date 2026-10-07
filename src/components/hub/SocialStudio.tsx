@@ -129,12 +129,14 @@ export function SocialStudio({
   companyName,
   logoUrl,
   siteUrl,
+  palette,
 }: {
   posters: MediaFile[];
   recent: RecentPost[];
   companyName: string;
   logoUrl?: string;
   siteUrl?: string;
+  palette?: { name: string; value: string }[];
 }) {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -546,6 +548,7 @@ export function SocialStudio({
                       designHeight={1080}
                       logoUrl={logoUrl}
                       siteUrl={siteUrl}
+                      palette={palette}
                       onSaved={() => setImageRev((current) => current + 1)}
                     />
                   </div>

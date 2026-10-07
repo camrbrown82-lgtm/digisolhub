@@ -69,12 +69,14 @@ export function BusinessCardMaker({
   scanNote,
   library,
   defaults,
+  palette,
 }: {
   companyName: string;
   siteReady: boolean;
   siteHint: string;
   scanNote: string;
   library: { url: string; label: string; role: "logo" | "emblem" | "award" | "upload"; selected?: boolean }[];
+  palette?: { name: string; value: string }[];
   defaults: {
     personName: string;
     personTitle: string;
@@ -395,6 +397,7 @@ export function BusinessCardMaker({
             designWidth={1050}
             designHeight={600}
             background="#09090b"
+            palette={palette}
             faces={["front", "back"]}
             scales={[
               { id: "logo", label: "Logo size", value: logoSize, min: 36, max: 160 },

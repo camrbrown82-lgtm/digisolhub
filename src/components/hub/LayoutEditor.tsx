@@ -8,16 +8,6 @@ function isPicture(piece: LayoutPiece) {
   return piece.kind === "image" || piece.kind === "logo" || piece.kind === "emblem";
 }
 
-const PRESET_COLOURS = [
-  { name: "Header", value: "#1e1b4b" },
-  { name: "Text", value: "#f4f4f5" },
-  { name: "Tertiary", value: "#a1a1aa" },
-  { name: "Gray", value: "#3f3f46" },
-  { name: "Indigo", value: "#4f46e5" },
-  { name: "Red", value: "#dc2626" },
-  { name: "Green", value: "#059669" },
-];
-
 type PaintAs = "fill" | "text" | "button";
 type Panel = "blocks" | "settings" | "type";
 
@@ -32,6 +22,7 @@ export function LayoutEditor({
   faces,
   color,
   highlight,
+  palette,
   siteUrl,
   library,
   scales,
@@ -47,6 +38,8 @@ export function LayoutEditor({
   faces?: string[];
   color?: string;
   highlight?: string;
+  /** Working company's brand colours, shown before the colour wheel. */
+  palette?: { name: string; value: string }[];
   /** Company website. Poster buttons open this. */
   siteUrl?: string;
   library?: { url: string; label: string }[];
@@ -70,11 +63,14 @@ export function LayoutEditor({
   const active = pieces.find((piece) => piece.id === selected) || shown[0];
   const textColour = color || "#f4f4f5";
   const buttonColour = highlight || "#4f46e5";
-  const swatches = [
-    { name: "Header", value: pieceHex(highlight, PRESET_COLOURS[0].value) },
-    { name: "Text", value: pieceHex(color, PRESET_COLOURS[1].value) },
-    ...PRESET_COLOURS.slice(2),
-  ];
+  const swatches = (palette?.length
+    ? palette
+    : [
+        { name: "Text", value: textColour },
+        { name: "Highlight", value: buttonColour },
+        { name: "Background", value: background || "#09090b" },
+      ]
+  ).filter((swatch) => pieceHex(swatch.value, "") );
 
   function bottomOf(piece: LayoutPiece) {
     return piece.y + (piece.size / designHeight) * 100;
@@ -254,17 +250,18 @@ export function LayoutEditor({
             {swatch.name}
           </button>
         ))}
-        <label className="flex items-center gap-1 text-[11px] text-zinc-600">
+        <label className="ml-1 flex items-center gap-1.5 border-l border-zinc-200 pl-2 text-[11px] text-zinc-600">
           <input
             type="color"
-            value={customColour}
+            aria-label="Pick another colour"
+            value={pieceHex(customColour, "#4f46e5")}
             onChange={(event) => {
               setCustomColour(event.target.value);
               paint(event.target.value);
             }}
-            className="h-5 w-5 cursor-pointer border-0 bg-transparent p-0"
+            className="h-7 w-7 cursor-pointer rounded-full border border-zinc-300 bg-transparent p-0"
           />
-          Custom
+          Other
         </label>
         <span className="text-[11px] text-zinc-400">Select a block, then click a colour.</span>
       </div>

@@ -4,7 +4,7 @@ import { PosterActions } from "@/components/hub/PosterActions";
 import { PosterExport } from "@/components/hub/PosterExport";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { getBrandLogoUrl } from "@/lib/brandLogo";
-import { brandFromClient } from "@/lib/branding";
+import { brandColourSwatches, brandFromClient } from "@/lib/branding";
 import { listPosterAssets } from "@/lib/posterArchive";
 import { parseLayoutPieces } from "@/lib/layoutPieces";
 import { groupPosterSeries, parsePosterMeta, socialPackFromAsset } from "@/lib/posterSocial";
@@ -60,6 +60,7 @@ export default async function AiPage() {
         ]}
         canQr={Boolean(siteUrl)}
         siteUrl={siteUrl}
+        palette={brandColourSwatches(brand)}
       />
       <div className="space-y-10">
         {groups.map((slides) => {
@@ -90,6 +91,7 @@ export default async function AiPage() {
                       logoUrl={logoUrl}
                       background={brand.backgroundColor}
                       highlight={brand.highlightColor}
+                      palette={brandColourSwatches(brand)}
                       siteUrl={siteUrl}
                       placeArtwork={meta?.artworkPlaced !== true}
                     />

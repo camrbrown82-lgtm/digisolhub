@@ -114,6 +114,7 @@ function DraftCard({
   adsManagerUrl,
   money,
   onRemoved,
+  palette,
 }: {
   onRemoved: () => void;
   initial: AdDraftRow;
@@ -124,6 +125,7 @@ function DraftCard({
   stats?: CampaignStats;
   adsManagerUrl: string;
   money: (value: number) => string;
+  palette?: { name: string; value: string }[];
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState(initial);
@@ -392,6 +394,7 @@ function DraftCard({
                       designWidth={1080}
                       designHeight={1350}
                       siteUrl={draft.link_url}
+                      palette={palette}
                       onSaved={() => setImageRev((current) => current + 1)}
                     />
                   </div>
@@ -497,6 +500,7 @@ export function AdsRobot({
   connected,
   stats,
   adsManagerUrl,
+  palette,
 }: {
   drafts: AdDraftRow[];
   posters: RobotPoster[];
@@ -505,6 +509,7 @@ export function AdsRobot({
   connected: boolean;
   stats: Record<string, CampaignStats>;
   adsManagerUrl: string;
+  palette?: { name: string; value: string }[];
 }) {
   const router = useRouter();
   const [brief, setBrief] = useState("");
@@ -610,6 +615,7 @@ export function AdsRobot({
               stats={draft.meta_campaign_id ? stats[draft.meta_campaign_id] : undefined}
               adsManagerUrl={adsManagerUrl}
               money={money}
+              palette={palette}
               onRemoved={() => setList((current) => current.filter((row) => row.id !== draft.id))}
             />
           ))}

@@ -7,6 +7,7 @@ import { adviceLabel, coachCampaigns } from "@/lib/meta/adsCoach";
 import { metaAdAccountId } from "@/lib/meta/config";
 import { emptyMetaAdsSummary, fetchMetaAdsSummary } from "@/lib/meta/insights";
 import { emptyOpportunity, opportunityStatus } from "@/lib/meta/opportunity";
+import { brandColourSwatches, brandFromClient } from "@/lib/branding";
 import { createClient } from "@/lib/supabase/server";
 import { getWorkspaceClient, isDigisolClient, resolveClientId } from "@/lib/workspace";
 
@@ -187,6 +188,7 @@ export default async function AdsPage() {
         connected={connected}
         stats={stats}
         adsManagerUrl={adsManagerUrl}
+        palette={brandColourSwatches(brandFromClient(active).brand)}
       />
 
       <MetaAdsPanel summary={summary} />

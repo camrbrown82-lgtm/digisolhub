@@ -28,6 +28,28 @@ export type CompanyBrand = {
 };
 
 export const DIGISOL_HOUSE_NAME = "DigiSol";
+
+export type ColourSwatch = { name: string; value: string };
+
+/** The working company's kit, in the order the poster editor shows them. */
+export function brandColourSwatches(
+  brand: Pick<
+    CompanyBrand,
+    "primaryColor" | "secondaryColor" | "accentColor" | "backgroundColor" | "textColor" | "highlightColor"
+  >,
+): ColourSwatch[] {
+  return [
+    ["Primary", brand.primaryColor],
+    ["Secondary", brand.secondaryColor],
+    ["Accent", brand.accentColor],
+    ["Background", brand.backgroundColor],
+    ["Text", brand.textColor],
+    ["Highlight", brand.highlightColor],
+  ].flatMap(([name, value]) => {
+    const hex = value.trim();
+    return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex) ? [{ name, value: hex }] : [];
+  });
+}
 export const DIGISOL_HOUSE_DOMAIN = "wwwdigisol.com";
 
 export const DIGISOL_BRAND: CompanyBrand = {

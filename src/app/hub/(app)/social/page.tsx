@@ -1,5 +1,6 @@
 import { SocialStudio } from "@/components/hub/SocialStudio";
 import { getBrandLogoUrl } from "@/lib/brandLogo";
+import { brandColourSwatches, brandFromClient } from "@/lib/branding";
 import { SocialWeekPlanner } from "@/components/hub/SocialWeekPlanner";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { ensureAnalyticsSocialSchema } from "@/lib/ensureAnalyticsSocialSchema";
@@ -95,6 +96,7 @@ export default async function SocialPage() {
         companyName={active.name}
         logoUrl={await getBrandLogoUrl(supabase, active)}
         siteUrl={companySiteUrl(active)}
+        palette={brandColourSwatches(brandFromClient(active).brand)}
       />
       <SocialWeekPlanner plans={(planRows.data ?? []) as SocialPlan[]} maxDaily={maxDailyBudget()} />
     </div>

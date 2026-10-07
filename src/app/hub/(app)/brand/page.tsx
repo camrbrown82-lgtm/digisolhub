@@ -4,7 +4,7 @@ import { PosterActions } from "@/components/hub/PosterActions";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { ensureDigisolBadgeFiles } from "@/lib/digisolBadgeFiles";
 import { getBrandLogoUrl } from "@/lib/brandLogo";
-import { brandFromClient } from "@/lib/branding";
+import { brandColourSwatches, brandFromClient } from "@/lib/branding";
 import { listBusinessCardAssets } from "@/lib/posterArchive";
 import { groupPosterSeries, parsePosterMeta } from "@/lib/posterSocial";
 import {
@@ -94,6 +94,7 @@ export default async function BrandPage() {
                 : "A scan opens this company's website."
             }
             library={library}
+            palette={brandColourSwatches(brand)}
             defaults={{
               personName: house ? DIGISOL_FOUNDER : "",
               personTitle: "",

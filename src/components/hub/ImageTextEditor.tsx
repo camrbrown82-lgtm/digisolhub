@@ -26,6 +26,7 @@ export function ImageTextEditor({
   logoUrl,
   background,
   highlight,
+  palette,
   siteUrl,
   placeArtwork = true,
   onSaved,
@@ -41,6 +42,7 @@ export function ImageTextEditor({
   logoUrl?: string;
   background?: string;
   highlight?: string;
+  palette?: { name: string; value: string }[];
   /** Company website. Buttons on the poster open it. */
   siteUrl?: string;
   /** When a previous save removed the generated picture, leave it off. */
@@ -131,6 +133,7 @@ export function ImageTextEditor({
         logoUrl={logoUrl}
         color={color}
         highlight={highlight}
+        palette={palette}
         siteUrl={siteUrl}
         library={[
           logoUrl ? { url: logoUrl, label: "Logo" } : null,
@@ -181,6 +184,7 @@ export function PosterWithEditor({
   logoUrl,
   background,
   highlight,
+  palette,
   siteUrl,
   placeArtwork = true,
   designWidth = 1080,
@@ -194,6 +198,7 @@ export function PosterWithEditor({
   logoUrl?: string;
   background?: string;
   highlight?: string;
+  palette?: { name: string; value: string }[];
   siteUrl?: string;
   placeArtwork?: boolean;
   designWidth?: number;
@@ -218,6 +223,7 @@ export function PosterWithEditor({
       logoUrl={logoUrl}
       background={background}
       highlight={highlight}
+      palette={palette}
       siteUrl={siteUrl}
       placeArtwork={placeArtwork}
     />
