@@ -8,6 +8,7 @@ import { metaAdAccountId } from "@/lib/meta/config";
 import { emptyMetaAdsSummary, fetchMetaAdsSummary } from "@/lib/meta/insights";
 import { emptyOpportunity, opportunityStatus } from "@/lib/meta/opportunity";
 import { brandColourSwatches, brandFromClient } from "@/lib/branding";
+import { isBusinessCardAsset } from "@/lib/posterArchive";
 import { createClient } from "@/lib/supabase/server";
 import { getWorkspaceClient, isDigisolClient, resolveClientId } from "@/lib/workspace";
 
@@ -73,7 +74,7 @@ export default async function AdsPage() {
       .limit(30),
     supabase
       .from("assets")
-      .select("public_url, caption, created_at")
+      .select("public_url, caption, filename, notes, created_at")
       .eq("bucket", "ai-posters")
       .eq("client_id", clientId)
       .order("created_at", { ascending: false })
@@ -85,10 +86,13 @@ export default async function AdsPage() {
     new Intl.NumberFormat("en-CA", { style: "currency", currency, maximumFractionDigits: 2 }).format(value);
   const drafts = (draftsResult.data ?? []) as unknown as AdDraftRow[];
   const posters: RobotPoster[] = (postersResult.data ?? [])
-    .filter((row) => row.public_url)
+    .filter((row) => row.public_url && !isBusinessCardAsset(row))
     .map((row) => ({
       url: row.public_url as string,
-      label: (row.caption as string | null)?.slice(0, 80) || new Date(row.created_at as string).toLocaleDateString("en-CA"),
+      label:
+        (row.caption as string | null)?.slice(0, 80) ||
+        (row.filename as string | null) ||
+        new Date(row.created_at as string).toLocaleDateString("en-CA"),
     }));
   const stats: Record<string, CampaignStats> = Object.fromEntries(
     summary.campaigns.map((c) => [c.campaignId, { spend: c.spend, clicks: c.clicks, leads: c.leads, cpl: c.cpl }]),

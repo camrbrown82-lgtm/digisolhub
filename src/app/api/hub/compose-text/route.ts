@@ -108,25 +108,35 @@ export async function POST(request: Request) {
     cacheControl: "0",
   });
   if (uploadError) return NextResponse.json({ error: uploadError.message }, { status: 400 });
-  if (replaced && existingId && existingNotes) {
+  const versioned = `${supabase.storage.from("ai-posters").getPublicUrl(filePath).data.publicUrl}?v=${Date.now()}`;
+  const caption =
+    pieces.find((piece) => piece.kind !== "image" && piece.kind !== "logo" && piece.kind !== "emblem" && piece.text.trim())
+      ?.text.slice(0, 80) || "Poster";
+  if (replaced && existingId) {
+    let notes = existingNotes;
     try {
       const parsed = JSON.parse(existingNotes) as Record<string, unknown>;
       if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-          parsed.pieces = pieces;
-          parsed.artworkPlaced = true;
-        await supabase
-          .from("assets")
-          .update({ notes: JSON.stringify(parsed), byte_size: stamped.length })
-          .eq("id", existingId);
+        parsed.pieces = pieces;
+        parsed.artworkPlaced = true;
+        notes = JSON.stringify(parsed);
       }
     } catch {
-      /* plain notes stay as they are */
+      notes = existingNotes;
     }
+    await supabase
+      .from("assets")
+      .update({
+        notes: notes || JSON.stringify({ kind: "ai-poster", pieces, artworkPlaced: true }),
+        byte_size: stamped.length,
+        public_url: versioned,
+        caption,
+      })
+      .eq("id", existingId);
   }
-  const url = supabase.storage.from("ai-posters").getPublicUrl(filePath).data.publicUrl;
   if (!replaced) {
     const notes = JSON.stringify({
-      kind: "poster",
+      kind: "ai-poster",
       pieces,
       artworkPlaced: true,
       artUrl: pictures.find((piece) => piece.cover)?.src || imageUrl || "",
@@ -134,11 +144,12 @@ export async function POST(request: Request) {
     const row = {
       bucket: "ai-posters",
       path: filePath,
-      public_url: url,
+      public_url: versioned,
       filename: "poster.png",
       mime_type: "image/png",
       kind: "image",
       client_id: client?.id ?? null,
+      caption,
       notes,
       byte_size: stamped.length,
     };
@@ -152,9 +163,10 @@ export async function POST(request: Request) {
         mime_type: row.mime_type,
         kind: row.kind,
         client_id: row.client_id,
+        caption: row.caption,
         notes: "ai-poster",
       });
     }
   }
-  return NextResponse.json({ url, replaced });
+  return NextResponse.json({ url: versioned, replaced });
 }

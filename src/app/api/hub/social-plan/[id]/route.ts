@@ -7,6 +7,7 @@ import { maxDailyBudget } from "@/lib/meta/ads";
 import { loadPlan, runApprovedPlan } from "@/lib/social/runWeekPlan";
 import { planItems } from "@/lib/social/weekPlan";
 import { companySiteUrl } from "@/lib/workspace";
+import { isBusinessCardAsset } from "@/lib/posterArchive";
 import { isStoredPosterUrl } from "@/lib/posterSizes";
 
 export const dynamic = "force-dynamic";
@@ -77,10 +78,13 @@ export async function POST(request: Request, { params }: Params) {
 async function posterUrls(db: Parameters<typeof loadPlan>[0], clientId: string) {
   const { data } = await db
     .from("assets")
-    .select("public_url")
+    .select("public_url, filename, notes")
     .eq("bucket", "ai-posters")
     .eq("client_id", clientId)
     .order("created_at", { ascending: false })
     .limit(12);
-  return (data ?? []).map((row) => row.public_url as string).filter(isStoredPosterUrl);
+  return (data ?? [])
+    .filter((row) => !isBusinessCardAsset(row))
+    .map((row) => row.public_url as string)
+    .filter(isStoredPosterUrl);
 }

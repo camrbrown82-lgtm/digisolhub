@@ -228,9 +228,7 @@ export function LayoutEditor({
     event.preventDefault();
     const start = { px: event.clientX, py: event.clientY, x: dragging.x, y: dragging.y };
     const others = pieces.filter((item) => item.id !== id && (item.face || "") === (piece.face || ""));
-    let moved = false;
     function move(next: PointerEvent) {
-      if (Math.hypot(next.clientX - start.px, next.clientY - start.py) > 5) moved = true;
       let x = Math.min(96, Math.max(0, start.x + ((next.clientX - start.px) / bounds.width) * 100));
       let y = Math.min(96, Math.max(0, start.y + ((next.clientY - start.py) / bounds.height) * 100));
       const drop = (dragging.size / designHeight) * 100;
@@ -259,7 +257,6 @@ export function LayoutEditor({
       setGuide({ x: null, y: null });
       window.removeEventListener("pointermove", move);
       endGesture();
-      if (!moved && dragging.href && dragging.kind === "button") window.open(dragging.href, "_blank", "noopener,noreferrer");
     }
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up, { once: true });
@@ -560,6 +557,7 @@ export function LayoutEditor({
                   onPointerDown={(event) => {
                     event.stopPropagation();
                     setSelected(piece.id);
+                    setPaintAs(piece.kind === "button" ? "button" : "text");
                     setPanel(piece.kind === "button" ? "settings" : "type");
                     drag(piece.id, event);
                   }}
@@ -724,15 +722,64 @@ export function LayoutEditor({
               <div className="space-y-3">
                 <p className="text-xs uppercase tracking-wide text-zinc-400">Settings for the selected item</p>
                 {active.kind === "button" ? (
-                  <label className="block text-xs text-zinc-300">
-                    Link web address
-                    <input
-                      value={active.href || ""}
-                      onChange={(event) => update(active.id, { href: event.target.value })}
-                      {...textGesture}
-                      className="mt-1 w-full rounded border border-zinc-600 bg-zinc-900 px-2 py-1 text-sm"
-                    />
-                  </label>
+                  <div className="space-y-3">
+                    <label className="block text-xs text-zinc-300">
+                      Link web address
+                      <input
+                        value={active.href || ""}
+                        onChange={(event) => update(active.id, { href: event.target.value })}
+                        {...textGesture}
+                        className="mt-1 w-full rounded border border-zinc-600 bg-zinc-900 px-2 py-1 text-sm"
+                      />
+                    </label>
+                    <p className="text-[11px] text-zinc-400">The link stays off while you edit. It opens after the poster is saved and posted.</p>
+                    <div>
+                      <p className="text-xs text-zinc-300">Button colour</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-1">
+                        {swatches.map((swatch) => (
+                          <button
+                            key={`fill-${swatch.name}`}
+                            type="button"
+                            title={swatch.name}
+                            onClick={() => update(active.id, { fill: swatch.value })}
+                            className="h-5 w-5 rounded-full border border-white/30"
+                            style={{ background: swatch.value }}
+                          />
+                        ))}
+                        <input
+                          type="color"
+                          aria-label="Button colour"
+                          value={pieceHex(active.fill, buttonColour)}
+                          onChange={(event) => update(active.id, { fill: event.target.value })}
+                          {...slideGesture}
+                          className="h-6 w-6 cursor-pointer rounded-full border border-zinc-500 bg-transparent p-0"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-zinc-300">Label colour</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-1">
+                        {swatches.map((swatch) => (
+                          <button
+                            key={`ink-${swatch.name}`}
+                            type="button"
+                            title={swatch.name}
+                            onClick={() => update(active.id, { ink: swatch.value })}
+                            className="h-5 w-5 rounded-full border border-white/30"
+                            style={{ background: swatch.value }}
+                          />
+                        ))}
+                        <input
+                          type="color"
+                          aria-label="Label colour"
+                          value={pieceHex(active.ink, "#ffffff")}
+                          onChange={(event) => update(active.id, { ink: event.target.value })}
+                          {...slideGesture}
+                          className="h-6 w-6 cursor-pointer rounded-full border border-zinc-500 bg-transparent p-0"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 ) : null}
                 {isPicture(active) ? (
                   <label className="block text-xs text-zinc-300">

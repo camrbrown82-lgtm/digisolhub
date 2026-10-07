@@ -8,6 +8,7 @@ import { maxDailyBudget } from "@/lib/meta/ads";
 import { socialProviderConfigured } from "@/lib/social/providers";
 import type { SocialPlan } from "@/lib/social/weekPlan";
 import { mediaLibraryVideos } from "@/lib/media";
+import { isBusinessCardAsset } from "@/lib/posterArchive";
 import { companySiteUrl, getWorkspaceClient, isDigisolClient } from "@/lib/workspace";
 import { createClient } from "@/lib/supabase/server";
 
@@ -37,7 +38,7 @@ export default async function SocialPage() {
   const [postersResult, postsResult, planRows] = await Promise.all([
     supabase
       .from("assets")
-      .select("public_url, caption, filename, bucket, mime_type, created_at")
+      .select("public_url, caption, filename, bucket, mime_type, notes, created_at")
       .eq("client_id", active.id)
       .not("public_url", "is", null)
       .order("created_at", { ascending: false })
@@ -62,16 +63,26 @@ export default async function SocialPage() {
     const video = mime.startsWith("video/") || /\.(mp4|mov|m4v|webm)(\?|$)/i.test(url);
     const image = mime.startsWith("image/") || /\.(png|jpe?g|webp|gif)(\?|$)/i.test(url);
     if (!video && !image) return [];
+    const poster = row.bucket === "ai-posters" && !isBusinessCardAsset(row);
     const name =
       (row.caption as string | null)?.slice(0, 80) ||
       (row.filename as string | null) ||
       (row.bucket as string | null) ||
       new Date(row.created_at as string).toLocaleDateString("en-CA");
-    return [{ url, label: video ? `Video · ${name}` : name, kind: video ? ("video" as const) : ("image" as const) }];
+    return [
+      {
+        url,
+        label: video ? `Video · ${name}` : poster ? `Poster · ${name}` : name,
+        kind: video ? ("video" as const) : ("image" as const),
+        source: poster ? ("poster" as const) : undefined,
+      },
+    ];
   });
-  const known = new Set(posters.map((file) => file.url));
-  const library = mediaLibraryVideos().filter((file) => !known.has(file.url));
-  const files = [...posters, ...library];
+  const known = new Set(posters.map((file) => file.url.split("?")[0]));
+  const library = mediaLibraryVideos().filter((file) => !known.has(file.url.split("?")[0]));
+  const savedPosters = posters.filter((file) => file.source === "poster");
+  const otherFiles = posters.filter((file) => file.source !== "poster");
+  const files = [...savedPosters, ...otherFiles, ...library];
   const recent = (postsResult.data ?? []).filter(
     (row) => (row.metadata as { publishMode?: string } | null)?.publishMode !== "manual_facebook_group",
   );

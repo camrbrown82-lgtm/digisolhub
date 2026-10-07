@@ -14,7 +14,7 @@ type Draft = { channel: Channel; body: string };
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
-type MediaFile = { url: string; label: string; kind: "image" | "video"; source?: "media" };
+type MediaFile = { url: string; label: string; kind: "image" | "video"; source?: "media" | "poster" };
 
 function kindFor(url: string, files: MediaFile[]) {
   const known = files.find((file) => file.url === url);

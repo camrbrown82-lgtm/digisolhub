@@ -10,6 +10,7 @@ import { AD_CTAS, AD_OBJECTIVES } from "@/lib/meta/adOptions";
 import { maxDailyBudget } from "@/lib/meta/ads";
 import { metaPixelId } from "@/lib/meta/config";
 import { createOpenAIClient, getOpenAIApiKey, openaiErrorMessage } from "@/lib/openai";
+import { isBusinessCardAsset } from "@/lib/posterArchive";
 import { isStoredPosterUrl } from "@/lib/posterSizes";
 import { isDigisolSiteUrl, kaylevAuditUrl } from "@/lib/site";
 import { dailyFromWeekly, planItems } from "@/lib/social/weekPlan";
@@ -37,12 +38,15 @@ export async function POST(request: Request) {
 
   const { data: posterRows } = await supabase
     .from("assets")
-    .select("public_url")
+    .select("public_url, filename, notes")
     .eq("bucket", "ai-posters")
     .eq("client_id", workspace.clientId)
     .order("created_at", { ascending: false })
-    .limit(8);
-  const posters = (posterRows ?? []).map((row) => row.public_url as string).filter(isStoredPosterUrl);
+    .limit(12);
+  const posters = (posterRows ?? [])
+    .filter((row) => !isBusinessCardAsset(row))
+    .map((row) => row.public_url as string)
+    .filter(isStoredPosterUrl);
   const { companyName, brand } = brandFromClient(workspace.client);
   const site = companySiteUrl(workspace.client);
   const published = await companyPublishedFacts(workspace.client);
