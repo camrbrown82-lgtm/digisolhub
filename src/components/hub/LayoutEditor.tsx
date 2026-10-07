@@ -13,6 +13,14 @@ const DEVICE_WIDTH: Record<DeviceView, string> = {
   mobile: "18rem",
 };
 
+/** Inset from each edge, as a percent of the canvas. */
+const CUSHION = 8;
+const CENTER = 50;
+
+function nearGuide(value: number, targets: number[]) {
+  return targets.find((target) => Math.abs(value - target) < 1.5) ?? null;
+}
+
 function snapshot(list: LayoutPiece[]) {
   return JSON.stringify(list);
 }
@@ -77,6 +85,7 @@ export function LayoutEditor({
   const [customColour, setCustomColour] = useState("#4f46e5");
   const [editing, setEditing] = useState("");
   const [device, setDevice] = useState<DeviceView>("desktop");
+  const [guidesOn, setGuidesOn] = useState(true);
   const [historyTick, setHistoryTick] = useState(0);
   const latestPieces = useRef(pieces);
   const livePieces = useRef(pieces);
@@ -234,8 +243,20 @@ export function LayoutEditor({
       const drop = (dragging.size / designHeight) * 100;
       let snapX: number | null = null;
       let snapY: number | null = null;
+      if (guidesOn) {
+        const linedX = nearGuide(x, [CUSHION, CENTER, 100 - CUSHION]);
+        const linedY = nearGuide(y, [CUSHION, CENTER, 100 - CUSHION]);
+        if (linedX != null) {
+          x = linedX;
+          snapX = linedX;
+        }
+        if (linedY != null) {
+          y = linedY;
+          snapY = linedY;
+        }
+      }
       for (const other of others) {
-        if (isPicture(other)) continue;
+        if (isPicture(other) || other.cover) continue;
         if (Math.abs(x - other.x) < 1.4) {
           x = other.x;
           snapX = other.x;
@@ -475,6 +496,17 @@ export function LayoutEditor({
                 </button>
               ))}
             </div>
+            <button
+              type="button"
+              aria-pressed={guidesOn}
+              onClick={() => setGuidesOn((current) => !current)}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                guidesOn ? "bg-zinc-900 text-white" : "border border-zinc-300 bg-white text-zinc-600"
+              }`}
+              title="Center cross, cushion margin, and vertical and horizontal lines"
+            >
+              Guides
+            </button>
           </div>
           {backgrounds ? (
             <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
@@ -542,6 +574,16 @@ export function LayoutEditor({
                   className="pointer-events-none absolute inset-0 z-10 h-full w-full object-cover"
                 />
               ))}
+            {guidesOn ? (
+              <div className="pointer-events-none absolute inset-0 z-20" aria-hidden="true">
+                <div className="absolute inset-y-0 border-l border-dashed border-sky-300" style={{ left: `${CENTER}%` }} />
+                <div className="absolute inset-x-0 border-t border-dashed border-sky-300" style={{ top: `${CENTER}%` }} />
+                <div className="absolute inset-y-0 border-l border-dashed border-amber-200/90" style={{ left: `${CUSHION}%` }} />
+                <div className="absolute inset-y-0 border-l border-dashed border-amber-200/90" style={{ left: `${100 - CUSHION}%` }} />
+                <div className="absolute inset-x-0 border-t border-dashed border-amber-200/90" style={{ top: `${CUSHION}%` }} />
+                <div className="absolute inset-x-0 border-t border-dashed border-amber-200/90" style={{ top: `${100 - CUSHION}%` }} />
+              </div>
+            ) : null}
             {guide.y != null ? (
               <div className="pointer-events-none absolute left-0 right-0 z-20 border-t-2 border-indigo-500" style={{ top: `${guide.y}%` }} />
             ) : null}
@@ -627,7 +669,12 @@ export function LayoutEditor({
               );
             })}
           </div>
-          {uploadNote ? <p className="mt-2 text-sm text-zinc-600">{uploadNote}</p> : null}
+            {guidesOn ? (
+              <p className="mt-2 text-center text-[11px] text-zinc-500">
+                Sky is the center. Amber is the cushion, inset from each edge. Drag a block and it locks to those lines.
+              </p>
+            ) : null}
+            {uploadNote ? <p className="mt-2 text-sm text-zinc-600">{uploadNote}</p> : null}
         </div>
 
         <aside className="flex w-56 shrink-0 flex-col border-l border-zinc-300 bg-zinc-800 text-zinc-100">
