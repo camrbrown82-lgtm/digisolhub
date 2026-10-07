@@ -24,7 +24,7 @@ const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
 
-const emails = ["digisol2026@yahoo.com", "cam.r.brown82@gmail.com"];
+const emails = ["cam@wwwdigisol.com", "digisol2026@yahoo.com", "cam.r.brown82@gmail.com"];
 
 const { data: clients, error: clientErr } = await supabase
   .from("clients")
@@ -82,7 +82,7 @@ const { data: me } = await supabase
   .from("contacts")
   .select("id, email, name, company, tags, created_at")
   .or(
-    "email.ilike.digisol2026@yahoo.com,email.ilike.cam.r.brown82@gmail.com",
+    "email.ilike.cam@wwwdigisol.com,email.ilike.digisol2026@yahoo.com,email.ilike.cam.r.brown82@gmail.com",
   );
 console.log("\n=== YOUR CONTACTS ===");
 console.table(me);

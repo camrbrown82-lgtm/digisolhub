@@ -53,6 +53,9 @@ try {
       "utf8",
     );
     await client.query(sql);
+    await client.query(
+      "insert into public.hub_allowlist (email) values ('cam@wwwdigisol.com') on conflict (email) do nothing",
+    );
     const check = await client.query(
       "select to_regclass('public.website_audits') as table_name",
     );

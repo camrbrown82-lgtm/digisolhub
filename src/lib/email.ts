@@ -14,6 +14,7 @@ import {
   resolveEmailLogoFile,
 } from "@/lib/emailLogo";
 import { mergeVarsFromBrand, renderMergeFields } from "@/lib/emailTemplates";
+import { DIGISOL_EMAIL } from "@/lib/site";
 import { resolveScannerStatus } from "@/lib/mailScanner";
 import { oneClickUnsubscribeUrl, wrapCampaignHtml } from "@/lib/unsubscribe";
 import { Resend } from "resend";
@@ -231,7 +232,7 @@ export async function sendEmailToContact(input: SendEmailInput) {
     from,
     to: contact.email,
     ...(bcc.length ? { bcc } : {}),
-    ...(firstEnv("RESEND_REPLY_TO") ? { replyTo: firstEnv("RESEND_REPLY_TO") } : {}),
+    replyTo: firstEnv("RESEND_REPLY_TO") || DIGISOL_EMAIL,
     subject: mergedSubject || `Message from ${companyName}`,
     html: personalized,
     text: htmlToText(personalized),

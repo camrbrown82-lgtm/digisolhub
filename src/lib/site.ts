@@ -54,7 +54,7 @@ export function kaylevSourceUrl(siteUrl: string, campaign: "business-card" | "po
 export const DIGISOL_FOUNDER = "Cameron Brown";
 export const DIGISOL_FOUNDER_TITLE = "Founder & CEO";
 /** Public business inbox — use everywhere visitors / schema / Kaylev see email. */
-export const DIGISOL_EMAIL = "digisol2026@yahoo.com";
+export const DIGISOL_EMAIL = "cam@wwwdigisol.com";
 /**
  * Facebook Page (not a personal profile). Override with
  * NEXT_PUBLIC_DIGISOL_FACEBOOK_URL if the vanity URL changes.

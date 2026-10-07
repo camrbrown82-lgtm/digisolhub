@@ -11,6 +11,7 @@ import { metaPixelConfigured } from "@/lib/metaPixel";
 import { adsApiReady } from "@/lib/google/adsApi";
 import { serviceAccountReady } from "@/lib/google/auth";
 import { createClient } from "@/lib/supabase/server";
+import { DIGISOL_EMAIL } from "@/lib/site";
 import { getWorkspaceClient, isDigisolClient } from "@/lib/workspace";
 
 function status(ok: boolean) {
@@ -172,7 +173,7 @@ export default async function IntegrationsPage() {
           In Cloudflare DNS for <code className="text-zinc-200">wwwdigisol.com</code>, add
           a TXT record — Name: <code className="text-zinc-200">_dmarc</code>, Value:{" "}
           <code className="text-zinc-200">
-            v=DMARC1; p=none; rua=mailto:digisol2026@yahoo.com;
+            v=DMARC1; p=none; rua=mailto:{DIGISOL_EMAIL};
           </code>
           . Start with <code className="text-zinc-200">p=none</code>, then move to{" "}
           <code className="text-zinc-200">quarantine</code> after reports look clean.
