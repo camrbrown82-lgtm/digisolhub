@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { LayoutEditor } from "@/components/hub/LayoutEditor";
+import { PrintPosterButton } from "@/components/hub/PrintButton";
 import { artworkPiece, withPosterButtonLinks, type LayoutPiece } from "@/lib/layoutPieces";
 
 function startingPieces(
@@ -29,6 +30,7 @@ export function ImageTextEditor({
   palette,
   siteUrl,
   placeArtwork = true,
+  printable = false,
   onSaved,
 }: {
   /** Artwork without the editable words. Becomes a layer you can resize or remove. */
@@ -47,6 +49,8 @@ export function ImageTextEditor({
   siteUrl?: string;
   /** When a previous save removed the generated picture, leave it off. */
   placeArtwork?: boolean;
+  /** Print the saved poster image. Used on AI posters. */
+  printable?: boolean;
   onSaved?: (url: string) => void;
 }) {
   const [pieces, setPieces] = useState<LayoutPiece[]>(() =>
@@ -58,6 +62,7 @@ export function ImageTextEditor({
   const [frame, setFrame] = useState({ width: designWidth, height: designHeight });
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
+  const [savedUrl, setSavedUrl] = useState(replaceUrl || "");
 
   async function apply() {
     const ready = pieces.some(
@@ -94,6 +99,7 @@ export function ImageTextEditor({
       setStatus(result.error || "Could not save that text.");
       return;
     }
+    setSavedUrl(result.url);
     onSaved?.(result.url);
     setStatus("Saved on this image.");
   }
@@ -169,9 +175,12 @@ export function ImageTextEditor({
       <p className="text-sm text-zinc-400">
         Select an image in the list and remove it. Saving updates this same file.
       </p>
-      <button type="button" disabled={busy} onClick={() => void apply()} className="hub-btn">
-        {busy ? "Saving…" : "Save on this image"}
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" disabled={busy} onClick={() => void apply()} className="hub-btn">
+          {busy ? "Saving…" : "Save on this image"}
+        </button>
+        {printable ? <PrintPosterButton url={savedUrl} /> : null}
+      </div>
       {status ? <p className="text-sm text-zinc-400">{status}</p> : null}
     </div>
   );
@@ -228,6 +237,7 @@ export function PosterWithEditor({
       palette={palette}
       siteUrl={siteUrl}
       placeArtwork={placeArtwork}
+      printable
     />
     </div>
   );

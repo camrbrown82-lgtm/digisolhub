@@ -279,6 +279,7 @@ export function AiImageForm({
               palette={palette}
               siteUrl={siteUrl}
               logoUrl={logoUrl}
+              printable
             />
           ))}
         </div>
@@ -296,6 +297,7 @@ export function AiImageForm({
           palette={palette}
           siteUrl={siteUrl}
           logoUrl={logoUrl}
+          printable
           onSaved={() => router.refresh()}
         />
       ) : null}
