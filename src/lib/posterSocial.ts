@@ -2,6 +2,8 @@ import {
   DIGISOL_INSTAGRAM_HANDLE,
   DIGISOL_INSTAGRAM_URL,
   DIGISOL_SITE_URL,
+  DIGISOL_X_HANDLE,
+  DIGISOL_X_URL,
   LINKEDIN_ENABLED,
 } from "@/lib/site";
 import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
@@ -79,7 +81,10 @@ export function posterSocialPack(input: {
     .filter((line) => line !== "")
     .join("\n");
 
-  const twitter = clip([hook, site, hashtags.slice(0, 3).join(" ")].filter(Boolean).join("\n"), 280);
+  const twitter = clip(
+    [hook, isDigisol ? `@${DIGISOL_X_HANDLE}` : "", site, hashtags.slice(0, 2).join(" ")].filter(Boolean).join("\n"),
+    280,
+  );
 
   const fileBody = [
     `${company.toUpperCase()} ${carousel ? "CAROUSEL" : "POSTER"}`,
@@ -87,6 +92,7 @@ export function posterSocialPack(input: {
     "",
     site ? `Site: ${site}` : "",
     isDigisol ? `Instagram: ${DIGISOL_INSTAGRAM_URL}` : "",
+    isDigisol ? `X: ${DIGISOL_X_URL}` : "",
     input.pdfUrl ? `PDF: ${input.pdfUrl}` : "",
     "",
     "SLIDES",
@@ -138,6 +144,9 @@ export function parsePosterMeta(notes?: string | null) {
       slideIndex?: number;
       slideCount?: number;
       archivedAt?: string | null;
+      artUrl?: string;
+      pieces?: unknown;
+      artworkPlaced?: boolean;
       social?: PosterSocialPack;
     };
     if (parsed && typeof parsed === "object") return parsed;

@@ -20,7 +20,7 @@ export function NewWorkflowButton() {
   }
 
   return (
-    <button type="button" onClick={create} disabled={busy} className="hub-btn">
+    <button type="button" onClick={create} disabled={busy} className="hub-btn w-full sm:w-auto">
       {busy ? "Creating…" : "New workflow"}
     </button>
   );

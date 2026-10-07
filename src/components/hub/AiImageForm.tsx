@@ -3,7 +3,9 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MicDictateButton, appendDictation } from "@/components/hub/MicDictateButton";
+import { ImageTextEditor } from "@/components/hub/ImageTextEditor";
 import { PosterExport } from "@/components/hub/PosterExport";
+import { type LayoutPiece } from "@/lib/layoutPieces";
 import { type PosterFormat } from "@/lib/poster";
 import { type PosterSocialPack } from "@/lib/posterSocial";
 
@@ -21,6 +23,7 @@ export function AiImageForm({
   logoUrl,
   fonts,
   canQr,
+  siteUrl,
 }: {
   companyName: string;
   tagline: string;
@@ -29,6 +32,7 @@ export function AiImageForm({
   logoUrl?: string;
   fonts?: string;
   canQr?: boolean;
+  siteUrl?: string;
 }) {
   const router = useRouter();
   const [prompt, setPrompt] = useState("");
@@ -36,6 +40,7 @@ export function AiImageForm({
   const [qr, setQr] = useState(false);
   const [status, setStatus] = useState("");
   const [urls, setUrls] = useState<string[]>([]);
+  const [slides, setSlides] = useState<{ artUrl?: string; pieces?: LayoutPiece[] }[]>([]);
   const [artDirection, setArtDirection] = useState("");
   const [social, setSocial] = useState<PosterSocialPack | null>(null);
   const [busy, setBusy] = useState(false);
@@ -43,8 +48,9 @@ export function AiImageForm({
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
-    setStatus("Reading your slides and typesetting Brand-locked cards. Multi-slide briefs take about a minute…");
+    setStatus("Designing a new picture from your prompt. This takes about a minute…");
     setUrls([]);
+    setSlides([]);
     setArtDirection("");
     setSocial(null);
     const response = await fetch("/api/hub/ai/image", {
@@ -61,7 +67,7 @@ export function AiImageForm({
       social?: PosterSocialPack;
       logoStamped?: boolean;
       qrUrl?: string;
-      slides?: { label: string }[];
+      slides?: { label: string; artUrl?: string; pieces?: LayoutPiece[] }[];
       warning?: string;
     } = {};
     try {
@@ -86,6 +92,7 @@ export function AiImageForm({
         ? [result.asset.public_url]
         : [];
     setUrls(nextUrls);
+    setSlides(result.slides || []);
     setArtDirection(result.prompt ?? "");
     setSocial(result.social ?? null);
     setPrompt("");
@@ -189,13 +196,14 @@ export function AiImageForm({
           required
           rows={12}
           className="hub-field mt-1.5 resize-y placeholder:text-zinc-600"
-          placeholder="Paste or dictate your slide brief… Use [SLIDE 1], [SLIDE 2], … with Visual Idea, Headline, and Body Copy for each."
+          placeholder="Describe the picture, then the words that should appear. Example: a rocket launch. Headline: DigiSol official launch. Offers on their own lines. Notes in parentheses, like (add a rocket), are drawn and not printed."
         />
       </div>
       <p className="text-xs text-zinc-500">
-        Paste a fresh brief each time. Each [SLIDE n] becomes its own carousel
-        card — LinkedIn, X, Facebook, Instagram, and a PDF when there are
-        multiple slides.
+        The prompt is the design. Words you want on the poster go on their own
+        lines. Notes like “add a rocket” are the picture, not the type. Logo,
+        award badge, and each line can be removed from the Images and text lists.
+        Use [SLIDE n] when you want a carousel.
       </p>
       <label className="flex items-start gap-2 text-sm text-zinc-300">
         <input
@@ -216,14 +224,20 @@ export function AiImageForm({
       </button>
       {status ? <p className="text-sm text-zinc-400">{status}</p> : null}
       {urls.length ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-6">
           {urls.map((url, index) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={url}
-              src={url}
-              alt={`Generated ${format} slide ${index + 1} for ${companyName}`}
-              className="rounded-xl border border-zinc-800"
+            <ImageTextEditor
+              key={slides[index]?.artUrl || url}
+              imageUrl={slides[index]?.artUrl || url}
+              replaceUrl={url}
+              initialPieces={slides[index]?.pieces}
+              designWidth={format === "landscape" ? 1920 : 1080}
+              designHeight={format === "portrait" ? 1350 : 1080}
+              color={colors[1]}
+              background={colors[0]}
+              highlight={colors[2]}
+              siteUrl={siteUrl}
+              logoUrl={logoUrl}
             />
           ))}
         </div>

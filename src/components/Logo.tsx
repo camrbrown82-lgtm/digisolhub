@@ -43,7 +43,9 @@ export function Logo({
   return (
     <a
       href={href}
-      className={`inline-flex shrink-0 items-center gap-2.5 sm:gap-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 ${className}`}
+      className={`inline-flex items-center gap-2.5 sm:gap-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 ${
+        size === "hub" ? "min-w-0 shrink" : "shrink-0"
+      } ${className}`}
       aria-label="DigiSol home"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -52,7 +54,9 @@ export function Logo({
         alt="DigiSol"
         width={480}
         height={156}
-        className={`${wordmarkClass[size]} max-w-[min(100%,16rem)] object-contain object-left`}
+        className={`${wordmarkClass[size]} object-contain object-left ${
+          size === "hub" ? "max-w-[7.5rem] sm:max-w-[16rem]" : "max-w-[min(100%,16rem)]"
+        }`}
       />
       {withBadge ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -61,7 +65,9 @@ export function Logo({
           alt=""
           width={256}
           height={256}
-          className={`${badgeClass[size]} shrink-0 rounded-full object-cover ring-1 ring-indigo-400/30`}
+          className={`${badgeClass[size]} shrink-0 rounded-full object-cover ring-1 ring-indigo-400/30 ${
+            size === "hub" ? "hidden sm:block" : ""
+          }`}
           aria-hidden="true"
         />
       ) : null}

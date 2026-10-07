@@ -31,9 +31,7 @@ export function OurWork() {
           </h2>
           <p className="mt-4 text-zinc-300">{t.intro}</p>
         </div>
-        <ul
-          className={`mx-auto mt-10 grid gap-4 ${PUBLIC_PROJECTS.length > 1 ? "max-w-4xl md:grid-cols-2" : "max-w-xl"}`}
-        >
+        <ul className="mx-auto mt-10 grid max-w-4xl gap-4">
           {PUBLIC_PROJECTS.map((project, i) => {
             const copy = t.projects[project.id];
             return (
@@ -61,6 +59,26 @@ export function OurWork() {
                       {copy?.role ?? project.role}
                     </p>
                   </div>
+                  {project.video ? (
+                    <video
+                      className="mt-5 aspect-video w-full rounded-xl border border-white/10 bg-black object-contain"
+                      controls
+                      playsInline
+                      preload="metadata"
+                      aria-label={`A look at the ${project.company} website`}
+                    >
+                      <source src={project.video} type="video/mp4" />
+                    </video>
+                  ) : null}
+                  {project.mediaPage ? (
+                    <a
+                      href={project.mediaPage}
+                      className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-indigo-300 transition hover:text-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+                    >
+                      {t.watchMedia}
+                      <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                    </a>
+                  ) : null}
                   {project.url ? (
                     <a
                       href={project.url}

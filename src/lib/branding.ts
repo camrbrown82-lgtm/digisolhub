@@ -19,6 +19,12 @@ export type CompanyBrand = {
   /** Secondary circular badge / emblem URL */
   secondaryLogoUrl: string;
   secondaryLogoDescription: string;
+  /** JSON placement for the name and tagline on the brand preview. */
+  lockup: string;
+  /** Pixel height of the wordmark in the brand preview. */
+  logoSize: string;
+  /** Pixel height of the circular badge in the brand preview. */
+  badgeSize: string;
 };
 
 export const DIGISOL_HOUSE_NAME = "DigiSol";
@@ -51,6 +57,9 @@ export const DIGISOL_BRAND: CompanyBrand = {
   secondaryLogoUrl: "/logo-badge.png",
   secondaryLogoDescription:
     "DigiSol circular badge emblem: metallic dark ring, neon blue glow, gradient D with pixel cross and upward growth arrow, DIGISOL word across center, ENGINEERING & GROWTH along the bottom arc.",
+  lockup: "",
+  logoSize: "72",
+  badgeSize: "56",
 };
 
 export const NEUTRAL_BRAND: CompanyBrand = {
@@ -72,6 +81,9 @@ export const NEUTRAL_BRAND: CompanyBrand = {
   logoDescription: "",
   secondaryLogoUrl: "",
   secondaryLogoDescription: "",
+  lockup: "",
+  logoSize: "72",
+  badgeSize: "56",
 };
 
 export function isBrandEmpty(value: unknown) {
@@ -188,10 +200,8 @@ export function brandColorLock(brand: CompanyBrand) {
 export function posterColorHeader(brand: CompanyBrand) {
   const font = brand.fonts.split(",")[0]?.trim();
   return [
-    `MANDATORY COLORS: page ${named(brand.backgroundColor)}; every word of text ${named(brand.textColor)}; buttons, rules, and glow ${named(brand.highlightColor)} with ${named(brand.primaryColor)}. No other hues.`,
-    font
-      ? `MANDATORY TYPE: ${font}-style type for every line. Do not swap in condensed, serif, or display fonts that aren't ${font}.`
-      : "",
+    `MANDATORY COLORS: page ${named(brand.backgroundColor)}; glow and rules ${named(brand.highlightColor)} with ${named(brand.primaryColor)}. No other hues. Do not paint letters.`,
+    font ? `Type is added later in a ${font}-style face. Do not paint it.` : "",
   ]
     .filter(Boolean)
     .join("\n");
@@ -205,14 +215,14 @@ export function isHouseCompany(companyName?: string | null) {
 export function posterLook(companyName: string, brand: CompanyBrand) {
   if (isHouseCompany(companyName)) {
     return [
-      `LOOK (match the wwwdigisol.com homepage): near-black zinc ${brand.backgroundColor} page with a big indigo ${brand.primaryColor} radial glow pouring down from the top edge, a faint thin grid that fades out toward the edges, and soft ice-blue ${brand.highlightColor} light blooms.`,
-      `Headline in bold ${brand.textColor} type with the 1–3 key words in a luminous gradient from ice blue ${brand.highlightColor} to bright light indigo. Buttons are rounded pills in solid indigo ${brand.primaryColor} with an indigo glow. Supporting cards are dark glass with thin light borders.`,
+      `LOOK: near-black zinc ${brand.backgroundColor} page with a big indigo ${brand.primaryColor} radial glow pouring down from the top edge, a faint thin grid that fades out toward the edges, and soft ice-blue ${brand.highlightColor} light blooms.`,
       "Vivid, saturated, and glowing like a premium tech launch. Never muted, washed out, gray, or flat.",
+      "No letters, words, numbers, tagline, glass cards, labeled boxes, or buttons. Those are added later.",
     ].join("\n");
   }
   return isDarkBrand(brand)
-    ? `LOOK: vivid and saturated. Rich glowing gradients and light blooms using ${named(brand.highlightColor)} and ${named(brand.primaryColor)} over the ${named(brand.backgroundColor)} page, key headline words lit in ${named(brand.highlightColor)}, bold high-contrast type. Never muted, washed out, gray, or flat.`
-    : `LOOK: vivid and saturated. Bold color blocks, gradients, and shapes in ${named(brand.primaryColor)} and ${named(brand.highlightColor)} on the ${named(brand.backgroundColor)} page, key headline words in ${named(brand.highlightColor)}, crisp high-contrast type. Never muted, washed out, gray, or flat.`;
+    ? `LOOK: vivid and saturated. Rich glowing gradients and light blooms using ${named(brand.highlightColor)} and ${named(brand.primaryColor)} over the ${named(brand.backgroundColor)} page. No letters, words, tagline, glass cards, or labeled boxes. Never muted, washed out, gray, or flat.`
+    : `LOOK: vivid and saturated. Bold color blocks, gradients, and shapes in ${named(brand.primaryColor)} and ${named(brand.highlightColor)} on the ${named(brand.backgroundColor)} page. No letters, words, tagline, glass cards, or labeled boxes. Never muted, washed out, gray, or flat.`;
 }
 
 export function parseBrand(value: unknown, fallback: CompanyBrand = NEUTRAL_BRAND): CompanyBrand {
@@ -258,6 +268,9 @@ export function parseBrand(value: unknown, fallback: CompanyBrand = NEUTRAL_BRAN
       row.secondaryLogoDescription,
       fallback.secondaryLogoDescription,
     ).trim(),
+    lockup: text(row.lockup, fallback.lockup || ""),
+    logoSize: text(row.logoSize, fallback.logoSize || "72"),
+    badgeSize: text(row.badgeSize, fallback.badgeSize || "56"),
   };
 }
 
@@ -345,7 +358,11 @@ export function brandVoicePrompt(
 ) {
   return [
     `Brand name: ${companyName}`,
-    brand.tagline ? `Tagline: ${brand.tagline}` : "",
+    brand.tagline
+      ? kind === "visual"
+        ? `Mood only. Do not letter this tagline: ${brand.tagline}`
+        : `Tagline: ${brand.tagline}`
+      : "",
     brand.voice ? `Voice / tone: ${brand.voice}` : "",
     brand.audience ? `Audience: ${brand.audience}` : "",
     `Colors: background ${brand.backgroundColor}, text ${brand.textColor}, highlights ${brand.highlightColor}, primary ${brand.primaryColor}, secondary ${brand.secondaryColor}, accent ${brand.accentColor}`,
@@ -383,11 +400,11 @@ export function brandLockRules(
     `Voice: ${brand.voice || "Plain, specific, human. No agency filler."}`,
     `Audience: ${brand.audience || "this company's real customers"}`,
     `Palette: ${brandColorLock(brand)}`,
-    brand.fonts ? `Typography: ${brand.fonts}` : "",
-    brand.doSay ? `Lean on: ${brand.doSay}` : "",
+    kind === "visual" ? "Do not paint any letters or the tagline." : brand.fonts ? `Typography: ${brand.fonts}` : "",
+    kind === "visual" ? "" : brand.doSay ? `Lean on: ${brand.doSay}` : "",
     brand.dontSay ? `Never use: ${brand.dontSay}` : "",
     kind === "visual"
-      ? `Do not draw a logo or invent a wordmark. The official logo is stamped on after generation. User-supplied copy may include the company name as small footer type only if it is in the brief.`
+      ? `Do not draw a logo, wordmark, tagline, glass cards, or labeled boxes. The official logo is placed afterwards as its own layer.`
       : brandLogoPromptLine(brand) ||
         (kind === "logo"
           ? `Create a new official mark for ${companyName} only. Spell the name exactly.`
@@ -461,18 +478,18 @@ export function brandImagePrompt(
   const brief = [
     `Create a high-end ${format} marketing poster for ${companyName}.`,
     `Job: ${userPrompt.trim()}`,
-    brand.tagline ? `Tagline / mood: ${brand.tagline}` : "",
-    brand.voice ? `Tone to translate into composition, lighting, and type: ${brand.voice}` : "",
+    brand.tagline ? `Mood only. Do not letter this tagline: ${brand.tagline}` : "",
+    brand.voice ? `Tone to translate into composition and lighting: ${brand.voice}` : "",
     brand.audience ? `Made for this audience: ${brand.audience}` : "",
     brandColorLock(brand),
-    `Typography feel like ${font}. Body and headlines in ${brand.textColor}.`,
-    `Do not draw a logo or invent a wordmark for "${companyName}". A brand bar with the official logo is added after generation — fill the canvas with the layout, do not cover copy with a fake mark.`,
-    "Typeset the job copy exactly. Do not replace headlines with the brand tagline.",
+    `Leave open space for ${font} type that is added later. Do not paint it.`,
+    `Do not draw a logo or invent a wordmark for "${companyName}". The official logo is placed afterwards as its own layer.`,
+    "Do not paint any letters, words, numbers, or the tagline. Leave clear space where type will be added later. Do not draw glass cards or labeled boxes.",
     `Art direction: ${inferVisualStyle(brand)}`,
-    brand.doSay ? `Headline vocabulary: ${brand.doSay}` : "",
+    brand.doSay ? `Mood only, not lettering: ${brand.doSay}` : "",
     brand.dontSay ? `Do not depict or write: ${brand.dontSay}` : "",
     extra ? `Other visual notes: ${extra}` : "",
-    "Studio-quality social infographic, readable hierarchy, realistic materials and light. No photos of real people, no invented phone numbers, no QR codes, no watermarks, no tiny unreadable text, no stock-template look, no neon phone mockup unless the brief asks for a device.",
+    "Studio-quality scene with realistic materials and light. No letters of any size, no photos of real people, no invented phone numbers, no QR codes, no watermarks, no stock-template look, no neon phone mockup unless the brief asks for a device.",
   ]
     .filter(Boolean)
     .join("\n");

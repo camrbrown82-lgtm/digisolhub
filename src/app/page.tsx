@@ -10,7 +10,7 @@ import { localizePath } from "@/lib/i18n/config";
 import { getLocale, localizedMetadata } from "@/lib/i18n/server";
 import { getMessages } from "@/lib/i18n/messages";
 import { shareCardImages } from "@/lib/shareCard";
-import { DIGISOL_SITE_URL } from "@/lib/site";
+import { DIGISOL_SITE_URL, DIGISOL_X_CARD } from "@/lib/site";
 
 /** Geo-personalized homepage — must not be statically cached globally. */
 export const dynamic = "force-dynamic";
@@ -31,6 +31,7 @@ export function generateMetadata(): Metadata {
     },
     twitter: {
       card: "summary_large_image",
+      ...DIGISOL_X_CARD,
       title: t.homeTitle,
       description: t.homeShareDescription,
       images: shareCardImages(t.homeShareAlt, { locale }),

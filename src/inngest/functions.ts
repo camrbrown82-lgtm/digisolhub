@@ -3,7 +3,7 @@ import { inngest } from "@/inngest/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmailToContact } from "@/lib/email";
 import { isMailScannerContact, resolveScannerStatus } from "@/lib/mailScanner";
-import { contactMatchesAudience, leadAudienceOf } from "@/lib/workflowGraph";
+import { contactMatchesAudience, FREE_AUDIT_TAG, leadAudienceOf } from "@/lib/workflowGraph";
 import type { IndustryPlaybook } from "@/lib/competitive/schema";
 
 type FlowNode = {
@@ -291,14 +291,20 @@ export const alertOwnerOnLead = inngest.createFunction(
         .maybeSingle();
       if (!contact) return { skipped: "missing" };
       const tags = (contact.tags as string[] | null) ?? [];
+      const freeAudit = tags.includes(FREE_AUDIT_TAG);
       const audited =
-        tags.includes("prospect_audit_engaged") ||
-        String(contact.source || "").startsWith("prospect_audit");
-      const chat = !audited && contact.source === "visitor_chat";
+        !freeAudit &&
+        (tags.includes("prospect_audit_engaged") ||
+          String(contact.source || "").startsWith("prospect_audit"));
+      const chat = !audited && (freeAudit || contact.source === "visitor_chat");
       if (!audited && !chat) return { skipped: "alerted_at_capture_or_manual" };
       const { sendLeadAlert } = await import("@/lib/leadAlert");
       const result = await sendLeadAlert({
-        sourceLabel: audited ? "Audited prospect clicked" : "Kaylev chat",
+        sourceLabel: freeAudit
+          ? "Free website audit"
+          : audited
+            ? "Audited prospect clicked"
+            : "Kaylev chat",
         name: contact.name,
         email: contact.email,
         phone: contact.phone,
@@ -306,9 +312,11 @@ export const alertOwnerOnLead = inngest.createFunction(
         service: contact.service,
         message: contact.notes_preview,
         contactId: contact.id,
-        note: audited
-          ? "They clicked a link in the website audit DigiSol emailed them. Good moment to call."
-          : "They left their details with Kaylev on the website.",
+        note: freeAudit
+          ? "They asked for a free website audit and left an email so the results could be sent. They are in Contacts, on the lead pipeline, and on the audited-prospect follow-up."
+          : audited
+            ? "They clicked a link in the website audit DigiSol emailed them. Good moment to call."
+            : "They left their details with Kaylev on the website.",
       });
       if (!result.ok) throw new Error(result.message || "Lead alert failed");
       return { sent: true };

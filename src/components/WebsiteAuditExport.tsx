@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Copy, Download, Facebook, Instagram, Linkedin, Share2 } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
+import { XIcon } from "@/components/XIcon";
 import { useMessages } from "@/lib/i18n/client";
 import { shareToInstagram } from "@/lib/instagramShare";
 import { websiteAuditSocialPack } from "@/lib/media";
@@ -95,6 +96,14 @@ export function WebsiteAuditExport({
           )}
           {t.copyInstagram}
         </button>
+        <button
+          type="button"
+          onClick={() => copy("twitter", pack.twitter)}
+          className="inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-2 text-xs font-medium text-indigo-100 hover:bg-indigo-500/20 hover:text-sky-200"
+        >
+          {copied === "twitter" ? <Check className="h-3.5 w-3.5" /> : <XIcon className="h-3.5 w-3.5" />}
+          {t.copyX}
+        </button>
         <a
           href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pack.url)}`}
           target="_blank"
@@ -129,6 +138,16 @@ export function WebsiteAuditExport({
           <Instagram className="h-3.5 w-3.5" aria-hidden="true" />
           {t.shareInstagram}
         </button>
+        <a
+          href={`https://x.com/intent/post?text=${encodeURIComponent(pack.twitter)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => trackEvent("media_export", { format: "x_share", location })}
+          className="inline-flex items-center gap-2 rounded-full border border-sky-400/40 px-3 py-2 text-xs font-semibold text-sky-200 hover:bg-indigo-500/15"
+        >
+          <XIcon className="h-3.5 w-3.5" />
+          {t.shareX}
+        </a>
         <button
           type="button"
           onClick={() => copy("url", pack.url)}

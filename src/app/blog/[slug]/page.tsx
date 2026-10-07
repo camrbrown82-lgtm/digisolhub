@@ -18,6 +18,7 @@ import {
   DIGISOL_LINKEDIN_URL,
   DIGISOL_SAME_AS,
   DIGISOL_SITE_URL,
+  DIGISOL_X_CARD,
 } from "@/lib/site";
 
 type PageProps = { params: { slug: string } };
@@ -48,6 +49,7 @@ export function generateMetadata({ params }: PageProps): Metadata {
     },
     twitter: {
       card: "summary_large_image",
+      ...DIGISOL_X_CARD,
       title: post.title,
       description: post.excerpt,
       images: [card],

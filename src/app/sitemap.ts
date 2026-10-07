@@ -55,6 +55,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.75,
     },
     {
+      url: `${DIGISOL_SITE_URL}/media/google-setup`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.75,
+    },
+    {
       url: `${DIGISOL_SITE_URL}/media/ads-robot`,
       lastModified: now,
       changeFrequency: "monthly",

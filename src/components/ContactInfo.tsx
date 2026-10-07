@@ -1,8 +1,9 @@
 import { Linkedin, Mail, Phone } from "lucide-react";
 import { TrackedLink } from "@/components/TrackedLink";
+import { XIcon } from "@/components/XIcon";
 import { getLocale } from "@/lib/i18n/server";
 import { getMessages } from "@/lib/i18n/messages";
-import { DIGISOL_EMAIL, DIGISOL_LINKEDIN_URL, LINKEDIN_ENABLED } from "@/lib/site";
+import { DIGISOL_EMAIL, DIGISOL_LINKEDIN_URL, DIGISOL_X_HANDLE, DIGISOL_X_URL, LINKEDIN_ENABLED } from "@/lib/site";
 
 const allContacts = [
   {
@@ -22,6 +23,12 @@ const allContacts = [
     method: "linkedin",
     label: "LinkedIn",
     icon: Linkedin,
+  },
+  {
+    href: DIGISOL_X_URL,
+    method: "x",
+    label: `@${DIGISOL_X_HANDLE}`,
+    icon: XIcon,
   },
 ] as const;
 
@@ -71,7 +78,7 @@ export function ContactInfo({ location }: ContactInfoProps) {
       eventName="contact_click"
       eventParams={{ method, location }}
       className={linkClass[location]}
-      {...(method === "linkedin"
+      {...(method === "linkedin" || method === "x"
         ? { target: "_blank", rel: "noopener noreferrer me" }
         : {})}
     >

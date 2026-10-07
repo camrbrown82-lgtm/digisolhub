@@ -18,6 +18,7 @@ import {
   DIGISOL_SAME_AS,
   DIGISOL_SITE_URL,
   DIGISOL_STREET_ADDRESS,
+  DIGISOL_X_CARD,
 } from "@/lib/site";
 
 type PageProps = {
@@ -51,6 +52,7 @@ export function generateMetadata({ params }: PageProps): Metadata {
     },
     twitter: {
       card: "summary_large_image",
+      ...DIGISOL_X_CARD,
       title,
       description,
       images: [shareCardPath({ city: page.slug, locale })],

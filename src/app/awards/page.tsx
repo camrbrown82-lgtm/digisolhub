@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { ShareButtons } from "@/components/ShareButtons";
-import { DIGISOL_SITE_URL } from "@/lib/site";
+import { DIGISOL_SITE_URL, DIGISOL_X_CARD } from "@/lib/site";
 import WebsiteAwardBadge from "@/components/WebsiteAwardBadge";
 import { awardBadgeTheme } from "@/lib/awardTheme";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     siteName: "DigiSol",
     images: [{ url: `${ABOUT_POST}/card.jpg`, width: 1200, height: 630, alt: "DigiSol Excellence Award" }],
   },
-  twitter: { card: "summary_large_image", images: [`${ABOUT_POST}/card.jpg`] },
+  twitter: { card: "summary_large_image", ...DIGISOL_X_CARD, images: [`${ABOUT_POST}/card.jpg`] },
 };
 
 async function featuredWinners() {

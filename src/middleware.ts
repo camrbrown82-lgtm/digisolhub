@@ -120,6 +120,44 @@ function withGeoRequestHeaders(request: NextRequest, geo: VisitorGeo) {
 }
 
 /**
+ * The live Facebook and Instagram ad was saved with /contact, which has no page.
+ * Send that click to the homepage. The visitor then clicks Free audit or asks Kaylev.
+ * Other query params (utm_*) stay on the URL.
+ */
+function contactAdRedirect(request: NextRequest, path: string) {
+  if (path !== "/contact") return null;
+  if (request.method !== "GET" && request.method !== "HEAD") return null;
+  const dest = request.nextUrl.clone();
+  dest.pathname = "/";
+  dest.searchParams.delete("kaylev");
+  return NextResponse.redirect(dest, 307);
+}
+
+/**
+ * An older creative opened Kaylev immediately via ?kaylev=audit.
+ * Paid social clicks should land on the site first.
+ */
+function paidSocialHomeRedirect(request: NextRequest, path: string) {
+  if (path !== "/") return null;
+  if (request.method !== "GET" && request.method !== "HEAD") return null;
+  const params = request.nextUrl.searchParams;
+  if (params.get("kaylev") !== "audit") return null;
+  const medium = (params.get("utm_medium") || "").toLowerCase();
+  const source = (params.get("utm_source") || "").toLowerCase();
+  const paidSocial =
+    medium === "paid_social" ||
+    medium === "paidsocial" ||
+    source === "facebook" ||
+    source === "instagram" ||
+    source === "ig" ||
+    source === "fb";
+  if (!paidSocial) return null;
+  const dest = request.nextUrl.clone();
+  dest.searchParams.delete("kaylev");
+  return NextResponse.redirect(dest, 307);
+}
+
+/**
  * Send Alberta visitors on `/` to their city lander so GA4 records
  * /locations/{city}. Skip bots so Google keeps indexing the apex homepage.
  */
@@ -224,6 +262,8 @@ export async function middleware(request: NextRequest) {
 
   const geo = readRequestGeo(request);
   const response =
+    contactAdRedirect(request, barePath) ??
+    paidSocialHomeRedirect(request, barePath) ??
     savedLocaleRedirect(request, barePath, locale) ??
     albertaHomeGeoRedirect(request, geo, barePath, locale) ??
     nextWithGeo(request, geo, barePath, locale);

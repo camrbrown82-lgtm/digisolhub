@@ -16,7 +16,7 @@ import {
   dispatchUrl,
   getDispatchIssue,
 } from "@/lib/dispatch";
-import { DIGISOL_LINKEDIN_URL, DIGISOL_SAME_AS, DIGISOL_SITE_URL } from "@/lib/site";
+import { DIGISOL_LINKEDIN_URL, DIGISOL_SAME_AS, DIGISOL_SITE_URL, DIGISOL_X_CARD } from "@/lib/site";
 
 type PageProps = {
   params: { slug: string };
@@ -49,6 +49,7 @@ export function generateMetadata({ params }: PageProps): Metadata {
     },
     twitter: {
       card: "summary_large_image",
+      ...DIGISOL_X_CARD,
       title: issue.title,
       description: issue.excerpt,
       images: [`/dispatch/${issue.slug}/card.jpg`],

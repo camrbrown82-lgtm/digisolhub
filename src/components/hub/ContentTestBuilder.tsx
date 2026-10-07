@@ -228,7 +228,7 @@ export function ContentTestBuilder({
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="hub-btn inline-flex items-center gap-2"
+          className="hub-btn inline-flex w-full items-center justify-center gap-2 sm:w-auto"
         >
           {open ? <X className="h-4 w-4" aria-hidden="true" /> : <Plus className="h-4 w-4" aria-hidden="true" />}
           {open ? "Close" : "New A/B test"}

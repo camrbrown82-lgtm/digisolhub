@@ -20,6 +20,11 @@ export type PosterSlide = {
   mustPrint: string[];
   /** The brief is instructions ("a poster that…"), not copy, so the art director writes the copy. */
   freeform?: boolean;
+  /** Real poster lines, in order. Field labels are not included. */
+  copyLines?: { role: "headline" | "sub" | "award" | "button"; text: string }[];
+  placeLogo?: boolean;
+  placeEmblem?: boolean;
+  placeAward?: boolean;
 };
 
 const SLIDE_SPLIT =
@@ -42,6 +47,126 @@ function takeField(block: string, names: string[]) {
   );
   const match = block.match(pattern);
   return sanitizePosterCopy(match?.[1] || "");
+}
+
+const STAGE_DIRECTION = /\b(add|include|draw|graphic|image|rocket|photo|picture|icon|visual)\b/i;
+
+function posterLine(raw: string) {
+  const visual: string[] = [];
+  let text = raw.replace(/\(([^)]*)\)/g, (full, inner: string) => {
+    if (STAGE_DIRECTION.test(String(inner))) {
+      visual.push(String(inner).trim());
+      return " ";
+    }
+    return full;
+  });
+  text = text.replace(/^(sub\s*headlines?|headlines?|visual idea|body copy|body|text)\s*:\s*/i, "").replace(/\s+/g, " ").trim();
+  if (!text || /^(sub\s*headlines?|headlines?|visual idea|body copy|body|text)\s*:?\s*$/i.test(text)) {
+    return { text: "", visual };
+  }
+  if (
+    (/\b(draw|include|put)\b/i.test(text) || /\badd\b(?!\s*-?\s*on\b)/i.test(text)) &&
+    /\b(graphic|image|rocket|picture|photo|icon)\b/i.test(text) &&
+    text.length < 140
+  ) {
+    visual.push(text);
+    return { text: "", visual };
+  }
+  if (/^(make|create|design|draw|i want|i need|please)\b/i.test(text) && text.length < 180) {
+    visual.push(text);
+    return { text: "", visual };
+  }
+  return { text, visual };
+}
+
+function designBrief(brief: string) {
+  const visual: string[] = [];
+  const lines: string[] = [];
+  for (const raw of brief.split(/\n+/)) {
+    const line = raw.trim();
+    if (!line) continue;
+    const next = posterLine(line);
+    visual.push(...next.visual);
+    if (next.text && next.text.length <= 180) lines.push(next.text);
+  }
+  return { visual: visual.join(". ").slice(0, 500), lines: lines.slice(0, 8) };
+}
+
+const FIELD_LABEL =
+  /^(single page poster|visual idea|headlines?|titles?|sub[\s-]*head(?:line|lines)?|text above award|buttons?|cta|graphics|body copy|body|text)\s*[,;:]+\s*(.*)$/i;
+
+function fieldSection(name: string) {
+  const label = name.toLowerCase();
+  if (/^single page poster$/.test(label)) return "skip";
+  if (/visual/.test(label)) return "visual";
+  if (/^head|^title/.test(label)) return "headline";
+  if (/sub/.test(label)) return "sub";
+  if (/text above award/.test(label)) return "award";
+  if (/button|cta/.test(label)) return "button";
+  if (/graphic/.test(label)) return "graphics";
+  return "body";
+}
+
+/** A labeled brief (Headline; / Sub Headline; / Graphics;) becomes copy, a scene, and which real marks to place. */
+export function parsePosterRequest(brief: string): {
+  visualIdea: string;
+  lines: { role: "headline" | "sub" | "award" | "button"; text: string }[];
+  placeLogo: boolean;
+  placeEmblem: boolean;
+  placeAward: boolean;
+} | null {
+  const sections = new Map<string, string[]>();
+  let current = "";
+  let labels = 0;
+  for (const raw of brief.split(/\n+/)) {
+    const line = raw.trim();
+    if (!line) continue;
+    const match = line.match(FIELD_LABEL);
+    if (match) {
+      labels += 1;
+      current = fieldSection(match[1]);
+      const rest = match[2].trim();
+      if (rest && current !== "skip") {
+        const list = sections.get(current) || [];
+        list.push(rest);
+        sections.set(current, list);
+      }
+      continue;
+    }
+    if (!current || current === "skip") continue;
+    const list = sections.get(current) || [];
+    list.push(line);
+    sections.set(current, list);
+  }
+  if (labels < 2) return null;
+
+  const visual: string[] = [];
+  const lines: { role: "headline" | "sub" | "award" | "button"; text: string }[] = [];
+  for (const role of ["headline", "sub", "award", "button"] as const) {
+    for (const raw of sections.get(role) || []) {
+      const next = posterLine(raw);
+      visual.push(...next.visual);
+      if (!next.text || /[,;:]$/.test(next.text)) continue;
+      if (role === "button" && !/^https?:\/\//i.test(next.text) && !/^www\./i.test(next.text)) continue;
+      lines.push({ role, text: next.text });
+    }
+  }
+
+  const graphics = sections.get("graphics") || [];
+  const placeLogo = graphics.some((line) => /\blogo\b/i.test(line));
+  const placeAward = graphics.some((line) => /\b(excellence award|award)\b/i.test(line));
+  const placeEmblem = graphics.some((line) => /\bbadge\b/i.test(line) && !/\b(excellence award|website excellence)\b/i.test(line));
+  const color = graphics.find((line) => /\b(indigo|purple|blue|color|page)\b/i.test(line)) || "";
+  const rocket = visual.some((line) => /\brocket\b/i.test(line));
+  const visualIdea = [
+    rocket ? "One medium rocket on the right third, beside the headline area. Do not cover the center or the bottom." : "",
+    color,
+    "Leave the top, the center, and the bottom empty.",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return { visualIdea, lines, placeLogo, placeEmblem, placeAward };
 }
 
 function roleFromLabel(label: string): PosterSlideRole {
@@ -92,42 +217,59 @@ export function parsePosterSlides(brief: string): {
       ...linesFrom(bodyText),
     ].filter((line, index, list) => list.findIndex((item) => item.toLowerCase() === line.toLowerCase()) === index);
 
+    const printed = designBrief((mustPrint.length ? mustPrint : linesFrom(leftover).slice(0, 12)).join("\n"));
     slides.push({
       index: Number(header[1]) || slides.length + 1,
       label,
       role: roleFromLabel(label),
-      visualIdea,
+      visualIdea: [visualIdea, printed.visual].filter(Boolean).join(". "),
       headline,
       subhead,
       body: bodyText,
-      mustPrint: mustPrint.length ? mustPrint : linesFrom(leftover).slice(0, 12),
+      mustPrint: printed.lines,
     });
   }
 
   if (!slides.length) {
+    const request = parsePosterRequest(cleaned);
+    if (request) {
+      slides.push({
+        index: 1,
+        label: "Poster",
+        role: "slide",
+        visualIdea: request.visualIdea,
+        headline: request.lines.find((line) => line.role === "headline")?.text || "",
+        subhead: request.lines
+          .filter((line) => line.role === "sub")
+          .map((line) => line.text)
+          .join("\n"),
+        body: cleaned,
+        mustPrint: request.lines.map((line) => line.text),
+        freeform: true,
+        copyLines: request.lines,
+        placeLogo: request.placeLogo,
+        placeEmblem: request.placeEmblem,
+        placeAward: request.placeAward,
+      });
+    }
+  }
+
+  if (!slides.length) {
     const headline = takeField(cleaned, ["Headline", "Title"]);
-    const subhead = takeField(cleaned, ["Sub-headline", "Subhead"]);
+    const subhead = takeField(cleaned, ["Sub-headline", "Subhead", "Sub headline"]);
     const bodyField = takeField(cleaned, ["Body Copy", "Body", "Text"]);
-    const body = bodyField || cleaned;
-    const mustPrint = [
-      ...linesFrom(headline),
-      ...linesFrom(subhead),
-      ...linesFrom(headline || subhead ? body : cleaned),
-    ].slice(0, 16);
+    const structured = Boolean(headline || subhead || bodyField);
+    const designed = designBrief(structured ? [headline, subhead, bodyField].filter(Boolean).join("\n") : cleaned);
     slides.push({
       index: 1,
       label: "Poster",
       role: "slide",
-      visualIdea: takeField(cleaned, ["Visual Idea"]),
+      visualIdea: [takeField(cleaned, ["Visual Idea"]), designed.visual].filter(Boolean).join(". "),
       headline,
       subhead,
-      body,
-      mustPrint: mustPrint.length ? mustPrint : [cleaned.slice(0, 280)],
-      freeform:
-        !headline &&
-        !subhead &&
-        !bodyField &&
-        /\b(poster|flyer|graphic|make|create|design|include|capture|encourag\w*|should|want|need)\b/i.test(cleaned),
+      body: structured ? bodyField || cleaned : cleaned,
+      mustPrint: designed.lines,
+      freeform: !structured,
     });
   }
 

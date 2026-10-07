@@ -74,20 +74,14 @@ export function VisitorChat() {
     setCountry(readCookie(GEO_COUNTRY_COOKIE).toUpperCase());
   }, []);
 
-  // Ad clicks use ?kaylev=audit and open the free-audit offer, including on a phone.
-  // Otherwise the chat starts open on desktop and collapsed on a small screen.
+  // The free-audit link still sets the audit greeting. On a phone or tablet the
+  // panel stays closed so the page is visible; the Kaylev button opens it.
+  // A desktop with a mouse starts with the panel open.
   useEffect(() => {
     const audit = new URLSearchParams(window.location.search).get("kaylev") === "audit";
     setAuditOffer(audit);
-    if (audit) {
-      setOpen(true);
-      return;
-    }
-    const mq = window.matchMedia("(min-width: 1024px)");
-    const sync = () => setOpen(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
+    const handheld = window.matchMedia("(max-width: 1023px), (hover: none), (pointer: coarse)").matches;
+    setOpen(!handheld);
   }, []);
 
   useEffect(() => {
@@ -131,7 +125,9 @@ export function VisitorChat() {
   useEffect(() => {
     for (const message of messages) {
       for (const part of message.parts ?? []) {
-        if (part.type !== "tool-captureVisitorLead") continue;
+        if (part.type !== "tool-captureVisitorLead" && part.type !== "tool-runVisitorWebsiteAudit") {
+          continue;
+        }
         const toolPart = part as {
           toolCallId?: string;
           state?: string;

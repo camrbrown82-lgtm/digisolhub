@@ -1,11 +1,12 @@
 import { SocialStudio } from "@/components/hub/SocialStudio";
+import { getBrandLogoUrl } from "@/lib/brandLogo";
 import { SocialWeekPlanner } from "@/components/hub/SocialWeekPlanner";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { ensureAnalyticsSocialSchema } from "@/lib/ensureAnalyticsSocialSchema";
 import { maxDailyBudget } from "@/lib/meta/ads";
 import { socialProviderConfigured } from "@/lib/social/providers";
 import type { SocialPlan } from "@/lib/social/weekPlan";
-import { getWorkspaceClient, isDigisolClient } from "@/lib/workspace";
+import { companySiteUrl, getWorkspaceClient, isDigisolClient } from "@/lib/workspace";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +39,7 @@ export default async function SocialPage() {
       .eq("client_id", active.id)
       .not("public_url", "is", null)
       .order("created_at", { ascending: false })
-      .limit(40),
+      .limit(80),
     supabase
       .from("social_posts")
       .select("id, channel, body, status, scheduled_at, published_at, external_url, error_message, metadata")
@@ -53,20 +54,19 @@ export default async function SocialPage() {
       .limit(8),
   ]);
 
-  const posters = (postersResult.data ?? [])
-    .filter((row) => {
-      const url = String(row.public_url || "");
-      const mime = String(row.mime_type || "");
-      return mime.startsWith("image/") || /\.(png|jpe?g|webp|gif)(\?|$)/i.test(url);
-    })
-    .map((row) => ({
-      url: row.public_url as string,
-      label:
-        (row.caption as string | null)?.slice(0, 80) ||
-        (row.filename as string | null) ||
-        (row.bucket as string | null) ||
-        new Date(row.created_at as string).toLocaleDateString("en-CA"),
-    }));
+  const posters = (postersResult.data ?? []).flatMap((row) => {
+    const url = String(row.public_url || "");
+    const mime = String(row.mime_type || "");
+    const video = mime.startsWith("video/") || /\.(mp4|mov|m4v|webm)(\?|$)/i.test(url);
+    const image = mime.startsWith("image/") || /\.(png|jpe?g|webp|gif)(\?|$)/i.test(url);
+    if (!video && !image) return [];
+    const name =
+      (row.caption as string | null)?.slice(0, 80) ||
+      (row.filename as string | null) ||
+      (row.bucket as string | null) ||
+      new Date(row.created_at as string).toLocaleDateString("en-CA");
+    return [{ url, label: video ? `Video · ${name}` : name, kind: video ? ("video" as const) : ("image" as const) }];
+  });
   const recent = (postsResult.data ?? []).filter(
     (row) => (row.metadata as { publishMode?: string } | null)?.publishMode !== "manual_facebook_group",
   );
@@ -79,8 +79,8 @@ export default async function SocialPage() {
         <WorkspaceScope companyName={active.name} noun="posts" />
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">
           Kaylev writes both captions and builds the image, with this company&apos;s logo and badge, from what you tell
-          him. You can swap the image for any file in this workspace, then post now or schedule it. Nothing publishes
-          until you approve it.
+          him. Upload an MP4 or MOV here and post it to Facebook and Instagram, or swap in any image from this
+          workspace. Nothing publishes until you approve it.
         </p>
       </div>
       {connected ? null : (
@@ -89,7 +89,13 @@ export default async function SocialPage() {
           set.
         </p>
       )}
-      <SocialStudio posters={posters} recent={recent} companyName={active.name} />
+      <SocialStudio
+        posters={posters}
+        recent={recent}
+        companyName={active.name}
+        logoUrl={await getBrandLogoUrl(supabase, active)}
+        siteUrl={companySiteUrl(active)}
+      />
       <SocialWeekPlanner plans={(planRows.data ?? []) as SocialPlan[]} maxDaily={maxDailyBudget()} />
     </div>
   );

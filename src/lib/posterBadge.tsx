@@ -5,7 +5,7 @@ import { awardTheme } from "@/lib/awardTheme";
 import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
 import { AWARD_MIN_SCORE, HOUSE_AWARD_ID, loadAward, sampleAward, type AwardStatus } from "@/lib/websiteAward";
 
-const WANTS_BADGE = /\b(award|badge|reward image|seal of excellence|website excellence)\b/i;
+const WANTS_BADGE = /\b(excellence award|award badge|award seal|website excellence|seal of excellence)\b/i;
 const WANTS_HOUSE = /\b(own audit|we pass|our (own )?(site|website)('s)? (score|audit))\b/i;
 
 export type PosterBadge = {

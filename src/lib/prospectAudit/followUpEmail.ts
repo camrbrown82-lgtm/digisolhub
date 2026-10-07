@@ -18,6 +18,7 @@ import {
   DIGISOL_PHONE,
   DIGISOL_SITE_URL,
 } from "@/lib/site";
+import { FREE_AUDIT_TAG } from "@/lib/workflowGraph";
 import { AWARD_MIN_SCORE, awardLinks } from "@/lib/websiteAward";
 
 export type AuditFollowUpSource = "prospect_audit" | "visitor_chat";
@@ -39,8 +40,8 @@ export type AuditFollowUpInput = {
   /** Email language; audit findings are machine-translated when not English. */
   language?: Locale;
   /**
-   * Award id (`prospects.id`) for a prospect site scoring AWARD_MIN_SCORE+. The first email then leads
-   * with the Excellence Award badge. English prospect outreach only.
+   * Award id for a site scoring AWARD_MIN_SCORE+. The email then leads with the Excellence Award badge.
+   * Prospect outreach is English only. A homepage audit uses the website_audits id.
    */
   awardId?: string;
   /** When true, skip Resend and only upsert contact/lead. */
@@ -129,9 +130,9 @@ export async function sendAuditFollowUpEmail(input: AuditFollowUpInput) {
   const tier = scoreTier(input.score);
   const award =
     input.awardId &&
-    input.source === "prospect_audit" &&
     input.score >= AWARD_MIN_SCORE &&
-    language === DEFAULT_LOCALE
+    (input.source === "visitor_chat" ||
+      (input.source === "prospect_audit" && language === DEFAULT_LOCALE))
       ? { id: input.awardId, companyName: input.company?.trim() || hostOf(input.url) }
       : undefined;
   const tags = Array.from(
@@ -140,6 +141,7 @@ export async function sendAuditFollowUpEmail(input: AuditFollowUpInput) {
       "lead",
       sourceTag,
       "audit_followup",
+      ...(input.source === "visitor_chat" ? [FREE_AUDIT_TAG] : []),
       ...(input.source === "prospect_audit" ? ["cold_prospect"] : []),
       ...(tier === "strong" ? ["audit_strong"] : []),
       ...(award ? ["award_winner"] : []),
@@ -272,6 +274,7 @@ export async function sendAuditFollowUpEmail(input: AuditFollowUpInput) {
     sendId: sent.sendId as string | undefined,
     resendId: sent.resendId as string | undefined,
     emailed: true,
+    awardIncluded: Boolean(award),
   };
 }
 

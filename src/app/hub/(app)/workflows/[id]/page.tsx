@@ -131,11 +131,9 @@ export default async function WorkflowDetailPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <HubBackButton href="/hub/campaigns" label="Back to campaigns" />
-          <h1 className="mt-3 text-3xl font-semibold text-white">Edit workflow</h1>
-        </div>
+      <div className="min-w-0">
+        <HubBackButton href="/hub/campaigns" label="Back to campaigns" />
+        <h1 className="mt-3 text-2xl font-semibold text-white sm:text-3xl">Edit workflow</h1>
       </div>
       <WorkflowEditor
         workflow={workflow}

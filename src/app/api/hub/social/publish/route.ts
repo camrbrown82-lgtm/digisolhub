@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { adsWorkspace } from "@/lib/meta/adDrafts";
 import { isWorkspaceMediaUrl } from "@/lib/posterSizes";
+import { isSocialVideoUrl } from "@/lib/social/providers";
 import { processSocialPostQueue } from "@/lib/social/dispatchSocialCampaign";
 import { mountainInstant } from "@/lib/social/weekPlan";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 90;
+export const maxDuration = 180;
 
 const CHANNELS = new Set(["facebook", "instagram"]);
 
@@ -37,8 +38,11 @@ export async function POST(request: Request) {
   if (mediaUrl && !isWorkspaceMediaUrl(mediaUrl)) {
     return NextResponse.json({ error: "Pick a file from this company's workspace." }, { status: 400 });
   }
+  if (mediaUrl && /\.(webm|avi|mkv)(\?|$)/i.test(mediaUrl) && !isSocialVideoUrl(mediaUrl)) {
+    return NextResponse.json({ error: "Facebook and Instagram need an MP4 or MOV." }, { status: 400 });
+  }
   if (channel === "instagram" && !mediaUrl) {
-    return NextResponse.json({ error: "Instagram needs an image. Pick a file first." }, { status: 400 });
+    return NextResponse.json({ error: "Instagram needs an image or a video." }, { status: 400 });
   }
 
   let scheduledAt = new Date().toISOString();

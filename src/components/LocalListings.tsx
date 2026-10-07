@@ -3,6 +3,7 @@
 import { Facebook, Instagram, Linkedin, Star, Youtube } from "lucide-react";
 import { TikTokIcon } from "@/components/TikTokIcon";
 import { TrackedLink } from "@/components/TrackedLink";
+import { XIcon } from "@/components/XIcon";
 import { useMessages } from "@/lib/i18n/client";
 import {
   DIGISOL_FACEBOOK_URL,
@@ -11,6 +12,7 @@ import {
   DIGISOL_INSTAGRAM_URL,
   DIGISOL_LINKEDIN_URL,
   DIGISOL_TIKTOK_URL,
+  DIGISOL_X_URL,
   DIGISOL_YOUTUBE_FEATURED_URL,
   LINKEDIN_ENABLED,
 } from "@/lib/site";
@@ -91,6 +93,17 @@ export function ListingLinks({ location }: { location: ListingLocation }) {
       >
         <Instagram className="h-4 w-4 shrink-0 text-sky-400" aria-hidden="true" />
         Instagram
+      </TrackedLink>
+      <TrackedLink
+        href={DIGISOL_X_URL}
+        eventName="social_click"
+        eventParams={{ network: "x", location }}
+        target="_blank"
+        rel="noopener noreferrer me"
+        className={className}
+      >
+        <XIcon className="h-4 w-4 shrink-0 text-sky-400" />
+        X
       </TrackedLink>
       <TrackedLink
         href={DIGISOL_YOUTUBE_FEATURED_URL}

@@ -15,6 +15,10 @@ export type Project = {
   status: ProjectStatus;
   public: boolean;
   url?: string;
+  /** Public MP4, shown on the beta card. */
+  video?: string;
+  /** Media page for the same video. */
+  mediaPage?: string;
 };
 
 export const PROJECTS: Project[] = [
@@ -25,7 +29,7 @@ export const PROJECTS: Project[] = [
       "An app that started as a political campaign tool and is growing into a full business application.",
     role: "Product ideas and code for the move from campaigns to business, with social media growth through DigiSol Hub planned next.",
     status: "beta",
-    public: true,
+    public: false,
   },
   {
     id: "dealfinder-auctions",
@@ -33,7 +37,9 @@ export const PROJECTS: Project[] = [
     summary: "An online auction website.",
     role: "Website design and build, with live testing before the full launch.",
     status: "beta",
-    public: false,
+    public: true,
+    video: "/media/dealfinder-auctions.mp4",
+    mediaPage: "/media/dealfinder",
   },
 ];
 

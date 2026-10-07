@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Copy, Facebook, Linkedin, Share2 } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
+import { XIcon } from "@/components/XIcon";
 import { LINKEDIN_ENABLED } from "@/lib/site";
 
 /**
@@ -71,6 +72,16 @@ export function ShareButtons({
             Share on LinkedIn
           </a>
         ) : null}
+        <a
+          href={`https://x.com/intent/post?text=${encodeURIComponent(caption)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => trackEvent("share_export", { format: "x_share", item: analyticsKey })}
+          className="inline-flex items-center gap-2 rounded-full border border-indigo-400/40 px-3 py-2 text-xs font-semibold text-indigo-200 hover:bg-indigo-500/15"
+        >
+          <XIcon className="h-3.5 w-3.5" />
+          Share on X
+        </a>
         <button type="button" onClick={() => void copy("caption")} className={button}>
           {copied === "caption" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           Copy post text

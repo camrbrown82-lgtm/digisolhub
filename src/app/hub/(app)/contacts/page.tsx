@@ -173,9 +173,9 @@ export default async function ContactsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold text-white">Contacts</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold text-white sm:text-3xl">Contacts</h1>
           <WorkspaceScope companyName={active?.name} noun="contacts" />
           <p className="mt-2 max-w-2xl text-sm text-zinc-400">
             Contacts are grouped by audience so a workflow can target one
@@ -183,7 +183,7 @@ export default async function ContactsPage({
             mixing everyone together.
           </p>
         </div>
-        <Link href="/hub/contacts/new" className="hub-btn">
+        <Link href="/hub/contacts/new" className="hub-btn w-full shrink-0 sm:w-auto">
           New contact
         </Link>
       </div>

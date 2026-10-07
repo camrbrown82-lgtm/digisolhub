@@ -3,9 +3,10 @@ import { FileActions } from "@/components/hub/FileActions";
 import { FileExportButton } from "@/components/hub/FileExportButton";
 import { FileImporter } from "@/components/hub/FileImporter";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
+import { ensureDigisolBadgeFiles } from "@/lib/digisolBadgeFiles";
 import { FILE_KIND_LABELS, isFileKind, type FileKind } from "@/lib/files";
 import { createClient } from "@/lib/supabase/server";
-import { getWorkspaceClient } from "@/lib/workspace";
+import { getWorkspaceClient, isDigisolClient } from "@/lib/workspace";
 
 const FILTERS = [
   { href: "/hub/assets", label: "All files", kind: "" },
@@ -29,6 +30,11 @@ export default async function AssetsPage({
 }) {
   const supabase = await createClient();
   const active = await getWorkspaceClient(supabase);
+  if (active && isDigisolClient(active)) {
+    await ensureDigisolBadgeFiles(supabase, active.id).catch((err) => {
+      console.error("Could not save DigiSol badge files", err);
+    });
+  }
   const kind = searchParams?.kind ?? "";
   let query = supabase.from("assets").select("*").order("created_at", { ascending: false });
   if (active) query = query.eq("client_id", active.id);
@@ -42,6 +48,11 @@ export default async function AssetsPage({
         <div>
           <h1 className="text-3xl font-semibold text-white">Files</h1>
           <WorkspaceScope companyName={active?.name} noun="files" />
+          {active && isDigisolClient(active) ? (
+            <p className="mt-2 max-w-2xl text-sm text-zinc-400">
+              DigiSol&apos;s earned badges are saved here as images. Use Download on each one.
+            </p>
+          ) : null}
         </div>
         <FileExportButton kind={isFileKind(kind) ? kind : ""} disabled={files.length === 0} />
       </div>

@@ -10,7 +10,8 @@ import {
   posterExportUrl,
   type PosterExportSize,
 } from "@/lib/posterSizes";
-import { DIGISOL_INSTAGRAM_HANDLE, DIGISOL_SITE_URL, LINKEDIN_ENABLED } from "@/lib/site";
+import { XIcon } from "@/components/XIcon";
+import { DIGISOL_INSTAGRAM_HANDLE, DIGISOL_SITE_URL, DIGISOL_X_HANDLE, LINKEDIN_ENABLED } from "@/lib/site";
 
 const EXPORT_SIZES = Object.entries(POSTER_EXPORT_SIZES) as [
   PosterExportSize,
@@ -35,6 +36,7 @@ export function PosterExport({
   const linkShareUrl = pack.url ? sized(pack.url, "link", { base: DIGISOL_SITE_URL }) : "";
   const slug = companyName.toLowerCase().replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "") || "poster";
   const instagramHandle = pack.instagramHandle || DIGISOL_INSTAGRAM_HANDLE;
+  const digisol = companyName.trim().toLowerCase() === "digisol";
 
   async function copy(key: typeof copied, value: string) {
     await navigator.clipboard.writeText(value);
@@ -95,7 +97,9 @@ export function PosterExport({
         Export to socials
       </p>
       <p className="mt-1 text-xs text-zinc-400">
-        {LINKEDIN_ENABLED ? "LinkedIn, " : ""}X, Facebook, and Instagram for @{instagramHandle}. On phone,
+        {LINKEDIN_ENABLED ? "LinkedIn, " : ""}
+        {digisol ? `X (@${DIGISOL_X_HANDLE}), ` : "X, "}
+        Facebook, and Instagram for @{instagramHandle}. On phone,
         Share to Instagram opens the system share sheet with your caption and
         slides.
       </p>
@@ -132,7 +136,7 @@ export function PosterExport({
             onClick={() => void copy("twitter", pack.twitter)}
             className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs font-medium text-zinc-100 hover:bg-white/10"
           >
-            {copied === "twitter" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied === "twitter" ? <Check className="h-3.5 w-3.5" /> : <XIcon className="h-3.5 w-3.5" />}
             Copy X / Twitter post
           </button>
         ) : null}
@@ -166,11 +170,12 @@ export function PosterExport({
         </button>
         {pack.twitter ? (
           <a
-            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(pack.twitter)}`}
+            href={`https://x.com/intent/post?text=${encodeURIComponent(pack.twitter)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 rounded-full border border-indigo-400/40 px-3 py-2 text-xs font-semibold text-indigo-200 hover:bg-indigo-500/15"
           >
+            <XIcon className="h-3.5 w-3.5" />
             Share on X
           </a>
         ) : null}

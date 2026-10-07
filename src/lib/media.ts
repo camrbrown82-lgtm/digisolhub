@@ -61,6 +61,20 @@ export const ADS_ROBOT_UPLOAD_DATETIME = `${ADS_ROBOT_UPLOAD_DATE}T00:00:00-06:0
 export const ADS_ROBOT_PAGE_URL = `${DIGISOL_SITE_URL}${ADS_ROBOT_PAGE_PATH}`;
 export const ADS_ROBOT_VIDEO_URL = `${DIGISOL_SITE_URL}${ADS_ROBOT_VIDEO_PATH}`;
 
+/** Google setup walkthrough — how DigiSol connects Analytics, Search Console, and Ads. */
+export const GOOGLE_SETUP_TITLE = "Watch how DigiSol sets up Google for you";
+export const GOOGLE_SETUP_DESCRIPTION =
+  "This is how we help you connect Google Analytics, Search Console, and Google Ads. Press play and see the Hub check the setup, the score, and what to fix before anything is left hanging.";
+export const GOOGLE_SETUP_PAGE_PATH = "/media/google-setup";
+export const GOOGLE_SETUP_VIDEO_PATH = "/media/google-setup.mp4";
+export const GOOGLE_SETUP_THUMBNAIL_URL = `${DIGISOL_SITE_URL}/og.jpg?page=video`;
+export const GOOGLE_SETUP_DURATION_ISO = "PT2M54S";
+export const GOOGLE_SETUP_DURATION_SECONDS = 174;
+export const GOOGLE_SETUP_UPLOAD_DATE = "2026-10-06";
+export const GOOGLE_SETUP_UPLOAD_DATETIME = `${GOOGLE_SETUP_UPLOAD_DATE}T00:00:00-06:00`;
+export const GOOGLE_SETUP_PAGE_URL = `${DIGISOL_SITE_URL}${GOOGLE_SETUP_PAGE_PATH}`;
+export const GOOGLE_SETUP_VIDEO_URL = `${DIGISOL_SITE_URL}${GOOGLE_SETUP_VIDEO_PATH}`;
+
 export const WEBSITE_AUDIT_TITLE =
   "DigiSol Website Audit — How Alberta Businesses Win Online";
 export const WEBSITE_AUDIT_DESCRIPTION =
@@ -70,6 +84,13 @@ export const WEBSITE_AUDIT_DESCRIPTION =
 export const MEDIA_INDEX_PATH = "/media";
 
 export const MEDIA_COLLECTION = [
+  {
+    href: GOOGLE_SETUP_PAGE_PATH,
+    title: GOOGLE_SETUP_TITLE,
+    description: GOOGLE_SETUP_DESCRIPTION,
+    videoPath: GOOGLE_SETUP_VIDEO_PATH,
+    label: GOOGLE_SETUP_TITLE,
+  },
   {
     href: ADS_ROBOT_PAGE_PATH,
     title: ADS_ROBOT_TITLE,

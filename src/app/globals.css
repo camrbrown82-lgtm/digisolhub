@@ -73,6 +73,10 @@ body.hub-lock {
   color: var(--hub-indigo);
 }
 
+.hub-app main {
+  overflow-wrap: break-word;
+}
+
 .hub-app h1 {
   color: var(--hub-ice);
 }

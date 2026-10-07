@@ -56,24 +56,26 @@ export function CompetitiveEmailButton({
       : "";
 
   return (
-    <div className="relative flex flex-col items-end gap-1 print:hidden">
+    <div className="flex w-full min-w-0 flex-col gap-2 print:hidden sm:w-auto sm:items-end">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="hub-btn inline-flex items-center gap-1.5 text-xs"
+        className="hub-btn inline-flex w-full items-center justify-center gap-1.5 text-xs sm:w-auto"
       >
-        <Mail className="h-3.5 w-3.5" aria-hidden="true" />
-        Email to {companyName}
+        <Mail className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        <span className="truncate">Email to {companyName}</span>
       </button>
-      {status ? <span className="text-xs text-emerald-300">{status}</span> : null}
+      {status ? (
+        <span className="max-w-full break-all text-xs text-emerald-300 sm:text-right">{status}</span>
+      ) : null}
       {open ? (
         <form
           onSubmit={onSubmit}
-          className="absolute right-0 top-full z-20 mt-2 w-96 space-y-3 rounded-2xl border border-zinc-700 bg-zinc-950 p-4 shadow-xl"
+          className="w-full space-y-3 rounded-2xl border border-zinc-700 bg-zinc-950 p-4 shadow-xl sm:w-96"
         >
           <p className="text-xs text-zinc-400">
-            Sends this report from DigiSol, in DigiSol&apos;s brand: the score, scorecard, quick wins, action
-            plan, competitors and keywords.
+            Sends this report from DigiSol, in DigiSol&apos;s brand: the score, any award badges this analysis
+            earned, the scorecard, quick wins, action plan, competitors and keywords.
           </p>
           <label className="block text-xs text-zinc-400">
             To
@@ -104,11 +106,11 @@ export function CompetitiveEmailButton({
               {error}
             </p>
           ) : null}
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setOpen(false)} className="text-sm text-zinc-500 hover:text-zinc-300">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button type="button" onClick={() => setOpen(false)} className="px-3 py-2 text-sm text-zinc-500 hover:text-zinc-300">
               Cancel
             </button>
-            <button type="submit" disabled={sending} className="hub-btn">
+            <button type="submit" disabled={sending} className="hub-btn w-full sm:w-auto">
               {sending ? "Sending…" : "Send report"}
             </button>
           </div>

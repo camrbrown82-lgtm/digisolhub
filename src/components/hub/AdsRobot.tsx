@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { Bot, ExternalLink, ImagePlus, Loader2, Pause, Play, Rocket, Save, Trash2 } from "lucide-react";
 import type { AdDraftRow } from "@/lib/meta/adDrafts";
 import { AD_CTAS, AD_OBJECTIVES } from "@/lib/meta/adOptions";
+import { ImageTextEditor } from "@/components/hub/ImageTextEditor";
+import type { LayoutPiece } from "@/lib/layoutPieces";
 import { isStoredPosterUrl, posterExportUrl } from "@/lib/posterSizes";
 
-export type RobotPoster = { url: string; label: string };
+export type RobotPoster = { url: string; label: string; artUrl?: string; pieces?: LayoutPiece[] };
 export type CampaignStats = { spend: number; clicks: number; leads: number; cpl: number | null };
 
 const inputClass =
@@ -24,10 +26,12 @@ const STATUS: Record<AdDraftRow["status"], { label: string; className: string }>
 function PosterPicker({
   posters,
   value,
+  version = 0,
   onChange,
 }: {
   posters: RobotPoster[];
   value: string;
+  version?: number;
   onChange: (url: string) => void;
 }) {
   if (!posters.length) {
@@ -47,7 +51,11 @@ function PosterPicker({
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={isStoredPosterUrl(poster.url) ? posterExportUrl(poster.url, "feed") : poster.url}
+            src={
+              isStoredPosterUrl(poster.url)
+                ? `${posterExportUrl(poster.url, "feed")}&v=${version}`
+                : `${poster.url}?v=${version}`
+            }
             alt={poster.label}
             className="h-full w-full object-contain"
           />
@@ -121,6 +129,8 @@ function DraftCard({
   const [draft, setDraft] = useState(initial);
   const [locations, setLocations] = useState(initial.locations.join(", "));
   const [made, setMade] = useState<RobotPoster[]>([]);
+  const [imageRev, setImageRev] = useState(0);
+  const [madeGen, setMadeGen] = useState(0);
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState(initial.error || "");
   const editable = draft.status === "draft" || draft.status === "failed";
@@ -201,15 +211,17 @@ function DraftCard({
       });
       const json = (await response.json().catch(() => ({}))) as {
         error?: string;
-        images?: { url: string; label: string }[];
+        images?: RobotPoster[];
       };
       if (!response.ok || !json.images?.length) {
         setMessage(json.error || "Could not make ad images.");
         return;
       }
-      setMade((current) => [...json.images!, ...current]);
+      setMade(json.images);
+      setMadeGen((current) => current + 1);
+      setImageRev((current) => current + 1);
       set("poster_url", json.images[0].url);
-      setMessage("Two feed-sized images are ready. The first one is selected.");
+      setMessage("Two feed-sized images are ready. Edit the words on the one you pick. Making them again updates these same two files.");
     } finally {
       setBusy("");
     }
@@ -365,8 +377,25 @@ function DraftCard({
               <PosterPicker
                 posters={[...made, ...posters]}
                 value={draft.poster_url || ""}
+                version={imageRev}
                 onChange={(url) => set("poster_url", url)}
               />
+              {made
+                .filter((poster) => poster.url === draft.poster_url && poster.artUrl)
+                .map((poster) => (
+                  <div key={poster.url} className="mt-3">
+                    <ImageTextEditor
+                      key={`${poster.artUrl}-${madeGen}`}
+                      imageUrl={poster.artUrl || poster.url}
+                      replaceUrl={poster.url}
+                      initialPieces={poster.pieces}
+                      designWidth={1080}
+                      designHeight={1350}
+                      siteUrl={draft.link_url}
+                      onSaved={() => setImageRev((current) => current + 1)}
+                    />
+                  </div>
+                ))}
             </div>
           </div>
         ) : (

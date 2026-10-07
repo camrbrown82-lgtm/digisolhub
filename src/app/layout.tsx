@@ -37,6 +37,8 @@ import {
   DIGISOL_SAME_AS,
   DIGISOL_SITE_URL,
   DIGISOL_STREET_ADDRESS,
+  DIGISOL_X_CARD,
+  DIGISOL_X_URL,
 } from "@/lib/site";
 import "./globals.css";
 
@@ -79,6 +81,7 @@ export const metadata: Metadata = {
   // Card type only: pages inherit this block unless they set their own, and X falls back to each page's og:title, og:description and og:image.
   twitter: {
     card: "summary_large_image",
+    ...DIGISOL_X_CARD,
   },
 };
 
@@ -146,8 +149,8 @@ const organizationJsonLd = {
     "@type": "Person",
     name: "Cameron Brown",
     jobTitle: "Founder & CEO",
-    url: DIGISOL_LINKEDIN_URL || DIGISOL_SITE_URL,
-    ...(DIGISOL_LINKEDIN_URL ? { sameAs: [DIGISOL_LINKEDIN_URL] } : {}),
+    url: DIGISOL_X_URL,
+    sameAs: [DIGISOL_X_URL, ...(DIGISOL_LINKEDIN_URL ? [DIGISOL_LINKEDIN_URL] : [])],
     description:
       "Certified Full Stack Developer and Digital Marketing and Social Media Specialist",
   },

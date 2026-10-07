@@ -53,6 +53,8 @@ export function BrandForm({
   const formRef = useRef<HTMLFormElement>(null);
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState(false);
+  const [logoSize, setLogoSize] = useState(Number(brand.logoSize) || 72);
+  const [badgeSize, setBadgeSize] = useState(Number(brand.badgeSize) || 56);
   const [words, setWords] = useState<BrandWording>(
     () => Object.fromEntries(BRAND_WORDING_KEYS.map((key) => [key, brand[key]])) as BrandWording,
   );
@@ -109,6 +111,8 @@ export function BrandForm({
         domain: data.get("domain"),
           branding: {
           tagline: data.get("tagline"),
+          logoSize: String(logoSize),
+          badgeSize: String(badgeSize),
           voice: data.get("voice"),
           audience: data.get("audience"),
           primaryColor: data.get("primaryColor"),
@@ -168,7 +172,8 @@ export function BrandForm({
           <img
             src={brand.logoUrl}
             alt={`${companyName} logo`}
-            className="h-14 w-auto max-w-[8rem] object-contain"
+            className="w-auto max-w-[12rem] object-contain"
+            style={{ height: logoSize }}
           />
         ) : (
           <div className="flex h-14 w-14 items-center justify-center rounded-full text-sm font-semibold" style={{ background: brand.primaryColor, color: "#fff" }}>
@@ -180,7 +185,8 @@ export function BrandForm({
           <img
             src={brand.secondaryLogoUrl}
             alt=""
-            className="h-14 w-14 rounded-full object-cover ring-1 ring-white/20"
+            className="rounded-full object-cover ring-1 ring-white/20"
+            style={{ height: badgeSize, width: badgeSize }}
             aria-hidden="true"
           />
         ) : null}
@@ -207,6 +213,31 @@ export function BrandForm({
             ),
           )}
         </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="block text-sm">
+          Logo size {logoSize}
+          <input
+            type="range"
+            min={36}
+            max={160}
+            value={logoSize}
+            onChange={(event) => setLogoSize(Number(event.target.value))}
+            className="mt-1 w-full"
+          />
+        </label>
+        <label className="block text-sm">
+          Logo badge size {badgeSize}
+          <input
+            type="range"
+            min={32}
+            max={160}
+            value={badgeSize}
+            onChange={(event) => setBadgeSize(Number(event.target.value))}
+            className="mt-1 w-full"
+          />
+        </label>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

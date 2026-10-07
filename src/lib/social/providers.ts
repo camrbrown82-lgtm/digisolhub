@@ -27,6 +27,18 @@ function linkedInToken() {
   return process.env.LINKEDIN_ACCESS_TOKEN?.trim() || "";
 }
 
+const SOCIAL_VIDEO = /\.(mp4|mov|m4v)$/i;
+
+/** MP4, MOV, and M4V can publish as a Facebook video or an Instagram Reel. */
+export function isSocialVideoUrl(url: string | null | undefined) {
+  if (!url) return false;
+  try {
+    return SOCIAL_VIDEO.test(new URL(url).pathname);
+  } catch {
+    return SOCIAL_VIDEO.test(url.split("?")[0] || "");
+  }
+}
+
 function linkedInAuthorUrn() {
   return (
     process.env.LINKEDIN_AUTHOR_URN?.trim() ||
@@ -62,10 +74,12 @@ export async function publishSocialPost(input: {
   }
 
   // One JPEG for both feeds: 1080×1080. That ratio sits inside Instagram (4:5 through 1.91:1)
-  // and Facebook's feed photo sizes. Instagram also rejects PNG.
-  const mediaUrl = isWorkspaceMediaUrl(input.mediaUrl)
-    ? posterExportUrl(input.mediaUrl!, input.channel === "linkedin" ? "link" : "square", { base: DIGISOL_SITE_URL })
-    : input.mediaUrl;
+  // and Facebook's feed photo sizes. Instagram also rejects PNG. Videos stay as the uploaded file.
+  const video = isSocialVideoUrl(input.mediaUrl);
+  const mediaUrl =
+    !video && isWorkspaceMediaUrl(input.mediaUrl)
+      ? posterExportUrl(input.mediaUrl!, input.channel === "linkedin" ? "link" : "square", { base: DIGISOL_SITE_URL })
+      : input.mediaUrl;
 
   if (input.channel === "linkedin") {
     if (!LINKEDIN_ENABLED) {
@@ -100,15 +114,27 @@ async function publishFacebook(input: {
     };
   }
 
-  const endpoint = input.mediaUrl
-    ? `https://graph.facebook.com/v21.0/${pageId}/photos`
-    : `https://graph.facebook.com/v21.0/${pageId}/feed`;
+  const video = isSocialVideoUrl(input.mediaUrl);
+  const endpoint = video
+    ? `https://graph-video.facebook.com/v21.0/${pageId}/videos`
+    : input.mediaUrl
+      ? `https://graph.facebook.com/v21.0/${pageId}/photos`
+      : `https://graph.facebook.com/v21.0/${pageId}/feed`;
 
-  const params = new URLSearchParams({
-    access_token: token,
-    message: input.body,
-    ...(input.mediaUrl ? { url: input.mediaUrl, caption: input.body } : {}),
-  });
+  const params = new URLSearchParams(
+    video
+      ? {
+          access_token: token,
+          file_url: input.mediaUrl || "",
+          description: input.body,
+          published: "true",
+        }
+      : {
+          access_token: token,
+          message: input.body,
+          ...(input.mediaUrl ? { url: input.mediaUrl, caption: input.body } : {}),
+        },
+  );
 
   try {
     const response = await fetch(endpoint, {
@@ -134,7 +160,9 @@ async function publishFacebook(input: {
       provider: "meta",
       externalId,
       externalUrl: externalId
-        ? `https://www.facebook.com/${externalId}`
+        ? video
+          ? `https://www.facebook.com/${pageId}/videos/${json.id || externalId}`
+          : `https://www.facebook.com/${externalId}`
         : undefined,
     };
   } catch (err) {
@@ -165,17 +193,27 @@ async function publishInstagram(input: {
     return {
       ok: false,
       provider: "meta",
-      error: "Instagram Graph posts require a public media_url (image)",
+      error: "Instagram needs a public image or video.",
     };
   }
 
+  const video = isSocialVideoUrl(input.mediaUrl);
   try {
-    // Create media container
-    const createParams = new URLSearchParams({
-      access_token: token,
-      image_url: input.mediaUrl,
-      caption: input.body,
-    });
+    const createParams = new URLSearchParams(
+      video
+        ? {
+            access_token: token,
+            media_type: "REELS",
+            video_url: input.mediaUrl || "",
+            caption: input.body,
+            share_to_feed: "true",
+          }
+        : {
+            access_token: token,
+            image_url: input.mediaUrl || "",
+            caption: input.body,
+          },
+    );
     const createRes = await fetch(
       `https://graph.facebook.com/v21.0/${igUserId}/media`,
       {
@@ -196,7 +234,7 @@ async function publishInstagram(input: {
       };
     }
 
-    const pending = await waitForInstagramMedia(createJson.id, token);
+    const pending = await waitForInstagramMedia(createJson.id, token, video ? 150_000 : 40_000);
     if (pending) {
       return { ok: false, provider: "meta", error: pending };
     }
@@ -248,8 +286,8 @@ async function instagramPermalink(mediaId: string, token: string) {
 }
 
 /** Instagram will not publish a container until it has finished fetching the image. */
-async function waitForInstagramMedia(containerId: string, token: string) {
-  const deadline = Date.now() + 40_000;
+async function waitForInstagramMedia(containerId: string, token: string, timeoutMs: number) {
+  const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const params = new URLSearchParams({ fields: "status_code,status", access_token: token });
     const response = await fetch(`https://graph.facebook.com/v21.0/${containerId}?${params}`);
@@ -258,15 +296,15 @@ async function waitForInstagramMedia(containerId: string, token: string) {
       status?: string;
       error?: { message?: string };
     };
-    if (!response.ok) return json.error?.message || "Could not check the Instagram image.";
+    if (!response.ok) return json.error?.message || "Could not check the Instagram file.";
     if (json.status_code === "FINISHED") return "";
     if (json.status_code === "ERROR" || json.status_code === "EXPIRED") {
       const detail = (json.status || "").replace(/^ERROR:\s*/i, "").trim();
-      return detail || "Instagram could not use this image.";
+      return detail || "Instagram could not use this file.";
     }
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
   }
-  return "Instagram is still preparing the image. Post it again in a moment.";
+  return "Instagram is still preparing this file. Post it again in a moment.";
 }
 
 async function publishLinkedIn(input: {

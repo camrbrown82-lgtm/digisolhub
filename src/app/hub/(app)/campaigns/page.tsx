@@ -260,7 +260,7 @@ export default async function CampaignsPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold text-white">Campaigns</h1>
+          <h1 className="text-2xl font-semibold text-white sm:text-3xl">Campaigns</h1>
           <WorkspaceScope companyName={active?.name} noun="campaigns & workflows" />
           <p className="mt-2 max-w-2xl text-sm text-zinc-400">
             A/B test social posts, ads, posters, files, and emails with
@@ -269,8 +269,8 @@ export default async function CampaignsPage() {
             Working on.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/hub/email" className="hub-btn-secondary">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
+          <Link href="/hub/email" className="hub-btn-secondary w-full sm:w-auto">
             Compose email
           </Link>
           <NewWorkflowButton />
@@ -400,15 +400,15 @@ export default async function CampaignsPage() {
               workflows.map((workflow) => (
                 <li
                   key={workflow.id}
-                  className="flex items-center justify-between gap-3 px-4 py-3"
+                  className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3"
                 >
                   <Link
                     href={`/hub/workflows/${workflow.id}`}
-                    className="truncate text-white hover:text-indigo-300"
+                    className="min-w-0 truncate text-white hover:text-indigo-300"
                   >
                     {workflow.name}
                   </Link>
-                  <span className="shrink-0 text-sm text-zinc-500">
+                  <span className="text-sm text-zinc-500">
                     {workflow.trigger}
                     {workflow.enabled ? " · on" : " · off"}
                   </span>
@@ -439,9 +439,9 @@ export default async function CampaignsPage() {
                 const stats = campaignStats.get(campaign.id);
                 return (
                   <li key={campaign.id} className="px-4 py-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="truncate font-medium text-white">{campaign.name}</p>
-                      <span className="shrink-0 text-sm text-zinc-500">
+                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                      <p className="min-w-0 truncate font-medium text-white">{campaign.name}</p>
+                      <span className="text-sm text-zinc-500">
                         {campaign.is_ab ? "A/B · " : ""}
                         {campaign.status}
                       </span>
@@ -481,7 +481,7 @@ export default async function CampaignsPage() {
                   return (
                     <li
                       key={send.id}
-                      className="flex justify-between gap-3 border-b border-zinc-800/80 py-2 last:border-0"
+                      className="flex flex-wrap justify-between gap-x-3 gap-y-1 border-b border-zinc-800/80 py-2 last:border-0"
                     >
                       <span className="truncate text-zinc-300">
                         {contact?.name || contact?.email || "Contact"}
@@ -515,7 +515,7 @@ export default async function CampaignsPage() {
                       key={run.id}
                       className="border-b border-zinc-800/80 py-2 last:border-0"
                     >
-                      <div className="flex justify-between gap-3">
+                      <div className="flex flex-wrap justify-between gap-x-3 gap-y-1">
                         <Link
                           href={`/hub/workflows/${run.workflow_id}`}
                           className="truncate text-zinc-200 hover:text-indigo-300"

@@ -25,6 +25,25 @@ export async function clientSignUpContact(db: SupabaseClient, companyName: strin
 }
 
 /**
+ * A website build or Hub sign-up unlocks the competitive-analysis badges a company has earned.
+ * A won lead with a contact email is that sign-up. DigiSol itself never unlocks them.
+ */
+export async function companyBadgesUnlocked(
+  db: SupabaseClient,
+  names: Array<string | null | undefined>,
+) {
+  const seen = new Set<string>();
+  for (const name of names) {
+    const trimmed = (name || "").trim();
+    const key = trimmed.toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    if (await clientSignUpContact(db, trimmed)) return true;
+  }
+  return false;
+}
+
+/**
  * Records a Hub company as a won lead in DigiSol's pipeline, linked to DigiSol's contact for it when
  * one exists. Safe to call repeatedly; one won lead per company. DigiSol itself is never counted.
  */

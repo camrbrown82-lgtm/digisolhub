@@ -1,5 +1,6 @@
 import { Globe } from "lucide-react";
 import { ContactInfo } from "@/components/ContactInfo";
+import { FooterBadges } from "@/components/FooterBadges";
 import { GoogleRating, ListingLinks } from "@/components/LocalListings";
 import { Logo } from "@/components/Logo";
 import { localizePath } from "@/lib/i18n/config";
@@ -66,23 +67,15 @@ export function Footer() {
             </a>
             <div className="mt-5 flex flex-col items-start gap-3">
               <GoogleRating location="footer" />
-              <a href="/award/digisol" className="block w-fit" title="Verify our website audit score">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/award/digisol/badge.svg"
-                  alt="DigiSol passes its own website audit. Verify the score."
-                  width={192}
-                  height={72}
-                  loading="lazy"
-                  className="h-auto w-44"
-                />
-              </a>
             </div>
           </div>
         </div>
 
-        <div className="mt-12 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-indigo-500/20 pt-5">
-          <p className="text-xs text-indigo-200/55">{t.rights(new Date().getFullYear(), DIGISOL_REGION)}</p>
+        <FooterBadges label={t.badges} />
+
+        <div className="mt-12 space-y-2 border-t border-indigo-500/20 pt-5">
+          <p className="text-sm text-indigo-100/90">{t.rights(new Date().getFullYear(), DIGISOL_REGION)}</p>
+          <p className="max-w-3xl text-xs leading-5 text-indigo-200/75">{t.copyrightWarning}</p>
           <a href="/privacy" className={linkClass}>
             {t.privacy}
           </a>

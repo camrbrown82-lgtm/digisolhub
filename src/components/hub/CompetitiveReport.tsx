@@ -1,3 +1,4 @@
+import { competitiveAwards } from "@/lib/competitive/awards";
 import { COMPETITIVE_DIMENSIONS, type MarketPresence, type SiteSnapshot } from "@/lib/competitive/schema";
 import type { StoredCompetitiveReport as Report } from "@/lib/competitive/scoring";
 import { prospectHostKey } from "@/lib/prospectAudit/seedCatalog";
@@ -14,6 +15,10 @@ type Props = {
     presence?: MarketPresence[];
   };
   completedAt: string | null;
+  /** Signed-up companies only. Free-audit analyses do not show these awards. */
+  awardsUnlocked?: boolean;
+  /** Public badge links for awards this analysis earned. */
+  analysisId?: string;
 };
 
 const POSITION_COPY: Record<Report["position"], string> = {
@@ -64,7 +69,78 @@ function Section({ title, subtitle, children }: { title: string; subtitle?: stri
   );
 }
 
-export function CompetitiveReport({ companyName, report, inputs, sources, completedAt }: Props) {
+function Awards({
+  report,
+  unlocked,
+  analysisId,
+}: {
+  report: Report;
+  unlocked: boolean;
+  analysisId?: string;
+}) {
+  if (!unlocked) {
+    return (
+      <Section
+        title="Awards"
+        subtitle="These awards are for companies signed up with DigiSol. A website build or Hub sign-up unlocks every badge the site has earned. The Excellence Award is separate, and only a free website audit can earn it."
+      >
+        <p className="text-sm text-zinc-400">
+          This company is not signed up, so these badges stay locked. Run a free website audit if you want the
+          Excellence Award scored on its own.
+        </p>
+      </Section>
+    );
+  }
+  const awards = competitiveAwards(report);
+  return (
+    <Section
+      title="Awards"
+      subtitle="Unlocked because this company is signed up with DigiSol. Speed, security and SEO, social and content, and Google Business Profile are earned at 90. Industry leader is the highest overall score in this analysis. The Excellence Award is separate and comes only from a free website audit."
+    >
+      <div className="grid gap-3 sm:grid-cols-2">
+        {awards.map((award) => (
+          <div
+            key={award.key}
+            className={`rounded-xl border p-4 ${
+              award.earned ? "border-emerald-500/40 bg-emerald-500/10" : "border-zinc-800 bg-zinc-950/40"
+            }`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <p className="font-medium text-white">{award.title}</p>
+              <span
+                className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                  award.earned ? "bg-emerald-500/20 text-emerald-200" : "bg-zinc-800 text-zinc-400"
+                }`}
+              >
+                {award.earned ? "Earned" : "Not yet"}
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-zinc-500">{award.covers}</p>
+            <p className="mt-2 text-sm text-zinc-300">{award.detail}</p>
+            {award.earned && analysisId ? (
+              <a
+                href={`/award/c/${analysisId}/${award.key}?add=1`}
+                className="mt-3 inline-flex text-sm font-medium text-indigo-300 hover:text-indigo-200"
+              >
+                Download and embed this badge
+              </a>
+            ) : null}
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+export function CompetitiveReport({
+  companyName,
+  report,
+  inputs,
+  sources,
+  completedAt,
+  awardsUnlocked = false,
+  analysisId,
+}: Props) {
   const presenceFor = (url: string) =>
     sources.presence?.find((p) => prospectHostKey(p.url) === prospectHostKey(url));
   const snapshotFor = (url: string) =>
@@ -133,6 +209,8 @@ export function CompetitiveReport({ companyName, report, inputs, sources, comple
           </div>
         ) : null}
       </section>
+
+      <Awards report={report} unlocked={awardsUnlocked} analysisId={analysisId} />
 
       {changes ? (
         <Section
@@ -258,7 +336,7 @@ export function CompetitiveReport({ companyName, report, inputs, sources, comple
                     <td className="py-2 pr-4 text-zinc-300">{row.offer}</td>
                     <td className="py-2 pr-4 font-medium text-zinc-100">{row.price}</td>
                     <td className="py-2 pr-4 text-zinc-400">{row.note || "—"}</td>
-                    <td className="py-2 text-zinc-400">
+                    <td className="max-w-[12rem] py-2 break-all text-zinc-400">
                       {row.source ? (
                         <a href={row.source} target="_blank" rel="noreferrer" className="text-indigo-300 hover:text-indigo-200">
                           {row.source.replace(/^https?:\/\//, "").replace(/\/$/, "")}

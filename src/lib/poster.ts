@@ -1,17 +1,8 @@
 import type OpenAI from "openai";
-import {
-  type CompanyBrand,
-  brandColorLock,
-  brandImagePrompt,
-  brandKitPrompt,
-  enforceVisualBrandLock,
-  inferVisualStyle,
-  isDarkBrand,
-  posterLook,
-  sanitizeVisualNotes,
-} from "@/lib/branding";
+import { type CompanyBrand } from "@/lib/branding";
 import { jsonSafeText } from "@/lib/jsonSafe";
-import { type PosterSlide, mustPrintBlock } from "@/lib/posterBrief";
+import { shouldFallbackImageModel } from "@/lib/openai";
+import { type PosterSlide } from "@/lib/posterBrief";
 
 export const POSTER_FORMATS = ["portrait", "square", "landscape"] as const;
 export type PosterFormat = (typeof POSTER_FORMATS)[number];
@@ -90,6 +81,45 @@ export function imageEditBody(
   };
 }
 
+/** The picture request, sent straight to the image API. Colors come from the company kit. Words and marks are added later. */
+export function directScenePrompt(
+  request: string,
+  brand?: { backgroundColor?: string; primaryColor?: string; highlightColor?: string },
+) {
+  const ask = request.replace(/\s+/g, " ").trim().slice(0, 1800);
+  const background = brand?.backgroundColor || "#09090b";
+  const primary = brand?.primaryColor || "#4f46e5";
+  const highlight = brand?.highlightColor || "#60a5fa";
+  return [
+    "Create a brand-new picture. Do not copy an older poster, business card, or award layout.",
+    `Palette only: near-black ${background}, indigo purple ${primary}, electric blue ${highlight}. Not orange, cream, yellow, or pastel.`,
+    `Draw this: ${ask || "open space, with the top, center, and bottom left clear."}`,
+    "No letters, words, numbers, logos, badges, awards, buttons, or QR codes.",
+  ].join("\n");
+}
+
+export async function generateSceneBuffer(
+  openai: OpenAI,
+  prompt: string,
+  format: PosterFormat,
+  preferred?: string,
+) {
+  let image;
+  try {
+    image = await openai.images.generate(imageGenerateBody(preferred, prompt, format));
+  } catch (err) {
+    if (!shouldFallbackImageModel(err)) throw err;
+    image = await openai.images.generate(imageGenerateBody("dall-e-3", jsonSafeText(prompt).slice(0, 2500), format));
+  }
+  const first = image.data?.[0];
+  if (first?.b64_json) return Buffer.from(first.b64_json, "base64");
+  if (first?.url) {
+    const downloaded = await fetch(first.url);
+    if (downloaded.ok) return Buffer.from(await downloaded.arrayBuffer());
+  }
+  return null;
+}
+
 export async function writePosterArtDirection(
   openai: OpenAI,
   input: {
@@ -107,92 +137,73 @@ export async function writePosterArtDirection(
     publishedFacts?: string;
   },
 ) {
-  const slide = input.slide;
-  const slideCount = input.slideCount || 1;
-  const site = input.siteUrl?.replace(/^https?:\/\//, "").replace(/\/$/, "");
-  const job = slide?.freeform
-    ? [
-        "OWNER'S BRIEF (instructions, not poster copy; never print these sentences):",
-        input.brief.trim(),
-        "Write the poster copy yourself in the brand voice, then typeset exactly that copy:",
-        "- one headline of at most 7 words",
-        "- one supporting line of at most 14 words",
-        `- one button${site ? ` whose label or the line under it is exactly "${site}"` : ""}`,
-        "Use only facts from the brief, the brand kit, and the facts below. No invented stats or claims.",
-        input.publishedFacts || "",
-        input.badgeFacts ? `Facts: ${input.badgeFacts}` : "",
-      ]
-        .filter(Boolean)
-        .join("\n")
-    : slide
-      ? [
-          `Slide ${slide.index} of ${slideCount} — ${slide.label}`,
-          slide.visualIdea ? `Requested layout: ${slide.visualIdea}` : "",
-          "MUST PRINT THIS COPY EXACTLY, spelled as written:",
-          mustPrintBlock(slide),
-          input.context ? `Series notes: ${input.context}` : "",
-          input.siteUrl ? `Canonical site URL if a button is needed: ${input.siteUrl}` : "",
-          input.publishedFacts
-            ? `Published site facts are context only. Do not replace copy that must be printed exactly.\n${input.publishedFacts}`
-            : "",
-          input.badgeFacts ? `Facts: ${input.badgeFacts}` : "",
-        ]
-          .filter(Boolean)
-          .join("\n")
-      : input.brief;
-  const badgeRule = input.badgeFacts
-    ? "\n- Do not draw any badge, seal, medal, laurel, rosette, certificate, or award emblem. The official award badge is added on its own band under the artwork after generation. The copy may name the award."
-    : "";
-  const fallback = brandImagePrompt(
-    input.companyName,
-    input.brand,
-    job,
-    input.format,
-  );
+  void openai;
+  const scene = input.slide?.visualIdea?.trim() || "Open space. Leave the top, center, and bottom clear.";
+  return directScenePrompt(scene, {
+    backgroundColor: input.brand.backgroundColor,
+    primaryColor: input.brand.primaryColor,
+    highlightColor: input.brand.highlightColor,
+  });
+}
 
+/** Words that will be typeset on the artwork, so they stay editable. */
+export async function posterEditableLines(
+  openai: OpenAI,
+  slide: PosterSlide | undefined,
+  companyName: string,
+  voice: string,
+) {
+  const printed = (slide?.mustPrint || [])
+    .map((line) => cleanPosterLine(line))
+    .filter((line) => line.length > 0 && line.length <= 180);
+  if (slide?.freeform) {
+    const offered = printed.filter((line) => !isPosterStageDirection(line)).slice(0, 8);
+    if (offered.length) return offered;
+  }
+  if (slide && !slide.freeform) return printed.filter((line) => !isPosterStageDirection(line)).slice(0, 8);
   try {
     const completion = await openai.chat.completions.create({
       model: process.env.OPENAI_EMAIL_MODEL || "gpt-4o-mini",
-      temperature: 0.12,
+      temperature: 0.2,
+      response_format: { type: "json_object" },
       messages: [
         {
           role: "system",
-          content: `You write one image-generation prompt for a single social-media infographic slide. Output the prompt only — no title, no markdown, no quotes around the whole prompt.
-
-${
-  slide?.freeform
-    ? "The owner gave instructions, not copy. Write short, specific copy in the brand voice, then write the full image prompt around it: layout, hierarchy, lighting, and where each line sits, with the exact copy in quotes. The prompt must describe the whole poster, not just list the copy."
-    : "You are a typesetter, not a copywriter.\n- Every MUST PRINT line must appear in the image, spelled exactly. Do not paraphrase, shorten, merge, or swap in a brand tagline."
-}
-- If the visual idea conflicts with the copy, keep ALL required text readable and adapt the layout.
-- Do not invent extra slogans, stats, phone numbers, cities, or URLs.
-${brandColorLock(input.brand)}
-${posterLook(input.companyName, input.brand)}
-- Describe that look in the prompt: the lighting, glow, gradients, and texture, not just the copy.
-- ${isDarkBrand(input.brand) ? "DARK MODE poster. The page is the background hex, not a white newsletter or paper mock." : "LIGHT MODE poster. Keep the page on the background hex."}
-- Large high-contrast type in the text color. Highlights for glow, rules, buttons, and the key headline words.
-- Fill the whole canvas with the layout. Do not leave a logo hole and do not draw a logo — a separate brand bar is added after generation so the mark never covers copy.
-- Closing slides: a solid highlight-colored button shape containing the exact URL from the copy.
-- Carousel slides must match each other: same background, same margins, same type style.
-- This is a social poster or carousel slide, never a business card, contact card, or name-and-title card.
-- No photos of real people, no QR codes, no watermarks, no unreadably small type.
-- The only website address allowed is the one given in the job. Never write any other domain.${badgeRule}`,
+          content:
+            "Return JSON {\"lines\":[\"...\"]} with the headline and offers that belong on the poster. Drop stage directions, labels like Sub Headlines, and anything in parentheses that says what to draw. Do not add the brand tagline. No hashtags, no invented stats.",
         },
         {
           role: "user",
-          content: `Format: ${input.format} ${slideCount > 1 ? "carousel slide" : "poster"}
-${job}
-
-${brandKitPrompt(input.companyName, input.brand, "visual")}
-Art direction: ${inferVisualStyle(input.brand)}
-Safe extra notes: ${sanitizeVisualNotes(input.brand.extra) || "(none)"}
-Official logo is stamped after generation.`,
+          content: `Company: ${companyName}\nVoice: ${voice || "clear"}\nBrief:\n${(slide?.body || printed.join("\n")).slice(0, 1200)}`,
         },
       ],
     });
-    const written = jsonSafeText(completion.choices[0]?.message?.content?.trim() || "");
-    return enforceVisualBrandLock(`${badgeRule.trim()}\n\n${written || fallback}`, input.companyName, input.brand);
+    const parsed = JSON.parse(completion.choices[0]?.message?.content || "{}") as { lines?: unknown };
+    const lines = Array.isArray(parsed.lines)
+      ? parsed.lines.filter((line): line is string => typeof line === "string")
+      : [];
+    const clean = lines.map((line) => cleanPosterLine(line)).filter((line) => line.length > 0 && line.length <= 180);
+    if (clean.length) return clean.filter((line) => !isPosterStageDirection(line)).slice(0, 8);
   } catch {
-    return enforceVisualBrandLock(`${badgeRule.trim()}\n\n${fallback}`, input.companyName, input.brand);
+    /* fall through */
   }
+  return printed.filter((line) => !isPosterStageDirection(line)).slice(0, 8);
+}
+
+function cleanPosterLine(line: string) {
+  return line
+    .replace(/\(([^)]*)\)/g, (full, inner: string) =>
+      /\b(add|include|draw|graphic|image|rocket|photo|picture|icon|visual)\b/i.test(String(inner)) ? " " : full,
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isPosterStageDirection(line: string) {
+  const text = line.trim();
+  if (!text) return true;
+  if (/^(sub\s*headlines?|headlines?|visual idea|body copy|body|text)\s*:?\s*$/i.test(text)) return true;
+  if (/^\(.*\)$/.test(text)) return true;
+  if (/\b(add|draw|include)\b.+\b(graphic|image|rocket|picture|photo)\b/i.test(text) && text.length < 80) return true;
+  return false;
 }

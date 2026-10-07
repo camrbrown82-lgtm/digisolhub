@@ -152,7 +152,7 @@ export function AbAuditVideoCampaignPanel() {
           <p className="mt-1 max-w-2xl text-sm text-zinc-400">
             Five staggered captions + the Media page website-audit video. Target
             Alberta startup / SMB Facebook Groups. CTA lands on wwwdigisol.com
-            (UTM-tagged) so Kaylev can run the free audit when they share a URL.
+            (UTM-tagged) so Kaylev can email the free audit once they share a URL and an email.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

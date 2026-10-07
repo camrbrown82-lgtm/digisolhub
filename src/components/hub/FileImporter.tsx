@@ -2,14 +2,8 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  FILE_KIND_LABELS,
-  inferFileKind,
-  MAX_FILE_BYTES,
-  MAX_FILE_MB,
-  type FileKind,
-} from "@/lib/files";
-import { createBrowserSupabase } from "@/lib/supabase/client";
+import { FILE_KIND_LABELS, MAX_FILE_MB, type FileKind } from "@/lib/files";
+import { uploadHubFile } from "@/lib/hubUpload";
 
 export function FileImporter() {
   const router = useRouter();
@@ -29,47 +23,15 @@ export function FileImporter() {
     }
 
     setStatus("Importing…");
-    const supabase = await createBrowserSupabase();
     const uploaded = [];
     const failed: string[] = [];
 
     for (const file of files.slice(0, 25)) {
-      if (file.size > MAX_FILE_BYTES) {
-        failed.push(`${file.name} is larger than ${MAX_FILE_MB}MB`);
-        continue;
+      try {
+        uploaded.push(await uploadHubFile(file, kind));
+      } catch (err) {
+        failed.push(`${file.name}: ${err instanceof Error ? err.message : "Could not save"}`);
       }
-      const ext = file.name.split(".").pop() || "bin";
-      const path = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from("assets").upload(path, file, {
-        contentType: file.type || "application/octet-stream",
-        upsert: false,
-      });
-      if (uploadError) {
-        failed.push(`${file.name}: ${uploadError.message}`);
-        continue;
-      }
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("assets").getPublicUrl(path);
-      const response = await fetch("/api/hub/assets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bucket: "assets",
-          path,
-          public_url: publicUrl,
-          filename: file.name,
-          mime_type: file.type,
-          kind: kind === "auto" ? inferFileKind(file.name, file.type) : kind,
-          byte_size: file.size,
-        }),
-      });
-      const result = (await response.json()) as { error?: string; asset?: unknown };
-      if (!response.ok) {
-        failed.push(`${file.name}: ${result.error || "Could not save"}`);
-        continue;
-      }
-      uploaded.push(result.asset);
     }
 
     form.reset();

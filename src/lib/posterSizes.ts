@@ -29,6 +29,22 @@ export function isStoredPosterUrl(url: string | null | undefined) {
   return Boolean(url && url.includes(POSTER_BUCKET_PATH));
 }
 
+/** Object name inside the ai-posters bucket, with any cache-busting query removed. */
+export function aiPosterObjectPath(url: string | null | undefined) {
+  if (!url) return "";
+  const clean = url.split("?")[0];
+  const index = clean.indexOf(POSTER_BUCKET_PATH);
+  if (index < 0) return "";
+  let path = "";
+  try {
+    path = decodeURIComponent(clean.slice(index + POSTER_BUCKET_PATH.length));
+  } catch {
+    return "";
+  }
+  if (!path || path.includes("..") || path.includes("/") || path.includes("\\")) return "";
+  return path;
+}
+
 /** A public file already stored for a company: posters, logos, uploads. */
 export function isWorkspaceMediaUrl(url: string | null | undefined) {
   if (!url) return false;

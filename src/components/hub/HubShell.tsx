@@ -37,7 +37,7 @@ export function HubShell({
 
   return (
     <div className="hub-app flex h-dvh max-h-dvh flex-col overflow-hidden bg-zinc-950 text-indigo-100">
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-zinc-800 bg-zinc-950 px-3 sm:px-4">
+      <header className="flex h-14 shrink-0 items-center gap-2 overflow-hidden border-b border-zinc-800 bg-zinc-950 px-3 sm:gap-3 sm:px-4">
         <button
           type="button"
           onClick={() => setOpen(true)}

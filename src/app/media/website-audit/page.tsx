@@ -22,6 +22,7 @@ import {
   DIGISOL_POSTAL_CODE,
   DIGISOL_SITE_URL,
   DIGISOL_STREET_ADDRESS,
+  DIGISOL_X_CARD,
 } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -47,6 +48,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
+    ...DIGISOL_X_CARD,
     title: WEBSITE_AUDIT_TITLE,
     description: WEBSITE_AUDIT_DESCRIPTION,
     images: [shareCardPath({ page: "video" })],

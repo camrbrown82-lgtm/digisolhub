@@ -3,6 +3,8 @@ import {
   DIGISOL_INSTAGRAM_URL,
   DIGISOL_SITE_URL,
   DIGISOL_TIKTOK_URL,
+  DIGISOL_X_HANDLE,
+  DIGISOL_X_URL,
   DIGISOL_YOUTUBE_URL,
   LINKEDIN_ENABLED,
 } from "@/lib/site";
@@ -176,7 +178,7 @@ export const DISPATCH_ISSUES: DispatchIssue[] = [
           "Three easy ways to take the first step:",
         ],
         bullets: [
-          "Get a free website audit: drop your URL into Kaylev’s chat at https://wwwdigisol.com.",
+          "Get a free website audit: share your site and email with Kaylev at https://wwwdigisol.com, and the results arrive in your inbox.",
           "Book a free consultation at https://wwwdigisol.com/#contact.",
           "Choose your package with code LAUNCH at https://wwwdigisol.com/pricing?promo=LAUNCH.",
         ],
@@ -325,6 +327,14 @@ export function dispatchSocialPack(issue: DispatchIssue) {
     hashtags.join(" "),
   ].join("\n");
 
+  const twitter = [
+    issue.title,
+    "",
+    url,
+    "",
+    `@${DIGISOL_X_HANDLE}`,
+  ].join("\n");
+
   const fileBody = [
     `DIGISOL DISPATCH — Volume ${issue.volume}`,
     `${issue.month} ${issue.year}`,
@@ -336,6 +346,7 @@ export function dispatchSocialPack(issue: DispatchIssue) {
     `Instagram: ${DIGISOL_INSTAGRAM_URL}`,
     `YouTube: ${DIGISOL_YOUTUBE_URL}`,
     `TikTok: ${DIGISOL_TIKTOK_URL}`,
+    `X: ${DIGISOL_X_URL}`,
     "",
     "FACEBOOK / THREADS",
     facebook,
@@ -344,6 +355,9 @@ export function dispatchSocialPack(issue: DispatchIssue) {
     "INSTAGRAM / SHORT CAPTION",
     instagram,
     "",
+    "X / TWITTER",
+    twitter,
+    "",
   ].join("\n");
 
   return {
@@ -351,6 +365,7 @@ export function dispatchSocialPack(issue: DispatchIssue) {
     facebook,
     linkedin,
     instagram,
+    twitter,
     fileBody,
     hashtags,
     instagramUrl: DIGISOL_INSTAGRAM_URL,

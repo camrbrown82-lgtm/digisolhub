@@ -35,10 +35,23 @@ export type LeadAudience = (typeof LEAD_AUDIENCES)[number];
 export const LEAD_AUDIENCE_LABELS: Record<LeadAudience, string> = {
   all: "Every new lead",
   inbound: "Inbound leads: forms, Kaylev chat, Google Ads, contacts you add",
-  audited: "Audited prospects who click a link in their audit email",
+  audited: "Audited prospects: free website audits, and people who click a link in their audit email",
   google_ads: "Google Ads leads only",
   clients: "Signed-up clients: the contact you add with a company",
 };
+
+/** A visitor who asked for a free audit. Puts them on the audited-prospect nurture, not inbound. */
+export const FREE_AUDIT_TAG = "free_audit";
+
+export function isAuditedLead(contact: { source?: string | null; tags?: string[] | null }) {
+  const tags = contact.tags ?? [];
+  const source = String(contact.source || "").toLowerCase();
+  return (
+    tags.includes("prospect_audit_engaged") ||
+    tags.includes(FREE_AUDIT_TAG) ||
+    source.startsWith("prospect_audit")
+  );
+}
 
 /** Tag on a company's sign-up contact. Clients get onboarding, never sales follow-ups. */
 export const CLIENT_TAG = "client";
@@ -68,8 +81,7 @@ export function contactMatchesAudience(
   if (audience === "all") return true;
   if (client) return false;
   const source = String(contact.source || "").toLowerCase();
-  const audited =
-    tags.includes("prospect_audit_engaged") || source.startsWith("prospect_audit");
+  const audited = isAuditedLead(contact);
   if (audience === "audited") return audited;
   if (audited) return false;
   if (audience === "google_ads") {

@@ -1,8 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Send } from "lucide-react";
+import { ImageTextEditor } from "@/components/hub/ImageTextEditor";
+import { MAX_FILE_MB } from "@/lib/files";
+import { uploadHubFile } from "@/lib/hubUpload";
+import type { LayoutPiece } from "@/lib/layoutPieces";
 
 type Channel = "facebook" | "instagram";
 
@@ -10,7 +14,17 @@ type Draft = { channel: Channel; body: string };
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
-type Poster = { url: string; label: string };
+type MediaFile = { url: string; label: string; kind: "image" | "video" };
+
+function kindFor(url: string, files: MediaFile[]) {
+  const known = files.find((file) => file.url === url);
+  if (known) return known.kind;
+  return /\.(mp4|mov|m4v|webm)(\?|$)/i.test(url) ? "video" : "image";
+}
+
+function isPublishableVideo(file: File) {
+  return file.type === "video/mp4" || file.type === "video/quicktime" || /\.(mp4|mov|m4v)$/i.test(file.name);
+}
 
 type RecentPost = {
   id: string;
@@ -51,23 +65,27 @@ function PostPreview({
   channel,
   companyName,
   body,
-  imageUrl,
-  onOpenImage,
+  mediaUrl,
+  kind,
+  onOpenMedia,
 }: {
   channel: Channel;
   companyName: string;
   body: string;
-  imageUrl: string;
-  onOpenImage: (url: string) => void;
+  mediaUrl: string;
+  kind: "image" | "video" | "";
+  onOpenMedia: (url: string) => void;
 }) {
   const mark = companyName.trim().slice(0, 1).toUpperCase() || "D";
-  const image = imageUrl ? (
-    <button type="button" className="block w-full bg-zinc-100" onClick={() => onOpenImage(imageUrl)}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={imageUrl} alt="" className="h-auto w-full" />
-    </button>
+  const media = !mediaUrl ? (
+    <p className="bg-zinc-100 px-4 py-10 text-center text-sm text-zinc-500">No file on this post.</p>
+  ) : kind === "video" ? (
+    <video src={mediaUrl} controls playsInline preload="metadata" className="aspect-video w-full bg-black" />
   ) : (
-    <p className="bg-zinc-100 px-4 py-10 text-center text-sm text-zinc-500">No image on this post.</p>
+    <button type="button" className="block w-full bg-zinc-100" onClick={() => onOpenMedia(mediaUrl)}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={mediaUrl} alt="" className="h-auto w-full" />
+    </button>
   );
 
   if (channel === "instagram") {
@@ -79,7 +97,7 @@ function PostPreview({
           </span>
           <p className="text-sm font-semibold">{companyName}</p>
         </div>
-        {image}
+        {media}
         <p className="whitespace-pre-line px-3 py-3 text-sm leading-5">
           <span className="font-semibold">{companyName} </span>
           {body}
@@ -100,7 +118,7 @@ function PostPreview({
         </div>
       </div>
       <p className="whitespace-pre-line px-3 pb-3 text-sm leading-5">{body}</p>
-      {image}
+      {media}
     </div>
   );
 }
@@ -109,10 +127,14 @@ export function SocialStudio({
   posters,
   recent,
   companyName,
+  logoUrl,
+  siteUrl,
 }: {
-  posters: Poster[];
+  posters: MediaFile[];
   recent: RecentPost[];
   companyName: string;
+  logoUrl?: string;
+  siteUrl?: string;
 }) {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -124,8 +146,16 @@ export function SocialStudio({
   ]);
   const [input, setInput] = useState("");
   const [drafts, setDrafts] = useState<Draft[]>([]);
+  const videoInput = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState(posters);
   const [images, setImages] = useState<Record<Channel, string>>({ facebook: posters[0]?.url || "", instagram: posters[0]?.url || "" });
+  const [artByUrl, setArtByUrl] = useState<Record<string, string>>({});
+  const [piecesByUrl, setPiecesByUrl] = useState<Record<string, LayoutPiece[]>>({});
+  const [editGen, setEditGen] = useState(0);
+  const [imageRev, setImageRev] = useState(0);
+  const [videoUrl, setVideoUrl] = useState(posters.find((file) => file.kind === "video")?.url || "");
+  const [videoCaption, setVideoCaption] = useState("");
+  const [videoChannels, setVideoChannels] = useState<Record<Channel, boolean>>({ facebook: true, instagram: true });
   const [day, setDay] = useState(tomorrowMountain);
   const [hour, setHour] = useState(10);
   const [busy, setBusy] = useState("");
@@ -160,23 +190,41 @@ export function SocialStudio({
       if (json.drafts?.length) setDrafts(json.drafts);
       if (json.visual) {
         setBusy("image");
-        setNotice("Building the image with this company's logo and badge…");
+        setNotice("Creating that picture…");
+        const currentUrl = images.facebook || images.instagram || "";
+        const currentArt = artByUrl[currentUrl] || "";
+        const canReplace = Boolean(currentArt && currentArt !== currentUrl);
         const imageResponse = await fetch("/api/hub/social/image", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: json.visual }),
+          body: JSON.stringify({
+            prompt: json.visual,
+            replaceUrl: canReplace ? currentUrl : "",
+            artUrl: canReplace ? currentArt : "",
+          }),
         });
         const imageJson = (await imageResponse.json().catch(() => ({}))) as {
           error?: string;
           url?: string;
+          artUrl?: string;
+          pieces?: LayoutPiece[];
           label?: string;
         };
         if (!imageResponse.ok || !imageJson.url) {
           setNotice(imageJson.error || "The captions are ready. The image did not build.");
         } else {
-          setFiles((current) => [{ url: imageJson.url!, label: imageJson.label || "New poster" }, ...current]);
-          setImages({ facebook: imageJson.url, instagram: imageJson.url });
-          setNotice("Image is attached to both posts. You can swap it for another file.");
+          const nextUrl = imageJson.url;
+          setFiles((current) =>
+            current.some((file) => file.url === nextUrl)
+              ? current
+              : [{ url: nextUrl, label: imageJson.label || "New poster", kind: "image" }, ...current],
+          );
+          setArtByUrl((current) => ({ ...current, [nextUrl]: imageJson.artUrl || nextUrl }));
+          setPiecesByUrl((current) => ({ ...current, [nextUrl]: imageJson.pieces || [] }));
+          setEditGen((current) => current + 1);
+          setImageRev((current) => current + 1);
+          setImages({ facebook: nextUrl, instagram: nextUrl });
+          setNotice("Image is attached to both posts. Edit the words on that same image.");
         }
       }
     } finally {
@@ -184,7 +232,31 @@ export function SocialStudio({
     }
   }
 
-  async function publish(draft: Draft, when: "now" | "later") {
+  async function uploadVideo(file: File | undefined) {
+    if (!file) return;
+    if (!isPublishableVideo(file)) {
+      setNotice("Upload an MP4 or MOV. Facebook and Instagram publish those.");
+      return;
+    }
+    setBusy("upload");
+    setNotice("");
+    try {
+      const saved = await uploadHubFile(file, "video");
+      const next = { url: saved.url, label: `Video · ${saved.filename}`, kind: "video" as const };
+      setFiles((current) => [next, ...current.filter((item) => item.url !== next.url)]);
+      setVideoUrl(next.url);
+      setImages({ facebook: next.url, instagram: next.url });
+      setNotice("Video is saved. Write a caption and post it, or attach it to a Kaylev draft.");
+      router.refresh();
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "Could not upload that video.");
+    } finally {
+      setBusy("");
+      if (videoInput.current) videoInput.current.value = "";
+    }
+  }
+
+  async function publish(draft: Draft, when: "now" | "later", mediaUrl?: string) {
     const label = `${draft.channel}-${when}`;
     if (when === "now") {
       const where = LABEL[draft.channel];
@@ -199,7 +271,7 @@ export function SocialStudio({
         body: JSON.stringify({
           channel: draft.channel,
           body: draft.body,
-          mediaUrl: images[draft.channel] || "",
+          mediaUrl: mediaUrl ?? images[draft.channel] ?? "",
           when,
           day,
           hour,
@@ -216,6 +288,58 @@ export function SocialStudio({
       setBusy("");
     }
   }
+
+  async function publishVideo(when: "now" | "later") {
+    const channels = (Object.keys(videoChannels) as Channel[]).filter((channel) => videoChannels[channel]);
+    if (!videoUrl || kindFor(videoUrl, files) !== "video") {
+      setNotice("Upload an MP4 or MOV first.");
+      return;
+    }
+    if (videoCaption.trim().length < 8) {
+      setNotice("Write a caption of at least a few words.");
+      return;
+    }
+    if (channels.length === 0) {
+      setNotice("Choose Facebook, Instagram, or both.");
+      return;
+    }
+    if (when === "now") {
+      const where = channels.map((channel) => LABEL[channel]).join(" and ");
+      if (!window.confirm(`Post this video to ${where} now?`)) return;
+    }
+    setBusy(`video-${when}`);
+    setNotice("");
+    const posted: string[] = [];
+    try {
+      for (const channel of channels) {
+        const response = await fetch("/api/hub/social/publish", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            channel,
+            body: videoCaption,
+            mediaUrl: videoUrl,
+            when,
+            day,
+            hour,
+          }),
+        });
+        const json = (await response.json().catch(() => ({}))) as { error?: string; scheduled?: boolean };
+        if (!response.ok) {
+          const reason = json.error || `Could not publish to ${LABEL[channel]}.`;
+          setNotice(posted.length ? `${posted.join(" and ")} is done. ${LABEL[channel]}: ${reason}` : reason);
+          return;
+        }
+        posted.push(LABEL[channel]);
+      }
+      setNotice(when === "later" ? `${posted.join(" and ")} is scheduled.` : `${posted.join(" and ")} is posted.`);
+      router.refresh();
+    } finally {
+      setBusy("");
+    }
+  }
+
+  const savedVideos = files.filter((file) => file.kind === "video");
 
   return (
     <div className="space-y-8">
@@ -270,9 +394,98 @@ export function SocialStudio({
           <div>
             <h2 className="text-lg font-semibold text-white">Ready to post</h2>
             <p className="mt-1 text-sm text-zinc-400">
-              The preview is the post, image included. Click the image to open it full size. Instagram needs an image.
-              Times are Mountain.
+              Upload a video or use a Kaylev draft. Instagram needs an image or a video. Times are Mountain.
             </p>
+          </div>
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+            <h3 className="text-sm font-semibold text-white">Upload a video</h3>
+            <p className="mt-1 text-sm text-zinc-400">
+              MP4 or MOV, up to {MAX_FILE_MB}MB. It is saved with this company, then you can post it to Facebook and
+              Instagram from here.
+            </p>
+            <label className="mt-3 flex w-full cursor-pointer flex-col gap-2 text-xs text-zinc-400 sm:flex-row sm:items-center">
+              <span className="inline-flex w-full items-center justify-center rounded-full border border-zinc-600 px-4 py-2 text-sm text-zinc-200 sm:w-auto">
+                {busy === "upload" ? "Uploading…" : "Choose video"}
+              </span>
+              <input
+                ref={videoInput}
+                type="file"
+                accept="video/mp4,video/quicktime,.mp4,.mov,.m4v"
+                disabled={Boolean(busy)}
+                className="sr-only"
+                onChange={(event) => void uploadVideo(event.target.files?.[0])}
+              />
+            </label>
+            {savedVideos.length > 0 ? (
+              <label className="mt-3 block text-xs text-zinc-400">
+                Saved videos
+                <select
+                  className={`${inputClass} mt-1`}
+                  value={videoUrl}
+                  onChange={(event) => {
+                    const url = event.target.value;
+                    setVideoUrl(url);
+                    if (url) setImages({ facebook: url, instagram: url });
+                  }}
+                >
+                  <option value="">Choose a video</option>
+                  {savedVideos.map((file) => (
+                    <option key={file.url} value={file.url}>
+                      {file.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            {videoUrl ? (
+              <video
+                key={videoUrl}
+                src={videoUrl}
+                controls
+                playsInline
+                preload="metadata"
+                className="mt-4 aspect-video w-full rounded-xl bg-black"
+              />
+            ) : null}
+            <textarea
+              className={`${inputClass} mt-3`}
+              rows={4}
+              value={videoCaption}
+              onChange={(event) => setVideoCaption(event.target.value)}
+              placeholder="Caption for this video"
+            />
+            <div className="mt-3 flex flex-wrap gap-4 text-sm text-zinc-200">
+              {(Object.keys(LABEL) as Channel[]).map((channel) => (
+                <label key={channel} className="inline-flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={videoChannels[channel]}
+                    onChange={(event) =>
+                      setVideoChannels((current) => ({ ...current, [channel]: event.target.checked }))
+                    }
+                  />
+                  {LABEL[channel]}
+                </label>
+              ))}
+            </div>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <button
+                type="button"
+                disabled={Boolean(busy)}
+                onClick={() => void publishVideo("now")}
+                className="w-full rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60 sm:w-auto"
+              >
+                {busy === "video-now" ? "Posting…" : "Post video now"}
+              </button>
+              <button
+                type="button"
+                disabled={Boolean(busy)}
+                onClick={() => void publishVideo("later")}
+                className="w-full rounded-full border border-zinc-600 px-4 py-2 text-sm text-zinc-200 hover:border-zinc-400 disabled:opacity-60 sm:w-auto"
+              >
+                {busy === "video-later" ? "Scheduling…" : "Schedule video"}
+              </button>
+            </div>
           </div>
           <div className="flex flex-wrap gap-3">
             <label className="text-xs text-zinc-400">
@@ -307,8 +520,9 @@ export function SocialStudio({
                     channel={draft.channel}
                     companyName={companyName}
                     body={draft.body}
-                    imageUrl={images[draft.channel]}
-                    onOpenImage={setOpenImage}
+                    mediaUrl={images[draft.channel] ? `${images[draft.channel]}?v=${imageRev}` : ""}
+                    kind={images[draft.channel] ? kindFor(images[draft.channel], files) : ""}
+                    onOpenMedia={setOpenImage}
                   />
                 </div>
                 <textarea
@@ -321,6 +535,21 @@ export function SocialStudio({
                     )
                   }
                 />
+                {images[draft.channel] && kindFor(images[draft.channel], files) === "image" ? (
+                  <div className="mt-3">
+                    <ImageTextEditor
+                      key={`${artByUrl[images[draft.channel]] || images[draft.channel]}-${editGen}`}
+                      imageUrl={artByUrl[images[draft.channel]] || images[draft.channel]}
+                      replaceUrl={images[draft.channel]}
+                      initialPieces={piecesByUrl[images[draft.channel]]}
+                      designWidth={1080}
+                      designHeight={1080}
+                      logoUrl={logoUrl}
+                      siteUrl={siteUrl}
+                      onSaved={() => setImageRev((current) => current + 1)}
+                    />
+                  </div>
+                ) : null}
                 <label className="mt-3 block text-xs text-zinc-400">
                   File
                   <select
@@ -328,7 +557,7 @@ export function SocialStudio({
                     value={images[draft.channel]}
                     onChange={(event) => setImages((current) => ({ ...current, [draft.channel]: event.target.value }))}
                   >
-                    <option value="">No image</option>
+                    <option value="">No file</option>
                     {files.map((poster, index) => (
                       <option key={`${poster.url}-${index}`} value={poster.url}>
                         {poster.label}
@@ -364,8 +593,12 @@ export function SocialStudio({
       {openImage ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setOpenImage("")}>
           <div className="max-h-[92vh] overflow-auto" onClick={(event) => event.stopPropagation()}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={openImage} alt="" className="mx-auto h-auto max-h-[88vh] w-auto max-w-[92vw]" />
+            {kindFor(openImage, files) === "video" ? (
+              <video src={openImage} controls playsInline className="mx-auto max-h-[88vh] w-auto max-w-[92vw]" />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={openImage} alt="" className="mx-auto h-auto max-h-[88vh] w-auto max-w-[92vw]" />
+            )}
             <button
               type="button"
               className="mt-3 rounded-full bg-white px-4 py-2 text-sm font-semibold text-zinc-900"

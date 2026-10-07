@@ -10,6 +10,7 @@ import { INTERNAL_TRAFFIC_COOKIE } from "@/lib/internalTraffic";
 import { awardBadgeTheme } from "@/lib/awardTheme";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { getOutboundSiteUrl } from "@/lib/supabase/env";
+import { DIGISOL_X_CARD } from "@/lib/site";
 import {
   AWARD_MIN_SCORE,
   awardDate,
@@ -40,7 +41,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     description,
     robots,
     openGraph: { title, description, url: verify, type: "website", siteName: "DigiSol", images },
-    twitter: { card: "summary_large_image", title, description, images: [card] },
+    twitter: { card: "summary_large_image", ...DIGISOL_X_CARD, title, description, images: [card] },
   };
 }
 

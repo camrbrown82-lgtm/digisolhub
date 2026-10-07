@@ -3,12 +3,15 @@
 import { Facebook, Instagram, Youtube } from "lucide-react";
 import { TikTokIcon } from "@/components/TikTokIcon";
 import { TrackedLink } from "@/components/TrackedLink";
+import { XIcon } from "@/components/XIcon";
 import {
   DIGISOL_FACEBOOK_URL,
   DIGISOL_INSTAGRAM_HANDLE,
   DIGISOL_INSTAGRAM_URL,
   DIGISOL_TIKTOK_HANDLE,
   DIGISOL_TIKTOK_URL,
+  DIGISOL_X_HANDLE,
+  DIGISOL_X_URL,
   DIGISOL_YOUTUBE_FEATURED_URL,
 } from "@/lib/site";
 
@@ -45,6 +48,18 @@ export function HeaderSocialLinks({
         className={iconLink}
       >
         <Instagram className="h-4 w-4" aria-hidden="true" />
+      </TrackedLink>
+      <TrackedLink
+        href={DIGISOL_X_URL}
+        eventName="social_click"
+        eventParams={{ network: "x", location }}
+        target="_blank"
+        rel="noopener noreferrer me"
+        aria-label={`Follow Cameron Brown on X @${DIGISOL_X_HANDLE}`}
+        title={`Follow on X @${DIGISOL_X_HANDLE}`}
+        className={iconLink}
+      >
+        <XIcon className="h-4 w-4" />
       </TrackedLink>
       <TrackedLink
         href={DIGISOL_YOUTUBE_FEATURED_URL}

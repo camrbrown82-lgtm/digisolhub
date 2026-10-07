@@ -2,6 +2,7 @@ import { BrandForm } from "@/components/hub/BrandForm";
 import { BusinessCardMaker } from "@/components/hub/BusinessCardMaker";
 import { PosterActions } from "@/components/hub/PosterActions";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
+import { ensureDigisolBadgeFiles } from "@/lib/digisolBadgeFiles";
 import { getBrandLogoUrl } from "@/lib/brandLogo";
 import { brandFromClient } from "@/lib/branding";
 import { listBusinessCardAssets } from "@/lib/posterArchive";
@@ -9,7 +10,6 @@ import { groupPosterSeries, parsePosterMeta } from "@/lib/posterSocial";
 import {
   DIGISOL_EMAIL,
   DIGISOL_FOUNDER,
-  DIGISOL_FOUNDER_TITLE,
   DIGISOL_PHONE_DISPLAY,
   isDigisolSiteUrl,
 } from "@/lib/site";
@@ -23,6 +23,41 @@ export default async function BrandPage() {
   const logoUrl = active ? await getBrandLogoUrl(supabase, active) : "";
   const siteUrl = companySiteUrl(active);
   const house = isDigisolClient(active);
+  if (active && house) {
+    await ensureDigisolBadgeFiles(supabase, active.id).catch((err) => {
+      console.error("Could not save DigiSol badge files", err);
+    });
+  }
+  const { data: awardRows } = active
+    ? await supabase
+        .from("assets")
+        .select("public_url, filename, mime_type, notes")
+        .eq("client_id", active.id)
+        .like("notes", "digisol-badge:%")
+        .order("created_at", { ascending: false })
+        .limit(12)
+    : { data: [] };
+  const awardOrder = ["house", "site", "social", "gbp", "leader"];
+  const awards = (awardRows ?? [])
+    .filter((row) => String(row.mime_type || "").startsWith("image/") && row.public_url)
+    .map((row) => ({
+      url: String(row.public_url),
+      label: String(row.filename || "Award"),
+      role: "award" as const,
+      key: String(row.notes || "").replace("digisol-badge:", ""),
+    }))
+    .sort((a, b) => awardOrder.indexOf(a.key) - awardOrder.indexOf(b.key));
+  const emblem = brand.secondaryLogoUrl || "";
+  const library = [
+    logoUrl ? { url: logoUrl, label: "Logo", role: "logo" as const, selected: true } : null,
+    emblem ? { url: emblem, label: "Logo badge", role: "emblem" as const, selected: true } : null,
+    ...awards.map((item, index) => ({
+      url: item.url,
+      label: item.label,
+      role: item.role,
+      selected: index < 4,
+    })),
+  ].filter((item): item is { url: string; label: string; role: "logo" | "emblem" | "award"; selected: boolean } => Boolean(item));
   const cards = groupPosterSeries(
     await listBusinessCardAssets(supabase, { clientId: active?.id, archived: false }),
   );
@@ -58,9 +93,10 @@ export default async function BrandPage() {
                 ? "On DigiSol's site, a scan opens Kaylev's free website audit."
                 : "A scan opens this company's website."
             }
+            library={library}
             defaults={{
               personName: house ? DIGISOL_FOUNDER : "",
-              personTitle: house ? DIGISOL_FOUNDER_TITLE : "",
+              personTitle: "",
               phone: house ? DIGISOL_PHONE_DISPLAY : "",
               email: house ? DIGISOL_EMAIL : "",
               line: "",

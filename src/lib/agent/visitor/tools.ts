@@ -1,6 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { runWebsiteAudit, type WebsiteAuditResult } from "@/lib/agent/websiteAudit";
+import { runWebsiteAudit } from "@/lib/agent/websiteAudit";
 import { logAgentActivity } from "@/lib/agent/digisol/activityLog";
 import { DIGISOL_OPERATOR } from "@/lib/agent/digisol/scope";
 import { logAnalyticsEvent } from "@/lib/analyticsEvents";
@@ -14,8 +14,9 @@ import {
   isGoogleAdsTouch,
   type AttributionPayload,
 } from "@/lib/meta/attribution";
-import { sendLeadAlert } from "@/lib/leadAlert";
+import { recordAward } from "@/lib/awardRegistry";
 import { sendAuditFollowUpEmail, sendConsultationFollowUpEmail } from "@/lib/prospectAudit/followUpEmail";
+import { AWARD_MIN_SCORE } from "@/lib/websiteAward";
 import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import { ensureDigisolClient } from "@/lib/workspace";
 
@@ -50,14 +51,22 @@ export function createVisitorAgentTools(
   return {
     runVisitorWebsiteAudit: tool({
       description:
-        "Run an automated SEO/performance website audit when the visitor shares their URL. Logs findings into DigiSol Hub.",
+        "Run a free website audit only after the visitor has given BOTH their website URL and the email address to send the results to. Never call this with only a URL. It emails the full results immediately, saves the Hub lead, and starts the 14-day audited-prospect follow-up. Do not also call captureVisitorLead for the same person.",
       inputSchema: z.object({
         url: z
           .string()
           .min(4)
           .describe("Visitor website URL (https://example.com)."),
+        email: z
+          .string()
+          .email()
+          .describe("Required. Where to email the audit. The audit does not run without it."),
+        name: z.string().optional().describe("Visitor name if they gave one."),
+        company: z.string().optional().describe("Business name if they gave one."),
+        phone: z.string().optional().describe("Phone if they gave one."),
+        language: languageInput,
       }),
-      execute: async ({ url: rawUrl }) => {
+      execute: async ({ url: rawUrl, email: rawEmail, name, company, phone, language: requestedLanguage }) => {
         if (!hasAdminClient()) {
           throw new Error("Hub database is not configured");
         }
@@ -118,25 +127,77 @@ export function createVisitorAgentTools(
             auditId: saved?.id ?? null,
             score: audit.score,
             url: audit.url,
+            email: rawEmail.trim().toLowerCase(),
           },
         });
 
-        await notifyOwnerOfVisitorAudit(admin, clientId, audit, saved?.id ?? null);
+        const language = emailLanguage(requestedLanguage);
+        const email = rawEmail.trim().toLowerCase();
+        const followUp = await sendVisitorAuditEmail({
+          admin,
+          clientId,
+          email,
+          name,
+          company,
+          websiteUrl: url,
+          auditId: saved?.id ?? null,
+          language,
+        });
 
+        if (followUp.contactId && phone?.trim()) {
+          await admin
+            .from("contacts")
+            .update({ phone: phone.trim() })
+            .eq("id", followUp.contactId);
+        }
+        if (followUp.contactId) {
+          await stampVisitorAttribution(admin, followUp.contactId, attr);
+        }
+
+        const resultsEmailed = Boolean(followUp.emailed);
+        const alreadyEmailed = String(followUp.reason || "").startsWith("already_emailed");
+        if (followUp.contactId && (resultsEmailed || alreadyEmailed)) {
+          await emitHubEvent("hub/lead.created", { contactId: followUp.contactId }).catch(() => null);
+          await logAnalyticsEvent(admin, {
+            companyId: clientId,
+            eventType: "visitor_chat_lead",
+            channel: "email",
+            success: true,
+            contactId: followUp.contactId,
+            source: "visitor_chat",
+            metadata: {
+              leadType: "audit",
+              email,
+              auditId: saved?.id ?? null,
+              score: audit.score,
+            },
+          });
+        }
+
+        const awardEarned = audit.score >= AWARD_MIN_SCORE;
         return {
           operator: DIGISOL_OPERATOR.name,
-          reportedToHub: Boolean(saved?.id),
+          reportedToHub: Boolean(followUp.contactId && (resultsEmailed || alreadyEmailed)),
+          leadCaptured: Boolean(followUp.contactId && (resultsEmailed || alreadyEmailed)),
+          resultsEmailed,
+          nurture: resultsEmailed
+            ? "Results emailed. They are in the 14-day audited prospect follow-up (day 2, day 6, day 13). Do not call captureVisitorLead."
+            : alreadyEmailed
+              ? "Results were already emailed in the last 24 hours. Do not send another copy."
+              : "The audit ran but the results email did not send. Say so and ask them to try the email again. Do not paste the full report.",
           auditId: saved?.id ?? null,
           score: audit.score,
           scoreLabel: audit.report.scoreLabel,
-          summary: audit.report.summary,
-          strengths: audit.report.strengths.slice(0, 4),
-          weaknesses: audit.report.weaknesses.slice(0, 5),
-          issues: audit.issues.slice(0, 6),
-          metrics: {
-            ttfbMs: audit.metrics.ttfbMs,
-            totalMs: audit.metrics.totalMs,
-            https: audit.metrics.https,
+          award: {
+            name: "DigiSol Excellence Award",
+            minimumScore: AWARD_MIN_SCORE,
+            checks: "speed, security, and SEO",
+            earned: awardEarned,
+            tellThem: !resultsEmailed && !alreadyEmailed
+              ? "The results email did not send. Do not quote a score as if they have it."
+              : awardEarned
+                ? "They earned the badge. It is already in the email. Mention the score and that the badge is in their inbox. Do not paste the full audit."
+                : `They did not earn the badge. ${AWARD_MIN_SCORE}+ is required. Mention the score and that the breakdown is in their inbox. Do not paste the full audit.`,
           },
         };
       },
@@ -144,7 +205,7 @@ export function createVisitorAgentTools(
 
     captureVisitorLead: tool({
       description:
-        "Create or update a DigiSol Hub contact + pipeline lead immediately when the visitor shares email. Use leadType=consultation for no-website / cost / unsure-what-they-need paths; audit when they had a site audit. Always call this as soon as you have an email.",
+        "Create or update a DigiSol Hub contact + pipeline lead when the visitor wants a consultation, a build, or anything other than a free website audit. For a free audit, call runVisitorWebsiteAudit with their URL and email instead — that tool already saves the lead, emails the results, and starts the 14-day follow-up. Do not call both.",
       inputSchema: z.object({
         email: z.string().email().describe("Visitor email address."),
         name: z.string().optional().describe("Visitor name if provided."),
@@ -269,7 +330,9 @@ export function createVisitorAgentTools(
           });
         }
 
-        if (contactId && (created || isFreshContact(existing?.created_at))) {
+        // Audit leads enroll only after runVisitorWebsiteAudit emails the results,
+        // so they join the audited-prospect nurture instead of inbound.
+        if (leadType !== "audit" && contactId && (created || isFreshContact(existing?.created_at))) {
           await emitHubEvent("hub/lead.created", { contactId }).catch(() => null);
         }
 
@@ -484,7 +547,7 @@ export function createVisitorAgentTools(
 
     emailVisitorAuditBreakdown: tool({
       description:
-        "Re-send the audit breakdown (findings + soft DigiSol product ideas, no pricing). captureVisitorLead with leadType=audit already emails it — only use this when capture ran earlier in the chat and the visitor asks for the write-up again.",
+        "Re-send the audit email. If the site scored 90 or higher, that email leads with the DigiSol Excellence Award badge. captureVisitorLead with leadType=audit already sends it — only use this when capture ran earlier and they ask for it again.",
       inputSchema: z.object({
         email: z.string().email(),
         name: z.string().optional(),
@@ -728,57 +791,46 @@ async function upsertVisitorPipelineLead(input: {
   return null;
 }
 
-/**
- * Email DigiSol as soon as Kaylev audits a site, even when the visitor
- * never leaves a name, email, or phone. Same host within two hours is one email.
- */
-async function notifyOwnerOfVisitorAudit(
+/** Keep ad click ids on the lead so the audited-prospect nurture still attributes the ad. */
+async function stampVisitorAttribution(
   admin: ReturnType<typeof createAdminClient>,
-  clientId: string,
-  audit: WebsiteAuditResult,
-  savedId: string | null,
+  contactId: string,
+  attr: AttributionPayload | null,
 ) {
-  const site = (audit.finalUrl || audit.url || "").trim();
-  if (!site) return;
+  if (!attr) return;
+  const clickFields: Record<string, string> = {};
+  if (attr.gclid) clickFields.gclid = attr.gclid;
+  if (attr.gbraid) clickFields.gbraid = attr.gbraid;
+  if (attr.wbraid) clickFields.wbraid = attr.wbraid;
+  if (attr.utm_source) clickFields.utm_source = attr.utm_source;
+  if (attr.utm_medium) clickFields.utm_medium = attr.utm_medium;
+  if (attr.utm_campaign) clickFields.utm_campaign = attr.utm_campaign;
+  if (attr.utm_term) clickFields.utm_term = attr.utm_term;
+  const extraTags = attributionTags(attr);
+  if (!Object.keys(clickFields).length && extraTags.length === 0) return;
 
-  let host = site;
-  try {
-    host = new URL(site.startsWith("http") ? site : `https://${site}`).hostname.replace(
-      /^www\./i,
-      "",
-    );
-  } catch {
-    host = site;
+  await ensureMetaSchema().catch(() => null);
+  const { data } = await admin.from("contacts").select("tags").eq("id", contactId).maybeSingle();
+  const tags = Array.from(new Set([...((data?.tags as string[] | null) ?? []), ...extraTags]));
+  const patch = { ...clickFields, tags };
+  let { error } = await admin.from("contacts").update(patch).eq("id", contactId);
+  if (error && /column|schema cache/i.test(error.message)) {
+    ({ error } = await admin.from("contacts").update({ tags }).eq("id", contactId));
   }
-
-  if (savedId) {
-    const since = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-    const { count } = await admin
-      .from("website_audits")
-      .select("id", { count: "exact", head: true })
-      .eq("client_id", clientId)
-      .gte("created_at", since)
-      .ilike("final_url", `%${host}%`);
-    if ((count ?? 0) > 1) return;
+  if (error) {
+    console.warn("[visitor-agent] attribution stamp skipped", error.message);
   }
+}
 
-  const score =
-    typeof audit.score === "number" ? `Score ${audit.score}/100 (${audit.report.scoreLabel}).` : "";
-
-  await sendLeadAlert({
-    sourceLabel: "Kaylev website audit",
-    name: host,
-    company: host,
-    service: score ? `Website audit · ${score}` : "Website audit",
-    website: site.startsWith("http") ? site : `https://${site}`,
-    note: "No name, email, or phone was left. This is the website Kaylev just audited.",
-    message: [score, audit.report.summary].filter(Boolean).join(" "),
-  }).catch((error) => {
-    console.warn(
-      "[visitor-agent] audit alert skipped",
-      error instanceof Error ? error.message : error,
-    );
-  });
+function findingLine(item: unknown) {
+  if (typeof item === "string") return item.trim();
+  if (!item || typeof item !== "object") return "";
+  const row = item as { title?: unknown; detail?: unknown; message?: unknown };
+  const title = typeof row.title === "string" ? row.title.trim() : "";
+  const detail = typeof row.detail === "string" ? row.detail.trim() : "";
+  const message = typeof row.message === "string" ? row.message.trim() : "";
+  if (title && detail) return `${title}: ${detail}`;
+  return title || detail || message;
 }
 
 /** A contact made in this chat (possibly by a sibling tool call a moment ago). */
@@ -871,21 +923,32 @@ async function sendVisitorAuditEmail(input: {
   }
 
   const report = audit.report || {};
+  const weaknessLines = (report.weaknesses || []).map(findingLine).filter(Boolean);
   const weaknesses =
-    (report.weaknesses || []).slice(0, 5).filter(Boolean).length > 0
-      ? (report.weaknesses || []).slice(0, 5)
+    weaknessLines.length > 0
+      ? weaknessLines.slice(0, 5)
       : (audit.raw?.issues || [])
-          .map((issue) => issue.message || "")
+          .map((issue) => findingLine(issue))
           .filter(Boolean)
           .slice(0, 5);
-  const strengths = (report.strengths || []).slice(0, 4).filter(Boolean);
+  const strengths = (report.strengths || []).map(findingLine).filter(Boolean).slice(0, 4);
+  const awardEarned = (audit.score ?? 0) >= AWARD_MIN_SCORE;
+  const companyName = input.company?.trim() || normalizeDomain(audit.url) || "";
+  if (awardEarned) {
+    await input.admin
+      .from("website_audits")
+      .update({
+        raw: { ...(audit.raw || {}), source: "visitor_chat", companyName },
+      })
+      .eq("id", audit.id);
+  }
 
   const sent = await sendAuditFollowUpEmail({
     db: input.admin,
     clientId: input.clientId,
     email: input.email,
     name: input.name,
-    company: input.company,
+    company: input.company || companyName,
     url: audit.url || input.websiteUrl || "",
     score: audit.score ?? 0,
     summary:
@@ -895,7 +958,23 @@ async function sendVisitorAuditEmail(input: {
     strengths,
     source: "visitor_chat",
     language: input.language,
+    awardId: awardEarned ? audit.id : undefined,
   });
+
+  if (sent.emailed && awardEarned) {
+    await recordAward(input.admin, {
+      id: audit.id,
+      source: "hub",
+      companyName: companyName || audit.url,
+      url: audit.url,
+      score: audit.score ?? 0,
+      auditId: audit.id,
+      clientId: input.clientId,
+      contactId: sent.contactId,
+      sentTo: input.email,
+      sentAt: new Date().toISOString(),
+    });
+  }
 
   return {
     emailed: Boolean(sent.emailed),
@@ -905,5 +984,7 @@ async function sendVisitorAuditEmail(input: {
     resendId: sent.resendId,
     auditId: audit.id,
     score: audit.score,
+    awardEarned,
+    awardIncluded: Boolean(sent.emailed && awardEarned),
   };
 }

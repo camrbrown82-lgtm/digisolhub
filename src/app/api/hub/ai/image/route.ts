@@ -6,7 +6,7 @@ sharp.concurrency(1);
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireHubSession } from "@/lib/auth";
 import { brandFromClient } from "@/lib/branding";
-import { resolveOfficialLogoFile } from "@/lib/brandLogo";
+import { fetchLogoBuffer, resolveOfficialLogoFile } from "@/lib/brandLogo";
 import {
   createOpenAIClient,
   getOpenAIApiKey,
@@ -16,8 +16,12 @@ import {
 import {
   imageGenerateBody,
   parsePosterFormat,
+  posterEditableLines,
   writePosterArtDirection,
 } from "@/lib/poster";
+import { imagePiece, piecesFromCopy, piecesFromRoles, withArtworkPiece, type LayoutPiece } from "@/lib/layoutPieces";
+import { stampLayoutText } from "@/lib/layoutText";
+import { POSTER_CANVAS } from "@/lib/posterSizes";
 import { jsonSafeText, jsonSafeValue } from "@/lib/jsonSafe";
 import {
   parsePosterSlides,
@@ -28,8 +32,8 @@ import { posterSlidesToPdf } from "@/lib/posterPdf";
 import { renderBadgePng, resolvePosterBadge } from "@/lib/posterBadge";
 import { posterSocialPack } from "@/lib/posterSocial";
 import { renderQrPng } from "@/lib/qrMark";
-import { kaylevSourceUrl, siteHostLabel } from "@/lib/site";
-import { artFormatFor, badgeWidthFor, stampOfficialLogo } from "@/lib/stampLogo";
+import { kaylevSourceUrl } from "@/lib/site";
+import { badgeWidthFor, fitInto } from "@/lib/stampLogo";
 import { companyPublishedFacts } from "@/lib/publishedFacts";
 import { companySiteUrl, getWorkspaceClient } from "@/lib/workspace";
 
@@ -62,6 +66,16 @@ async function generatePosterBuffer(
     if (downloaded.ok) return Buffer.from(await downloaded.arrayBuffer());
   }
   return null;
+}
+
+async function storePosterPng(supabase: SupabaseClient, path: string, buffer: Buffer) {
+  const png = await sharp(buffer).png().toBuffer();
+  const { error } = await supabase.storage.from("ai-posters").upload(path, png, {
+    contentType: "image/png",
+    upsert: false,
+  });
+  if (error) return "";
+  return supabase.storage.from("ai-posters").getPublicUrl(path).data.publicUrl;
 }
 
 async function saveAsset(supabase: SupabaseClient, row: Record<string, unknown>) {
@@ -147,6 +161,12 @@ export async function POST(request: Request) {
     const openai = createOpenAIClient();
     const preferred = process.env.OPENAI_IMAGE_MODEL;
     const logo = await resolveOfficialLogoFile(supabase, client);
+    const wantsEmblem = slides.some((slide) => slide.placeEmblem);
+    const emblemFile =
+      wantsEmblem && brand.secondaryLogoUrl.trim()
+        ? await fetchLogoBuffer(brand.secondaryLogoUrl.trim())
+        : null;
+    const emblem = emblemFile?.buffer?.length ? emblemFile.buffer : null;
     const { badge, warning: badgeWarning } = await resolvePosterBadge(supabase, client, prompt).catch(() => ({
       badge: null,
       warning: "Could not load the award badge.",
@@ -157,56 +177,125 @@ export async function POST(request: Request) {
           return null;
         })
       : null;
-    const artFormat = artFormatFor(format, Boolean(badgePng));
     const seriesId = crypto.randomUUID();
 
-    const directedSlides = await Promise.all(
-      slides.map((slide) =>
-        writePosterArtDirection(openai, {
-          companyName,
-          brand,
-          brief: prompt,
-          format: artFormat,
-          slide,
-          slideCount: slides.length,
-          context: parsed.context,
-          siteUrl,
-          badgeFacts: badgePng ? badge?.facts : undefined,
-          publishedFacts,
-        }),
+    const [directedSlides, copyLines] = await Promise.all([
+      Promise.all(
+        slides.map((slide) =>
+          writePosterArtDirection(openai, {
+            companyName,
+            brand,
+            brief: prompt,
+            format,
+            slide,
+            slideCount: slides.length,
+            context: parsed.context,
+            siteUrl,
+            badgeFacts: badgePng ? badge?.facts : undefined,
+            publishedFacts,
+          }),
+        ),
       ),
-    );
+      Promise.all(slides.map((slide) => posterEditableLines(openai, slide, companyName, brand.voice))),
+    ]);
 
-    const images: { buffer: Buffer; directed: string; slide: PosterSlide }[] = [];
+    const images: {
+      buffer: Buffer;
+      art: Buffer;
+      directed: string;
+      slide: PosterSlide;
+      pieces: LayoutPiece[];
+    }[] = [];
     for (let index = 0; index < slides.length; index += 1) {
       const directed = directedSlides[index];
-      const buffer = await generatePosterBuffer(openai, directed, artFormat, preferred);
+      const buffer = await generatePosterBuffer(openai, directed, format, preferred);
       if (!buffer) {
         return NextResponse.json(
           { error: `No image returned for slide ${index + 1}` },
           { status: 502 },
         );
       }
-      const canvas = {
-        format,
-        backgroundColor: brand.backgroundColor,
-        accentColor: brand.highlightColor || brand.accentColor,
-        textColor: brand.textColor,
-        badge: badgePng,
-        qr: qrPng,
-        qrHost: qrUrl ? siteHostLabel(siteUrl) : "",
-      };
-      const stamped = await stampOfficialLogo(buffer, logo?.buffer ?? null, canvas).catch((stampError) => {
-        console.error("Could not stamp official logo", stampError);
-        return stampOfficialLogo(buffer, null, canvas);
-      });
-      images.push({ buffer: stamped, directed, slide: slides[index] });
+      const frame = POSTER_CANVAS[format];
+      const scene = await fitInto(buffer, frame.width, frame.height);
+      const stamp = `${Date.now()}-${seriesId}-s${index + 1}`;
+      const overlays: LayoutPiece[] = [];
+      const pictures = new Map<string, Buffer>();
+      const slidePlan = slides[index];
+      if (logo?.buffer?.length) {
+        const src = await storePosterPng(supabase, `${stamp}-logo.png`, logo.buffer);
+        if (src) {
+          pictures.set(src, logo.buffer);
+          overlays.push(
+            imagePiece(
+              "logo",
+              "Logo",
+              src,
+              Math.round(frame.height * (slidePlan.placeLogo ? 0.08 : 0.07)),
+              slidePlan.placeLogo ? 30 : 6,
+              2,
+            ),
+          );
+        }
+      }
+      if (slidePlan.placeEmblem && emblem?.length) {
+        const src = await storePosterPng(supabase, `${stamp}-emblem.png`, emblem);
+        if (src) {
+          pictures.set(src, emblem);
+          overlays.push(imagePiece("emblem", "Badge", src, Math.round(frame.height * 0.24), 35, 36));
+        }
+      }
+      if (badgePng) {
+        const src = await storePosterPng(supabase, `${stamp}-badge.png`, badgePng);
+        if (src) {
+          pictures.set(src, badgePng);
+          overlays.push(imagePiece("badge", "Award badge", src, Math.round(frame.height * 0.18), 6, 78));
+        }
+      }
+      if (qrPng) {
+        const src = await storePosterPng(supabase, `${stamp}-qr.png`, qrPng);
+        if (src) {
+          pictures.set(src, qrPng);
+          overlays.push(imagePiece("qr", "QR code", src, Math.round(frame.height * 0.12), 78, 82));
+        }
+      }
+      const textPieces = slidePlan.copyLines?.length
+        ? piecesFromRoles(slidePlan.copyLines, siteUrl)
+        : piecesFromCopy(copyLines[index] || [], siteUrl);
+      const pieces = [...overlays, ...textPieces];
+      const typed = pieces.length
+        ? await stampLayoutText(scene, frame.width, frame.height, pieces, brand.textColor, {
+            highlight: brand.highlightColor,
+            images: pictures,
+          }).catch((typeError) => {
+            console.error("Could not typeset poster copy", typeError);
+            return scene;
+          })
+        : scene;
+      images.push({ buffer: typed, art: scene, directed, slide: slides[index], pieces });
     }
 
-    const uploaded: { path: string; publicUrl: string; directed: string; slide: PosterSlide; byteSize: number }[] = [];
+    const uploaded: {
+      path: string;
+      publicUrl: string;
+      artUrl: string;
+      directed: string;
+      slide: PosterSlide;
+      pieces: LayoutPiece[];
+      byteSize: number;
+    }[] = [];
     for (let index = 0; index < images.length; index += 1) {
       const image = images[index];
-      const path = `${Date.now()}-${seriesId}-s${index + 1}.png`;
+      const stamp = Date.now();
+      const artPath = `${stamp}-${seriesId}-s${index + 1}-art.png`;
+      const path = `${stamp}-${seriesId}-s${index + 1}.png`;
+      const { error: artError } = await supabase.storage.from("ai-posters").upload(artPath, image.art, {
+        contentType: "image/png",
+        upsert: false,
+      });
+      if (artError) {
+        return NextResponse.json({ error: artError.message }, { status: 400 });
+      }
+      const artUrl = supabase.storage.from("ai-posters").getPublicUrl(artPath).data.publicUrl;
       const { error: uploadError } = await supabase.storage
         .from("ai-posters")
         .upload(path, image.buffer, {
@@ -222,8 +311,10 @@ export async function POST(request: Request) {
       uploaded.push({
         path,
         publicUrl,
+        artUrl,
         directed: image.directed,
         slide: image.slide,
+        pieces: withArtworkPiece(image.pieces, artUrl, POSTER_CANVAS[format].height),
         byteSize: image.buffer.length,
       });
     }
@@ -270,6 +361,9 @@ export async function POST(request: Request) {
           kind: "ai-poster",
           brief: jsonSafeText(prompt).slice(0, 1500),
           prompt: jsonSafeText(image.directed).slice(0, 1500),
+          artUrl: image.artUrl,
+          pieces: image.pieces,
+          artworkPlaced: true,
           caption: social.instagram,
           social: jsonSafeValue({
             url: social.url,
@@ -324,10 +418,12 @@ export async function POST(request: Request) {
       assets,
       urls: publicUrls,
       pdfUrl: pdfUrl || undefined,
-      slides: slides.map((slide) => ({
-        index: slide.index,
-        label: slide.label,
-        mustPrint: slide.mustPrint,
+      slides: uploaded.map((image) => ({
+        index: image.slide.index,
+        label: image.slide.label,
+        mustPrint: image.slide.mustPrint,
+        artUrl: image.artUrl,
+        pieces: image.pieces,
       })),
       prompt: directedSlides.join("\n\n---\n\n"),
       social,

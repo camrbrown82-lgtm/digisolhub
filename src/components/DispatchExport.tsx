@@ -8,9 +8,10 @@ import {
   type DispatchIssue,
 } from "@/lib/dispatch";
 import { shareToInstagram } from "@/lib/instagramShare";
-import { DIGISOL_INSTAGRAM_HANDLE, LINKEDIN_ENABLED } from "@/lib/site";
+import { XIcon } from "@/components/XIcon";
+import { DIGISOL_INSTAGRAM_HANDLE, DIGISOL_X_HANDLE, LINKEDIN_ENABLED } from "@/lib/site";
 
-type PackKey = "facebook" | "linkedin" | "instagram";
+type PackKey = "facebook" | "linkedin" | "instagram" | "twitter";
 
 export function DispatchExport({ issue }: { issue: DispatchIssue }) {
   const pack = dispatchSocialPack(issue);
@@ -58,7 +59,7 @@ export function DispatchExport({ issue }: { issue: DispatchIssue }) {
       </p>
       <p className="mt-1 text-xs text-zinc-400">
         Copy a ready caption or share straight to Facebook,{" "}
-        {LINKEDIN_ENABLED ? "LinkedIn, " : ""}or Instagram (@{DIGISOL_INSTAGRAM_HANDLE}). Every link points to
+        {LINKEDIN_ENABLED ? "LinkedIn, " : ""}Instagram (@{DIGISOL_INSTAGRAM_HANDLE}), or X (@{DIGISOL_X_HANDLE}). Every link points to
         wwwdigisol.com.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
@@ -100,6 +101,14 @@ export function DispatchExport({ issue }: { issue: DispatchIssue }) {
           )}
           Copy Instagram caption
         </button>
+        <button
+          type="button"
+          onClick={() => copy("twitter", pack.twitter)}
+          className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs font-medium text-zinc-100 hover:bg-white/10"
+        >
+          {copied === "twitter" ? <Check className="h-3.5 w-3.5" /> : <XIcon className="h-3.5 w-3.5" />}
+          Copy X post
+        </button>
         <a
           href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pack.url)}`}
           target="_blank"
@@ -134,6 +143,16 @@ export function DispatchExport({ issue }: { issue: DispatchIssue }) {
           <Instagram className="h-3.5 w-3.5" aria-hidden="true" />
           Share to Instagram
         </button>
+        <a
+          href={`https://x.com/intent/post?text=${encodeURIComponent(pack.twitter)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => trackEvent("dispatch_export", { format: "x_share", slug: issue.slug })}
+          className="inline-flex items-center gap-2 rounded-full border border-indigo-400/40 px-3 py-2 text-xs font-semibold text-indigo-200 hover:bg-indigo-500/15"
+        >
+          <XIcon className="h-3.5 w-3.5" />
+          Share on X
+        </a>
         <button
           type="button"
           onClick={() => copy("url", pack.url)}

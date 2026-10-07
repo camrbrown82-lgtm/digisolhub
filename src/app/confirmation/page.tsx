@@ -8,7 +8,8 @@ import { TrackedLink } from "@/components/TrackedLink";
 import { localizePath } from "@/lib/i18n/config";
 import { getLocale } from "@/lib/i18n/server";
 import { getMessages } from "@/lib/i18n/messages";
-import { DIGISOL_EMAIL, DIGISOL_LINKEDIN_URL, LINKEDIN_ENABLED } from "@/lib/site";
+import { XIcon } from "@/components/XIcon";
+import { DIGISOL_EMAIL, DIGISOL_LINKEDIN_URL, DIGISOL_X_HANDLE, DIGISOL_X_URL, LINKEDIN_ENABLED } from "@/lib/site";
 
 export function generateMetadata(): Metadata {
   const locale = getLocale();
@@ -63,6 +64,17 @@ export default function ConfirmationPage() {
             >
               <Mail className="h-4 w-4 text-indigo-400" aria-hidden="true" />
               {DIGISOL_EMAIL}
+            </TrackedLink>
+            <TrackedLink
+              href={DIGISOL_X_URL}
+              eventName="contact_click"
+              eventParams={{ method: "x", location: "confirmation" }}
+              target="_blank"
+              rel="noopener noreferrer me"
+              className="inline-flex items-center gap-2 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+            >
+              <XIcon className="h-4 w-4 text-indigo-400" />
+              @{DIGISOL_X_HANDLE}
             </TrackedLink>
             {LINKEDIN_ENABLED ? (
               <TrackedLink

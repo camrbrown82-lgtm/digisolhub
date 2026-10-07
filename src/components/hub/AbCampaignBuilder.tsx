@@ -272,7 +272,7 @@ export function AbCampaignBuilder({
           <button
             type="submit"
             disabled={busy || !templateAId || !templateBId}
-            className="hub-btn inline-flex items-center gap-2"
+            className="hub-btn inline-flex w-full items-center justify-center gap-2 sm:w-auto"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
             {busy ? "Sending A/B…" : "Send A/B test"}

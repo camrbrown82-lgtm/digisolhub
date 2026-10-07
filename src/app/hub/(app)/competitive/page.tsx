@@ -6,7 +6,7 @@ import { PrintButton } from "@/components/hub/PrintButton";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import type { MarketPresence, SiteSnapshot } from "@/lib/competitive/schema";
 import type { StoredCompetitiveReport } from "@/lib/competitive/scoring";
-import { clientSignUpContact } from "@/lib/clientWins";
+import { clientSignUpContact, companyBadgesUnlocked } from "@/lib/clientWins";
 import { ensureCompetitiveSchema } from "@/lib/ensureCompetitiveSchema";
 import { createClient } from "@/lib/supabase/server";
 import { prospectHostKey } from "@/lib/prospectAudit/seedCatalog";
@@ -79,6 +79,12 @@ export default async function CompetitivePage({
       ((selected.sources ?? {}) as { company?: SiteSnapshot }).company?.name ||
       companyName
     : companyName;
+  const domain = companySiteUrl(active);
+  const analyzedUrl = (selected?.inputs as Inputs | undefined)?.url || "";
+  const ownSite = Boolean(domain && analyzedUrl && sameSite(analyzedUrl, domain));
+  const awardsUnlocked = selected?.result
+    ? await companyBadgesUnlocked(supabase, ownSite ? [active?.name, reportCompany] : [reportCompany])
+    : false;
   const [signUpContact, emailed] = selected?.result
     ? await Promise.all([
         clientSignUpContact(supabase, active?.name || ""),
@@ -91,7 +97,6 @@ export default async function CompetitivePage({
       ])
     : [null, null];
 
-  const domain = companySiteUrl(active);
   // Only pre-fill from an analysis of this company's own website.
   const lastInputs = domain
     ? history.find((r) => r.inputs?.url && sameSite(r.inputs.url, domain))?.inputs
@@ -99,9 +104,9 @@ export default async function CompetitivePage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold text-white">Competitive analysis</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold text-white sm:text-3xl">Competitive analysis</h1>
           <WorkspaceScope companyName={active?.name} noun="analyses" />
           <p className="mt-2 max-w-2xl text-sm text-zinc-400">
             The website you enter is the company being analyzed. DigiSol stays the agency
@@ -109,7 +114,7 @@ export default async function CompetitivePage({
           </p>
         </div>
         {selected?.result ? (
-          <div className="flex flex-wrap items-start gap-2">
+          <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-start">
             <CompetitiveEmailButton
               analysisId={selected.id}
               companyName={reportCompany}
@@ -118,7 +123,7 @@ export default async function CompetitivePage({
               lastEmailedTo={emailed?.emailed_to}
               lastEmailedAt={emailed?.emailed_at}
             />
-            <PrintButton label="Print / save PDF" />
+            <PrintButton label="Print / save PDF" className="w-full sm:w-auto" />
           </div>
         ) : null}
       </div>
@@ -182,6 +187,8 @@ export default async function CompetitivePage({
             }
           }
           completedAt={selected.completed_at}
+          awardsUnlocked={awardsUnlocked}
+          analysisId={selected.id}
         />
       ) : !running ? (
         <div className="rounded-2xl border border-dashed border-zinc-700 p-8 text-center text-sm text-zinc-400">

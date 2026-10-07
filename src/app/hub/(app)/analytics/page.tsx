@@ -27,6 +27,7 @@ import {
   summarizeLeadPerformance,
 } from "@/lib/lead-pipeline";
 import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
+import { companyBadgesUnlocked } from "@/lib/clientWins";
 import { loadContentTests, type ContentTestLoad } from "@/lib/contentTestData";
 import { emptyReviewSummary, loadReviewSummary } from "@/lib/googleReviews";
 import { fetchAnalyticsEventsSummary } from "@/lib/analyticsEvents";
@@ -66,6 +67,7 @@ export default async function AnalyticsPage({
   const scopedIds = active ? await contactIdsForClient(supabase, active.id) : null;
   const isDigisol =
     (active?.name || "").toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase();
+  const badgesUnlocked = await companyBadgesUnlocked(supabase, [active?.name]);
   const ga4PropertyId = await companyGa4PropertyId(supabase, active?.id, isDigisol);
   const gaStatus = ga4StatusFor(ga4PropertyId);
 
@@ -548,6 +550,7 @@ export default async function AnalyticsPage({
         companyName={active?.name}
         domain={active?.domain}
         awardBaseUrl={getOutboundSiteUrl()}
+        badgesUnlocked={badgesUnlocked}
         initialAudit={
           "data" in latestAudit ? latestAudit.data : latestAudit
         }
