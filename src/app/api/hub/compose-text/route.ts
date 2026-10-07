@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { parseLayoutPieces } from "@/lib/layoutPieces";
 import { blankCanvas, stampLayoutText } from "@/lib/layoutText";
+import { isAiPosterNotes, savePosterArchiveCopy } from "@/lib/posterArchive";
+import { parsePosterMeta } from "@/lib/posterSocial";
 import { aiPosterObjectPath, isWorkspaceMediaUrl } from "@/lib/posterSizes";
 import { getWorkspaceClient } from "@/lib/workspace";
 
@@ -112,6 +114,7 @@ export async function POST(request: Request) {
   const caption =
     pieces.find((piece) => piece.kind !== "image" && piece.kind !== "logo" && piece.kind !== "emblem" && piece.text.trim())
       ?.text.slice(0, 80) || "Poster";
+  let savedNotes = "";
   if (replaced && existingId) {
     let notes = existingNotes;
     try {
@@ -133,6 +136,7 @@ export async function POST(request: Request) {
         caption,
       })
       .eq("id", existingId);
+    savedNotes = notes || JSON.stringify({ kind: "ai-poster", pieces, artworkPlaced: true });
   }
   if (!replaced) {
     const notes = JSON.stringify({
@@ -167,6 +171,19 @@ export async function POST(request: Request) {
         notes: "ai-poster",
       });
     }
+    savedNotes = notes;
+  }
+  if (savedNotes && isAiPosterNotes(savedNotes)) {
+    const meta = parsePosterMeta(savedNotes);
+    await savePosterArchiveCopy(supabase, {
+      clientId: client?.id,
+      sourcePath: filePath,
+      bytes: stamped,
+      caption,
+      filename: meta?.seriesId ? `poster-${meta.seriesId}.png` : "poster.png",
+      notes: savedNotes,
+      seriesId: meta?.seriesId,
+    }).catch((err) => console.error("Could not archive poster", err));
   }
   return NextResponse.json({ url: versioned, replaced });
 }

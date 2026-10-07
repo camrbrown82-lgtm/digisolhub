@@ -28,6 +28,7 @@ import {
   withHouseCtaDetails,
   type PosterSlide,
 } from "@/lib/posterBrief";
+import { savePosterArchiveCopy } from "@/lib/posterArchive";
 import { posterSlidesToPdf } from "@/lib/posterPdf";
 import { renderBadgePng, resolvePosterBadge } from "@/lib/posterBadge";
 import { posterSocialPack } from "@/lib/posterSocial";
@@ -337,10 +338,6 @@ export async function POST(request: Request) {
         console.error("Could not build poster PDF", pdfError);
       }
     }
-    images.forEach((image) => {
-      image.buffer = Buffer.alloc(0);
-    });
-
     const social = posterSocialPack({
       companyName,
       tagline: brand.tagline,
@@ -411,7 +408,19 @@ export async function POST(request: Request) {
       const { asset, insertError } = await saveAsset(supabase, row);
       if (insertError) saveWarning = insertError.message;
       if (asset) assets.push(asset);
+      await savePosterArchiveCopy(supabase, {
+        clientId: client?.id,
+        sourcePath: image.path,
+        bytes: images[index]?.buffer || Buffer.alloc(0),
+        caption: social.instagram.slice(0, 80) || "Poster",
+        filename: `poster-${seriesId}-slide-${index + 1}.png`,
+        notes,
+        seriesId,
+      }).catch((err) => console.error("Could not archive poster", err));
     }
+    images.forEach((image) => {
+      image.buffer = Buffer.alloc(0);
+    });
 
     return NextResponse.json({
       asset: assets[0] || { public_url: publicUrls[0] },

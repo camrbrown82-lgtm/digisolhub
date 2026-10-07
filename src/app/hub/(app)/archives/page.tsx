@@ -3,7 +3,7 @@ import { PosterExport } from "@/components/hub/PosterExport";
 import { HubBackButton } from "@/components/hub/HubBackButton";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { brandFromClient } from "@/lib/branding";
-import { listBusinessCardAssets, listPosterAssets } from "@/lib/posterArchive";
+import { ensurePosterArchiveCopies, isArchiveCopy, listBusinessCardAssets, listPosterAssets } from "@/lib/posterArchive";
 import { groupPosterSeries, parsePosterMeta, socialPackFromAsset } from "@/lib/posterSocial";
 import { createClient } from "@/lib/supabase/server";
 import { companySiteUrl, getActiveClient, getWorkspaceClient } from "@/lib/workspace";
@@ -14,6 +14,9 @@ export default async function ArchivesPage() {
   const brandSource = await getWorkspaceClient(supabase);
   const { companyName, brand } = brandFromClient(brandSource);
   const clientId = selected?.id || brandSource?.id;
+  await ensurePosterArchiveCopies(supabase, clientId).catch((err) => {
+    console.error("Could not copy posters into the archive", err);
+  });
   const posters = await listPosterAssets(supabase, {
     clientId,
     archived: true,
@@ -32,8 +35,8 @@ export default async function ArchivesPage() {
         <h1 className="mt-3 text-3xl font-semibold text-white">Poster archives</h1>
         <WorkspaceScope companyName={selected?.name || brandSource?.name} noun="archives" />
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-          Archived poster sets for this company. Restore them to AI posters or
-          delete them for good.
+          Saving a poster on AI posters keeps a copy here. The one you are editing
+          stays on AI posters. Delete a copy when you do not need it.
         </p>
       </div>
       {cards.length > 0 ? (
@@ -67,7 +70,7 @@ export default async function ArchivesPage() {
       ) : null}
       {groups.length === 0 && cards.length === 0 ? (
         <p className="rounded-2xl border border-zinc-800 px-4 py-8 text-sm text-zinc-500">
-          Nothing archived yet. On AI posters, use Archive to move a generation here.
+          Nothing saved here yet. Save a poster on AI posters and a copy shows up here.
         </p>
       ) : groups.length > 0 ? (
         <div className="space-y-10">
@@ -96,7 +99,7 @@ export default async function ArchivesPage() {
                     />
                   ))}
                 </div>
-                <PosterActions id={slides[0].id} archived />
+                <PosterActions id={slides[0].id} archived copy={isArchiveCopy(slides[0])} />
                 {grouped.url ? <PosterExport pack={grouped} companyName={companyName} /> : null}
               </div>
             );

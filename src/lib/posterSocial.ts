@@ -147,6 +147,7 @@ export function parsePosterMeta(notes?: string | null) {
       artUrl?: string;
       pieces?: unknown;
       artworkPlaced?: boolean;
+      archiveOf?: string;
       social?: PosterSocialPack;
     };
     if (parsed && typeof parsed === "object") return parsed;

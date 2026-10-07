@@ -8,7 +8,7 @@ import { metaAdAccountId } from "@/lib/meta/config";
 import { emptyMetaAdsSummary, fetchMetaAdsSummary } from "@/lib/meta/insights";
 import { emptyOpportunity, opportunityStatus } from "@/lib/meta/opportunity";
 import { brandColourSwatches, brandFromClient } from "@/lib/branding";
-import { isBusinessCardAsset } from "@/lib/posterArchive";
+import { isArchiveCopy, isBusinessCardAsset } from "@/lib/posterArchive";
 import { createClient } from "@/lib/supabase/server";
 import { getWorkspaceClient, isDigisolClient, resolveClientId } from "@/lib/workspace";
 
@@ -86,7 +86,7 @@ export default async function AdsPage() {
     new Intl.NumberFormat("en-CA", { style: "currency", currency, maximumFractionDigits: 2 }).format(value);
   const drafts = (draftsResult.data ?? []) as unknown as AdDraftRow[];
   const posters: RobotPoster[] = (postersResult.data ?? [])
-    .filter((row) => row.public_url && !isBusinessCardAsset(row))
+    .filter((row) => row.public_url && !isBusinessCardAsset(row) && !isArchiveCopy(row))
     .map((row) => ({
       url: row.public_url as string,
       label:

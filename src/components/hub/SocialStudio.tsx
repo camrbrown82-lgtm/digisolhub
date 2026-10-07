@@ -158,6 +158,7 @@ export function SocialStudio({
   const [videoUrl, setVideoUrl] = useState(
     posters.find((file) => file.kind === "video" && file.source !== "media")?.url || "",
   );
+  const [posterUrl, setPosterUrl] = useState("");
   const [videoCaption, setVideoCaption] = useState("");
   const [videoChannels, setVideoChannels] = useState<Record<Channel, boolean>>({ facebook: true, instagram: true });
   const [day, setDay] = useState(tomorrowMountain);
@@ -175,10 +176,14 @@ export function SocialStudio({
     setBusy("chat");
     setNotice("");
     try {
+      const chosen = files.find((file) => file.url === posterUrl && file.source === "poster");
       const response = await fetch("/api/hub/social/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next.slice(1) }),
+        body: JSON.stringify({
+          messages: next.slice(1),
+          posterLabel: chosen?.label || "",
+        }),
       });
       const json = (await response.json().catch(() => ({}))) as {
         error?: string;
@@ -192,7 +197,12 @@ export function SocialStudio({
       }
       setMessages((current) => [...current, { role: "assistant", content: json.reply || "Done." }]);
       if (json.drafts?.length) setDrafts(json.drafts);
-      if (json.visual) {
+      if (chosen) {
+        setImages({ facebook: chosen.url, instagram: chosen.url });
+        if (json.drafts?.length) {
+          setNotice("Kaylev wrote the posts for that poster. The image stays the one you picked.");
+        }
+      } else if (json.visual) {
         setBusy("image");
         setNotice("Creating that picture…");
         const currentUrl = images.facebook || images.instagram || "";
@@ -343,6 +353,7 @@ export function SocialStudio({
     }
   }
 
+  const savedPosters = files.filter((file) => file.kind === "image" && file.source === "poster");
   const savedVideos = files.filter((file) => file.kind === "video");
   const mediaVideos = savedVideos.filter((file) => file.source === "media");
   const uploadedVideos = savedVideos.filter((file) => file.source !== "media");
@@ -354,7 +365,9 @@ export function SocialStudio({
           <div className="border-b border-zinc-800 px-5 py-4">
             <h2 className="text-lg font-semibold text-white">Kaylev</h2>
             <p className="mt-1 text-sm text-zinc-400">
-              Describe the offer. Ask for the logo, the badge, or another file from this company.
+              {posterUrl
+                ? "Kaylev will write both posts for the poster you picked and keep that image."
+                : "Describe the offer. Ask for the logo, the badge, or another file from this company."}
             </p>
           </div>
           <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
@@ -400,8 +413,46 @@ export function SocialStudio({
           <div>
             <h2 className="text-lg font-semibold text-white">Ready to post</h2>
             <p className="mt-1 text-sm text-zinc-400">
-              Upload a video or use a Kaylev draft. Instagram needs an image or a video. Times are Mountain.
+              Pick a saved poster for Kaylev to write, upload a video, or use a Kaylev draft. Instagram needs an
+              image or a video. Times are Mountain.
             </p>
+          </div>
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+            <h3 className="text-sm font-semibold text-white">Post an image</h3>
+            <p className="mt-1 text-sm text-zinc-400">
+              Choose a poster saved on AI posters. Ask Kaylev and he writes the Facebook and Instagram captions for
+              that image.
+            </p>
+            <label className="mt-3 block text-xs text-zinc-400">
+              Saved posters
+              <select
+                className={`${inputClass} mt-1`}
+                value={posterUrl}
+                onChange={(event) => {
+                  const url = event.target.value;
+                  setPosterUrl(url);
+                  if (url) setImages({ facebook: url, instagram: url });
+                }}
+              >
+                <option value="">Kaylev will make a new image</option>
+                {savedPosters.map((file) => (
+                  <option key={file.url} value={file.url}>
+                    {file.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {savedPosters.length === 0 ? (
+              <p className="mt-2 text-xs text-zinc-500">Save a poster on AI posters and it shows up in this list.</p>
+            ) : null}
+            {posterUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={posterUrl}
+                alt={savedPosters.find((file) => file.url === posterUrl)?.label || "Saved poster"}
+                className="mt-4 max-h-80 w-full rounded-xl bg-zinc-950 object-contain"
+              />
+            ) : null}
           </div>
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
             <h3 className="text-sm font-semibold text-white">Post a video</h3>
@@ -575,14 +626,34 @@ export function SocialStudio({
                   <select
                     className={`${inputClass} mt-1`}
                     value={images[draft.channel]}
-                    onChange={(event) => setImages((current) => ({ ...current, [draft.channel]: event.target.value }))}
+                    onChange={(event) => {
+                      const url = event.target.value;
+                      setImages((current) => ({ ...current, [draft.channel]: url }));
+                      const picked = files.find((file) => file.url === url);
+                      if (picked?.source === "poster") setPosterUrl(url);
+                    }}
                   >
                     <option value="">No file</option>
-                    {files.map((poster, index) => (
-                      <option key={`${poster.url}-${index}`} value={poster.url}>
-                        {poster.label}
-                      </option>
-                    ))}
+                    {savedPosters.length > 0 ? (
+                      <optgroup label="Saved posters">
+                        {savedPosters.map((poster) => (
+                          <option key={poster.url} value={poster.url}>
+                            {poster.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ) : null}
+                    {files.some((file) => file.source !== "poster") ? (
+                      <optgroup label="Other files">
+                        {files
+                          .filter((file) => file.source !== "poster")
+                          .map((poster, index) => (
+                            <option key={`${poster.url}-${index}`} value={poster.url}>
+                              {poster.label}
+                            </option>
+                          ))}
+                      </optgroup>
+                    ) : null}
                   </select>
                 </label>
                 <div className="mt-3 flex flex-wrap gap-2">

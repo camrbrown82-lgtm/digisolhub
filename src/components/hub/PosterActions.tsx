@@ -7,11 +7,14 @@ import { Archive, ArchiveRestore, Trash2 } from "lucide-react";
 export function PosterActions({
   id,
   archived = false,
+  copy = false,
   noun = "poster set",
   onDone,
 }: {
   id: string;
   archived?: boolean;
+  /** Automatic archive copy. The working poster is still on AI posters. */
+  copy?: boolean;
   noun?: string;
   onDone?: (action: "archive" | "restore" | "delete") => void;
 }) {
@@ -43,6 +46,7 @@ export function PosterActions({
 
   return (
     <div className="flex flex-wrap gap-2">
+      {copy ? null : (
       <button
         type="button"
         onClick={() => void archive(!archived)}
@@ -62,6 +66,7 @@ export function PosterActions({
             ? "Restore"
             : "Archive"}
       </button>
+      )}
       <button
         type="button"
         onClick={() => void remove()}

@@ -10,7 +10,7 @@ import { AD_CTAS, AD_OBJECTIVES } from "@/lib/meta/adOptions";
 import { maxDailyBudget } from "@/lib/meta/ads";
 import { metaPixelId } from "@/lib/meta/config";
 import { createOpenAIClient, getOpenAIApiKey, openaiErrorMessage } from "@/lib/openai";
-import { isBusinessCardAsset } from "@/lib/posterArchive";
+import { isArchiveCopy, isBusinessCardAsset } from "@/lib/posterArchive";
 import { isStoredPosterUrl } from "@/lib/posterSizes";
 import { isDigisolSiteUrl, kaylevAuditUrl } from "@/lib/site";
 import { dailyFromWeekly, planItems } from "@/lib/social/weekPlan";
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     .order("created_at", { ascending: false })
     .limit(12);
   const posters = (posterRows ?? [])
-    .filter((row) => !isBusinessCardAsset(row))
+    .filter((row) => !isBusinessCardAsset(row) && !isArchiveCopy(row))
     .map((row) => row.public_url as string)
     .filter(isStoredPosterUrl);
   const { companyName, brand } = brandFromClient(workspace.client);

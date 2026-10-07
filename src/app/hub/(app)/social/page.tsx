@@ -8,7 +8,7 @@ import { maxDailyBudget } from "@/lib/meta/ads";
 import { socialProviderConfigured } from "@/lib/social/providers";
 import type { SocialPlan } from "@/lib/social/weekPlan";
 import { mediaLibraryVideos } from "@/lib/media";
-import { isBusinessCardAsset } from "@/lib/posterArchive";
+import { isArchiveCopy, isBusinessCardAsset } from "@/lib/posterArchive";
 import { companySiteUrl, getWorkspaceClient, isDigisolClient } from "@/lib/workspace";
 import { createClient } from "@/lib/supabase/server";
 
@@ -62,7 +62,7 @@ export default async function SocialPage() {
     const mime = String(row.mime_type || "");
     const video = mime.startsWith("video/") || /\.(mp4|mov|m4v|webm)(\?|$)/i.test(url);
     const image = mime.startsWith("image/") || /\.(png|jpe?g|webp|gif)(\?|$)/i.test(url);
-    if (!video && !image) return [];
+    if ((!video && !image) || isArchiveCopy(row)) return [];
     const poster = row.bucket === "ai-posters" && !isBusinessCardAsset(row);
     const name =
       (row.caption as string | null)?.slice(0, 80) ||
@@ -94,9 +94,9 @@ export default async function SocialPage() {
         <h1 className="text-3xl font-semibold text-white">Social</h1>
         <WorkspaceScope companyName={active.name} noun="posts" />
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-          Kaylev writes both captions and builds the image, with this company&apos;s logo and badge, from what you tell
-          him. Pick a video from DigiSol media or upload an MP4 or MOV, then post it to Facebook and Instagram.
-          Nothing publishes until you approve it.
+          Kaylev writes both captions. Pick a saved poster and he writes the posts for that image, or ask him to
+          build a new one. Pick a video from DigiSol media or upload an MP4 or MOV, then post it to Facebook and
+          Instagram. Nothing publishes until you approve it.
         </p>
       </div>
       {connected ? null : (

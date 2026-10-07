@@ -38,7 +38,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "OPENAI_API_KEY is not configured." }, { status: 400 });
   }
 
-  const body = (await request.json().catch(() => null)) as { messages?: ChatMessage[] } | null;
+  const body = (await request.json().catch(() => null)) as {
+    messages?: ChatMessage[];
+    posterLabel?: string;
+  } | null;
+  const posterLabel = typeof body?.posterLabel === "string" ? body.posterLabel.trim().slice(0, 160) : "";
   const messages = (body?.messages ?? [])
     .filter((message) => message && (message.role === "user" || message.role === "assistant"))
     .map((message) => ({
@@ -79,7 +83,8 @@ Voice: ${brand.voice}
 Audience: ${brand.audience}
 Lean on: ${brand.doSay}
 Never use: ${brand.dontSay}
-Posts go to ${companyName}'s own Facebook Page and Instagram feed. The public site is ${DIGISOL_SITE_URL}.`,
+Posts go to ${companyName}'s own Facebook Page and Instagram feed. The public site is ${DIGISOL_SITE_URL}.
+${posterLabel ? `The image is already chosen: "${posterLabel}". Write the captions for that saved poster. Leave visual as an empty string. Do not describe a new picture.` : ""}`,
         },
         ...messages,
       ],
