@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createBrowserSupabase } from "@/lib/supabase/client";
-import { allowedEmail, isAllowedEmail } from "@/lib/allowlist";
+import { hubLoginEmails, isAllowedEmail } from "@/lib/allowlist";
 
 function withTimeout<T>(promise: Promise<T>, ms: number, message: string) {
   return new Promise<T>((resolve, reject) => {
@@ -24,7 +24,6 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string) {
 /** Password-only hub login — owner email is fixed server-side. */
 export function LoginForm() {
   const params = useSearchParams();
-  const ownerEmail = allowedEmail();
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "working">("idle");
   const [error, setError] = useState(
@@ -45,7 +44,8 @@ export function LoginForm() {
     setStatus("working");
 
     try {
-      if (!isAllowedEmail(ownerEmail)) {
+      const emails = hubLoginEmails().filter((email) => isAllowedEmail(email));
+      if (emails.length === 0) {
         throw new Error("Hub owner email is not configured.");
       }
 
@@ -55,20 +55,28 @@ export function LoginForm() {
         "Timed out connecting to Supabase.",
       );
 
-      const { data, error: authError } = await withTimeout(
-        supabase.auth.signInWithPassword({
-          email: ownerEmail,
-          password,
-        }),
-        20000,
-        "Sign-in timed out.",
-      );
+      let signedIn = false;
+      let lastError: Error | null = null;
+      for (const email of emails) {
+        const { data, error: authError } = await withTimeout(
+          supabase.auth.signInWithPassword({ email, password }),
+          20000,
+          "Sign-in timed out.",
+        );
+        if (authError || !data.user) {
+          lastError = authError ?? new Error("Could not sign in. Check the password.");
+          continue;
+        }
+        if (!isAllowedEmail(data.user.email)) {
+          await supabase.auth.signOut();
+          throw new Error("That account is not allowed to access the hub.");
+        }
+        signedIn = true;
+        break;
+      }
 
-      if (authError) throw authError;
-
-      if (!isAllowedEmail(data.user?.email)) {
-        await supabase.auth.signOut();
-        throw new Error("That account is not allowed to access the hub.");
+      if (!signedIn) {
+        throw lastError ?? new Error("Could not sign in. Check the password.");
       }
 
       const unlock = await withTimeout(
