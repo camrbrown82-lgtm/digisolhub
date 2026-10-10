@@ -14,9 +14,21 @@ import {
   runGoogleAudit,
   saveGoogleAudit,
   saveGoogleIds,
+  type GoogleCheck,
   type GoogleSetupIds,
 } from "@/lib/google/audit";
-import { getWorkspaceClient } from "@/lib/workspace";
+import * as ads from "@/lib/google/adsApi";
+import {
+  KEYWORD_AREAS,
+  findTrendingKeywords,
+  loadAdGroups,
+  writeSearchAd,
+  type CompanyContext,
+  type KeywordArea,
+} from "@/lib/google/keywords";
+import { brandFromClient } from "@/lib/branding";
+import { companyPublishedFacts } from "@/lib/publishedFacts";
+import { companySiteUrl, getWorkspaceClient } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -52,6 +64,44 @@ function reloadSetup(ctx: { supabase: Parameters<typeof loadGoogleSetup>[0]; cli
 const text = (value: unknown, max = 200) =>
   typeof value === "string" && value.trim() ? value.trim().slice(0, max) : null;
 
+const MAX_CPC = 50;
+const MAX_DAILY_BUDGET = 500;
+const MAX_BID_KEYWORDS = 20;
+const MATCH_TYPES: ads.KeywordMatchType[] = ["PHRASE", "EXACT", "BROAD"];
+
+const KEYWORD_LOG: GoogleCheck = {
+  id: "ads_trending_keywords",
+  product: "ads",
+  title: "Bid on trending keywords",
+  status: "info",
+  detail: "",
+};
+
+async function companyContext(client: {
+  name: string;
+  domain?: string | null;
+  notes?: string | null;
+  branding?: unknown;
+}): Promise<CompanyContext> {
+  const { companyName, brand } = brandFromClient(client);
+  return {
+    companyName,
+    brand,
+    siteUrl: companySiteUrl(client),
+    notes: client.notes,
+    published: await companyPublishedFacts(client),
+  };
+}
+
+function adsAccount(setupIds: GoogleSetupIds) {
+  const cid = ads.cleanCustomerId(setupIds.adsCustomerId);
+  if (!cid) return { cid: "", error: "Link this company's Google Ads account above and save first." };
+  if (!ads.adsApiReady()) {
+    return { cid: "", error: "Google Ads isn't connected to the Hub yet. Set up the manager account first." };
+  }
+  return { cid, error: "" };
+}
+
 export async function GET(request: Request) {
   const ctx = await scope();
   if ("error" in ctx) return ctx.error;
@@ -69,7 +119,10 @@ export async function GET(request: Request) {
   });
 }
 
-/** `{ action: "save", ids }`, `{ action: "audit" }` or `{ action: "fix", checkId }`. */
+/**
+ * `{ action: "save", ids }`, `{ action: "audit" }`, `{ action: "fix", checkId }`,
+ * `{ action: "keywords", area }` or `{ action: "bid", keywords, matchType, area, adGroup | newCampaign }`.
+ */
 export async function POST(request: Request) {
   const ctx = await scope();
   if ("error" in ctx) return ctx.error;
@@ -77,6 +130,11 @@ export async function POST(request: Request) {
     action?: string;
     ids?: Partial<GoogleSetupIds>;
     checkId?: string;
+    area?: string;
+    keywords?: { text?: unknown; bid?: unknown }[];
+    matchType?: string;
+    adGroup?: string;
+    newCampaign?: { dailyBudget?: unknown; enabled?: unknown };
   };
   const { supabase, client, setup } = ctx;
 
@@ -123,6 +181,104 @@ export async function POST(request: Request) {
         setup: await reloadSetup(ctx),
         fixes: await recentGoogleFixes(supabase, client.id),
       });
+    }
+
+    const area: KeywordArea = body.area === "canada" ? "canada" : "alberta";
+
+    if (body.action === "keywords") {
+      const account = adsAccount(setup.ids);
+      if (!account.cid) return NextResponse.json({ error: account.error }, { status: 400 });
+      const found = await findTrendingKeywords(account.cid, await companyContext(client), area);
+      return NextResponse.json({ ...found, area });
+    }
+
+    if (body.action === "bid") {
+      const account = adsAccount(setup.ids);
+      if (!account.cid) return NextResponse.json({ error: account.error }, { status: 400 });
+      const cid = account.cid;
+      const matchType = MATCH_TYPES.find((m) => m === body.matchType) ?? "PHRASE";
+      const picked = (body.keywords ?? [])
+        .map((k) => ({ text: text(k.text, 80) ?? "", bid: Number(k.bid) }))
+        .filter((k) => k.text && Number.isFinite(k.bid) && k.bid >= 0.05);
+      if (!picked.length) return NextResponse.json({ error: "Pick at least one keyword with a bid." }, { status: 400 });
+      if (picked.length > MAX_BID_KEYWORDS) {
+        return NextResponse.json({ error: `Pick ${MAX_BID_KEYWORDS} keywords or fewer at a time.` }, { status: 400 });
+      }
+      if (picked.some((k) => k.bid > MAX_CPC)) {
+        return NextResponse.json({ error: `Max bid is $${MAX_CPC} a click.` }, { status: 400 });
+      }
+      const bids = picked.map((k) => ({ text: k.text, cpcBidMicros: ads.toMicros(k.bid) }));
+      const list = picked.map((k) => `"${k.text}" ($${k.bid.toFixed(2)})`).join(", ");
+
+      let message = "";
+      try {
+        if (body.newCampaign) {
+          const daily = Number(body.newCampaign.dailyBudget);
+          if (!Number.isFinite(daily) || daily < 1 || daily > MAX_DAILY_BUDGET) {
+            return NextResponse.json(
+              { error: `Daily budget must be between $1 and $${MAX_DAILY_BUDGET}.` },
+              { status: 400 },
+            );
+          }
+          const company = await companyContext(client);
+          if (!company.siteUrl) {
+            return NextResponse.json({ error: "Add this company's website under Companies first. The ad links to it." }, { status: 400 });
+          }
+          const enabled = body.newCampaign.enabled === true;
+          const ad = await writeSearchAd(company, picked.map((k) => k.text));
+          const month = new Date().toLocaleString("en-CA", { month: "short", year: "numeric", timeZone: "America/Edmonton" });
+          const name = `Kaylev trending keywords · ${KEYWORD_AREAS[area].label} · ${month} · ${Date.now().toString(36)}`;
+          const created = await ads.createSearchCampaign(cid, {
+            name,
+            dailyBudgetMicros: ads.toMicros(daily),
+            defaultCpcMicros: ads.toMicros(Math.max(...picked.map((k) => k.bid))),
+            geoTargets: [...KEYWORD_AREAS[area].geoTargets],
+            keywords: bids,
+            matchType,
+            finalUrl: company.siteUrl,
+            headlines: ad.headlines,
+            descriptions: ad.descriptions,
+            enabled,
+          });
+          message = `New Search campaign "${name}" with ${picked.length} keyword${picked.length === 1 ? "" : "s"}, $${daily.toFixed(2)}/day in ${KEYWORD_AREAS[area].label}. ${
+            enabled ? "It's live now." : "It's paused. Turn it on in Google Ads when the ad looks right."
+          }${created.campaignId ? ` Campaign ID ${created.campaignId}.` : ""}`;
+        } else {
+          const adGroup = text(body.adGroup, 200) ?? "";
+          const { adGroups } = await loadAdGroups(cid);
+          const target = adGroups.find((g) => g.resourceName === adGroup);
+          if (!target || !adGroup.startsWith(`customers/${cid}/adGroups/`)) {
+            return NextResponse.json({ error: "That ad group isn't in this company's account. Find keywords again." }, { status: 400 });
+          }
+          const result = await ads.addAdGroupKeywords(
+            cid,
+            target.resourceName,
+            target.manualCpc ? bids : bids.map(({ text: t }) => ({ text: t })),
+            matchType,
+          );
+          message = `Added ${result.added} of ${picked.length} keyword${picked.length === 1 ? "" : "s"} to "${target.campaign} › ${target.name}".${
+            target.manualCpc ? "" : " That campaign uses automated bidding, so Google sets the bids inside its budget."
+          }${result.error ? ` Google skipped some: ${result.error}` : ""}`;
+        }
+        await logGoogleFix(supabase, {
+          clientId: client.id,
+          check: KEYWORD_LOG,
+          ok: true,
+          detail: `${message} Keywords: ${list}.`,
+          userEmail: ctx.user?.email,
+        });
+      } catch (error) {
+        const detail = errorMessage(error);
+        await logGoogleFix(supabase, {
+          clientId: client.id,
+          check: KEYWORD_LOG,
+          ok: false,
+          detail: `${detail} Keywords: ${list}.`,
+          userEmail: ctx.user?.email,
+        });
+        return NextResponse.json({ error: `Google refused: ${detail}` }, { status: 502 });
+      }
+      return NextResponse.json({ message, fixes: await recentGoogleFixes(supabase, client.id) });
     }
 
     return NextResponse.json({ error: "Unknown action" }, { status: 400 });

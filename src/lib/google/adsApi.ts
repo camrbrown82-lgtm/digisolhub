@@ -121,3 +121,172 @@ export async function listManagedAccounts() {
 }
 
 export const micros = (value: string | number | undefined) => Number(value || 0) / 1_000_000;
+export const toMicros = (dollars: number) => String(Math.round(dollars * 100) * 10_000);
+
+export type KeywordIdeaRow = {
+  text?: string;
+  keywordIdeaMetrics?: {
+    avgMonthlySearches?: string;
+    competition?: string;
+    competitionIndex?: string;
+    monthlySearchVolumes?: { year?: string; month?: string; monthlySearches?: string }[];
+    lowTopOfPageBidMicros?: string;
+    highTopOfPageBidMicros?: string;
+    averageCpcMicros?: string;
+  };
+};
+
+/** Keyword Planner ideas for this account's market. Seeds are phrases plus the company's own site. */
+export async function generateKeywordIdeas(
+  customerId: string,
+  input: { seeds: string[]; url?: string | null; geoTargets: string[]; language?: string },
+) {
+  const seeds = input.seeds.map((s) => s.trim()).filter(Boolean).slice(0, 20);
+  const body = {
+    language: `languageConstants/${input.language || "1000"}`,
+    geoTargetConstants: input.geoTargets.map((id) => `geoTargetConstants/${id}`),
+    keywordPlanNetwork: "GOOGLE_SEARCH",
+    includeAdultKeywords: false,
+    pageSize: 300,
+    historicalMetricsOptions: { includeAverageCpc: true },
+    ...(input.url && seeds.length
+      ? { keywordAndUrlSeed: { url: input.url, keywords: seeds } }
+      : input.url
+        ? { urlSeed: { url: input.url } }
+        : { keywordSeed: { keywords: seeds } }),
+  };
+  const json = await adsCall<{ results?: KeywordIdeaRow[] }>(customerId, ":generateKeywordIdeas", body);
+  return json.results ?? [];
+}
+
+export type KeywordMatchType = "PHRASE" | "EXACT" | "BROAD";
+
+/** Adds keywords to one ad group. Bids only apply on Manual CPC campaigns. */
+export async function addAdGroupKeywords(
+  customerId: string,
+  adGroupResource: string,
+  keywords: { text: string; cpcBidMicros?: string }[],
+  matchType: KeywordMatchType,
+) {
+  const json = await adsMutate(customerId, "/adGroupCriteria:mutate", {
+    partialFailure: true,
+    operations: keywords.map((k) => ({
+      create: {
+        adGroup: adGroupResource,
+        status: "ENABLED",
+        keyword: { text: k.text.slice(0, 80), matchType },
+        ...(k.cpcBidMicros ? { cpcBidMicros: k.cpcBidMicros } : {}),
+      },
+    })),
+  }) as { results?: { resourceName?: string }[]; partialFailureError?: { message?: string } };
+  return {
+    added: (json.results ?? []).filter((r) => r.resourceName).length,
+    error: json.partialFailureError?.message || "",
+  };
+}
+
+/** One Search campaign, budget, ad group, keywords and a responsive search ad in a single all-or-nothing call. */
+export async function createSearchCampaign(
+  customerId: string,
+  input: {
+    name: string;
+    dailyBudgetMicros: string;
+    defaultCpcMicros: string;
+    geoTargets: string[];
+    keywords: { text: string; cpcBidMicros: string }[];
+    matchType: KeywordMatchType;
+    finalUrl: string;
+    headlines: string[];
+    descriptions: string[];
+    enabled: boolean;
+  },
+) {
+  const cid = cleanCustomerId(customerId);
+  const budget = `customers/${cid}/campaignBudgets/-1`;
+  const campaign = `customers/${cid}/campaigns/-2`;
+  const adGroup = `customers/${cid}/adGroups/-3`;
+  const json = await adsMutate(cid, "/googleAds:mutate", {
+    mutateOperations: [
+      {
+        campaignBudgetOperation: {
+          create: {
+            resourceName: budget,
+            name: `${input.name} budget ${Date.now()}`,
+            amountMicros: input.dailyBudgetMicros,
+            deliveryMethod: "STANDARD",
+            explicitlyShared: false,
+          },
+        },
+      },
+      {
+        campaignOperation: {
+          create: {
+            resourceName: campaign,
+            name: input.name,
+            status: input.enabled ? "ENABLED" : "PAUSED",
+            advertisingChannelType: "SEARCH",
+            manualCpc: {},
+            campaignBudget: budget,
+            networkSettings: {
+              targetGoogleSearch: true,
+              targetSearchNetwork: false,
+              targetContentNetwork: false,
+              targetPartnerSearchNetwork: false,
+            },
+            geoTargetTypeSetting: { positiveGeoTargetType: "PRESENCE" },
+            containsEuPoliticalAdvertising: "DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING",
+          },
+        },
+      },
+      ...input.geoTargets.map((id) => ({
+        campaignCriterionOperation: {
+          create: { campaign, location: { geoTargetConstant: `geoTargetConstants/${id}` } },
+        },
+      })),
+      {
+        campaignCriterionOperation: {
+          create: { campaign, language: { languageConstant: "languageConstants/1000" } },
+        },
+      },
+      {
+        adGroupOperation: {
+          create: {
+            resourceName: adGroup,
+            campaign,
+            name: input.name,
+            status: "ENABLED",
+            type: "SEARCH_STANDARD",
+            cpcBidMicros: input.defaultCpcMicros,
+          },
+        },
+      },
+      ...input.keywords.map((k) => ({
+        adGroupCriterionOperation: {
+          create: {
+            adGroup,
+            status: "ENABLED",
+            keyword: { text: k.text.slice(0, 80), matchType: input.matchType },
+            cpcBidMicros: k.cpcBidMicros,
+          },
+        },
+      })),
+      {
+        adGroupAdOperation: {
+          create: {
+            adGroup,
+            status: "ENABLED",
+            ad: {
+              finalUrls: [input.finalUrl],
+              responsiveSearchAd: {
+                headlines: input.headlines.map((text) => ({ text })),
+                descriptions: input.descriptions.map((text) => ({ text })),
+              },
+            },
+          },
+        },
+      },
+    ],
+  }) as { mutateOperationResponses?: { campaignResult?: { resourceName?: string } }[] };
+  const created = json.mutateOperationResponses?.find((r) => r.campaignResult)?.campaignResult?.resourceName || "";
+  return { campaignId: created.split("/").pop() || "" };
+}

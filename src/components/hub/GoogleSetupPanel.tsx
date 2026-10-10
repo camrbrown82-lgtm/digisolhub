@@ -8,6 +8,7 @@ import type {
   GoogleSetupIds,
   GoogleSetupRecord,
 } from "@/lib/google/audit";
+import { GoogleKeywordsPanel } from "@/components/hub/GoogleKeywordsPanel";
 
 type Fix = { title: string; ok: boolean; detail: string; applied_by: string | null; created_at: string };
 
@@ -529,6 +530,14 @@ export function GoogleSetupPanel({
           Link {companyName}&apos;s accounts above and click Save and run check.
         </p>
       )}
+
+      {adsReady && setup.ids.adsCustomerId && audit?.products.ads?.connected ? (
+        <GoogleKeywordsPanel
+          companyName={companyName}
+          currency={audit.ads?.currency || "CAD"}
+          onFixes={setFixes}
+        />
+      ) : null}
 
       {fixes.length ? (
         <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
