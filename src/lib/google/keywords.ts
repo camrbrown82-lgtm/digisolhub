@@ -2,6 +2,8 @@ import { routeAgentModel } from "@/lib/agent/modelRouter";
 import { brandVoicePrompt, type CompanyBrand } from "@/lib/branding";
 import { createOpenAIClient, getOpenAIApiKey } from "@/lib/openai";
 import * as ads from "@/lib/google/adsApi";
+import { GoogleApiError } from "@/lib/google/auth";
+import * as gsc from "@/lib/google/searchConsole";
 
 /** Google geo target ids. Alberta is the default market for Hub companies. */
 export const KEYWORD_AREAS = {
@@ -39,7 +41,10 @@ export type CompanyContext = {
   published: string;
 };
 
+export type KeywordSource = "planner" | "own_searches";
+
 const MIN_SEARCHES = 10;
+const MIN_OWN_IMPRESSIONS = 5;
 const FALLBACK_BID = 1.5;
 
 async function askKaylev<T>(system: string, user: string, maxTokens: number): Promise<T> {
@@ -112,8 +117,84 @@ export async function loadAdGroups(customerId: string) {
   return { adGroups, bidding };
 }
 
-/** Kaylev seeds Keyword Planner from this company's field, then keeps the rising, buyer-intent terms. */
-export async function findTrendingKeywords(customerId: string, ctx: CompanyContext, area: KeywordArea) {
+type PoolKeyword = Omit<TrendingKeyword, "why" | "alreadyBidding">;
+
+function edmontonDay(offsetDays: number) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Edmonton",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(Date.now() + offsetDays * 86_400_000));
+}
+
+/** This company's own searches: Search Console queries and ad search terms, 4 weeks vs the 4 before. */
+async function ownSearchPool(customerId: string, searchConsoleSite: string | null | undefined): Promise<PoolKeyword[]> {
+  const now = { startDate: edmontonDay(-30), endDate: edmontonDay(-3) };
+  const prev = { startDate: edmontonDay(-58), endDate: edmontonDay(-31) };
+  const site = searchConsoleSite?.trim();
+  type AdsTerm = { searchTermView?: { searchTerm?: string }; metrics?: { impressions?: string; clicks?: string; costMicros?: string } };
+  const termsQuery = (range: typeof now) =>
+    `SELECT search_term_view.search_term, metrics.impressions, metrics.clicks, metrics.cost_micros FROM search_term_view WHERE segments.date BETWEEN '${range.startDate}' AND '${range.endDate}'`;
+  const [gscNow, gscPrev, adsNow, adsPrev] = await Promise.allSettled([
+    site ? gsc.searchAnalytics(site, { ...now, dimensions: ["query"], rowLimit: 1000 }) : Promise.resolve([]),
+    site ? gsc.searchAnalytics(site, { ...prev, dimensions: ["query"], rowLimit: 1000 }) : Promise.resolve([]),
+    ads.adsSearch<AdsTerm>(customerId, termsQuery(now)),
+    ads.adsSearch<AdsTerm>(customerId, termsQuery(prev)),
+  ]);
+
+  const rows = new Map<string, { gscNow: number; gscPrev: number; adsNow: number; adsPrev: number; cost: number; clicks: number }>();
+  const row = (text: string | undefined) => {
+    const key = (text || "").trim().toLowerCase();
+    if (!key) return null;
+    let hit = rows.get(key);
+    if (!hit) {
+      hit = { gscNow: 0, gscPrev: 0, adsNow: 0, adsPrev: 0, cost: 0, clicks: 0 };
+      rows.set(key, hit);
+    }
+    return hit;
+  };
+  if (gscNow.status === "fulfilled") for (const r of gscNow.value) { const h = row(r.keys?.[0]); if (h) h.gscNow += r.impressions; }
+  if (gscPrev.status === "fulfilled") for (const r of gscPrev.value) { const h = row(r.keys?.[0]); if (h) h.gscPrev += r.impressions; }
+  if (adsNow.status === "fulfilled") {
+    for (const r of adsNow.value) {
+      const h = row(r.searchTermView?.searchTerm);
+      if (!h) continue;
+      h.adsNow += Number(r.metrics?.impressions || 0);
+      h.clicks += Number(r.metrics?.clicks || 0);
+      h.cost += ads.micros(r.metrics?.costMicros);
+    }
+  }
+  if (adsPrev.status === "fulfilled") {
+    for (const r of adsPrev.value) { const h = row(r.searchTermView?.searchTerm); if (h) h.adsPrev += Number(r.metrics?.impressions || 0); }
+  }
+
+  return Array.from(rows, ([text, r]) => {
+    const current = Math.max(r.gscNow, r.adsNow);
+    const before = Math.max(r.gscPrev, r.adsPrev);
+    const cpc = r.clicks ? r.cost / r.clicks : 0;
+    return {
+      text,
+      monthlySearches: current,
+      trend: before ? Math.round(((current - before) / before) * 100) : current ? 100 : 0,
+      competition: "",
+      lowBid: 0,
+      highBid: 0,
+      suggestedBid: suggestBid(0, 0, cpc),
+    };
+  });
+}
+
+/**
+ * Kaylev seeds Keyword Planner from this company's field, then keeps the rising, buyer-intent terms.
+ * Without Basic API access, falls back to this company's own Search Console and ad search data.
+ */
+export async function findTrendingKeywords(
+  customerId: string,
+  ctx: CompanyContext,
+  area: KeywordArea,
+  searchConsoleSite?: string | null,
+) {
   if (!getOpenAIApiKey()) throw new Error("Kaylev needs OPENAI_API_KEY to pick keywords.");
   const brief = companyBrief(ctx);
   const where = KEYWORD_AREAS[area].label;
@@ -129,43 +210,73 @@ Give 8-12 short phrases (1-4 words) a ready-to-buy customer in ${where} types in
     : [];
   if (!seeds.length && !ctx.siteUrl) throw new Error("Kaylev couldn't tell what this company sells. Fill in the brand kit or add a website.");
 
-  const [ideas, account] = await Promise.all([
-    ads.generateKeywordIdeas(customerId, {
-      seeds,
-      url: ctx.siteUrl || null,
-      geoTargets: [...KEYWORD_AREAS[area].geoTargets],
-    }),
+  const [planned, account] = await Promise.all([
+    ads
+      .generateKeywordIdeas(customerId, {
+        seeds,
+        url: ctx.siteUrl || null,
+        geoTargets: [...KEYWORD_AREAS[area].geoTargets],
+      })
+      .then((ideas) => ({ ideas, locked: false }))
+      .catch((error: unknown) => {
+        if (error instanceof GoogleApiError && error.adsCode === "DEVELOPER_TOKEN_NOT_APPROVED") {
+          return { ideas: [] as ads.KeywordIdeaRow[], locked: true };
+        }
+        throw error;
+      }),
     loadAdGroups(customerId),
   ]);
 
   const ownName = ctx.companyName.toLowerCase();
-  const pool = ideas
-    .map((row) => {
-      const m = row.keywordIdeaMetrics;
-      const low = ads.micros(m?.lowTopOfPageBidMicros);
-      const high = ads.micros(m?.highTopOfPageBidMicros);
-      return {
-        text: (row.text || "").trim(),
-        monthlySearches: Number(m?.avgMonthlySearches || 0),
-        trend: trendOf(m?.monthlySearchVolumes),
-        competition: (m?.competition || "UNKNOWN").toLowerCase(),
-        lowBid: Math.round(low * 100) / 100,
-        highBid: Math.round(high * 100) / 100,
-        suggestedBid: suggestBid(low, high, ads.micros(m?.averageCpcMicros)),
-      };
-    })
-    .filter((k) => k.text && k.monthlySearches >= MIN_SEARCHES && !k.text.toLowerCase().includes(ownName))
+  const source: KeywordSource = planned.locked ? "own_searches" : "planner";
+  let pool: PoolKeyword[] = planned.locked
+    ? await ownSearchPool(customerId, searchConsoleSite)
+    : planned.ideas.map((row) => {
+        const m = row.keywordIdeaMetrics;
+        const low = ads.micros(m?.lowTopOfPageBidMicros);
+        const high = ads.micros(m?.highTopOfPageBidMicros);
+        return {
+          text: (row.text || "").trim(),
+          monthlySearches: Number(m?.avgMonthlySearches || 0),
+          trend: trendOf(m?.monthlySearchVolumes),
+          competition: (m?.competition || "UNKNOWN").toLowerCase(),
+          lowBid: Math.round(low * 100) / 100,
+          highBid: Math.round(high * 100) / 100,
+          suggestedBid: suggestBid(low, high, ads.micros(m?.averageCpcMicros)),
+        };
+      });
+  pool = pool
+    .filter(
+      (k) =>
+        k.text &&
+        k.monthlySearches >= (planned.locked ? MIN_OWN_IMPRESSIONS : MIN_SEARCHES) &&
+        !k.text.toLowerCase().includes(ownName),
+    )
     .sort((a, b) => b.monthlySearches - a.monthlySearches)
     .slice(0, 90);
+  if (planned.locked && pool.length < 15) {
+    const have = new Set(pool.map((k) => k.text.toLowerCase()));
+    pool.push(
+      ...seeds
+        .filter((s) => !have.has(s.toLowerCase()))
+        .map((text) => ({ text, monthlySearches: 0, trend: 0, competition: "", lowBid: 0, highBid: 0, suggestedBid: FALLBACK_BID })),
+    );
+  }
+  const notice = planned.locked
+    ? `Google's Keyword Planner is locked until the Hub's Google Ads API access goes from Explorer to Basic. Until then Kaylev ranks searches from ${ctx.companyName}'s own Google data (Search Console and ad search terms, last 4 weeks vs the 4 before) plus his own picks for the field. Numbers are impressions for this company, not all of Google.`
+    : "";
   if (!pool.length) {
-    return { field: seeded.field || "", seeds, keywords: [] as TrendingKeyword[], adGroups: account.adGroups };
+    return { field: seeded.field || "", seeds, keywords: [] as TrendingKeyword[], adGroups: account.adGroups, source, notice };
   }
 
+  const columns = planned.locked
+    ? "impressions for this company in the last 4 weeks (0 = Kaylev's idea, no data yet), trend vs the 4 weeks before"
+    : `monthly searches in ${where}, trend last 3 months vs 3 before, competition`;
   const picked = await askKaylev<{ picks?: { text?: unknown; why?: unknown }[] }>(
     `You are Kaylev, choosing Google Ads keywords for ${ctx.companyName} only. From the list, keep up to 15 that a paying customer of this company would search. Prefer rising trend, then volume. Drop competitor or other brand names, job searches, DIY, free, definitions, and anything this company doesn't sell.
 Return JSON {"picks": [{"text": "exact keyword from the list", "why": "one short sentence on why it's worth bidding"}]}, best first.`,
-    `${brief}\n\nKeywords (monthly searches in ${where}, trend last 3 months vs 3 before, competition):\n${pool
-      .map((k) => `${k.text} | ${k.monthlySearches} | ${k.trend > 0 ? "+" : ""}${k.trend}% | ${k.competition}`)
+    `${brief}\n\nKeywords (${columns}):\n${pool
+      .map((k) => `${k.text} | ${k.monthlySearches} | ${k.trend > 0 ? "+" : ""}${k.trend}%${k.competition ? ` | ${k.competition}` : ""}`)
       .join("\n")}`,
     1500,
   );
@@ -181,7 +292,7 @@ Return JSON {"picks": [{"text": "exact keyword from the list", "why": "one short
       alreadyBidding: account.bidding.has(hit.text.toLowerCase()),
     });
   }
-  return { field: seeded.field || "", seeds, keywords, adGroups: account.adGroups };
+  return { field: seeded.field || "", seeds, keywords, adGroups: account.adGroups, source, notice };
 }
 
 const fit = (lines: unknown, max: number, count: number) =>

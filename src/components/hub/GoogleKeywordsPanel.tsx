@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { AdGroupOption, KeywordArea, TrendingKeyword } from "@/lib/google/keywords";
+import type { AdGroupOption, KeywordArea, KeywordSource, TrendingKeyword } from "@/lib/google/keywords";
 
 type Fix = { title: string; ok: boolean; detail: string; applied_by: string | null; created_at: string };
 
@@ -11,6 +11,8 @@ type Found = {
   keywords: TrendingKeyword[];
   adGroups: AdGroupOption[];
   area: KeywordArea;
+  source: KeywordSource;
+  notice: string;
 };
 
 const NEW_CAMPAIGN = "new";
@@ -158,6 +160,11 @@ export function GoogleKeywordsPanel({
 
       {found?.keywords.length ? (
         <>
+          {found.notice ? (
+            <p className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-100/90">
+              {found.notice}
+            </p>
+          ) : null}
           <p className="mt-4 text-xs text-zinc-500">
             {found.field ? `Field: ${found.field}. ` : ""}Started from: {found.seeds.join(", ")}.
           </p>
@@ -167,7 +174,9 @@ export function GoogleKeywordsPanel({
                 <tr>
                   <th className="py-2 pr-2" />
                   <th className="py-2 pr-3 font-medium">Keyword</th>
-                  <th className="py-2 pr-3 text-right font-medium">Searches / mo</th>
+                  <th className="py-2 pr-3 text-right font-medium">
+                    {found.source === "planner" ? "Searches / mo" : "Impressions / 4 wk"}
+                  </th>
                   <th className="py-2 pr-3 text-right font-medium">Trend</th>
                   <th className="py-2 pr-3 font-medium">Competition</th>
                   <th className="py-2 pr-3 text-right font-medium">Top-of-page bid</th>
@@ -194,7 +203,9 @@ export function GoogleKeywordsPanel({
                       </p>
                       {k.why ? <p className="mt-0.5 text-xs text-zinc-500">{k.why}</p> : null}
                     </td>
-                    <td className="py-2 pr-3 text-right tabular-nums text-zinc-300">{k.monthlySearches.toLocaleString("en-CA")}</td>
+                    <td className="py-2 pr-3 text-right tabular-nums text-zinc-300">
+                      {k.monthlySearches ? k.monthlySearches.toLocaleString("en-CA") : "Kaylev's pick"}
+                    </td>
                     <td
                       className={`py-2 pr-3 text-right tabular-nums ${
                         k.trend > 0 ? "text-emerald-400" : k.trend < 0 ? "text-rose-300" : "text-zinc-400"
@@ -203,7 +214,7 @@ export function GoogleKeywordsPanel({
                       {k.trend > 0 ? "+" : ""}
                       {k.trend}%
                     </td>
-                    <td className="py-2 pr-3 capitalize text-zinc-400">{k.competition}</td>
+                    <td className="py-2 pr-3 capitalize text-zinc-400">{k.competition || "-"}</td>
                     <td className="py-2 pr-3 text-right tabular-nums text-zinc-400">
                       {k.lowBid || k.highBid ? `${money(k.lowBid)}–${money(k.highBid)}` : "-"}
                     </td>

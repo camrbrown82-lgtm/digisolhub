@@ -188,7 +188,12 @@ export async function POST(request: Request) {
     if (body.action === "keywords") {
       const account = adsAccount(setup.ids);
       if (!account.cid) return NextResponse.json({ error: account.error }, { status: 400 });
-      const found = await findTrendingKeywords(account.cid, await companyContext(client), area);
+      const found = await findTrendingKeywords(
+        account.cid,
+        await companyContext(client),
+        area,
+        setup.ids.searchConsoleSite,
+      );
       return NextResponse.json({ ...found, area });
     }
 

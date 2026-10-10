@@ -46,7 +46,11 @@ async function adsCall<T>(customerId: string, path: string, body: unknown): Prom
       const result = await googleFetch<T>(url, { body, headers: headers(cid) });
       directLogin.add(cid);
       return result;
-    } catch {
+    } catch (directError) {
+      if (directError instanceof GoogleApiError && directError.adsCode && directError.adsCode !== "USER_PERMISSION_DENIED") {
+        directLogin.add(cid);
+        throw directError;
+      }
       throw error;
     }
   }
