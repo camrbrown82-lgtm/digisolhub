@@ -76,6 +76,7 @@ export function Footer() {
         <div className="mt-12 space-y-2 border-t border-indigo-500/20 pt-5">
           <p className="text-sm text-indigo-100/90">{t.rights(new Date().getFullYear(), DIGISOL_REGION)}</p>
           <p className="max-w-3xl text-xs leading-5 text-indigo-200/75">{t.copyrightWarning}</p>
+          <p className="max-w-3xl text-xs leading-5 text-indigo-200/75">{t.disclaimer}</p>
           <a href="/privacy" className={linkClass}>
             {t.privacy}
           </a>

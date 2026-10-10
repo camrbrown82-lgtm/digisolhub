@@ -255,6 +255,8 @@ export const en = {
     copyrightWarning:
       "The words, images, logos, and design on this site belong to DigiSol. Don't copy or reuse them without written permission.",
     privacy: "Privacy Policy",
+    disclaimer:
+      "DigiSol of Airdrie, Alberta, Canada is not affiliated with any company named DigiSol in India.",
   },
 
   hero: {

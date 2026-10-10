@@ -11,6 +11,7 @@ import {
 } from "@/lib/openai";
 import { routeAgentModel } from "@/lib/agent/modelRouter";
 import {
+  finishInstagramContainer,
   publishSocialPost,
   socialProviderConfigured,
 } from "@/lib/social/providers";
@@ -228,6 +229,7 @@ export async function processSocialPostQueue(
 ) {
   const limit = Math.min(20, Math.max(1, opts?.limit ?? 10));
   const now = new Date().toISOString();
+  if (!opts?.onlyIds?.length) await reclaimStuckSocialPosts(db);
 
   let query = db
     .from("social_posts")
@@ -279,8 +281,8 @@ export async function processSocialPostQueue(
       continue;
     }
 
-    const meta = (row as { metadata?: Record<string, unknown> }).metadata;
-    if (meta?.publishMode === "manual_facebook_group") {
+    const meta = (row as { metadata?: Record<string, unknown> }).metadata || {};
+    if (meta.publishMode === "manual_facebook_group") {
       results.push({
         id: row.id,
         channel: row.channel,
@@ -291,16 +293,41 @@ export async function processSocialPostQueue(
       continue;
     }
 
+    const containerId = typeof meta.igContainerId === "string" ? meta.igContainerId : "";
+
     await db
       .from("social_posts")
-      .update({ status: "publishing", error_message: null })
+      .update({ status: "publishing", error_message: null, updated_at: new Date().toISOString() })
       .eq("id", row.id);
 
-    const published = await publishSocialPost({
-      channel: row.channel,
-      body: row.body,
-      mediaUrl: row.media_url,
-    });
+    const published =
+      row.channel === "instagram" && containerId
+        ? await finishInstagramContainer(containerId)
+        : await publishSocialPost({
+            channel: row.channel,
+            body: row.body,
+            mediaUrl: row.media_url,
+          });
+
+    if (published.pending && published.containerId) {
+      await db
+        .from("social_posts")
+        .update({
+          status: "publishing",
+          error_message: null,
+          updated_at: new Date().toISOString(),
+          metadata: { ...meta, igContainerId: published.containerId },
+        })
+        .eq("id", row.id);
+      results.push({
+        id: row.id,
+        channel: row.channel,
+        ok: false,
+        skipped: true,
+        error: "Instagram is still preparing the video.",
+      });
+      continue;
+    }
 
     if (published.ok) {
       await db
@@ -362,4 +389,48 @@ export async function processSocialPostQueue(
     failed: results.filter((r) => !r.ok && !r.skipped).length,
     skipped: results.filter((r) => r.skipped).length,
   };
+}
+
+/**
+ * Facebook could not download a video that was not on the public site yet, and
+ * Instagram stays on Sending when the function stops while the file is still processing.
+ * Put those rows back in the queue once.
+ */
+async function reclaimStuckSocialPosts(db: SupabaseClient) {
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const staleBefore = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+  const { data: stuck } = await db
+    .from("social_posts")
+    .select("id, status, error_message, metadata, updated_at")
+    .in("status", ["failed", "publishing"])
+    .gte("created_at", weekAgo)
+    .limit(20);
+
+  for (const row of stuck ?? []) {
+    const meta = (row.metadata || {}) as Record<string, unknown>;
+    if (row.status === "publishing" && meta.igContainerId) {
+      await db
+        .from("social_posts")
+        .update({ status: "queued", updated_at: new Date().toISOString() })
+        .eq("id", row.id);
+      continue;
+    }
+    if (meta.videoRefetch) continue;
+    const fetchFailed =
+      row.status === "failed" && /unable to fetch video/i.test(row.error_message || "");
+    const stalled =
+      row.status === "publishing" &&
+      !meta.igContainerId &&
+      (!row.updated_at || row.updated_at < staleBefore);
+    if (!fetchFailed && !stalled) continue;
+    await db
+      .from("social_posts")
+      .update({
+        status: "queued",
+        error_message: null,
+        updated_at: new Date().toISOString(),
+        metadata: { ...meta, videoRefetch: true },
+      })
+      .eq("id", row.id);
+  }
 }

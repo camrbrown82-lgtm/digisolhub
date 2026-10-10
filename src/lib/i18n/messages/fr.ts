@@ -517,6 +517,8 @@ export const fr: Messages = {
     copyrightWarning:
       "Les textes, images, logos et la conception de ce site appartiennent à DigiSol. Ne les copiez pas et ne les réutilisez pas sans permission écrite.",
     privacy: "Politique de confidentialité (EN)",
+    disclaimer:
+      "DigiSol, d'Airdrie (Alberta, Canada), n'est affiliée à aucune entreprise nommée DigiSol en Inde.",
   },
 
   hero: {

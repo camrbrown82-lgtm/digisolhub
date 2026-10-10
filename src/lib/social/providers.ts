@@ -8,8 +8,13 @@ export type SocialPublishResult = {
   externalUrl?: string;
   error?: string;
   skipped?: boolean;
+  /** Instagram is still fetching the video. Keep the container and finish on the next pass. */
+  pending?: boolean;
+  containerId?: string;
   provider: "meta" | "linkedin" | "none";
 };
+
+const INSTAGRAM_PENDING = "pending";
 
 function metaPageId() {
   return process.env.META_PAGE_ID?.trim() || "";
@@ -234,41 +239,12 @@ async function publishInstagram(input: {
       };
     }
 
-    const pending = await waitForInstagramMedia(createJson.id, token, video ? 150_000 : 40_000);
-    if (pending) {
-      return { ok: false, provider: "meta", error: pending };
+    const pending = await waitForInstagramMedia(createJson.id, token, video ? 20_000 : 25_000);
+    if (pending === INSTAGRAM_PENDING) {
+      return { ok: false, pending: true, containerId: createJson.id, provider: "meta" };
     }
-
-    const publishParams = new URLSearchParams({
-      access_token: token,
-      creation_id: createJson.id,
-    });
-    const publishRes = await fetch(
-      `https://graph.facebook.com/v21.0/${igUserId}/media_publish`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: publishParams,
-      },
-    );
-    const publishJson = (await publishRes.json()) as {
-      id?: string;
-      error?: { message?: string };
-    };
-    if (!publishRes.ok) {
-      return {
-        ok: false,
-        provider: "meta",
-        error: publishJson.error?.message || "Instagram publish failed",
-      };
-    }
-    const permalink = publishJson.id ? await instagramPermalink(publishJson.id, token) : "";
-    return {
-      ok: true,
-      provider: "meta",
-      externalId: publishJson.id,
-      externalUrl: permalink || undefined,
-    };
+    if (pending) return { ok: false, provider: "meta", error: pending };
+    return publishInstagramContainer(createJson.id, token);
   } catch (err) {
     return {
       ok: false,
@@ -276,6 +252,56 @@ async function publishInstagram(input: {
       error: err instanceof Error ? err.message : "Instagram publish failed",
     };
   }
+}
+
+/** Finish an Instagram container that was already created. */
+export async function finishInstagramContainer(containerId: string): Promise<SocialPublishResult> {
+  const token = metaPageToken();
+  if (!token) {
+    return {
+      ok: false,
+      skipped: true,
+      provider: "meta",
+      error: "META_PAGE_ACCESS_TOKEN not configured",
+    };
+  }
+  const pending = await waitForInstagramMedia(containerId, token, 90_000);
+  if (pending === INSTAGRAM_PENDING) {
+    return { ok: false, pending: true, containerId, provider: "meta" };
+  }
+  if (pending) return { ok: false, provider: "meta", error: pending };
+  return publishInstagramContainer(containerId, token);
+}
+
+async function publishInstagramContainer(containerId: string, token: string): Promise<SocialPublishResult> {
+  const igUserId = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID?.trim() || "";
+  const publishParams = new URLSearchParams({
+    access_token: token,
+    creation_id: containerId,
+  });
+  const publishRes = await fetch(`https://graph.facebook.com/v21.0/${igUserId}/media_publish`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: publishParams,
+  });
+  const publishJson = (await publishRes.json()) as {
+    id?: string;
+    error?: { message?: string };
+  };
+  if (!publishRes.ok) {
+    return {
+      ok: false,
+      provider: "meta",
+      error: publishJson.error?.message || "Instagram publish failed",
+    };
+  }
+  const permalink = publishJson.id ? await instagramPermalink(publishJson.id, token) : "";
+  return {
+    ok: true,
+    provider: "meta",
+    externalId: publishJson.id,
+    externalUrl: permalink || undefined,
+  };
 }
 
 async function instagramPermalink(mediaId: string, token: string) {
@@ -304,7 +330,7 @@ async function waitForInstagramMedia(containerId: string, token: string, timeout
     }
     await new Promise((resolve) => setTimeout(resolve, 3000));
   }
-  return "Instagram is still preparing this file. Post it again in a moment.";
+  return INSTAGRAM_PENDING;
 }
 
 async function publishLinkedIn(input: {
