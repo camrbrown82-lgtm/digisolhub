@@ -1,16 +1,20 @@
 import { AdsRobot, type CampaignStats, type RobotPoster } from "@/components/hub/AdsRobot";
 import { MetaAdsPanel } from "@/components/hub/MetaAdsPanel";
+import { MetaSetupPanel } from "@/components/hub/MetaSetupPanel";
+import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { ensureMetaSchema } from "@/lib/ensureMetaSchema";
-import { ADS_ONLY_DIGISOL, DRAFT_COLUMNS, type AdDraftRow } from "@/lib/meta/adDrafts";
-import { adAccountInfo, maxDailyBudget, metaPageId, type AdAccountInfo } from "@/lib/meta/ads";
+import { ensureMetaSetupSchema } from "@/lib/ensureMetaSetupSchema";
+import { DRAFT_COLUMNS, type AdDraftRow } from "@/lib/meta/adDrafts";
+import { adAccountInfo, maxDailyBudget, type AdAccountInfo } from "@/lib/meta/ads";
 import { adviceLabel, coachCampaigns } from "@/lib/meta/adsCoach";
-import { metaAdAccountId } from "@/lib/meta/config";
+import { metaAccessToken } from "@/lib/meta/config";
 import { emptyMetaAdsSummary, fetchMetaAdsSummary } from "@/lib/meta/insights";
 import { emptyOpportunity, opportunityStatus } from "@/lib/meta/opportunity";
+import { houseMetaIds, loadMetaSetup, metaBusinessId, metaTargetFromIds } from "@/lib/meta/setup";
 import { brandColourSwatches, brandFromClient } from "@/lib/branding";
 import { isArchiveCopy, isBusinessCardAsset } from "@/lib/posterArchive";
 import { createClient } from "@/lib/supabase/server";
-import { getWorkspaceClient, isDigisolClient, resolveClientId } from "@/lib/workspace";
+import { getWorkspaceClient, isDigisolClient } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
 
@@ -21,13 +25,6 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T) {
   ]);
 }
 
-const SETUP_STEPS = [
-  "Business Settings → Users → System users → open Conversions API System User.",
-  "Assign assets: ad account 1576410710460508 (full control), the Facebook Page, Instagram, and the dataset. Do this before generating the token.",
-  "Generate a new token on that system user, expiry Never, with ads_read and ads_management. A Graph API Explorer token will not clear this.",
-  "Replace META_CAPI_ACCESS_TOKEN in Vercel with that new token, then redeploy.",
-];
-
 const ADVICE_STYLE = {
   pause: "border-rose-400/40 bg-rose-500/10 text-rose-100",
   review: "border-amber-400/40 bg-amber-500/10 text-amber-100",
@@ -36,36 +33,49 @@ const ADVICE_STYLE = {
 } as const;
 
 export default async function AdsPage() {
-  await Promise.race([ensureMetaSchema().catch(() => null), new Promise((resolve) => setTimeout(resolve, 3000))]);
+  await Promise.race([
+    Promise.all([ensureMetaSchema().catch(() => null), ensureMetaSetupSchema().catch(() => null)]),
+    new Promise((resolve) => setTimeout(resolve, 3000)),
+  ]);
   const supabase = await createClient();
   const active = await getWorkspaceClient(supabase);
 
-  if (!isDigisolClient(active)) {
+  if (!active) {
     return (
       <div className="space-y-4">
         <h1 className="text-3xl font-semibold text-white">Ads robot</h1>
-        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm text-amber-100">
-          <p>{ADS_ONLY_DIGISOL}</p>
-          <p className="mt-2 text-amber-100/80">
-            To run ads for {active?.name || "another company"}, they add DigiSol as a partner on their own Meta ad
-            account, and that account gets connected to their company here. Their ads never touch DigiSol&apos;s.
-          </p>
-        </div>
+        <p className="text-sm text-zinc-400">Pick a company under Working on first.</p>
       </div>
     );
   }
 
-  const clientId = (await resolveClientId(supabase)) || active?.id || "";
+  const house = isDigisolClient(active);
+  const setup = await loadMetaSetup(supabase, active.id, house ? houseMetaIds() : undefined);
+  const target = metaTargetFromIds(setup.ids);
+  const linked = Boolean(target.adAccountId && target.pageId);
+  const clientId = active.id;
   const [account, summary, opportunity, draftsResult, postersResult] = await Promise.all([
-    withTimeout<AdAccountInfo>(adAccountInfo(), 6000, { ok: false, error: "Meta did not answer in time." }),
-    withTimeout(fetchMetaAdsSummary(14), 12000, {
-      ...emptyMetaAdsSummary(14),
-      error: "Meta Insights timed out. Refresh to try again.",
-    }),
-    withTimeout(opportunityStatus(), 12000, {
-      ...emptyOpportunity(),
-      error: "Meta did not answer in time. Refresh to try again.",
-    }),
+    linked
+      ? withTimeout<AdAccountInfo>(adAccountInfo(target), 6000, { ok: false, error: "Meta did not answer in time." })
+      : Promise.resolve<AdAccountInfo>({ ok: false, error: "This company's Meta ad account is not linked yet." }),
+    linked
+      ? withTimeout(fetchMetaAdsSummary(14, target.adAccountId), 12000, {
+          ...emptyMetaAdsSummary(14, target.adAccountId),
+          error: "Meta Insights timed out. Refresh to try again.",
+        })
+      : Promise.resolve({
+          ...emptyMetaAdsSummary(14, ""),
+          error: "Link this company's Meta ad account first.",
+        }),
+    linked
+      ? withTimeout(opportunityStatus("CA", target), 12000, {
+          ...emptyOpportunity(),
+          error: "Meta did not answer in time. Refresh to try again.",
+        })
+      : Promise.resolve({
+          ...emptyOpportunity(),
+          error: "Link this company's Meta ad account first.",
+        }),
     supabase
       .from("meta_ad_drafts")
       .select(DRAFT_COLUMNS)
@@ -98,43 +108,40 @@ export default async function AdsPage() {
     summary.campaigns.map((c) => [c.campaignId, { spend: c.spend, clicks: c.clicks, leads: c.leads, cpl: c.cpl }]),
   );
   const advice = coachCampaigns(summary.campaigns, money);
-  const connected = account.ok && Boolean(metaPageId());
-  const accountNumber = metaAdAccountId().replace(/^act_/, "");
+  const connected = account.ok && Boolean(target.pageId);
+  const accountNumber = target.adAccountId.replace(/^act_/, "");
   const adsManagerUrl = `https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${accountNumber}`;
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-semibold text-white">Ads robot</h1>
+        <WorkspaceScope companyName={active.name} noun="campaigns" />
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-          Writes Facebook and Instagram campaigns in DigiSol&apos;s voice with your posters, creates them in Meta
-          paused, and checks results every day. Nothing spends until you press Launch, and budgets are capped at{" "}
+          Writes Facebook and Instagram campaigns in {active.name}&apos;s voice with your posters, creates them in
+          Meta paused, and checks results every day. Nothing spends until you press Launch, and budgets are capped at{" "}
           {money(maxDailyBudget())} a day.
         </p>
       </div>
 
+      <MetaSetupPanel
+        key={active.id}
+        companyName={active.name}
+        initial={setup}
+        tokenReady={Boolean(metaAccessToken())}
+        businessId={metaBusinessId()}
+      />
+
       {connected ? (
         <p className="text-sm text-emerald-300">
-          Connected to {account.name || "the ad account"} ({currency}).
+          Connected to {account.name || "the ad account"} ({currency}). Ads run on {active.name}&apos;s account.
         </p>
-      ) : (
-        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm text-amber-100">
-          <p className="font-medium text-amber-50">Connect the Meta ad account</p>
-          <p className="mt-1 text-amber-100/80">
-            {account.error
-              ? `Meta rejected the saved token: ${account.error}`
-              : !metaPageId()
-                ? "META_PAGE_ID is not set."
-                : "Not connected."}{" "}
-            You can still write drafts now; they&apos;ll be ready to send once this is fixed.
-          </p>
-          <ol className="mt-3 list-inside list-decimal space-y-1 text-amber-100/80">
-            {SETUP_STEPS.map((step) => (
-              <li key={step}>{step}</li>
-            ))}
-          </ol>
-        </div>
-      )}
+      ) : linked ? (
+        <p className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+          {account.error || "The linked ad account did not answer."} You can still write drafts. They send once this
+          company&apos;s Meta link is working.
+        </p>
+      ) : null}
 
       {connected ? (
         <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 text-sm text-zinc-300">

@@ -2,7 +2,6 @@ import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
 import {
   metaAccessToken,
   metaAdAccountId,
-  metaAdsInsightsConfigured,
   metaGraphVersion,
 } from "@/lib/meta/config";
 import { ensureMetaSchema } from "@/lib/ensureMetaSchema";
@@ -63,9 +62,14 @@ function actionCount(
     .reduce((sum, row) => sum + num(row.value), 0);
 }
 
-export function emptyMetaAdsSummary(days = 14): MetaAdsSummary {
+function accountConfigured(accountId: string) {
+  return Boolean(metaAccessToken() && accountId);
+}
+
+export function emptyMetaAdsSummary(days = 14, adAccountId?: string): MetaAdsSummary {
+  const accountId = adAccountId === undefined ? metaAdAccountId() : adAccountId;
   return {
-    configured: metaAdsInsightsConfigured(),
+    configured: accountConfigured(accountId),
     synced: false,
     days,
     spend: 0,
@@ -80,15 +84,18 @@ export function emptyMetaAdsSummary(days = 14): MetaAdsSummary {
 /**
  * Pull campaign-level Insights for the last N days and upsert into meta_ads_insights.
  */
-export async function syncMetaAdsInsights(days = 14): Promise<MetaAdsSummary> {
-  const summary = emptyMetaAdsSummary(days);
-  if (!metaAdsInsightsConfigured()) {
-    summary.error =
-      "Set META_AD_ACCOUNT_ID and META_CAPI_ACCESS_TOKEN (or META_PAGE_ACCESS_TOKEN with ads_read).";
+export async function syncMetaAdsInsights(days = 14, adAccountId?: string): Promise<MetaAdsSummary> {
+  const summary = emptyMetaAdsSummary(days, adAccountId);
+  const accountId = adAccountId === undefined ? metaAdAccountId() : adAccountId;
+  if (!accountConfigured(accountId)) {
+    summary.error = accountId
+      ? "Add META_CAPI_ACCESS_TOKEN in Vercel (system user with ads_read)."
+      : adAccountId === undefined
+        ? "Set META_AD_ACCOUNT_ID and META_CAPI_ACCESS_TOKEN (or META_PAGE_ACCESS_TOKEN with ads_read)."
+        : "Link this company's Meta ad account first.";
     return summary;
   }
 
-  const accountId = metaAdAccountId();
   const token = metaAccessToken();
   const fields = [
     "campaign_id",
@@ -199,9 +206,10 @@ export async function syncMetaAdsInsights(days = 14): Promise<MetaAdsSummary> {
 }
 
 /** Read latest cached insights when live sync is unavailable. */
-export async function loadCachedMetaAdsSummary(days = 14): Promise<MetaAdsSummary> {
-  const summary = emptyMetaAdsSummary(days);
-  if (!hasAdminClient()) return summary;
+export async function loadCachedMetaAdsSummary(days = 14, adAccountId?: string): Promise<MetaAdsSummary> {
+  const summary = emptyMetaAdsSummary(days, adAccountId);
+  const accountId = adAccountId === undefined ? metaAdAccountId() : adAccountId;
+  if (!hasAdminClient() || !accountId) return summary;
   await ensureMetaSchema().catch(() => null);
 
   try {
@@ -213,11 +221,12 @@ export async function loadCachedMetaAdsSummary(days = 14): Promise<MetaAdsSummar
         "campaign_id, campaign_name, spend, impressions, clicks, ctr, cpc, leads, date_start, date_stop, synced_at",
       )
       .gte("synced_at", since)
+      .eq("ad_account_id", accountId)
       .order("spend", { ascending: false })
       .limit(50);
 
     if (error || !data?.length) {
-      summary.configured = metaAdsInsightsConfigured();
+      summary.configured = accountConfigured(accountId);
       return summary;
     }
 
@@ -249,10 +258,10 @@ export async function loadCachedMetaAdsSummary(days = 14): Promise<MetaAdsSummar
   }
 }
 
-export async function fetchMetaAdsSummary(days = 14): Promise<MetaAdsSummary> {
-  const live = await syncMetaAdsInsights(days);
+export async function fetchMetaAdsSummary(days = 14, adAccountId?: string): Promise<MetaAdsSummary> {
+  const live = await syncMetaAdsInsights(days, adAccountId);
   if (live.synced || !live.error) return live;
-  const cached = await loadCachedMetaAdsSummary(days);
+  const cached = await loadCachedMetaAdsSummary(days, adAccountId);
   if (cached.synced) {
     return { ...cached, error: live.error };
   }

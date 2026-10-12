@@ -1,6 +1,6 @@
-import { metaAdAccountId } from "@/lib/meta/config";
 import { lookalikeForCountry, type LookalikeStatus } from "@/lib/meta/audiences";
 import { metaGraph } from "@/lib/meta/graph";
+import type { MetaTarget } from "@/lib/meta/setup";
 
 /** Placements only. These do not change cities, ages, budget, or the approved poster and copy. */
 const APPLY_TYPES = new Set(["AUTOMATIC_PLACEMENTS", "PERFORMANT_CREATIVE_REELS_OPT_IN"]);
@@ -61,8 +61,8 @@ export function emptyOpportunity(): OpportunityStatus {
 }
 
 /** Turns on placement recommendations. Cities, ages, budget, and the approved creative stay as they are. */
-export async function applyPlacementRecommendations() {
-  const account = metaAdAccountId();
+export async function applyPlacementRecommendations(target?: MetaTarget) {
+  const account = target?.adAccountId || "";
   const applied = new Set<string>();
   const held = new Map<string, string>();
   let left = 0;
@@ -107,11 +107,11 @@ export async function applyPlacementRecommendations() {
 }
 
 /** Reads the account score, applies placement recommendations, and prepares the Canada lookalike. */
-export async function opportunityStatus(country = "CA"): Promise<OpportunityStatus> {
+export async function opportunityStatus(country = "CA", target?: MetaTarget): Promise<OpportunityStatus> {
   const status = emptyOpportunity();
-  const account = metaAdAccountId();
-  if (!account) {
-    status.error = "META_AD_ACCOUNT_ID is not set.";
+  const account = target?.adAccountId || "";
+  if (!account || !target) {
+    status.error = "Link this company's Meta ad account first.";
     return status;
   }
 
@@ -123,7 +123,7 @@ export async function opportunityStatus(country = "CA"): Promise<OpportunityStat
       },
       (error: unknown) => error,
     ),
-    lookalikeForCountry(country).catch((error: unknown) => ({
+    lookalikeForCountry(country, target).catch((error: unknown) => ({
       audienceId: null,
       country,
       seedCount: null,
@@ -136,7 +136,7 @@ export async function opportunityStatus(country = "CA"): Promise<OpportunityStat
   else status.error = scoreResult instanceof Error ? scoreResult.message : "Opportunity score could not be read.";
 
   try {
-    const placed = await applyPlacementRecommendations();
+    const placed = await applyPlacementRecommendations(target);
     status.applied = placed.applied;
     status.held = placed.held;
     status.leftInAdsManager = placed.leftInAdsManager;

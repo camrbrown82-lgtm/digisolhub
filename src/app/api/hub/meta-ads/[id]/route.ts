@@ -3,6 +3,7 @@ import { requireHubSession } from "@/lib/auth";
 import { ensureMetaSchema } from "@/lib/ensureMetaSchema";
 import { adsWorkspace, DRAFT_COLUMNS, draftFields, type AdDraftRow } from "@/lib/meta/adDrafts";
 import { createPausedCampaign, maxDailyBudget, metaErrorMessage, setCampaignLive } from "@/lib/meta/ads";
+import { metaTargetForClientId } from "@/lib/meta/setup";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -75,7 +76,14 @@ export async function POST(request: Request, { params }: Params) {
   try {
     if (body?.action === "create") {
       if (draft.meta_campaign_id) return NextResponse.json({ error: "Already created in Meta." }, { status: 400 });
-      const created = await createPausedCampaign(draft);
+      const target = await metaTargetForClientId(supabase, draft.client_id || "");
+      if (!target.adAccountId || !target.pageId) {
+        return NextResponse.json(
+          { error: "Link this company's Meta ad account and Facebook Page first." },
+          { status: 400 },
+        );
+      }
+      const created = await createPausedCampaign(draft, target);
       const saved = await save({
         status: "ready",
         error: null,

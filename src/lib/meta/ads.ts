@@ -1,9 +1,9 @@
 import sharp from "sharp";
-import { metaAdAccountId, metaPixelId } from "@/lib/meta/config";
 import { isAdCta, isAdObjective, type AdObjective } from "@/lib/meta/adOptions";
 import { lookalikeForCountry } from "@/lib/meta/audiences";
 import { MetaApiError, metaGraph } from "@/lib/meta/graph";
 import { applyPlacementRecommendations } from "@/lib/meta/opportunity";
+import { houseMetaTarget, type MetaTarget } from "@/lib/meta/setup";
 import { digisolAdsLandingUrl, isDigisolSiteUrl } from "@/lib/site";
 import { fitInto } from "@/lib/stampLogo";
 
@@ -47,9 +47,9 @@ export type AdAccountInfo = {
   status?: number;
 };
 
-export async function adAccountInfo(): Promise<AdAccountInfo> {
-  const account = metaAdAccountId();
-  if (!account) return { ok: false, error: "META_AD_ACCOUNT_ID is not set." };
+export async function adAccountInfo(target: MetaTarget = houseMetaTarget()): Promise<AdAccountInfo> {
+  const account = target.adAccountId;
+  if (!account) return { ok: false, error: "This company's Meta ad account is not linked yet." };
   try {
     const info = await metaGraph<{ name?: string; currency?: string; account_status?: number }>("GET", account, {
       fields: "name,currency,account_status",
@@ -154,12 +154,12 @@ function toMinorUnits(amount: number, currency = "CAD") {
   return String(Math.round(zeroDecimal.includes(currency.toUpperCase()) ? amount : amount * 100));
 }
 
-async function uploadPoster(posterUrl: string) {
+async function uploadPoster(posterUrl: string, adAccountId: string) {
   const response = await fetch(posterUrl);
   if (!response.ok) throw new MetaApiError("Could not load the poster image.");
   const fitted = await fitInto(Buffer.from(await response.arrayBuffer()), 1080, 1350);
   const jpeg = await sharp(fitted).flatten({ background: "#09090b" }).jpeg({ quality: 90 }).toBuffer();
-  const uploaded = await metaGraph<{ images?: Record<string, { hash?: string }> }>("POST", `${metaAdAccountId()}/adimages`, {
+  const uploaded = await metaGraph<{ images?: Record<string, { hash?: string }> }>("POST", `${adAccountId}/adimages`, {
     bytes: jpeg.toString("base64"),
   });
   const hash = Object.values(uploaded.images ?? {})[0]?.hash;
@@ -179,24 +179,27 @@ export type CreatedAd = {
  * Builds the campaign, ad set, creative, and ad in Meta — every piece PAUSED, so nothing spends until Launch.
  * If any step fails the half-built campaign is deleted.
  */
-export async function createPausedCampaign(draft: AdDraft): Promise<CreatedAd> {
-  const account = metaAdAccountId();
-  const pageId = metaPageId();
-  if (!account) throw new MetaApiError("META_AD_ACCOUNT_ID is not set.");
-  if (!pageId) throw new MetaApiError("META_PAGE_ID is not set.");
+export async function createPausedCampaign(draft: AdDraft, target: MetaTarget): Promise<CreatedAd> {
+  const account = target.adAccountId;
+  const pageId = target.pageId;
+  if (!account) throw new MetaApiError("Link this company's Meta ad account first.");
+  if (!pageId) throw new MetaApiError("Link this company's Facebook Page first.");
   if (!draft.poster_url) throw new MetaApiError("Pick a poster for the ad first.");
   if (!draft.link_url) throw new MetaApiError("The ad needs a website link.");
   if (draft.daily_budget > maxDailyBudget()) {
     throw new MetaApiError(`Daily budget is over the robot's cap of ${maxDailyBudget()}.`);
   }
   const objective: AdObjective = isAdObjective(draft.objective) ? draft.objective : "OUTCOME_LEADS";
-  const pixelId = metaPixelId();
-  if (objective === "OUTCOME_LEADS" && !pixelId) throw new MetaApiError("Leads campaigns need the Meta Pixel ID.");
+  const pixelId = target.pixelId;
+  if (objective === "OUTCOME_LEADS" && !pixelId) throw new MetaApiError("Leads campaigns need this company's Meta Pixel ID.");
 
-  const info = await adAccountInfo();
+  const info = await adAccountInfo(target);
   if (!info.ok) throw new MetaApiError(info.error || "Could not reach the ad account.");
-  const [imageHash, located] = await Promise.all([uploadPoster(draft.poster_url), geoTargeting(draft.locations)]);
-  const lookalike = await lookalikeForCountry(located.country).catch((error: unknown) => ({
+  const [imageHash, located] = await Promise.all([
+    uploadPoster(draft.poster_url, account),
+    geoTargeting(draft.locations),
+  ]);
+  const lookalike = await lookalikeForCountry(located.country, target).catch((error: unknown) => ({
     audienceId: null as string | null,
     country: located.country,
     seedCount: null as number | null,
@@ -266,9 +269,7 @@ export async function createPausedCampaign(draft: AdDraft): Promise<CreatedAd> {
       url_tags: "utm_source=facebook&utm_medium=paid_social&utm_campaign={{campaign.name}}&utm_content={{ad.name}}",
       object_story_spec: {
         page_id: pageId,
-        ...(instagram && process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID?.trim()
-          ? { instagram_user_id: process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID.trim() }
-          : {}),
+        ...(instagram && target.instagramUserId ? { instagram_user_id: target.instagramUserId } : {}),
         link_data: linkData,
       },
     });
@@ -285,7 +286,7 @@ export async function createPausedCampaign(draft: AdDraft): Promise<CreatedAd> {
       creative: { creative_id: creative.id },
       status: "PAUSED",
     });
-    await applyPlacementRecommendations().catch(() => null);
+    await applyPlacementRecommendations(target).catch(() => null);
     return { campaignId: campaign.id, adsetId: adset.id, creativeId: creative.id, adId: ad.id, audienceNote };
   } catch (error) {
     await metaGraph("DELETE", campaign.id).catch(() => null);

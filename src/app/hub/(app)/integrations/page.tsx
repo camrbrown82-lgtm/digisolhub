@@ -147,8 +147,8 @@ export default async function IntegrationsPage() {
           <p>
             DigiSol&apos;s own setup notes (Dispatch, its Google Ads and GA4 property, Meta, and
             DNS) show when Working on is DigiSol. For {workspace?.name || "this company"}, connect
-            Google under <a href="/hub/google" className="text-indigo-300 hover:underline">Google setup</a>{" "}
-            and install the visitor tracker from Analytics.
+            Google under <a href="/hub/google" className="text-indigo-300 hover:underline">Google setup</a>,
+            link Meta on Ads robot or Social, and install the visitor tracker from Analytics.
           </p>
         </div>
       ) : (

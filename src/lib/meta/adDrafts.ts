@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isAdCta, isAdObjective, maxDailyBudget, type AdDraft } from "@/lib/meta/ads";
 import { isStoredPosterUrl } from "@/lib/posterSizes";
-import { getWorkspaceClient, isDigisolClient, resolveClientId } from "@/lib/workspace";
+import { getWorkspaceClient, resolveClientId } from "@/lib/workspace";
 
 export const DRAFT_COLUMNS =
   "id, client_id, status, brief, name, objective, daily_budget, headline, primary_text, description, cta, link_url, poster_url, locations, age_min, age_max, meta_campaign_id, meta_adset_id, meta_creative_id, meta_ad_id, error, created_at, updated_at, launched_at";
@@ -17,15 +17,14 @@ export type AdDraftRow = AdDraft & {
   launched_at: string | null;
 };
 
-export const ADS_ONLY_DIGISOL =
-  "The ads robot runs DigiSol's own Meta ad account. Switch Working on to DigiSol to use it.";
-
-/** The ad account in Vercel belongs to DigiSol, so the robot only works in the DigiSol workspace. */
+/** Any Working-on company. Posts and ads use that company's linked Meta assets. */
 export async function adsWorkspace(supabase: SupabaseClient) {
   const client = await getWorkspaceClient(supabase);
   const clientId = (await resolveClientId(supabase)) || client?.id || "";
-  if (!client || !isDigisolClient(client) || !clientId) {
-    return { error: NextResponse.json({ error: ADS_ONLY_DIGISOL }, { status: 400 }) } as const;
+  if (!client || !clientId) {
+    return {
+      error: NextResponse.json({ error: "Pick a company under Working on first." }, { status: 400 }),
+    } as const;
   }
   return { client, clientId } as const;
 }

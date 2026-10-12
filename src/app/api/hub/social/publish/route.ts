@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { adsWorkspace } from "@/lib/meta/adDrafts";
+import { metaTargetForClientId, pageAccessToken } from "@/lib/meta/setup";
 import { absolutePublicMediaUrl, isPublicMediaVideoUrl } from "@/lib/media";
 import { isWorkspaceMediaUrl } from "@/lib/posterSizes";
 import { isSocialVideoUrl } from "@/lib/social/providers";
@@ -12,7 +13,7 @@ export const maxDuration = 180;
 
 const CHANNELS = new Set(["facebook", "instagram"]);
 
-/** Queue a Kaylev draft, or publish it now on DigiSol's Facebook Page or Instagram. */
+/** Queue a draft, or publish it now on the Working-on company's Facebook Page or Instagram. */
 export async function POST(request: Request) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
@@ -45,6 +46,30 @@ export async function POST(request: Request) {
   }
   if (channel === "instagram" && !mediaUrl) {
     return NextResponse.json({ error: "Instagram needs an image or a video." }, { status: 400 });
+  }
+
+  const target = await metaTargetForClientId(supabase, workspace.clientId);
+  if (!target.pageId) {
+    return NextResponse.json(
+      { error: "Link this company's Facebook Page on Social first." },
+      { status: 400 },
+    );
+  }
+  if (channel === "instagram" && !target.instagramUserId) {
+    return NextResponse.json(
+      { error: "Link this company's Instagram account on Social first." },
+      { status: 400 },
+    );
+  }
+  const pageToken = await pageAccessToken(target.pageId);
+  if (!pageToken) {
+    return NextResponse.json(
+      {
+        error:
+          "Meta did not give a Page token. Assign this company's Page to DigiSol's system user, then save the Meta link again.",
+      },
+      { status: 400 },
+    );
   }
 
   let scheduledAt = new Date().toISOString();

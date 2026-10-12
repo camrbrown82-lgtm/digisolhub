@@ -1,10 +1,12 @@
-import { metaAdAccountId, metaPixelId } from "@/lib/meta/config";
+import { metaAdAccountId } from "@/lib/meta/config";
 import { metaGraph } from "@/lib/meta/graph";
+import type { MetaTarget } from "@/lib/meta/setup";
 
 /** Meta will not build a lookalike until the source audience has about this many people. */
 const MIN_SEED = 100;
 const SEED_DAYS = 180;
-const SEED_NAME = "DigiSol Hub · website visitors";
+const HOUSE_SEED = "DigiSol Hub · website visitors";
+const CLIENT_SEED = "Hub · website visitors";
 
 export type LookalikeStatus = {
   audienceId: string | null;
@@ -21,8 +23,17 @@ type CustomAudience = {
   delivery_status?: { code?: number };
 };
 
-function lookalikeName(country: string) {
-  return `DigiSol Hub · 1% lookalike ${country}`;
+function houseAccount(target: MetaTarget) {
+  const house = metaAdAccountId();
+  return Boolean(house) && target.adAccountId === house;
+}
+
+function seedName(target: MetaTarget) {
+  return houseAccount(target) ? HOUSE_SEED : CLIENT_SEED;
+}
+
+function lookalikeName(country: string, target: MetaTarget) {
+  return houseAccount(target) ? `DigiSol Hub · 1% lookalike ${country}` : `Hub · 1% lookalike ${country}`;
 }
 
 function seedCount(audience: CustomAudience) {
@@ -32,8 +43,7 @@ function seedCount(audience: CustomAudience) {
   return Number.isFinite(lower) && lower >= 0 ? lower : null;
 }
 
-async function listAudiences() {
-  const account = metaAdAccountId();
+async function listAudiences(account: string) {
   const page = await metaGraph<{ data?: CustomAudience[] }>("GET", `${account}/customaudiences`, {
     fields: "id,name,approximate_count,approximate_count_lower_bound,delivery_status",
     limit: 200,
@@ -63,10 +73,10 @@ function websiteRule(pixelId: string) {
  * Reuses the pixel's website visitors as a 1% lookalike in one country.
  * The ad still has to match the cities and ages on the draft; this only ranks people inside that box.
  */
-export async function lookalikeForCountry(country: string): Promise<LookalikeStatus> {
+export async function lookalikeForCountry(country: string, target: MetaTarget): Promise<LookalikeStatus> {
   const code = /^[A-Z]{2}$/.test(country) ? country : "CA";
-  const account = metaAdAccountId();
-  const pixelId = metaPixelId();
+  const account = target.adAccountId;
+  const pixelId = target.pixelId;
   if (!account) {
     return { audienceId: null, country: code, seedCount: null, note: "No ad account is connected, so no lookalike was added." };
   }
@@ -74,11 +84,11 @@ export async function lookalikeForCountry(country: string): Promise<LookalikeSta
     return { audienceId: null, country: code, seedCount: null, note: "No pixel is connected, so no lookalike was added." };
   }
 
-  const existing = await listAudiences();
-  let seed = existing.find((row) => row.name === SEED_NAME && row.id);
+  const existing = await listAudiences(account);
+  let seed = existing.find((row) => row.name === seedName(target) && row.id);
   if (!seed?.id) {
     seed = await metaGraph<CustomAudience>("POST", `${account}/customaudiences`, {
-      name: SEED_NAME,
+      name: seedName(target),
       subtype: "WEBSITE",
       retention_days: SEED_DAYS,
       rule: websiteRule(pixelId),
@@ -88,7 +98,7 @@ export async function lookalikeForCountry(country: string): Promise<LookalikeSta
 
   const counted = seed.id ? existing.find((row) => row.id === seed?.id) || seed : seed;
   const count = seedCount(counted);
-  const ready = existing.find((row) => row.name === lookalikeName(code) && row.id);
+  const ready = existing.find((row) => row.name === lookalikeName(code, target) && row.id);
   if (ready?.id) {
     return {
       audienceId: ready.id,
@@ -111,7 +121,7 @@ export async function lookalikeForCountry(country: string): Promise<LookalikeSta
 
   try {
     const created = await metaGraph<CustomAudience>("POST", `${account}/customaudiences`, {
-      name: lookalikeName(code),
+      name: lookalikeName(code, target),
       subtype: "LOOKALIKE",
       origin_audience_id: seed.id,
       lookalike_spec: { type: "similarity", ratio: 0.01, country: code },

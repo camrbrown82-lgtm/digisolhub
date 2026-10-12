@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { DRAFT_COLUMNS } from "@/lib/meta/adDrafts";
 import { createPausedCampaign, metaErrorMessage, setCampaignLive, type AdDraft } from "@/lib/meta/ads";
-import { metaPixelId } from "@/lib/meta/config";
+import { metaTargetForClientId } from "@/lib/meta/setup";
 import { dailyFromWeekly, nextPostInstant, type PlanAd, type PlanItem, type PlanPost, type SocialPlan } from "@/lib/social/weekPlan";
 
 const PLAN_COLUMNS =
@@ -48,8 +48,13 @@ export async function runApprovedPlan(
   if (ad) {
     const daily = dailyFromWeekly(Number(plan.weekly_budget), maxDaily);
     try {
-      if (!metaPixelId() && ad.objective === "OUTCOME_LEADS") ad.objective = "OUTCOME_TRAFFIC";
-      const created = await launchAd(db, plan.client_id, ad, daily);
+      if (!ad.posterUrl) throw new Error("The ad needs a poster.");
+      const target = await metaTargetForClientId(db, plan.client_id);
+      if (!target.adAccountId || !target.pageId) {
+        throw new Error("Link this company's Meta ad account and Facebook Page on Ads robot first.");
+      }
+      if (!target.pixelId && ad.objective === "OUTCOME_LEADS") ad.objective = "OUTCOME_TRAFFIC";
+      const created = await launchAd(db, plan.client_id, ad, daily, target);
       ad.status = "live";
       adDraftId = created.draftId;
     } catch (error) {
@@ -98,7 +103,13 @@ async function queuePost(db: SupabaseClient, clientId: string, planId: string, p
   return { id: data.id as string };
 }
 
-async function launchAd(db: SupabaseClient, clientId: string, ad: PlanAd, daily: number) {
+async function launchAd(
+  db: SupabaseClient,
+  clientId: string,
+  ad: PlanAd,
+  daily: number,
+  target: Awaited<ReturnType<typeof metaTargetForClientId>>,
+) {
   if (!ad.posterUrl) throw new Error("The ad needs a poster.");
   if (!(daily > 0)) throw new Error("Set a weekly budget above zero to run ads.");
   const { data: draft, error } = await db
@@ -124,7 +135,7 @@ async function launchAd(db: SupabaseClient, clientId: string, ad: PlanAd, daily:
     .single();
   if (error || !draft) throw new Error(error?.message || "Could not save the ad.");
   const row = draft as unknown as AdDraft;
-  const created = await createPausedCampaign({ ...row, daily_budget: daily });
+  const created = await createPausedCampaign({ ...row, daily_budget: daily }, target);
   await db
     .from("meta_ad_drafts")
     .update({

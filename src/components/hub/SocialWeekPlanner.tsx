@@ -190,10 +190,12 @@ export function SocialWeekPlanner({
   plans,
   maxDaily,
   setupError,
+  companyName = "this company",
 }: {
   plans: SocialPlan[];
   maxDaily: number;
   setupError?: string | null;
+  companyName?: string;
 }) {
   const router = useRouter();
   const maxWeekly = maxDaily * 7;
@@ -237,7 +239,7 @@ export function SocialWeekPlanner({
           Social media plan
         </h2>
         <p className="mt-1 max-w-2xl text-sm text-zinc-400">
-          Pick a weekly budget and what to promote. The plan is posts to DigiSol&apos;s Facebook Page and Instagram
+          Pick a weekly budget and what to promote. The plan is posts to {companyName}&apos;s Facebook Page and Instagram
           feed, plus one Meta ad in the cities it recommends. Nothing goes out until you approve it here. The budget
           is ad spend; posting is free. Not included: Facebook Groups, Stories, TikTok, and LinkedIn ads.
         </p>

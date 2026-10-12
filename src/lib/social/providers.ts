@@ -14,6 +14,13 @@ export type SocialPublishResult = {
   provider: "meta" | "linkedin" | "none";
 };
 
+/** Page credentials for one company. When omitted, publishing uses DigiSol's env tokens. */
+export type MetaPageAccount = {
+  pageId: string;
+  pageToken: string;
+  instagramUserId: string;
+};
+
 const INSTAGRAM_PENDING = "pending";
 
 function metaPageId() {
@@ -26,6 +33,19 @@ function metaPageToken() {
     process.env.FACEBOOK_PAGE_ACCESS_TOKEN?.trim() ||
     ""
   );
+}
+
+function envMetaAccount(): MetaPageAccount {
+  return {
+    pageId: metaPageId(),
+    pageToken: metaPageToken(),
+    instagramUserId: process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID?.trim() || "",
+  };
+}
+
+/** A passed account is used as-is, so another company's post never falls through to DigiSol's Page. */
+function accountOrEnv(account?: MetaPageAccount | null): MetaPageAccount {
+  return account ?? envMetaAccount();
 }
 
 function linkedInToken() {
@@ -68,6 +88,7 @@ export async function publishSocialPost(input: {
   channel: SocialCampaignChannel;
   body: string;
   mediaUrl?: string | null;
+  account?: MetaPageAccount | null;
 }): Promise<SocialPublishResult> {
   const body = input.body.trim();
   if (!body) {
@@ -98,24 +119,25 @@ export async function publishSocialPost(input: {
     return publishLinkedIn({ body, mediaUrl });
   }
   if (input.channel === "instagram") {
-    return publishInstagram({ body, mediaUrl });
+    return publishInstagram({ body, mediaUrl, account: input.account });
   }
-  return publishFacebook({ body, mediaUrl });
+  return publishFacebook({ body, mediaUrl, account: input.account });
 }
 
 async function publishFacebook(input: {
   body: string;
   mediaUrl?: string | null;
+  account?: MetaPageAccount | null;
 }): Promise<SocialPublishResult> {
-  const pageId = metaPageId();
-  const token = metaPageToken();
+  const { pageId, pageToken: token } = accountOrEnv(input.account);
   if (!pageId || !token) {
     return {
       ok: false,
       skipped: true,
       provider: "meta",
-      error:
-        "META_PAGE_ID / META_PAGE_ACCESS_TOKEN not configured — post left for manual publish",
+      error: input.account
+        ? "Link this company's Facebook Page first. Assign the Page to DigiSol's system user, then save the Meta link."
+        : "META_PAGE_ID / META_PAGE_ACCESS_TOKEN not configured — post left for manual publish",
     };
   }
 
@@ -182,16 +204,19 @@ async function publishFacebook(input: {
 async function publishInstagram(input: {
   body: string;
   mediaUrl?: string | null;
+  account?: MetaPageAccount | null;
 }): Promise<SocialPublishResult> {
-  const igUserId = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID?.trim() || "";
-  const token = metaPageToken();
+  const account = accountOrEnv(input.account);
+  const igUserId = account.instagramUserId;
+  const token = account.pageToken;
   if (!igUserId || !token) {
     return {
       ok: false,
       skipped: true,
       provider: "meta",
-      error:
-        "INSTAGRAM_BUSINESS_ACCOUNT_ID / META_PAGE_ACCESS_TOKEN not configured",
+      error: input.account
+        ? "Link this company's Instagram account on Social or Ads robot first."
+        : "INSTAGRAM_BUSINESS_ACCOUNT_ID / META_PAGE_ACCESS_TOKEN not configured",
     };
   }
   if (!input.mediaUrl) {
@@ -244,7 +269,7 @@ async function publishInstagram(input: {
       return { ok: false, pending: true, containerId: createJson.id, provider: "meta" };
     }
     if (pending) return { ok: false, provider: "meta", error: pending };
-    return publishInstagramContainer(createJson.id, token);
+    return publishInstagramContainer(createJson.id, token, igUserId);
   } catch (err) {
     return {
       ok: false,
@@ -255,26 +280,34 @@ async function publishInstagram(input: {
 }
 
 /** Finish an Instagram container that was already created. */
-export async function finishInstagramContainer(containerId: string): Promise<SocialPublishResult> {
-  const token = metaPageToken();
-  if (!token) {
+export async function finishInstagramContainer(
+  containerId: string,
+  account?: MetaPageAccount | null,
+): Promise<SocialPublishResult> {
+  const page = accountOrEnv(account);
+  if (!page.pageToken || !page.instagramUserId) {
     return {
       ok: false,
       skipped: true,
       provider: "meta",
-      error: "META_PAGE_ACCESS_TOKEN not configured",
+      error: account
+        ? "Link this company's Instagram account first."
+        : "META_PAGE_ACCESS_TOKEN not configured",
     };
   }
-  const pending = await waitForInstagramMedia(containerId, token, 90_000);
+  const pending = await waitForInstagramMedia(containerId, page.pageToken, 90_000);
   if (pending === INSTAGRAM_PENDING) {
     return { ok: false, pending: true, containerId, provider: "meta" };
   }
   if (pending) return { ok: false, provider: "meta", error: pending };
-  return publishInstagramContainer(containerId, token);
+  return publishInstagramContainer(containerId, page.pageToken, page.instagramUserId);
 }
 
-async function publishInstagramContainer(containerId: string, token: string): Promise<SocialPublishResult> {
-  const igUserId = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID?.trim() || "";
+async function publishInstagramContainer(
+  containerId: string,
+  token: string,
+  igUserId: string,
+): Promise<SocialPublishResult> {
   const publishParams = new URLSearchParams({
     access_token: token,
     creation_id: containerId,

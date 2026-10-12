@@ -130,6 +130,7 @@ export function SocialStudio({
   logoUrl,
   siteUrl,
   palette,
+  canPost = { facebook: true, instagram: true },
 }: {
   posters: MediaFile[];
   recent: RecentPost[];
@@ -137,6 +138,7 @@ export function SocialStudio({
   logoUrl?: string;
   siteUrl?: string;
   palette?: { name: string; value: string }[];
+  canPost?: { facebook: boolean; instagram: boolean };
 }) {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -317,6 +319,11 @@ export function SocialStudio({
       setNotice("Choose Facebook, Instagram, or both.");
       return;
     }
+    const blocked = channels.filter((channel) => !canPost[channel]);
+    if (blocked.length) {
+      setNotice(`Link ${blocked.map((channel) => LABEL[channel]).join(" and ")} above before posting.`);
+      return;
+    }
     if (when === "now") {
       const where = channels.map((channel) => LABEL[channel]).join(" and ");
       if (!window.confirm(`Post this video to ${where} now?`)) return;
@@ -457,8 +464,10 @@ export function SocialStudio({
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
             <h3 className="text-sm font-semibold text-white">Post a video</h3>
             <p className="mt-1 text-sm text-zinc-400">
-              Choose a video from DigiSol media, or upload an MP4 or MOV up to {MAX_FILE_MB}MB. Uploads are saved with
-              this company. Then post it to Facebook and Instagram from here.
+              {mediaVideos.length > 0
+                ? `Choose a video from DigiSol media, or upload an MP4 or MOV up to ${MAX_FILE_MB}MB.`
+                : `Upload an MP4 or MOV up to ${MAX_FILE_MB}MB.`}{" "}
+              Uploads are saved with this company. Then post it to Facebook and Instagram from here.
             </p>
             <label className="mt-3 flex w-full cursor-pointer flex-col gap-2 text-xs text-zinc-400 sm:flex-row sm:items-center">
               <span className="inline-flex w-full items-center justify-center rounded-full border border-zinc-600 px-4 py-2 text-sm text-zinc-200 sm:w-auto">
@@ -529,7 +538,8 @@ export function SocialStudio({
                 <label key={channel} className="inline-flex items-center gap-2">
                   <input
                     type="checkbox"
-                    checked={videoChannels[channel]}
+                    checked={videoChannels[channel] && canPost[channel]}
+                    disabled={!canPost[channel]}
                     onChange={(event) =>
                       setVideoChannels((current) => ({ ...current, [channel]: event.target.checked }))
                     }
@@ -541,7 +551,8 @@ export function SocialStudio({
             <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <button
                 type="button"
-                disabled={Boolean(busy)}
+                disabled={Boolean(busy) || (!canPost.facebook && !canPost.instagram)}
+                title={canPost.facebook || canPost.instagram ? "" : "Link this company's Meta account first"}
                 onClick={() => void publishVideo("now")}
                 className="w-full rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60 sm:w-auto"
               >
@@ -549,7 +560,8 @@ export function SocialStudio({
               </button>
               <button
                 type="button"
-                disabled={Boolean(busy)}
+                disabled={Boolean(busy) || (!canPost.facebook && !canPost.instagram)}
+                title={canPost.facebook || canPost.instagram ? "" : "Link this company's Meta account first"}
                 onClick={() => void publishVideo("later")}
                 className="w-full rounded-full border border-zinc-600 px-4 py-2 text-sm text-zinc-200 hover:border-zinc-400 disabled:opacity-60 sm:w-auto"
               >
@@ -659,7 +671,8 @@ export function SocialStudio({
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
                     type="button"
-                    disabled={Boolean(busy)}
+                    disabled={Boolean(busy) || !canPost[draft.channel]}
+                    title={canPost[draft.channel] ? "" : "Link this company's Meta account first"}
                     onClick={() => void publish(draft, "now")}
                     className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
                   >
@@ -667,7 +680,8 @@ export function SocialStudio({
                   </button>
                   <button
                     type="button"
-                    disabled={Boolean(busy)}
+                    disabled={Boolean(busy) || !canPost[draft.channel]}
+                    title={canPost[draft.channel] ? "" : "Link this company's Meta account first"}
                     onClick={() => void publish(draft, "later")}
                     className="rounded-full border border-zinc-600 px-4 py-2 text-sm text-zinc-200 hover:border-zinc-400 disabled:opacity-60"
                   >

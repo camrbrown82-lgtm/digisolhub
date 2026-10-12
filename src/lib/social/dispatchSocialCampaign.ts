@@ -14,9 +14,10 @@ import {
   finishInstagramContainer,
   publishSocialPost,
   socialProviderConfigured,
+  type MetaPageAccount,
 } from "@/lib/social/providers";
 import { digisolPublishedFacts } from "@/lib/publishedFacts";
-import { ensureDigisolClient } from "@/lib/workspace";
+import { metaTargetForClientId, pageAccessToken } from "@/lib/meta/setup";
 
 export type SocialAbCopy = {
   bodyA: string;
@@ -257,17 +258,43 @@ export async function processSocialPostQueue(
     error?: string;
   }> = [];
 
-  // Provider tokens are DigiSol's own pages; other companies' posts wait until they connect accounts.
-  const houseId = await ensureDigisolClient(db);
+  const ready = new Map<string, MetaPageAccount | { error: string }>();
+  async function publishingAccount(clientId: string): Promise<MetaPageAccount | { error: string }> {
+    const cached = ready.get(clientId);
+    if (cached) return cached;
+    const target = await metaTargetForClientId(db, clientId);
+    if (!target.pageId) {
+      const miss = { error: "Link this company's Facebook Page on Social or Ads robot first." };
+      ready.set(clientId, miss);
+      return miss;
+    }
+    const pageToken = await pageAccessToken(target.pageId);
+    if (!pageToken) {
+      const miss = {
+        error:
+          "Meta did not give a Page token. Assign this company's Page to DigiSol's system user, then save the Meta link again.",
+      };
+      ready.set(clientId, miss);
+      return miss;
+    }
+    const account: MetaPageAccount = {
+      pageId: target.pageId,
+      pageToken,
+      instagramUserId: target.instagramUserId,
+    };
+    ready.set(clientId, account);
+    return account;
+  }
 
   for (const row of rows ?? []) {
-    if (row.client_id !== houseId) {
+    const account = await publishingAccount(row.client_id);
+    if ("error" in account) {
       results.push({
         id: row.id,
         channel: row.channel,
         ok: false,
         skipped: true,
-        error: "This company has no connected social account yet — post it manually.",
+        error: account.error,
       });
       continue;
     }
@@ -302,11 +329,12 @@ export async function processSocialPostQueue(
 
     const published =
       row.channel === "instagram" && containerId
-        ? await finishInstagramContainer(containerId)
+        ? await finishInstagramContainer(containerId, account)
         : await publishSocialPost({
             channel: row.channel,
             body: row.body,
             mediaUrl: row.media_url,
+            account,
           });
 
     if (published.pending && published.containerId) {

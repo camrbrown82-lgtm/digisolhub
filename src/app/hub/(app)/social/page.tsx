@@ -2,10 +2,13 @@ import { SocialStudio } from "@/components/hub/SocialStudio";
 import { getBrandLogoUrl } from "@/lib/brandLogo";
 import { brandColourSwatches, brandFromClient } from "@/lib/branding";
 import { SocialWeekPlanner } from "@/components/hub/SocialWeekPlanner";
+import { MetaSetupPanel } from "@/components/hub/MetaSetupPanel";
 import { WorkspaceScope } from "@/components/hub/WorkspaceScope";
 import { ensureAnalyticsSocialSchema } from "@/lib/ensureAnalyticsSocialSchema";
+import { ensureMetaSetupSchema } from "@/lib/ensureMetaSetupSchema";
 import { maxDailyBudget } from "@/lib/meta/ads";
-import { socialProviderConfigured } from "@/lib/social/providers";
+import { metaAccessToken } from "@/lib/meta/config";
+import { houseMetaIds, loadMetaSetup, metaBusinessId, metaTargetFromIds } from "@/lib/meta/setup";
 import type { SocialPlan } from "@/lib/social/weekPlan";
 import { mediaLibraryVideos } from "@/lib/media";
 import { isArchiveCopy, isBusinessCardAsset } from "@/lib/posterArchive";
@@ -16,24 +19,22 @@ export const dynamic = "force-dynamic";
 
 export default async function SocialPage() {
   await Promise.race([
-    ensureAnalyticsSocialSchema().catch(() => null),
+    Promise.all([ensureAnalyticsSocialSchema().catch(() => null), ensureMetaSetupSchema().catch(() => null)]),
     new Promise((resolve) => setTimeout(resolve, 3000)),
   ]);
   const supabase = await createClient();
   const active = await getWorkspaceClient(supabase);
-  const house = isDigisolClient(active);
-
-  if (!house || !active) {
+  if (!active) {
     return (
       <div className="space-y-4">
         <h1 className="text-3xl font-semibold text-white">Social</h1>
-        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm text-amber-100">
-          <p>Social posts go out on DigiSol&apos;s Facebook Page and Instagram.</p>
-          <p className="mt-2 text-amber-100/80">Switch Working on to DigiSol to write and publish them.</p>
-        </div>
+        <p className="text-sm text-zinc-400">Pick a company under Working on first.</p>
       </div>
     );
   }
+  const house = isDigisolClient(active);
+  const setup = await loadMetaSetup(supabase, active.id, house ? houseMetaIds() : undefined);
+  const target = metaTargetFromIds(setup.ids);
 
   const [postersResult, postsResult, planRows] = await Promise.all([
     supabase
@@ -79,14 +80,24 @@ export default async function SocialPage() {
     ];
   });
   const known = new Set(posters.map((file) => file.url.split("?")[0]));
-  const library = mediaLibraryVideos().filter((file) => !known.has(file.url.split("?")[0]));
+  const library = house ? mediaLibraryVideos().filter((file) => !known.has(file.url.split("?")[0])) : [];
   const savedPosters = posters.filter((file) => file.source === "poster");
   const otherFiles = posters.filter((file) => file.source !== "poster");
   const files = [...savedPosters, ...otherFiles, ...library];
   const recent = (postsResult.data ?? []).filter(
     (row) => (row.metadata as { publishMode?: string } | null)?.publishMode !== "manual_facebook_group",
   );
-  const connected = socialProviderConfigured("facebook") && socialProviderConfigured("instagram");
+  const facebookReady = Boolean(target.pageId);
+  const instagramReady = Boolean(target.pageId && target.instagramUserId);
+  const adsReady = Boolean(target.adAccountId && target.pageId);
+  const socialError = !facebookReady
+    ? "Link this company's Facebook Page above before posts can go out."
+    : !instagramReady
+      ? "Instagram is not linked yet. Facebook can still post. Save the Page again after Instagram is connected in Meta."
+      : null;
+  const planError = !adsReady
+    ? "Link this company's Meta ad account above before the plan can run an ad."
+    : socialError;
 
   return (
     <div className="space-y-10">
@@ -95,14 +106,25 @@ export default async function SocialPage() {
         <WorkspaceScope companyName={active.name} noun="posts" />
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">
           Kaylev writes both captions. Pick a saved poster and he writes the posts for that image, or ask him to
-          build a new one. Pick a video from DigiSol media or upload an MP4 or MOV, then post it to Facebook and
-          Instagram. Nothing publishes until you approve it.
+          build a new one. Upload an MP4 or MOV, then post it to {active.name}&apos;s Facebook and Instagram.
+          Nothing publishes until you approve it.
         </p>
       </div>
-      {connected ? null : (
+      <MetaSetupPanel
+        key={active.id}
+        companyName={active.name}
+        initial={setup}
+        tokenReady={Boolean(metaAccessToken())}
+        businessId={metaBusinessId()}
+      />
+      {socialError ? (
         <p className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
-          Facebook or Instagram is not connected yet. You can still draft posts. Publishing works after both tokens are
-          set.
+          {socialError}
+          {!facebookReady ? " You can still draft posts." : null}
+        </p>
+      ) : (
+        <p className="text-sm text-emerald-300">
+          Posts go out on {active.name}&apos;s Facebook Page and Instagram.
         </p>
       )}
       <SocialStudio
@@ -112,8 +134,14 @@ export default async function SocialPage() {
         logoUrl={await getBrandLogoUrl(supabase, active)}
         siteUrl={companySiteUrl(active)}
         palette={brandColourSwatches(brandFromClient(active).brand)}
+        canPost={{ facebook: facebookReady, instagram: instagramReady }}
       />
-      <SocialWeekPlanner plans={(planRows.data ?? []) as SocialPlan[]} maxDaily={maxDailyBudget()} />
+      <SocialWeekPlanner
+        plans={(planRows.data ?? []) as SocialPlan[]}
+        maxDaily={maxDailyBudget()}
+        companyName={active.name}
+        setupError={planError}
+      />
     </div>
   );
 }
