@@ -45,7 +45,7 @@ async function removeStoredFiles(db: SupabaseClient, clientId: string) {
     list.push(path);
     byBucket.set(bucket, list);
   }
-  for (const [bucket, paths] of byBucket) {
+  for (const [bucket, paths] of Array.from(byBucket.entries())) {
     const unique = Array.from(new Set(paths));
     for (let index = 0; index < unique.length; index += 100) {
       const { error: storageError } = await db.storage.from(bucket).remove(unique.slice(index, index + 100));
