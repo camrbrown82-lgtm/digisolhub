@@ -1,5 +1,6 @@
 import { ClientContactButton } from "@/components/hub/ClientContactButton";
 import { ClientForm } from "@/components/hub/ClientForm";
+import { CompanyDeleteButton } from "@/components/hub/CompanyDeleteButton";
 import { DIGISOL_HOUSE_NAME } from "@/lib/branding";
 import { OpenClientButton } from "@/components/hub/OpenClientButton";
 import { createClient } from "@/lib/supabase/server";
@@ -46,11 +47,15 @@ export default async function ClientsPage() {
                   <ClientContactButton clientId={client.id} />
                 )}
               </div>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap items-center gap-4">
                 <OpenClientButton clientId={client.id} />
                 <OpenClientButton clientId={client.id} href="/hub/brand" label="Brand" />
                 <OpenClientButton clientId={client.id} href="/hub/assets" label="Files" />
                 <OpenClientButton clientId={client.id} href="/hub/analytics" label="Analytics" />
+                {client.id === houseId ||
+                client.name.trim().toLowerCase() === DIGISOL_HOUSE_NAME.toLowerCase() ? null : (
+                  <CompanyDeleteButton clientId={client.id} name={client.name} />
+                )}
               </div>
             </li>
           ))

@@ -1,6 +1,10 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { requireHubSession } from "@/lib/auth";
 import { mergeBrand, parseBrand, starterBrandForCompany } from "@/lib/branding";
+import { deleteCompany } from "@/lib/deleteCompany";
+import { createAdminClient, hasAdminClient } from "@/lib/supabase/admin";
+import { HUB_CLIENT_COOKIE, getActiveClientId } from "@/lib/workspace";
 
 type Params = { params: { id: string } };
 
@@ -82,4 +86,33 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   return NextResponse.json({ client: brandedClient(data) });
+}
+
+export async function DELETE(_request: Request, { params }: Params) {
+  const { error } = await requireHubSession();
+  if (error) return error;
+  if (!hasAdminClient()) {
+    return NextResponse.json({ error: "Company delete needs the Hub database key." }, { status: 400 });
+  }
+
+  try {
+    const result = await deleteCompany(createAdminClient(), params.id);
+    if ("missing" in result) {
+      return NextResponse.json({ error: "Company not found" }, { status: 404 });
+    }
+    if ("protected" in result) {
+      return NextResponse.json({ error: "DigiSol stays. Remove another company instead." }, { status: 400 });
+    }
+    revalidatePath("/hub", "layout");
+    const response = NextResponse.json({ ok: true, name: result.name });
+    if ((await getActiveClientId()) === params.id) {
+      response.cookies.delete(HUB_CLIENT_COOKIE);
+    }
+    return response;
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Could not delete the company" },
+      { status: 400 },
+    );
+  }
 }
