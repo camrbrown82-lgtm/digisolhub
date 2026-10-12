@@ -100,29 +100,26 @@ export default async function ProspectsPage() {
           <WorkspaceScope companyName={active?.name} noun="prospect audits" />
           {!isDigisol ? (
             <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-              Website audits Kaylev filed for {active?.name || "this company"}. The daily
-              automated audit-and-email run is DigiSol&apos;s own outreach, so it
-              doesn&apos;t run here.
+              Website audits Kaylev filed for {active?.name || "this company"}. The
+              audit-and-email run is DigiSol&apos;s own outreach, so it doesn&apos;t
+              run here.
             </p>
           ) : (
           <>
           <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-            Daily automated website audits. Kaylev emails a business only when
+            Website audits you run yourself. Kaylev emails a business only when
             its own site conspicuously publishes that address, the domain has a
             mail server, and the address has never bounced. This list keeps
             those email-compliant audits. Sites that fail the CASL check are
             counted in the run summary and then left off the list.
           </p>
           <p className="mt-2 max-w-2xl text-sm text-zinc-500">
-            Schedule:{" "}
-            <code className="text-zinc-300">/api/cron/prospect-audit</code> runs
-            daily at <span className="text-zinc-300">15:00 UTC</span> (9:00 AM
-            Mountain Daylight / 8:00 AM Mountain Standard) and processes{" "}
-            <span className="text-zinc-300">up to 5</span> prospects. Prefer
-            trades first, then expand to other Alberta sectors if the trade queue
-            is empty. Use <span className="text-zinc-300">Run audits now</span>{" "}
-            anytime — that bypasses the cron daily ceiling and re-queues prior
-            dry-runs / Resend failures for a live send.
+            Nothing runs on a schedule. Audits only happen when you press{" "}
+            <span className="text-zinc-300">Run audits now</span> (or{" "}
+            <span className="text-zinc-300">Dry run</span> to check sites without
+            emailing). Each run tries trades first, then other Alberta sectors if
+            the trade queue is empty, and re-queues prior dry-runs / Resend
+            failures for a live send.
           </p>
           </>
           )}

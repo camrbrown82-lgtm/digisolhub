@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { ContactAbVariantSelect } from "@/components/hub/ContactAbVariantSelect";
+import { ContactBulkActions, ContactSelectAll } from "@/components/hub/ContactBulkActions";
+import { ContactBulkAdd } from "@/components/hub/ContactBulkAdd";
 import { ContactChannelSelect } from "@/components/hub/ContactChannelSelect";
 import { ContactDeleteButton } from "@/components/hub/ContactDeleteButton";
 import { ContactImportExport } from "@/components/hub/ContactImportExport";
@@ -188,6 +190,8 @@ export default async function ContactsPage({
         </Link>
       </div>
 
+      <ContactBulkAdd />
+
       <ContactImportExport />
 
       {schemaWarning ? (
@@ -313,6 +317,10 @@ export default async function ContactsPage({
           {channelFilter || abFilter || sourceFilter ? " for this filter" : ""}.
         </p>
       ) : (
+        <ContactBulkActions />
+      )}
+
+      {grouped.length === 0 ? null : (
         grouped.map((section) => (
           <section key={section.id} className="space-y-2">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -333,6 +341,12 @@ export default async function ContactsPage({
               <table className="min-w-full text-left text-sm">
                 <thead className="bg-zinc-900 text-zinc-400">
                   <tr>
+                    <th className="w-10 px-4 py-3">
+                      <ContactSelectAll
+                        section={section.id}
+                        label={`Select all ${section.label}`}
+                      />
+                    </th>
                     <th className="px-4 py-3 font-medium">Name</th>
                     <th className="px-4 py-3 font-medium">Email</th>
                     <th className="px-4 py-3 font-medium">Phone</th>
@@ -347,6 +361,16 @@ export default async function ContactsPage({
                 <tbody>
                   {section.rows.map((contact) => (
                     <tr key={contact.id} className="border-t border-zinc-800">
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          name="contactIds"
+                          value={contact.id}
+                          data-section={section.id}
+                          aria-label={`Select ${contact.name || contact.email}`}
+                          className="h-4 w-4 accent-indigo-500"
+                        />
+                      </td>
                       <td className="px-4 py-3">
                         <Link
                           href={`/hub/contacts/${contact.id}`}
