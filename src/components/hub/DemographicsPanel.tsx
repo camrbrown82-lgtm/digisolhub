@@ -96,9 +96,6 @@ export function DemographicsPanel({
   data: Ga4Demographics;
   domain?: string | null;
 }) {
-  const withheldNote =
-    "Google hides age and gender until enough people visit, to protect privacy. It fills in as traffic grows.";
-
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -130,16 +127,9 @@ export function DemographicsPanel({
         </p>
       ) : (
         <>
-          {data.ageGenderWithheld ? (
-            <p className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100/90">
-              {withheldNote} Until then, Google Ads → Audiences, keywords, and
-              content → Audiences → Demographics shows age and gender for the
-              people who saw your ads.
-            </p>
-          ) : null}
           <div className="grid gap-4 lg:grid-cols-2">
-            <Breakdown title="Age" rows={data.age} empty={withheldNote} />
-            <Breakdown title="Gender" rows={data.gender} empty={withheldNote} />
+            <Breakdown title="Age" rows={data.age} empty="No age data yet." />
+            <Breakdown title="Gender" rows={data.gender} empty="No gender data yet." />
             <Breakdown
               title="Cities"
               rows={data.cities}

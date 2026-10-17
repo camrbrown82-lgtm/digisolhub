@@ -85,10 +85,11 @@ export async function fetchInstagramInsights(): Promise<InstagramInsightsSummary
     summary.followers = profile.followers_count ?? null;
     summary.mediaCount = profile.media_count ?? null;
 
-    // Account insights (IG professional accounts). Some metrics need days/period.
+    // Account insights (IG professional accounts). follower_count is not a
+    // total_value metric — Meta rejects the whole request if it's included.
+    // Follower count already comes from the profile above.
     const metrics = [
       "reach",
-      "follower_count",
       "profile_views",
       "website_clicks",
       "accounts_engaged",
