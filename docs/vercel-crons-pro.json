@@ -1,5 +1,5 @@
 {
-  "_comment": "Pro-frequency Vercel crons (restored after Hobby downgrade). Keep in sync with vercel.json on Pro.",
+  "_comment": "Pro-frequency crons. vercel.json is daily-only while the Vercel account is Hobby. Copy these schedules back into vercel.json after upgrading to Pro.",
   "crons": [
     {
       "path": "/api/cron/dispatch",
