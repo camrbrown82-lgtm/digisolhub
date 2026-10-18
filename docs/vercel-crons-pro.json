@@ -1,5 +1,5 @@
 {
-  "_comment": "Pro-frequency crons. vercel.json is daily-only while the Vercel account is Hobby. Copy these schedules back into vercel.json after upgrading to Pro.",
+  "_comment": "Pro-frequency Vercel crons. Keep in sync with vercel.json. Hobby cannot deploy this project: crons must be daily, and a deployment can have at most 12 serverless functions.",
   "crons": [
     {
       "path": "/api/cron/dispatch",
