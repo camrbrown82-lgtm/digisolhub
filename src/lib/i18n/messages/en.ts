@@ -225,7 +225,6 @@ export const en = {
       { href: "/#dispatch", label: "Dispatch" },
       { href: "/media", label: "Media" },
       { href: "/locations/airdrie", label: "Airdrie" },
-      { href: "/about", label: "About" },
     ],
   },
 
@@ -240,7 +239,6 @@ export const en = {
       { href: "/blog", label: "Guides" },
       { href: "/#dispatch", label: "Dispatch" },
       { href: "/media", label: "Media" },
-      { href: "/about", label: "About" },
       { href: "/locations", label: "Locations" },
       { href: "/#contact", label: "Contact" },
       { href: "/privacy", label: "Privacy Policy" },

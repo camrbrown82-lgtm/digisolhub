@@ -29,7 +29,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...translated("/locations/airdrie", { lastModified: now, changeFrequency: "weekly", priority: 0.98 }),
     ...translated("/locations", { lastModified: now, changeFrequency: "weekly", priority: 0.9 }),
     ...translated("/pricing", { lastModified: now, changeFrequency: "weekly", priority: 0.9 }),
-    ...translated("/about", { lastModified: now, changeFrequency: "monthly", priority: 0.8 }),
     {
       url: `${DIGISOL_SITE_URL}/privacy`,
       lastModified: now,

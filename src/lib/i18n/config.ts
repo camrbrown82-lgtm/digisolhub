@@ -23,7 +23,6 @@ export const LOCALE_META: Record<
 /** Pages that have translations. Blog, Dispatch, media, privacy and the Hub stay English-only. */
 const TRANSLATED_PATHS = [
   /^\/$/,
-  /^\/about$/,
   /^\/pricing$/,
   /^\/pricing\/success$/,
   /^\/confirmation$/,

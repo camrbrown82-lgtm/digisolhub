@@ -487,7 +487,6 @@ export const fr: Messages = {
       { href: "/#dispatch", label: "Dispatch" },
       { href: "/media", label: "Médias" },
       { href: "/locations/airdrie", label: "Airdrie" },
-      { href: "/about", label: "À propos" },
     ],
   },
 
@@ -502,7 +501,6 @@ export const fr: Messages = {
       { href: "/blog", label: "Guides (EN)" },
       { href: "/#dispatch", label: "Dispatch" },
       { href: "/media", label: "Médias" },
-      { href: "/about", label: "À propos" },
       { href: "/locations", label: "Villes" },
       { href: "/#contact", label: "Contact" },
       { href: "/privacy", label: "Politique de confidentialité (EN)" },

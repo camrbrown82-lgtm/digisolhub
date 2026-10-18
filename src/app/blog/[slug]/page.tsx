@@ -84,7 +84,7 @@ export default function BlogPostPage({ params }: PageProps) {
       "@type": "Person",
       name: DIGISOL_FOUNDER,
       jobTitle: DIGISOL_FOUNDER_TITLE,
-      url: DIGISOL_LINKEDIN_URL || `${DIGISOL_SITE_URL}/about`,
+      url: DIGISOL_LINKEDIN_URL || DIGISOL_SITE_URL,
     },
     publisher: {
       "@type": "Organization",
