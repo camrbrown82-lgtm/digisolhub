@@ -107,19 +107,22 @@ export default async function ProspectsPage() {
           ) : (
           <>
           <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-            Website audits you run yourself. Kaylev emails a business only when
+            Daily automated website audits. Kaylev emails a business only when
             its own site conspicuously publishes that address, the domain has a
             mail server, and the address has never bounced. This list keeps
             those email-compliant audits. Sites that fail the CASL check are
             counted in the run summary and then left off the list.
           </p>
           <p className="mt-2 max-w-2xl text-sm text-zinc-500">
-            Nothing runs on a schedule. Audits only happen when you press{" "}
-            <span className="text-zinc-300">Run audits now</span> (or{" "}
-            <span className="text-zinc-300">Dry run</span> to check sites without
-            emailing). Each run tries trades first, then other Alberta sectors if
-            the trade queue is empty, and re-queues prior dry-runs / Resend
-            failures for a live send.
+            Schedule:{" "}
+            <code className="text-zinc-300">/api/cron/prospect-audit</code> runs
+            daily at <span className="text-zinc-300">15:00 UTC</span> (9:00 AM
+            Mountain Daylight / 8:00 AM Mountain Standard) and processes{" "}
+            <span className="text-zinc-300">up to 10</span> prospects. Prefer
+            trades first, then expand to other Alberta sectors if the trade queue
+            is empty. Use <span className="text-zinc-300">Run audits now</span>{" "}
+            anytime — that bypasses the daily ceiling and re-queues prior
+            dry-runs / Resend failures for a live send.
           </p>
           </>
           )}
@@ -164,7 +167,7 @@ export default async function ProspectsPage() {
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-8 text-zinc-500">
-                  No email-compliant audits yet. A run can check five sites and
+                  No email-compliant audits yet. A run can check ten sites and
                   keep only the ones allowed to email.
                 </td>
               </tr>

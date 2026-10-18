@@ -85,19 +85,22 @@ async function run(
 }
 
 /**
- * DigiSol prospect-audit run. Manual only: no schedule calls this.
- * POST /api/cron/prospect-audit from the Hub's "Run audits now" button.
+ * DigiSol local prospect-audit cron.
+ * GET/POST /api/cron/prospect-audit
+ *
+ * Cron defaults: 10 audits/day. Hub session POST sets manual=true (run anytime).
  * Body: { dailyMax?, batchSize?, trades?, dryRun?, manual?, resendDryRuns? }
  */
 export async function GET(request: Request) {
   if (!cronAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  return NextResponse.json({
-    ok: true,
-    skipped: true,
-    note: "Automated prospect audits are off. Run them from Prospect audits in the Hub.",
-  });
+  try {
+    return await run(request, { dailyMax: 10, batchSize: 10 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Prospect audit failed";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {

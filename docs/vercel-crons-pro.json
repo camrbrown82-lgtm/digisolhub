@@ -7,6 +7,11 @@
       "note": "Daily DigiSol Dispatch send — 16:00 UTC"
     },
     {
+      "path": "/api/cron/prospect-audit",
+      "schedule": "0 15 * * *",
+      "note": "Morning Alberta prospect audits — 15:00 UTC / 9 AM MDT, up to 10"
+    },
+    {
       "path": "/api/cron/resend-sync",
       "schedule": "15 * * * *",
       "note": "Hourly Resend open/click backfill (Pro)"

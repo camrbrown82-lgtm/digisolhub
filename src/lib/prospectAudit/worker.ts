@@ -165,7 +165,7 @@ export async function runProspectAuditWorker(
     .gte("last_audited_at", dayStart);
 
   const usedToday = Math.max(processedTodayBefore ?? 0, digisolDaily.auditsUsed);
-  // Manual Hub runs ignore the cron "5/day" ceiling when budgets are open.
+  // Manual Hub runs ignore the cron "10/day" ceiling when budgets are open.
   const remainingDaily =
     manual && !digisolBudgetsEnforced()
       ? Math.min(

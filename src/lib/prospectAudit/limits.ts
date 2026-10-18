@@ -1,7 +1,7 @@
 /**
  * DigiSol local prospect-audit worker limits.
  *
- * Cron: 5 audits/day by default.
+ * Cron: 10 audits/day by default.
  * Hub "Run now": manual — can run anytime (does not wait on the cron quota).
  * DIGISOL_ENFORCE_BUDGETS=1 still applies DigiSol house hard caps when set.
  */
@@ -12,7 +12,7 @@ import {
 } from "@/lib/agent/budget/digisolDaily";
 
 /** Scheduled cron daily ceiling (UTC day). */
-export const PROSPECT_AUDIT_CRON_DAILY_MAX = 5;
+export const PROSPECT_AUDIT_CRON_DAILY_MAX = 10;
 
 /** Hub / Kaylev manual run — batch ceiling when not enforcing house budgets. */
 export const PROSPECT_AUDIT_MANUAL_BATCH_MAX = 25;

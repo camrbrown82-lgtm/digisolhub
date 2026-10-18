@@ -15,7 +15,7 @@ export function digisolBudgetsEnforced() {
 
 /** Soft defaults only used when DIGISOL_ENFORCE_BUDGETS=1. */
 export const DIGISOL_DAILY_AUTOMATED_AUDIT_CAP = digisolBudgetsEnforced()
-  ? Number(process.env.DIGISOL_DAILY_AUDIT_CAP || 5) || 5
+  ? Number(process.env.DIGISOL_DAILY_AUDIT_CAP || 10) || 10
   : 1_000_000;
 export const DIGISOL_DAILY_AUTOMATED_EMAIL_CAP = digisolBudgetsEnforced()
   ? Number(process.env.DIGISOL_DAILY_EMAIL_CAP || 5) || 5
