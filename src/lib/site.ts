@@ -1,11 +1,11 @@
 export const DIGISOL_SITE_URL = "https://wwwdigisol.com";
 
-/** Opens Kaylev on the free website audit. Used by cards and posters, not by ads. */
+/** Opens Sammy on the free website audit. Used by cards and posters, not by ads. */
 export function kaylevAuditUrl() {
   return `${DIGISOL_SITE_URL}/?kaylev=audit`;
 }
 
-/** Facebook and Instagram ads land on the site. The visitor then clicks Free audit or asks Kaylev. */
+/** Facebook and Instagram ads land on the site. The visitor then clicks Free audit or asks Sammy. */
 export function digisolAdsLandingUrl() {
   return `${DIGISOL_SITE_URL}/`;
 }
@@ -32,8 +32,8 @@ export function siteHostLabel(url: string) {
 
 /**
  * QR destination for the Working-on company.
- * DigiSol's own site opens Kaylev's free website audit. Every card and poster
- * records Kaylev as the visit source.
+ * DigiSol's own site opens Sammy's free website audit. Every card and poster
+ * records Sammy as the visit source.
  */
 export function kaylevSourceUrl(siteUrl: string, campaign: "business-card" | "poster") {
   const raw = siteUrl.trim();
@@ -53,7 +53,7 @@ export function kaylevSourceUrl(siteUrl: string, campaign: "business-card" | "po
 
 export const DIGISOL_FOUNDER = "Cameron Brown";
 export const DIGISOL_FOUNDER_TITLE = "Founder & CEO";
-/** Public business inbox — use everywhere visitors / schema / Kaylev see email. */
+/** Public business inbox — use everywhere visitors / schema / Sammy see email. */
 export const DIGISOL_EMAIL = "cam@wwwdigisol.com";
 /**
  * Facebook Page (not a personal profile). Override with

@@ -33,7 +33,7 @@ function ChangeChip({ change, kind = "count" }: { change: Ga4Change; kind?: Kind
 
 function methodLabel(raw: string) {
   if (raw === "(not set)") return "Not tagged";
-  if (raw === "kaylev_chat") return "Kaylev chat";
+  if (raw === "kaylev_chat") return "Sammy chat";
   const words = raw.replace(/[_-]+/g, " ").trim();
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
@@ -152,7 +152,7 @@ export function Ga4InsightsPanel({
               </p>
             ) : (
               <p className="mt-3 text-xs text-zinc-500">
-                To split leads by form, Kaylev chat, and so on, register <code>method</code> as an
+                To split leads by form, Sammy chat, and so on, register <code>method</code> as an
                 event-scoped custom dimension in Google Analytics (Admin, then Custom definitions).
               </p>
             )

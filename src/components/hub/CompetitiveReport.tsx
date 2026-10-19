@@ -409,7 +409,9 @@ export function CompetitiveReport({
                   <Pill tone={LEVEL_TONE[a.impact]}>impact {a.impact}</Pill>
                   <Pill tone="bg-zinc-800 text-zinc-300">effort {a.effort}</Pill>
                   <Pill tone="bg-sky-500/15 text-sky-200">{a.timeframe}</Pill>
-                  <Pill tone="bg-indigo-500/15 text-indigo-200">{a.owner}</Pill>
+                  <Pill tone="bg-indigo-500/15 text-indigo-200">
+                    {a.owner === "Kaylev" ? "Sammy" : a.owner}
+                  </Pill>
                 </div>
               </div>
               <div className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -529,7 +531,7 @@ export function CompetitiveReport({
       ) : null}
 
       {report.dataGaps.length ? (
-        <Section title="Check by hand" subtitle="Kaylev couldn't verify these from public data.">
+        <Section title="Check by hand" subtitle="Sammy couldn't verify these from public data.">
           <ul className="list-disc space-y-1 pl-5 text-sm text-zinc-400">
             {report.dataGaps.map((g) => (
               <li key={g}>{g}</li>

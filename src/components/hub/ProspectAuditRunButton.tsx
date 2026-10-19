@@ -68,7 +68,7 @@ export function ProspectAuditRunButton() {
               ? `Seeded ${seeded} prospect${seeded === 1 ? "" : "s"}.`
               : null,
           json.queueSeed?.discoveryTier === "other"
-            ? "Trades are searched out, so Kaylev moved on to other sectors."
+            ? "Trades are searched out, so Sammy moved on to other sectors."
             : null,
           json.requeuedDryRuns
             ? `Re-queued ${json.requeuedDryRuns} dry-run/Resend row${json.requeuedDryRuns === 1 ? "" : "s"}.`

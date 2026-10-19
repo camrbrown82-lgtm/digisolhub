@@ -19,7 +19,7 @@ export async function translateLines(lines: string[], locale: Locale): Promise<s
       prompt: `Translate each string into ${LOCALE_META[locale].label} (${LOCALE_META[locale].intl}).${
         locale === "fr" ? ' Use Canadian French: "vous", and "courriel" for email.' : ""
       }
-Keep URLs, numbers, brand names (DigiSol, Kaylev, Google, Next.js) and technical terms like SEO, CTA, HTTPS and TTFB unchanged.
+Keep URLs, numbers, brand names (DigiSol, Sammy, Google, Next.js) and technical terms like SEO, CTA, HTTPS and TTFB unchanged.
 Reply with only a JSON array of strings, same order and same length as the input.
 
 ${JSON.stringify(lines)}`,

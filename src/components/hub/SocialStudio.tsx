@@ -194,7 +194,7 @@ export function SocialStudio({
         visual?: string;
       };
       if (!response.ok) {
-        setNotice(json.error || "Kaylev could not write that.");
+        setNotice(json.error || "Sammy could not write that.");
         return;
       }
       setMessages((current) => [...current, { role: "assistant", content: json.reply || "Done." }]);
@@ -202,7 +202,7 @@ export function SocialStudio({
       if (chosen) {
         setImages({ facebook: chosen.url, instagram: chosen.url });
         if (json.drafts?.length) {
-          setNotice("Kaylev wrote the posts for that poster. The image stays the one you picked.");
+          setNotice("Sammy wrote the posts for that poster. The image stays the one you picked.");
         }
       } else if (json.visual) {
         setBusy("image");
@@ -262,7 +262,7 @@ export function SocialStudio({
       setFiles((current) => [next, ...current.filter((item) => item.url !== next.url)]);
       setVideoUrl(next.url);
       setImages({ facebook: next.url, instagram: next.url });
-      setNotice("Video is saved. Write a caption and post it, or attach it to a Kaylev draft.");
+      setNotice("Video is saved. Write a caption and post it, or attach it to a Sammy draft.");
       router.refresh();
     } catch (err) {
       setNotice(err instanceof Error ? err.message : "Could not upload that video.");
@@ -370,10 +370,10 @@ export function SocialStudio({
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="flex min-h-[28rem] flex-col rounded-2xl border border-zinc-800 bg-zinc-900/40">
           <div className="border-b border-zinc-800 px-5 py-4">
-            <h2 className="text-lg font-semibold text-white">Kaylev</h2>
+            <h2 className="text-lg font-semibold text-white">Sammy</h2>
             <p className="mt-1 text-sm text-zinc-400">
               {posterUrl
-                ? "Kaylev will write both posts for the poster you picked and keep that image."
+                ? "Sammy will write both posts for the poster you picked and keep that image."
                 : "Describe the offer. Ask for the logo, the badge, or another file from this company."}
             </p>
           </div>
@@ -411,7 +411,7 @@ export function SocialStudio({
               className="mt-3 inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
             >
               {busy === "chat" || busy === "image" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              {busy === "image" ? "Building image…" : busy === "chat" ? "Writing…" : "Ask Kaylev"}
+              {busy === "image" ? "Building image…" : busy === "chat" ? "Writing…" : "Ask Sammy"}
             </button>
           </form>
         </section>
@@ -420,14 +420,14 @@ export function SocialStudio({
           <div>
             <h2 className="text-lg font-semibold text-white">Ready to post</h2>
             <p className="mt-1 text-sm text-zinc-400">
-              Pick a saved poster for Kaylev to write, upload a video, or use a Kaylev draft. Instagram needs an
+              Pick a saved poster for Sammy to write, upload a video, or use a Sammy draft. Instagram needs an
               image or a video. Times are Mountain.
             </p>
           </div>
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
             <h3 className="text-sm font-semibold text-white">Post an image</h3>
             <p className="mt-1 text-sm text-zinc-400">
-              Choose a poster saved on AI posters. Ask Kaylev and he writes the Facebook and Instagram captions for
+              Choose a poster saved on AI posters. Ask Sammy and he writes the Facebook and Instagram captions for
               that image.
             </p>
             <label className="mt-3 block text-xs text-zinc-400">
@@ -441,7 +441,7 @@ export function SocialStudio({
                   if (url) setImages({ facebook: url, instagram: url });
                 }}
               >
-                <option value="">Kaylev will make a new image</option>
+                <option value="">Sammy will make a new image</option>
                 {savedPosters.map((file) => (
                   <option key={file.url} value={file.url}>
                     {file.label}
@@ -591,7 +591,7 @@ export function SocialStudio({
           </div>
           {drafts.length === 0 ? (
             <p className="rounded-2xl border border-dashed border-zinc-700 px-4 py-8 text-sm text-zinc-500">
-              Drafts show up here after Kaylev writes them.
+              Drafts show up here after Sammy writes them.
             </p>
           ) : (
             drafts.map((draft) => (

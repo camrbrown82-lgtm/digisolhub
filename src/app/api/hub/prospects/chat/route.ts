@@ -92,7 +92,7 @@ Rules:
 
   const content = completion.choices[0]?.message?.content?.trim();
   if (!content) {
-    return NextResponse.json({ error: "Kaylev returned an empty plan." }, { status: 502 });
+    return NextResponse.json({ error: "Sammy returned an empty plan." }, { status: 502 });
   }
 
   let parsed: {

@@ -1,5 +1,5 @@
 /**
- * Client projects shown in the "Our work" section and known to Kaylev.
+ * Client projects shown in the "Our work" section and known to Sammy.
  * Only set `public: true` once the client has agreed to be shown, and only
  * set `url` once their site is live and they're happy to be linked.
  */

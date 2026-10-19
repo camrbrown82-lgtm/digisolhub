@@ -41,9 +41,9 @@ export const GOOGLE_ADS_CONVERSIONS: {
   },
   {
     kind: "chat_lead",
-    label: "Kaylev chat lead",
+    label: "Sammy chat lead",
     envVar: "NEXT_PUBLIC_GOOGLE_ADS_CHAT_LEAD_LABEL",
-    firesOn: "Kaylev saves a lead in the site chat",
+    firesOn: "Sammy saves a lead in the site chat",
   },
   {
     kind: "contact_click",

@@ -411,7 +411,7 @@ export function EmailComposer({
       subject: "",
       html: `Hey {{name}},\n\n{{logo}}\n\n{{tagline}}\n\n{{company}}`,
     });
-    if (id) setStatus("New template — give it a name Kaylev can find, e.g. Restaurant welcome.");
+    if (id) setStatus("New template — give it a name Sammy can find, e.g. Restaurant welcome.");
   }
 
   async function saveAsCopy() {
@@ -578,7 +578,7 @@ export function EmailComposer({
             placeholder="e.g. Restaurant welcome"
           />
           <span className="mt-1 block text-xs text-zinc-500">
-            Kaylev and the workflow builder find emails by this name. Include the
+            Sammy and the workflow builder find emails by this name. Include the
             industry and purpose, then Save.
           </span>
         </label>

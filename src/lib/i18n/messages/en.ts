@@ -146,7 +146,7 @@ export const en = {
     locationsDescription:
       "DigiSol website design, development, and local SEO for Calgary, Edmonton, Red Deer, Cochrane, and Airdrie. Same full DigiSol experience — Alberta-wide.",
     locationsShareDescription:
-      "Full DigiSol homepage experience for Alberta-wide search — design, engineering, marketing, Kaylev, audit video, and contact.",
+      "Full DigiSol homepage experience for Alberta-wide search — design, engineering, marketing, Sammy, audit video, and contact.",
     locationsShareAlt: "DigiSol web design and marketing across Alberta",
     cityShareAlt: (city: string) => `DigiSol web design and marketing for ${city} businesses`,
   },
@@ -285,22 +285,22 @@ export const en = {
   },
 
   kaylev: {
-    eyebrow: "DigiSol AI · Kaylev",
-    title: "Meet Kaylev: Your 24/7 Autonomous Growth Engine",
+    eyebrow: "DigiSol AI · Sammy",
+    title: "Meet Sammy: Your 24/7 Autonomous Growth Engine",
     intro:
       "Most websites just sit there. Yours should actively close deals. Lead capture, audits, campaigns, and hours back every week.",
     pillars: [
       {
         title: "24/7 Midnight Lead Capture",
-        body: "Never miss a high-intent prospect. Kaylev catches social and website leads around the clock and engages them instantly—before interest cools down.",
+        body: "Never miss a high-intent prospect. Sammy catches social and website leads around the clock and engages them instantly—before interest cools down.",
       },
       {
         title: "Autonomous Site Audits & Local SEO",
-        body: "Kaylev scans your web presence, flags performance leaks, and strengthens local ranking so customers in your area find you first.",
+        body: "Sammy scans your web presence, flags performance leaks, and strengthens local ranking so customers in your area find you first.",
       },
       {
         title: "Multi-Channel Campaign Orchestration",
-        body: "From automated email follow-ups to coordinated social touchpoints, Kaylev runs outreach pipelines without a manual click for every step.",
+        body: "From automated email follow-ups to coordinated social touchpoints, Sammy runs outreach pipelines without a manual click for every step.",
       },
       {
         title: "15+ Hours/Week Recovered",
@@ -315,7 +315,7 @@ export const en = {
     freeAudit: "Get a free website audit",
     bookConsult: "Book a consultation",
     chatHint:
-      "Prefer chat? Open Kaylev on this page. Share your site and email, and the audit arrives in your inbox.",
+      "Prefer chat? Open Sammy on this page. Share your site and email, and the audit arrives in your inbox.",
   },
 
   services: {
@@ -412,7 +412,7 @@ export const en = {
         name: "OpenAI",
         category: "AI",
         description:
-          "The models behind Kaylev, workflow drafts, poster copy, and website-audit writeups.",
+          "The models behind Sammy, workflow drafts, poster copy, and website-audit writeups.",
       },
       {
         name: "Tailwind CSS",
@@ -609,7 +609,7 @@ export const en = {
     email: "Email",
     book: "Book a call",
     bookDetail: "Pick a time that suits you",
-    chat: "Chat with Kaylev",
+    chat: "Chat with Sammy",
     chatDetail: "Instant answers, day or night",
   },
 

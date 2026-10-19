@@ -66,7 +66,7 @@ const siteUrl = (path: string, language: Locale) => `${DIGISOL_SITE_URL}${locali
 const INSTANT_EMAIL_GAP_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Kaylev can fire its capture and email tools in parallel for the same visitor.
+ * Sammy can fire its capture and email tools in parallel for the same visitor.
  * The conditional update is atomic, so only one of them wins the right to email.
  */
 async function claimInstantEmail(db: SupabaseClient, contactId: string) {
@@ -109,7 +109,7 @@ function scoreTier(score: number): ScoreTier {
 
 /**
  * Soft audit breakdown email: findings + product ideas (no pricing) +
- * Cameron consultation CTA. Used by daily prospect cron and Kaylev chat.
+ * Cameron consultation CTA. Used by daily prospect cron and Sammy chat.
  */
 export async function sendAuditFollowUpEmail(input: AuditFollowUpInput) {
   const contact = await findOrCreateContactForSend(input.db, {
@@ -468,7 +468,7 @@ function suggestProducts(score: number, weaknesses: string[], language: Locale) 
 }
 
 /**
- * Free consultation invite for Kaylev visitors with no site / cost questions.
+ * Free consultation invite for Sammy visitors with no site / cost questions.
  * Upserts contact + pipeline lead, then emails Cameron booking CTA.
  */
 export async function sendConsultationFollowUpEmail(
@@ -511,7 +511,7 @@ export async function sendConsultationFollowUpEmail(
       service: "Free consultation",
       notes_preview: (
         requirements ||
-        "Requested free consultation via Kaylev chat"
+        "Requested free consultation via Sammy chat"
       ).slice(0, 280),
       client_id: input.clientId,
     })
@@ -530,7 +530,7 @@ export async function sendConsultationFollowUpEmail(
     summary: requirements || "Free consultation request",
     source: "visitor_chat",
     service: "Free consultation",
-    activityBody: "Created from Kaylev free consultation invite.",
+    activityBody: "Created from Sammy free consultation invite.",
     advanceTo: "contacted",
   });
 
@@ -648,7 +648,7 @@ async function ensurePipelineLead(input: {
         type: "note",
         body:
           input.activityBody ||
-          `Kaylev follow-up · ${service} · ${notes}`.slice(0, 500),
+          `Sammy follow-up · ${service} · ${notes}`.slice(0, 500),
         to_stage:
           existingLead.stage === "new" || !existingLead.stage
             ? stage

@@ -409,7 +409,7 @@ export const fr: Messages = {
     locationsDescription:
       "Conception Web, développement et SEO local par DigiSol pour Calgary, Edmonton, Red Deer, Cochrane et Airdrie. La même expérience DigiSol complète, partout en Alberta.",
     locationsShareDescription:
-      "L’expérience DigiSol complète pour toute l’Alberta : design, ingénierie, marketing, Kaylev, vidéo d’audit et contact.",
+      "L’expérience DigiSol complète pour toute l’Alberta : design, ingénierie, marketing, Sammy, vidéo d’audit et contact.",
     locationsShareAlt: "Conception Web et marketing DigiSol partout en Alberta",
     cityShareAlt: (city) => `Conception Web et marketing DigiSol pour les entreprises ${de(city)}`,
   },
@@ -547,22 +547,22 @@ export const fr: Messages = {
   },
 
   kaylev: {
-    eyebrow: "IA DigiSol · Kaylev",
-    title: "Voici Kaylev : votre moteur de croissance autonome, 24 h sur 24",
+    eyebrow: "IA DigiSol · Sammy",
+    title: "Voici Sammy : votre moteur de croissance autonome, 24 h sur 24",
     intro:
       "La plupart des sites Web restent là à ne rien faire. Le vôtre devrait conclure des ventes. Capture de prospects, audits, campagnes et des heures récupérées chaque semaine.",
     pillars: [
       {
         title: "Capture de prospects jour et nuit",
-        body: "Ne manquez plus jamais un prospect intéressé. Kaylev capte les demandes venant des réseaux sociaux et du site à toute heure et y répond instantanément, avant que l’intérêt refroidisse.",
+        body: "Ne manquez plus jamais un prospect intéressé. Sammy capte les demandes venant des réseaux sociaux et du site à toute heure et y répond instantanément, avant que l’intérêt refroidisse.",
       },
       {
         title: "Audits de site et SEO local autonomes",
-        body: "Kaylev analyse votre présence Web, repère les pertes de performance et renforce votre classement local pour que la clientèle de votre secteur vous trouve en premier.",
+        body: "Sammy analyse votre présence Web, repère les pertes de performance et renforce votre classement local pour que la clientèle de votre secteur vous trouve en premier.",
       },
       {
         title: "Campagnes multicanales orchestrées",
-        body: "Des relances par courriel automatisées aux publications coordonnées sur les réseaux sociaux, Kaylev gère vos démarches sans un clic manuel à chaque étape.",
+        body: "Des relances par courriel automatisées aux publications coordonnées sur les réseaux sociaux, Sammy gère vos démarches sans un clic manuel à chaque étape.",
       },
       {
         title: "Plus de 15 heures récupérées par semaine",
@@ -577,7 +577,7 @@ export const fr: Messages = {
     freeAudit: "Obtenir un audit de site gratuit",
     bookConsult: "Réserver une consultation",
     chatHint:
-      "Vous préférez écrire? Ouvrez Kaylev sur cette page. Donnez-lui votre site et votre courriel, et l’audit arrive dans votre boîte.",
+      "Vous préférez écrire? Ouvrez Sammy sur cette page. Donnez-lui votre site et votre courriel, et l’audit arrive dans votre boîte.",
   },
 
   services: {
@@ -627,7 +627,7 @@ export const fr: Messages = {
       {
         id: "report",
         title: "Un rapport clair chaque semaine",
-        body: "Chaque lundi, la vérification recommence. Les correctifs sans risque s’appliquent en un clic, et Kaylev peut expliquer n’importe quel résultat en termes simples.",
+        body: "Chaque lundi, la vérification recommence. Les correctifs sans risque s’appliquent en un clic, et Sammy peut expliquer n’importe quel résultat en termes simples.",
       },
     ],
     cta: "Demander une vérification de Google",
@@ -709,7 +709,7 @@ export const fr: Messages = {
         name: "OpenAI",
         category: "IA",
         description:
-          "Les modèles derrière Kaylev, les ébauches de séquences, les textes d’affiches et les rapports d’audit.",
+          "Les modèles derrière Sammy, les ébauches de séquences, les textes d’affiches et les rapports d’audit.",
       },
       {
         name: "Tailwind CSS",
@@ -905,7 +905,7 @@ export const fr: Messages = {
     email: "Courriel",
     book: "Réserver un appel",
     bookDetail: "Choisissez le moment qui vous convient",
-    chat: "Écrire à Kaylev",
+    chat: "Écrire à Sammy",
     chatDetail: "Réponses instantanées, jour et nuit",
   },
 

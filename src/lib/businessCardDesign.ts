@@ -219,7 +219,7 @@ export async function planBusinessCard(companyName: string, brand: CompanyBrand,
       messages: [
         {
           role: "system",
-          content: `You are Kaylev. You design both sides of a printed business card (3.5 × 2 inches). Return JSON:
+          content: `You are Sammy. You design both sides of a printed business card (3.5 × 2 inches). Return JSON:
 headerColor (hex), showHeader (boolean), name, roles (string array, max 6), details (string array, max 6), backHeadline, backSubline, qrFace ("front"|"back"), qrSide ("left"|"right"|"center"), emblemSize (number 200-420), awardsFace ("front"|"back"), showBadges (boolean), reply.
 Start from this design, then change whatever they ask:
 Front has two sections. Section one is an indigo header (#4f46e5) with the logo centered in it (showHeader true). Section two is the body: their lines on the left, a large circular logo badge in the center (emblemSize 360), and the QR on the right (qrFace "front", qrSide "right").
@@ -265,7 +265,7 @@ Directions: ${form.directions}`,
     };
     return enforceCardPlan(planned, brand, form);
   } catch (err) {
-    console.error("Kaylev card design failed", err);
+    console.error("Sammy card design failed", err);
     return enforceCardPlan(base, brand, form);
   }
 }

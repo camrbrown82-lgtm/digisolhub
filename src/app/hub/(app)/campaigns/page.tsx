@@ -302,7 +302,7 @@ export default async function CampaignsPage() {
         <Link href="/hub/social" className="text-indigo-300 hover:text-indigo-200">
           Social
         </Link>
-        . Kaylev drafts them there, and the weekly plan is on that page too.
+        . Sammy drafts them there, and the weekly plan is on that page too.
       </p>
 
       <ContentTestBuilder

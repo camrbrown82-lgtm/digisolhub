@@ -152,7 +152,7 @@ export async function POST(request: Request) {
     ].join(" ");
   } else if (preset === "leads") {
     audienceLine =
-      "Organic new leads only — forms, Facebook, Kaylev chat, consult requests. Not prospect-audit companies.";
+      "Organic new leads only — forms, Facebook, Sammy chat, consult requests. Not prospect-audit companies.";
   } else if (preset === "engaged") {
     audienceLine =
       "Engaged contacts only — people who opened or clicked a tracked email, or are tagged engaged / warm-lead / prospect_audit_engaged. They already know us: skip cold intros and move toward a consult. Return audience \"engaged\".";

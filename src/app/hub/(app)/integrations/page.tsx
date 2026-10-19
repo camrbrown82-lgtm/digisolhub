@@ -216,7 +216,7 @@ export default async function IntegrationsPage() {
           contact tagged <code className="text-zinc-200">google_ads</code> and
           starts any enabled &quot;New lead&quot; workflow. Clicks that land on the
           site keep their <code className="text-zinc-200">gclid</code> on the
-          contact when they fill the form or chat with Kaylev.
+          contact when they fill the form or chat with Sammy.
         </p>
         <p className="mt-3">
           GA4 into Hub Analytics: set{" "}

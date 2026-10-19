@@ -54,7 +54,7 @@ export const DISPATCH_ISSUES: DispatchIssue[] = [
     year: 2026,
     title: "DigiSol Officially Launches: The All-in-One Growth Platform for Alberta Businesses",
     excerpt:
-      "DigiSol is officially open. A custom website, the DigiSol Hub, and Kaylev, your AI assistant, work together to bring in leads, follow up automatically, and show you exactly what’s working. Here’s everything the platform does for your business, plus a launch offer: from October 2 to 31, code LAUNCH takes 20% off your website build and design.",
+      "DigiSol is officially open. A custom website, the DigiSol Hub, and Sammy, your AI assistant, work together to bring in leads, follow up automatically, and show you exactly what’s working. Here’s everything the platform does for your business, plus a launch offer: from October 2 to 31, code LAUNCH takes 20% off your website build and design.",
     publishedAt: "2026-09-28",
     readingMinutes: 8,
     keywords: [
@@ -86,7 +86,7 @@ export const DISPATCH_ISSUES: DispatchIssue[] = [
       {
         heading: "DigiSol is officially open for business",
         body: [
-          "For months, every part of DigiSol ran on our own business first: the website, the lead capture, the automated follow-ups, the analytics, and Kaylev. It works, and today it’s available to companies across Airdrie, Calgary, Edmonton, Red Deer, and the rest of Alberta.",
+          "For months, every part of DigiSol ran on our own business first: the website, the lead capture, the automated follow-ups, the analytics, and Sammy. It works, and today it’s available to companies across Airdrie, Calgary, Edmonton, Red Deer, and the rest of Alberta.",
           "DigiSol is not just a web design shop. It’s a growth platform: the software that brings customers in, follows up with them automatically, and shows you which marketing is paying off. Every company gets its own private workspace, its own brand kit, and its own data. Nothing is shared between companies.",
         ],
       },
@@ -111,7 +111,7 @@ export const DISPATCH_ISSUES: DispatchIssue[] = [
         bullets: [
           "A custom website built to convert: designed for your brand (not a template), fast on phones, and wired to capture every lead.",
           "The DigiSol Hub: your CRM, contacts, pipeline, email campaigns, and automated workflows.",
-          "Kaylev, your AI assistant: answers visitors around the clock, writes your emails, and analyses your competitors.",
+          "Sammy, your AI assistant: answers visitors around the clock, writes your emails, and analyses your competitors.",
           "Analytics: website traffic, Google Ads, Meta Ads, and Instagram results in one dashboard.",
           "Branded content: posters, emails, and exports that always use your logo, colours, and voice.",
         ],
@@ -136,7 +136,7 @@ export const DISPATCH_ISSUES: DispatchIssue[] = [
         ],
         bullets: [
           "Every lead lands in one place: website forms, chat conversations, and Google Ads lead forms, with an instant alert.",
-          "Describe the follow-up you want, and Kaylev drafts the emails, matches the right one to each contact, and shows you an approval table before anything sends.",
+          "Describe the follow-up you want, and Sammy drafts the emails, matches the right one to each contact, and shows you an approval table before anything sends.",
           "Guardrails built in: no more than one automatic email per person every 24 hours, sequences stop the moment someone unsubscribes, and they step aside when you move a lead forward.",
           "See everyone in each workflow, where they are, and what they received last.",
           "Spam and email security scanners are filtered out, so you only nurture real people.",
@@ -144,9 +144,9 @@ export const DISPATCH_ISSUES: DispatchIssue[] = [
         ],
       },
       {
-        heading: "Kaylev: the assistant that never clocks out",
+        heading: "Sammy: the assistant that never clocks out",
         body: [
-          "Kaylev is DigiSol’s built-in AI. He works inside your Hub and on your website, using your business details and your brand kit.",
+          "Sammy is DigiSol’s built-in AI. He works inside your Hub and on your website, using your business details and your brand kit.",
         ],
         bullets: [
           "Answers website visitors 24/7 and saves their details straight to your contacts.",
@@ -178,7 +178,7 @@ export const DISPATCH_ISSUES: DispatchIssue[] = [
           "Three easy ways to take the first step:",
         ],
         bullets: [
-          "Get a free website audit: share your site and email with Kaylev at https://wwwdigisol.com, and the results arrive in your inbox.",
+          "Get a free website audit: share your site and email with Sammy at https://wwwdigisol.com, and the results arrive in your inbox.",
           "Book a free consultation at https://wwwdigisol.com/#contact.",
           "Choose your package with code LAUNCH at https://wwwdigisol.com/pricing?promo=LAUNCH.",
         ],

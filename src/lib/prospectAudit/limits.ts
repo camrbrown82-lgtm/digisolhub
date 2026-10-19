@@ -14,7 +14,7 @@ import {
 /** Scheduled cron daily ceiling (UTC day). */
 export const PROSPECT_AUDIT_CRON_DAILY_MAX = 10;
 
-/** Hub / Kaylev manual run — batch ceiling when not enforcing house budgets. */
+/** Hub / Sammy manual run — batch ceiling when not enforcing house budgets. */
 export const PROSPECT_AUDIT_MANUAL_BATCH_MAX = 25;
 
 /** Absolute daily ceiling when DIGISOL_ENFORCE_BUDGETS=1. */

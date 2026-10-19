@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { openKaylevAudit } from "@/components/ContactOptions";
 import { trackEvent } from "@/lib/analytics";
 
-/** Opens Kaylev on the free website audit. Works on the homepage and city landers ads already use. */
+/** Opens Sammy on the free website audit. Works on the homepage and city landers ads already use. */
 export function OpenKaylevAuditButton({
   children,
   className,

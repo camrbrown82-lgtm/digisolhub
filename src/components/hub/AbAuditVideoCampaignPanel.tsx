@@ -152,7 +152,7 @@ export function AbAuditVideoCampaignPanel() {
           <p className="mt-1 max-w-2xl text-sm text-zinc-400">
             Five staggered captions + the Media page website-audit video. Target
             Alberta startup / SMB Facebook Groups. CTA lands on wwwdigisol.com
-            (UTM-tagged) so Kaylev can email the free audit once they share a URL and an email.
+            (UTM-tagged) so Sammy can email the free audit once they share a URL and an email.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -211,8 +211,8 @@ export function AbAuditVideoCampaignPanel() {
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             <Stat label="CTA landings" value={data.metrics.ctaLandings} />
             <Stat label="Unique visitors" value={data.metrics.uniqueVisitors} />
-            <Stat label="Kaylev leads" value={data.metrics.kaylevLeads} />
-            <Stat label="Kaylev audits" value={data.metrics.kaylevAudits} />
+            <Stat label="Sammy leads" value={data.metrics.kaylevLeads} />
+            <Stat label="Sammy audits" value={data.metrics.kaylevAudits} />
           </div>
           {data.metrics.byVariant.length > 0 ? (
             <div>
@@ -240,9 +240,9 @@ export function AbAuditVideoCampaignPanel() {
             </p>
           )}
           <div className="rounded-lg border border-zinc-800/80 bg-zinc-900/40 px-3 py-2 text-[11px] leading-relaxed text-zinc-500">
-            <strong className="text-zinc-400">Kaylev (site chat)</strong> can run
+            <strong className="text-zinc-400">Sammy (site chat)</strong> can run
             a free website audit, email the breakdown, capture a lead, and log
-            findings to Hub. Kaylev does <em>not</em> manage Facebook posting or
+            findings to Hub. Sammy does <em>not</em> manage Facebook posting or
             read Group metrics — that stays on this Campaigns panel + Analytics.
           </div>
         </div>

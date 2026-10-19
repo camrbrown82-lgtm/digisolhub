@@ -108,11 +108,11 @@ export const frEmails: Widen<typeof enEmails> = {
   },
   consultSubject: "Votre consultation gratuite avec DigiSol",
   consultHi: (first) =>
-    `Bonjour${first ? ` ${first}` : ""}, merci d’avoir discuté avec Kaylev sur le site de DigiSol.`,
+    `Bonjour${first ? ` ${first}` : ""}, merci d’avoir discuté avec Sammy sur le site de DigiSol.`,
   consultBody: (requirements, founder, title) =>
     `Vous avez demandé les prochaines étapes${requirements ? ` (${requirements})` : ""}, et vous n’avez pas à tout déterminer seul. ${founder} (${title}) offre une <strong>consultation gratuite</strong> : un court appel, sans pression, pour clarifier ce qui aiderait votre entreprise à croître en ligne.`,
   consultCta: "Réserver votre consultation gratuite",
   consultDirect: "Ou joignez Cameron directement :",
   consultCasl:
-    "Vous recevez ce message parce que vous avez demandé une consultation DigiSol par l’entremise de Kaylev. DigiSol · Alberta, Canada. Répondez à ce courriel pour vous désabonner en tout temps.",
+    "Vous recevez ce message parce que vous avez demandé une consultation DigiSol par l’entremise de Sammy. DigiSol · Alberta, Canada. Répondez à ce courriel pour vous désabonner en tout temps.",
 };

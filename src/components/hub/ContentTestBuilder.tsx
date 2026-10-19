@@ -131,7 +131,7 @@ export function ContentTestBuilder({
           checklist: string[];
         };
       };
-      if (!response.ok || !result.plan) throw new Error(result.error || "Kaylev couldn't plan this test.");
+      if (!response.ok || !result.plan) throw new Error(result.error || "Sammy couldn't plan this test.");
       const plan = result.plan;
       if (!name.trim()) setName(plan.name);
       setHypothesis(plan.hypothesis);
@@ -158,9 +158,9 @@ export function ContentTestBuilder({
           plan.variants.filter((v) => v.emailSubject).map((v) => [v.variant, v.emailSubject as string]),
         ),
       });
-      setStatus("Kaylev drafted both variants. Edit anything, then save.");
+      setStatus("Sammy drafted both variants. Edit anything, then save.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Kaylev couldn't plan this test.");
+      setError(err instanceof Error ? err.message : "Sammy couldn't plan this test.");
     } finally {
       setPlanning(false);
     }
@@ -220,7 +220,7 @@ export function ContentTestBuilder({
             <p className="mt-1 max-w-3xl text-sm text-zinc-400">
               Pair two versions (copy plus a poster, image, video, file, or email) and share each with its own
               tracking link. Visits, conversions, and leads land on the right variant and channel, so you can see
-              which one works. Kaylev can draft both versions and read the results. Tests belong to {companyName}{" "}
+              which one works. Sammy can draft both versions and read the results. Tests belong to {companyName}{" "}
               only; switch Working on to test for another company.
             </p>
           </div>
@@ -396,7 +396,7 @@ export function ContentTestBuilder({
                   ) : null}
                   {extras?.visuals[variant] && !draft.assetId && !newsletterCard ? (
                     <p className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-2 text-xs text-zinc-400">
-                      <span className="text-fuchsia-200/80">Kaylev&apos;s visual idea:</span>{" "}
+                      <span className="text-fuchsia-200/80">Sammy&apos;s visual idea:</span>{" "}
                       {extras.visuals[variant]}{" "}
                       <a href="/hub/ai" target="_blank" rel="noreferrer" className="text-indigo-300 hover:text-indigo-200">
                         Make it in AI posters
@@ -430,7 +430,7 @@ export function ContentTestBuilder({
                       </select>
                       {extras?.subjects[variant] ? (
                         <span className="mt-1 block text-xs text-fuchsia-200/80">
-                          Kaylev&apos;s subject line: {extras.subjects[variant]}
+                          Sammy&apos;s subject line: {extras.subjects[variant]}
                         </span>
                       ) : null}
                     </label>
@@ -452,7 +452,7 @@ export function ContentTestBuilder({
             </label>
             <label className="text-sm text-zinc-300">
               <span className="flex items-center justify-between gap-2">
-                Notes for Kaylev (optional)
+                Notes for Sammy (optional)
                 <MicDictateButton disabled={busy} onText={(c) => setNotes((n) => appendDictation(n, c))} />
               </span>
               <input
@@ -466,7 +466,7 @@ export function ContentTestBuilder({
 
           {extras ? (
             <div className="rounded-xl border border-fuchsia-400/20 bg-zinc-950/40 p-4 text-sm text-zinc-300">
-              <p className="font-medium text-white">Kaylev&apos;s plan</p>
+              <p className="font-medium text-white">Sammy&apos;s plan</p>
               <p className="mt-2">
                 <span className="text-zinc-500">Winner decided by:</span> {extras.measure}
               </p>
@@ -504,7 +504,7 @@ export function ContentTestBuilder({
               ) : (
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
               )}
-              {planning ? "Kaylev is planning…" : "Ask Kaylev to plan it"}
+              {planning ? "Sammy is planning…" : "Ask Sammy to plan it"}
             </button>
             <button
               type="submit"

@@ -34,7 +34,7 @@ export type LeadAudience = (typeof LEAD_AUDIENCES)[number];
 
 export const LEAD_AUDIENCE_LABELS: Record<LeadAudience, string> = {
   all: "Every new lead",
-  inbound: "Inbound leads: forms, Kaylev chat, Google Ads, contacts you add",
+  inbound: "Inbound leads: forms, Sammy chat, Google Ads, contacts you add",
   audited: "Audited prospects: free website audits, and people who click a link in their audit email",
   google_ads: "Google Ads leads only",
   clients: "Signed-up clients: the contact you add with a company",

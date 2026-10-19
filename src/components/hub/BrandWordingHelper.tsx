@@ -90,7 +90,7 @@ export function BrandWordingHelper({
           Help me write {companyName}&apos;s brand wording
         </h2>
         <p className="mt-1 text-sm text-zinc-400">
-          Kaylev drafts the tagline, voice, audience, words to lean on and avoid, visual style, and notes.
+          Sammy drafts the tagline, voice, audience, words to lean on and avoid, visual style, and notes.
           Only the wording you pick changes. Colors, fonts, and logos stay exactly as saved.
         </p>
       </div>

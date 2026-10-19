@@ -56,9 +56,9 @@ export function ProspectAuditChat() {
 
   return (
     <section className="rounded-2xl border border-indigo-400/25 bg-indigo-500/10 p-4">
-      <h2 className="text-sm font-semibold text-white">Kaylev — who to audit</h2>
+      <h2 className="text-sm font-semibold text-white">Sammy — who to audit</h2>
       <p className="mt-1 text-xs text-zinc-400">
-        Speak or type. Kaylev files each business into the matching Contacts
+        Speak or type. Sammy files each business into the matching Contacts
         section and the audit queue. Nothing is emailed until you run audits.
       </p>
       <div className="mt-3 max-h-64 space-y-2 overflow-y-auto">
@@ -74,7 +74,7 @@ export function ProspectAuditChat() {
             {turn.content}
           </p>
         ))}
-        {busy ? <p className="text-xs text-zinc-500">Kaylev is filing…</p> : null}
+        {busy ? <p className="text-xs text-zinc-500">Sammy is filing…</p> : null}
       </div>
       <form onSubmit={onSubmit} className="mt-3 space-y-2">
         <div className="flex items-center justify-between gap-2">

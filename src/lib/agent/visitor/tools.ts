@@ -453,7 +453,7 @@ export function createVisitorAgentTools(
         const email = input.email.trim().toLowerCase();
         const requirements =
           input.requirements?.trim() ||
-          "Requested free consultation via Kaylev (cost / no website / unsure)";
+          "Requested free consultation via Sammy (cost / no website / unsure)";
 
         const result = await sendConsultationFollowUpEmail({
           db: admin,
@@ -743,7 +743,7 @@ async function upsertVisitorPipelineLead(input: {
       await input.admin.from("lead_activities").insert({
         lead_id: existingLead.id,
         type: "note",
-        body: `[Kaylev] ${leadTypeLabel(input.leadType)} · ${input.requirements}`.slice(
+        body: `[Sammy] ${leadTypeLabel(input.leadType)} · ${input.requirements}`.slice(
           0,
           500,
         ),
@@ -842,7 +842,7 @@ function isFreshContact(createdAt: unknown) {
 }
 
 /**
- * Kaylev may create the contact from any of its tools, in any order. Report the new
+ * Sammy may create the contact from any of its tools, in any order. Report the new
  * lead from each; Inngest starts workflows once per contact.
  */
 async function startWorkflowsIfNewContact(

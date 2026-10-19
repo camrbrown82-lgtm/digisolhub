@@ -1,6 +1,6 @@
 /**
  * Client-side first-touch attribution (UTM + Meta and Google Ads click ids).
- * Stored in sessionStorage so contact forms / Kaylev can attach it later.
+ * Stored in sessionStorage so contact forms / Sammy can attach it later.
  */
 
 export const ATTRIBUTION_STORAGE_KEY = "ds_attribution_v1";

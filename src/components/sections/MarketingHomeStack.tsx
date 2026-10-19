@@ -18,7 +18,7 @@ import type { HomeCopy } from "@/lib/visitorRegion";
 
 type MarketingHomeStackProps = {
   copy: HomeCopy;
-  /** Optional city label for Kaylev Advantage line */
+  /** Optional city label for Sammy Advantage line */
   kaylevLocationName?: string;
   analyticsKaylev: string;
   /**

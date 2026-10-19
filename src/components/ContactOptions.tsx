@@ -13,9 +13,9 @@ import {
   DIGISOL_TEL_HREF,
 } from "@/lib/site";
 
-/** Fired to open the Kaylev visitor chat from anywhere on the page. */
+/** Fired to open the Sammy visitor chat from anywhere on the page. */
 export const OPEN_KAYLEV_EVENT = "kaylev:open";
-/** Opens Kaylev on the free website audit, including on a phone. */
+/** Opens Sammy on the free website audit, including on a phone. */
 export const AUDIT_KAYLEV_EVENT = "kaylev:audit";
 
 export function openKaylevChat() {

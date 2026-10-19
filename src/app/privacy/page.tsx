@@ -13,7 +13,7 @@ import {
 export const metadata: Metadata = {
   title: "Privacy Policy | DigiSol",
   description:
-    "How DigiSol collects, uses, and protects personal information when you visit wwwdigisol.com, chat with Kaylev, request a consult, or use DigiSol services.",
+    "How DigiSol collects, uses, and protects personal information when you visit wwwdigisol.com, chat with Sammy, request a consult, or use DigiSol services.",
   alternates: { canonical: "/privacy" },
   openGraph: {
     title: "Privacy Policy | DigiSol",
@@ -97,7 +97,7 @@ export default function PrivacyPolicyPage() {
                 </li>
                 <li>
                   <span className="text-zinc-200">Chat data</span> â€” messages
-                  you send to Kaylev (our on-site visitor assistant), plus
+                  you send to Sammy (our on-site visitor assistant), plus
                   related context needed to answer and follow up (for example,
                   contact details you choose to share for a consultation).
                 </li>
@@ -139,7 +139,7 @@ export default function PrivacyPolicyPage() {
               <p>We use personal information to:</p>
               <ul className="mt-3 list-disc space-y-2 pl-5 text-zinc-400">
                 <li>Respond to inquiries and provide quotes or consultations</li>
-                <li>Operate Kaylev and related follow-up communications</li>
+                <li>Operate Sammy and related follow-up communications</li>
                 <li>Deliver website, SEO, marketing, and Hub services</li>
                 <li>Process payments and manage subscriptions</li>
                 <li>
@@ -214,7 +214,7 @@ export default function PrivacyPolicyPage() {
 
             <Section title="6. AI-assisted features">
               <p>
-                Kaylev and certain Hub tools use artificial intelligence (for
+                Sammy and certain Hub tools use artificial intelligence (for
                 example, OpenAI) to generate responses, drafts, summaries, or
                 recommendations. Content you submit in those features may be
                 processed by those providers solely to fulfill the request.

@@ -28,7 +28,7 @@ function draftsOf(value: unknown) {
     .slice(0, 2);
 }
 
-/** Kaylev turns the conversation into Facebook and Instagram drafts. Nothing is posted. */
+/** Sammy turns the conversation into Facebook and Instagram drafts. Nothing is posted. */
 export async function POST(request: Request) {
   const { supabase, error } = await requireHubSession();
   if (error) return error;
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       messages: [
         {
           role: "system",
-          content: `You are Kaylev, writing social posts for ${companyName}. Speak as Kaylev in the first person. Kaylev is a boy (he/him).
+          content: `You are Sammy, writing social posts for ${companyName}. Speak as Sammy in the first person. Sammy is a boy (he/him).
 The user's message is the assignment. Execute it. Write every offer, percent, date, promo code, city, and link they name, exactly as they gave it. The brand kit controls voice only. It does not block a promo, discount, or price they just told you to post. Never refuse. Never say an offer has to be in the brand kit.
 Return JSON:
 reply: 1 to 3 sentences. Say what you wrote. Never say logos, badges, or images are handled elsewhere. If they are only asking a question and did not ask for a post, answer it and leave drafts and visual empty.

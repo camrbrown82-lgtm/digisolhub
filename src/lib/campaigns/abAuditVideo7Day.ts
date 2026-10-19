@@ -24,7 +24,7 @@ export type AuditVideoVariant = {
 
 /**
  * Fixed copy pack for DigiSol's Alberta Facebook Group campaign.
- * [Link] is replaced with a UTM-tagged homepage CTA (Kaylev lives there).
+ * [Link] is replaced with a UTM-tagged homepage CTA (Sammy lives there).
  */
 export const AB_AUDIT_VIDEO_VARIANTS: AuditVideoVariant[] = [
   {
@@ -393,7 +393,7 @@ export async function getAbAuditVideoCampaignStatus(db: SupabaseClient) {
 /**
  * DigiSol-side outcomes for the FB Groups campaign.
  * Facebook Group likes/reach/impressions are NOT available via Meta for Groups —
- * we measure what lands on wwwdigisol.com (UTM CTAs) + Kaylev actions.
+ * we measure what lands on wwwdigisol.com (UTM CTAs) + Sammy actions.
  */
 async function loadCampaignOutcomeMetrics(
   db: SupabaseClient,
@@ -455,7 +455,7 @@ async function loadCampaignOutcomeMetrics(
       }))
       .sort((a, b) => b.landings - a.landings),
     note:
-      "Facebook Groups do not expose likes/reach/impressions to DigiSol. Metrics below are DigiSol outcomes: UTM CTA clicks onto the site, plus Kaylev chat leads and free audits.",
+      "Facebook Groups do not expose likes/reach/impressions to DigiSol. Metrics below are DigiSol outcomes: UTM CTA clicks onto the site, plus Sammy chat leads and free audits.",
   };
 }
 

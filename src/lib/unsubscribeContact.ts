@@ -17,7 +17,7 @@ export function ilikeExact(email: string) {
 }
 
 /**
- * Kaylev's unsubscribe handler: stamps unsubscribed_at so every send path and
+ * Sammy's unsubscribe handler: stamps unsubscribed_at so every send path and
  * audience skips the person, hides them from Contacts, and records why. The row
  * stays as a do-not-contact record so audits/imports can't re-add them.
  */
@@ -52,7 +52,7 @@ export async function unsubscribeContactsByEmail(
 
     await admin.from("notes").insert({
       contact_id: row.id,
-      body: `Unsubscribed: ${email} ${SOURCE_COPY[source]}. Kaylev removed them from Contacts and audiences and stopped any running workflows. Do not email again.`,
+      body: `Unsubscribed: ${email} ${SOURCE_COPY[source]}. Sammy removed them from Contacts and audiences and stopped any running workflows. Do not email again.`,
     });
 
     if (row.client_id) {

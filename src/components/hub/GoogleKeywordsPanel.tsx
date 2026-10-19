@@ -129,7 +129,7 @@ export function GoogleKeywordsPanel({
         <span className="text-xs text-zinc-500">For {companyName} only. Switch Working on for another company.</span>
       </div>
       <p className="mt-1 text-sm text-zinc-400">
-        Kaylev works out {companyName}&apos;s field from its brand kit and website, pulls Google&apos;s search volumes,
+        Sammy works out {companyName}&apos;s field from its brand kit and website, pulls Google&apos;s search volumes,
         and keeps the searches that are rising and that a paying customer would type. Nothing is bid until you confirm.
       </p>
 
@@ -151,7 +151,7 @@ export function GoogleKeywordsPanel({
           disabled={Boolean(busy)}
           className="rounded-xl bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-400 disabled:opacity-50"
         >
-          {busy === "find" ? "Kaylev is searching… (up to a minute)" : found ? "Find again" : "Find trending keywords"}
+          {busy === "find" ? "Sammy is searching… (up to a minute)" : found ? "Find again" : "Find trending keywords"}
         </button>
       </div>
 
@@ -204,7 +204,7 @@ export function GoogleKeywordsPanel({
                       {k.why ? <p className="mt-0.5 text-xs text-zinc-500">{k.why}</p> : null}
                     </td>
                     <td className="py-2 pr-3 text-right tabular-nums text-zinc-300">
-                      {k.monthlySearches ? k.monthlySearches.toLocaleString("en-CA") : "Kaylev's pick"}
+                      {k.monthlySearches ? k.monthlySearches.toLocaleString("en-CA") : "Sammy's pick"}
                     </td>
                     <td
                       className={`py-2 pr-3 text-right tabular-nums ${
@@ -286,7 +286,7 @@ export function GoogleKeywordsPanel({
           {isNew ? (
             <label className="mt-3 flex items-center gap-2 text-sm text-zinc-300">
               <input type="checkbox" checked={startNow} onChange={(e) => setStartNow(e.target.checked)} />
-              Start it right away (otherwise it&apos;s created paused with a Kaylev-written ad for you to check)
+              Start it right away (otherwise it&apos;s created paused with a Sammy-written ad for you to check)
             </label>
           ) : null}
 

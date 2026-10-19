@@ -388,7 +388,7 @@ export function ContentTestCard({
         <div className="mt-4 rounded-xl border border-fuchsia-400/20 bg-fuchsia-500/5 p-4 text-sm text-zinc-300">
           <p className="flex items-center gap-2 font-medium text-white">
             <Sparkles className="h-4 w-4 text-fuchsia-300" aria-hidden="true" />
-            Kaylev: {test.kaylev.recommendation}
+            Sammy: {test.kaylev.recommendation}
           </p>
           <p className="mt-2 whitespace-pre-wrap">{test.kaylev.analysis}</p>
           {test.kaylev.actions?.length ? (
@@ -423,7 +423,7 @@ export function ContentTestCard({
           ) : (
             <Sparkles className="h-4 w-4" aria-hidden="true" />
           )}
-          {busy === "analyze" ? "Kaylev is reading…" : "Ask Kaylev to read the results"}
+          {busy === "analyze" ? "Sammy is reading…" : "Ask Sammy to read the results"}
         </button>
         {(["A", "B"] as TestVariant[]).map((variant) => (
           <button

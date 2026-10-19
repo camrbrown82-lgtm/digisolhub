@@ -240,7 +240,7 @@ export function AiImageForm({
         />
         <span>
           Add a QR code on a band under the art. It opens this company&apos;s website,
-          and Kaylev is the source on the link.
+          and Sammy is the source on the link.
           {canQr ? "" : " Add a domain on Brand first."}
         </span>
       </label>

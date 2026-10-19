@@ -61,7 +61,7 @@ export async function POST(request: Request, { params }: Params) {
   }
   if (runIds.length === 0) {
     return NextResponse.json(
-      { error: "Everyone selected has unsubscribed — Kaylev won't email them." },
+      { error: "Everyone selected has unsubscribed — Sammy won't email them." },
       { status: 400 },
     );
   }
@@ -85,7 +85,7 @@ export async function POST(request: Request, { params }: Params) {
       .eq("client_id", clientId);
     if ((found ?? []).length !== planTemplateIds.length) {
       return NextResponse.json(
-        { error: "The email plan points at a template that no longer exists. Re-run Kaylev's match." },
+        { error: "The email plan points at a template that no longer exists. Re-run Sammy's match." },
         { status: 400 },
       );
     }

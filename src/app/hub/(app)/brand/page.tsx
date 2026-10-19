@@ -90,7 +90,7 @@ export default async function BrandPage() {
             siteHint="Add a domain in the form above, save the kit, then make the card."
             scanNote={
               siteUrl && isDigisolSiteUrl(siteUrl)
-                ? "On DigiSol's site, a scan opens Kaylev's free website audit."
+                ? "On DigiSol's site, a scan opens Sammy's free website audit."
                 : "A scan opens this company's website."
             }
             library={library}

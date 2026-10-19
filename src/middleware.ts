@@ -121,7 +121,7 @@ function withGeoRequestHeaders(request: NextRequest, geo: VisitorGeo) {
 
 /**
  * The live Facebook and Instagram ad was saved with /contact, which has no page.
- * Send that click to the homepage. The visitor then clicks Free audit or asks Kaylev.
+ * Send that click to the homepage. The visitor then clicks Free audit or asks Sammy.
  * Other query params (utm_*) stay on the URL.
  */
 function contactAdRedirect(request: NextRequest, path: string) {
@@ -134,7 +134,7 @@ function contactAdRedirect(request: NextRequest, path: string) {
 }
 
 /**
- * An older creative opened Kaylev immediately via ?kaylev=audit.
+ * An older creative opened Sammy immediately via ?kaylev=audit.
  * Paid social clicks should land on the site first.
  */
 function paidSocialHomeRedirect(request: NextRequest, path: string) {

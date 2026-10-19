@@ -1163,7 +1163,7 @@ export async function auditAllGoogleSetups(db: SupabaseClient) {
   return { companies: digest.length, emailed };
 }
 
-/** Compact picture for Kaylev's analytics tools (reads the saved audit, no Google calls). */
+/** Compact picture for Sammy's analytics tools (reads the saved audit, no Google calls). */
 export async function googleSetupForAgent(db: SupabaseClient, clientId: string) {
   const setup = await loadGoogleSetup(db, clientId).catch(() => null);
   if (!setup?.audit) {

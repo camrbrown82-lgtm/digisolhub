@@ -103,7 +103,7 @@ export function CompetitiveRunForm({ companyName, defaults, activeRunId, activeS
         <div>
           <h2 className="text-lg font-semibold text-white">Run a competitive analysis</h2>
           <p className="mt-1 max-w-2xl text-sm text-zinc-400">
-            Kaylev analyzes the website below, finds its competitors (or uses the ones you
+            Sammy analyzes the website below, finds its competitors (or uses the ones you
             list), checks Google reviews, listings and social presence, then writes the
             action plan for that business. Saved under {companyName}. Takes 2 to 4 minutes.
           </p>
@@ -123,7 +123,7 @@ export function CompetitiveRunForm({ companyName, defaults, activeRunId, activeS
           />
         </label>
         <label className="text-xs text-zinc-400">
-          Industry <span className="text-zinc-600">(blank = Kaylev infers it)</span>
+          Industry <span className="text-zinc-600">(blank = Sammy infers it)</span>
           <input
             name="industry"
             value={industry}
@@ -146,7 +146,7 @@ export function CompetitiveRunForm({ companyName, defaults, activeRunId, activeS
         </label>
       </div>
       <label className="mt-3 block text-xs text-zinc-400">
-        Competitor websites <span className="text-zinc-600">(optional, one per line, up to 5 — leave blank and Kaylev finds them)</span>
+        Competitor websites <span className="text-zinc-600">(optional, one per line, up to 5 — leave blank and Sammy finds them)</span>
         <textarea
           name="competitorUrls"
           value={competitors}
@@ -166,7 +166,7 @@ export function CompetitiveRunForm({ companyName, defaults, activeRunId, activeS
           className="hub-btn inline-flex items-center gap-2 text-sm"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Swords className="h-4 w-4" />}
-          {busy ? "Kaylev is working…" : "Run with Kaylev"}
+          {busy ? "Sammy is working…" : "Run with Sammy"}
         </button>
         {runId && stage ? <span className="text-sm text-sky-200">{stage}…</span> : null}
         {error ? <span className="text-sm text-rose-300">{error}</span> : null}

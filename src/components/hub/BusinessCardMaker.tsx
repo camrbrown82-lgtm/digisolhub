@@ -172,7 +172,7 @@ export function BusinessCardMaker({
     };
     setBusy(false);
     if (!response.ok || !result.url) {
-      setStatus(result.error || "Kaylev could not build the card.");
+      setStatus(result.error || "Sammy could not build the card.");
       setMessages((current) => [
         ...current,
         { role: "kaylev", text: result.error || "I could not build that card. Try again." },
@@ -214,7 +214,7 @@ export function BusinessCardMaker({
   async function importFiles(list: FileList | null) {
     const chosen = Array.from(list ?? []).filter((file) => file.type.startsWith("image/")).slice(0, 6);
     if (!chosen.length) {
-      setStatus("Import an image. Kaylev sizes it to the card.");
+      setStatus("Import an image. Sammy sizes it to the card.");
       return;
     }
     setBusy(true);
@@ -229,8 +229,8 @@ export function BusinessCardMaker({
       setPicked((current) => [...added.map((item) => item.url), ...current]);
       setStatus(
         added.length === 1
-          ? "File imported. It will be sized to the card when you send this to Kaylev."
-          : `${added.length} files imported. They will be sized to the card when you send this to Kaylev.`,
+          ? "File imported. It will be sized to the card when you send this to Sammy."
+          : `${added.length} files imported. They will be sized to the card when you send this to Sammy.`,
       );
       router.refresh();
     } catch (err) {
@@ -251,7 +251,7 @@ export function BusinessCardMaker({
       <div>
         <h2 className="text-lg font-semibold text-white">Business cards</h2>
         <p className="mt-1 max-w-2xl text-sm text-zinc-400">
-          Tell Kaylev what the card should show and he draws that picture. Name, phone, and
+          Tell Sammy what the card should show and he draws that picture. Name, phone, and
           email stay as text you can edit. {scanNote}
         </p>
       </div>
@@ -280,7 +280,7 @@ export function BusinessCardMaker({
                 value={line}
                 onChange={(event) => setLine(event.target.value)}
                 className="hub-field"
-                placeholder="Leave blank and Kaylev writes one from the brand kit"
+                placeholder="Leave blank and Sammy writes one from the brand kit"
               />
             </label>
           </div>
@@ -334,7 +334,7 @@ export function BusinessCardMaker({
           </div>
 
           <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
-            <p className="text-sm font-medium text-white">Directions for Kaylev</p>
+            <p className="text-sm font-medium text-white">Directions for Sammy</p>
             <div className="mt-2 max-h-48 space-y-2 overflow-y-auto">
               {messages.map((message, index) => (
                 <p
@@ -344,7 +344,7 @@ export function BusinessCardMaker({
                   }`}
                 >
                   <span className="mr-2 text-xs uppercase tracking-wide text-zinc-500">
-                    {message.role === "kaylev" ? "Kaylev" : "You"}
+                    {message.role === "kaylev" ? "Sammy" : "You"}
                   </span>
                   {message.text}
                 </p>
@@ -369,7 +369,7 @@ export function BusinessCardMaker({
           </div>
 
           <button type="submit" disabled={busy} className="hub-btn">
-            {busy ? "Making the card…" : directions.trim() ? "Send to Kaylev" : "Kaylev, make this card"}
+            {busy ? "Making the card…" : directions.trim() ? "Send to Sammy" : "Sammy, make this card"}
           </button>
         </form>
       ) : (

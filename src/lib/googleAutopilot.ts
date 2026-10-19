@@ -1,4 +1,4 @@
-/** Public wording for the Hub's weekly Google setup check. Site section and Kaylev share it. */
+/** Public wording for the Hub's weekly Google setup check. Site section and Sammy share it. */
 export const GOOGLE_AUTOPILOT_PILLARS = [
   {
     id: "analytics",
@@ -18,7 +18,7 @@ export const GOOGLE_AUTOPILOT_PILLARS = [
   {
     id: "report",
     title: "A plain-English report every week",
-    body: "Every Monday the check runs again. Safe fixes are applied in one click, and Kaylev can explain any result in plain language.",
+    body: "Every Monday the check runs again. Safe fixes are applied in one click, and Sammy can explain any result in plain language.",
   },
 ] as const;
 

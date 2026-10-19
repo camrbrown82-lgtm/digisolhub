@@ -26,7 +26,7 @@ export async function GET(request: Request) {
 
   try {
     await ensureAnalyticsSocialSchema().catch(() => null);
-    // Most frequent cron: keeps runtime-added contact columns (click ids, Kaylev email claim) in place.
+    // Most frequent cron: keeps runtime-added contact columns (click ids, Sammy email claim) in place.
     await ensureMetaSchema().catch(() => null);
     const db = createAdminClient();
     const result = await processSocialPostQueue(db, { limit: 10 });

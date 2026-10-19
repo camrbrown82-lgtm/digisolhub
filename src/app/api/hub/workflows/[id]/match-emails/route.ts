@@ -37,7 +37,7 @@ export type EmailMatchRow = {
   reason: string;
 };
 
-const SYSTEM_PROMPT = `You are Kaylev, DigiSol Hub's campaign assistant. You pick which saved email template each contact should get at each Send step of a workflow.
+const SYSTEM_PROMPT = `You are Sammy, DigiSol Hub's campaign assistant. You pick which saved email template each contact should get at each Send step of a workflow.
 
 Rules:
 - Only use template ids from the provided list. Never invent ids.
@@ -67,7 +67,7 @@ export async function POST(request: Request, { params }: Params) {
 
   if (!getOpenAIApiKey()) {
     return NextResponse.json(
-      { error: "OPENAI_API_KEY is not configured, so Kaylev cannot match emails." },
+      { error: "OPENAI_API_KEY is not configured, so Sammy cannot match emails." },
       { status: 503 },
     );
   }

@@ -38,7 +38,7 @@ export const CONTACT_AUDIENCE_SECTIONS: {
   {
     id: "new_leads",
     label: "New leads",
-    hint: "Organic inquiries — forms, Facebook, Kaylev chat, consult requests.",
+    hint: "Organic inquiries — forms, Facebook, Sammy chat, consult requests.",
   },
   {
     id: "operator",

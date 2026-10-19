@@ -100,14 +100,14 @@ export default async function ProspectsPage() {
           <WorkspaceScope companyName={active?.name} noun="prospect audits" />
           {!isDigisol ? (
             <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-              Website audits Kaylev filed for {active?.name || "this company"}. The
+              Website audits Sammy filed for {active?.name || "this company"}. The
               audit-and-email run is DigiSol&apos;s own outreach, so it doesn&apos;t
               run here.
             </p>
           ) : (
           <>
           <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-            Daily automated website audits. Kaylev emails a business only when
+            Daily automated website audits. Sammy emails a business only when
             its own site conspicuously publishes that address, the domain has a
             mail server, and the address has never bounced. This list keeps
             those email-compliant audits. Sites that fail the CASL check are

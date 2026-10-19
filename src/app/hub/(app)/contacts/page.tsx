@@ -209,7 +209,7 @@ export default async function ContactsPage({
 
       {showUnsubscribed ? (
         <div className="rounded-xl border border-zinc-700 bg-zinc-900/60 px-4 py-3 text-sm text-zinc-300">
-          Showing people who unsubscribed. Kaylev keeps them here as
+          Showing people who unsubscribed. Sammy keeps them here as
           do-not-contact records so audits and imports can&apos;t re-add them —
           they&apos;re never emailed.{" "}
           <Link href="/hub/contacts" className="text-indigo-300 hover:text-indigo-200">

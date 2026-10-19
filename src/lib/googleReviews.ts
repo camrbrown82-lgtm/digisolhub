@@ -356,7 +356,7 @@ export async function loadReviewSummary(
   };
 }
 
-/** Compact Google review picture for Kaylev's analytics tools. */
+/** Compact Google review picture for Sammy's analytics tools. */
 export async function reviewsForAgent(db: SupabaseClient, clientId: string) {
   const s = await loadReviewSummary(db, clientId).catch(() => emptyReviewSummary());
   if (!s.latest) {

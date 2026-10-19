@@ -61,7 +61,7 @@ export const competitiveReportSchema = z.object({
         impact: level,
         effort: level,
         timeframe: z.enum(["this week", "30 days", "90 days"]),
-        owner: z.enum(["DigiSol", "Client", "Kaylev"]),
+        owner: z.enum(["DigiSol", "Client", "Sammy", "Kaylev"]),
         steps: z.array(z.string()).describe("4-8 concrete, ordered steps."),
         howToAchieve: z
           .string()

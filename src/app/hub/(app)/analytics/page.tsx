@@ -336,7 +336,7 @@ export default async function AnalyticsPage({
               <p className="mt-1 text-sm text-zinc-400">
                 {active?.name || "This company"}&apos;s numbers for the last {gaStatus.ready ? gaDays : 14} days:
                 {gaStatus.ready ? " its Google Analytics," : ""} visits from the Hub
-                tracker, email, leads, and Kaylev. Only this company&apos;s data shows here.
+                tracker, email, leads, and Sammy. Only this company&apos;s data shows here.
                 {gaStatus.ready ? null : " Connect its GA4 property in Google setup to add Google Analytics."}
               </p>
             </div>

@@ -515,7 +515,7 @@ export async function synthesizeReport(input: {
     temperature: 0,
     maxOutputTokens: REPORT_MAX_OUTPUT_TOKENS,
     output: Output.object({ schema: competitiveReportSchema }),
-    prompt: `You are Kaylev, writing a competitive analysis for one client company. DigiSol is the agency preparing the report. DigiSol is not the company being analyzed.
+    prompt: `You are Sammy, writing a competitive analysis for one client company. DigiSol is the agency preparing the report. DigiSol is not the company being analyzed.
 
 SUBJECT: ${input.companyName} (${input.company.url}), a ${input.inputs.industry} business serving ${input.inputs.location}.
 Write every summary, score explanation, SWOT point, keyword, and action about ${input.companyName} and the competitor sites below. Do not describe DigiSol's services, website, location, stack, or offers as if they belong to ${input.companyName}. Ignore anything you know about DigiSol as a business.
@@ -539,7 +539,7 @@ ${scorecardPromptBlock(input.scorecard, input.changes, { checklistUpdated: input
 - If there were improvements since the previous analysis, open the executive summary by naming them and the score change. Never describe an improvement as a weakness.
 - Base the action plan on the missing checklist items with the biggest point values and competitor gaps, plus anything else the evidence shows.
 
-The action plan is the most important part. Give 8-12 actions ordered by priority (highest impact for the least effort first, and close the biggest competitor gaps first). Each needs 4-8 concrete steps someone can follow, practical "how to achieve" recommendations (tools, examples, sample wording, what good looks like), a timeframe, an owner (DigiSol for web/SEO/automation work, Client for things only the business can do such as asking for reviews or photos, Kaylev for automated audits, follow-ups and monitoring), and a measurable KPI with a target.
+The action plan is the most important part. Give 8-12 actions ordered by priority (highest impact for the least effort first, and close the biggest competitor gaps first). Each needs 4-8 concrete steps someone can follow, practical "how to achieve" recommendations (tools, examples, sample wording, what good looks like), a timeframe, an owner (DigiSol for web/SEO/automation work, Client for things only the business can do such as asking for reviews or photos, Sammy for automated audits, follow-ups and monitoring), and a measurable KPI with a target.
 
 ## Published prices
 These are the only prices that were printed on the public pages. priceComparison.summary compares them in 3-5 sentences. Use these figures exactly. Never add a price that is not listed here. When a company has no line, say their prices are not published.
@@ -554,7 +554,7 @@ ${describeSite(trimmed.company, presenceFor(input.company.url))}
 ${trimmed.competitors.map((c) => describeSite(c, presenceFor(c.url))).join("\n\n") || "(no competitors could be analysed)"}`,
   });
 
-  if (!result.output) throw new Error("Kaylev could not produce a report. Try again.");
+  if (!result.output) throw new Error("Sammy could not produce a report. Try again.");
   return {
     report: {
       ...applyScorecard(result.output, input.scorecard),

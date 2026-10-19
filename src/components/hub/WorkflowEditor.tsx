@@ -402,15 +402,15 @@ export function WorkflowEditor({
 
   async function matchEmails() {
     if (selectedContactIds.length === 0) {
-      setStatus("Add contacts to Will run for, then let Kaylev match emails.");
+      setStatus("Add contacts to Will run for, then let Sammy match emails.");
       return;
     }
     if (sendSteps.length === 0) {
-      setStatus("Add a Send step first — Kaylev fills Send steps.");
+      setStatus("Add a Send step first — Sammy fills Send steps.");
       return;
     }
     setMatching(true);
-    setStatus(`Kaylev is matching emails for ${selectedContactIds.length} contact(s)…`);
+    setStatus(`Sammy is matching emails for ${selectedContactIds.length} contact(s)…`);
     try {
       const response = await fetch(`/api/hub/workflows/${workflow.id}/match-emails`, {
         method: "POST",
@@ -426,16 +426,16 @@ export function WorkflowEditor({
         error?: string;
       };
       if (!response.ok || !json.rows) {
-        setStatus(json.error || "Kaylev could not match emails");
+        setStatus(json.error || "Sammy could not match emails");
         return;
       }
       setEmailPlanRows(json.rows);
       setEmailPlanApproved(false);
       setStatus(
-        `Kaylev matched ${json.rows.length} contact(s). Review the emails below, change any you disagree with, then Approve.`,
+        `Sammy matched ${json.rows.length} contact(s). Review the emails below, change any you disagree with, then Approve.`,
       );
     } catch {
-      setStatus("Kaylev could not match emails — check your connection.");
+      setStatus("Sammy could not match emails — check your connection.");
     } finally {
       setMatching(false);
     }
@@ -641,14 +641,14 @@ export function WorkflowEditor({
       return;
     }
     if (planActive && !emailPlanApproved) {
-      setStatus("Approve Kaylev's email plan (or clear it) before running.");
+      setStatus("Approve Sammy's email plan (or clear it) before running.");
       return;
     }
     if (contactsMissingEmail.length > 0) {
       setStatus(
         planActive
-          ? `${contactsMissingEmail.length} contact(s) still have no email on a Send step — pick one in the plan or re-run Kaylev's match.`
-          : `Pick an email template on ${sendStepsMissingTemplate.length} send step(s), or let Kaylev match emails per contact.`,
+          ? `${contactsMissingEmail.length} contact(s) still have no email on a Send step — pick one in the plan or re-run Sammy's match.`
+          : `Pick an email template on ${sendStepsMissingTemplate.length} send step(s), or let Sammy match emails per contact.`,
       );
       return;
     }
@@ -1123,10 +1123,10 @@ export function WorkflowEditor({
                 ? emailPlanApproved
                   ? contactsMissingEmail.length > 0
                     ? `○ ${contactsMissingEmail.length} contact(s) still need an email in the plan`
-                    : `✓ Kaylev's email plan approved for ${selectedContactIds.length} contact(s)`
-                  : "○ Review and approve Kaylev's email plan below"
+                    : `✓ Sammy's email plan approved for ${selectedContactIds.length} contact(s)`
+                  : "○ Review and approve Sammy's email plan below"
                 : sendStepsMissingTemplate.length > 0
-                  ? `○ ${sendStepsMissingTemplate.length} send step(s) need a template — or let Kaylev match emails per contact`
+                  ? `○ ${sendStepsMissingTemplate.length} send step(s) need a template — or let Sammy match emails per contact`
                   : `✓ ${sendSteps.length} send step(s) have templates`}
           </li>
           <li className="text-zinc-500">
@@ -1140,7 +1140,7 @@ export function WorkflowEditor({
               <div>
                 <h3 className="text-sm font-semibold text-white">Emails per contact</h3>
                 <p className="mt-1 max-w-2xl text-xs text-zinc-400">
-                  Kaylev picks the best saved email for each company at every Send
+                  Sammy picks the best saved email for each company at every Send
                   step — restaurant vs trades, high vs low audit score, new lead vs
                   audit, or your general business email. Nothing sends until you
                   approve.
@@ -1162,7 +1162,7 @@ export function WorkflowEditor({
             <div className="mt-3 flex flex-wrap items-end gap-2">
               <label className="min-w-[16rem] flex-1 text-xs text-zinc-400">
                 <span className="flex items-center justify-between gap-2">
-                  Rules for Kaylev (optional)
+                  Rules for Sammy (optional)
                   <MicDictateButton
                     onText={(chunk) =>
                       setMatchRules((current) => appendDictation(current, chunk))
@@ -1183,10 +1183,10 @@ export function WorkflowEditor({
                 disabled={matching || selectedContactIds.length === 0}
               >
                 {matching
-                  ? "Kaylev is matching…"
+                  ? "Sammy is matching…"
                   : planActive
                     ? `Re-match emails (${selectedContactIds.length})`
-                    : `Kaylev: match emails (${selectedContactIds.length})`}
+                    : `Sammy: match emails (${selectedContactIds.length})`}
               </button>
             </div>
 

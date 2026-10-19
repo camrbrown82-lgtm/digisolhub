@@ -1,4 +1,4 @@
-/** DigiSol's public promises. Kept in one place so the site, checkout, FAQ and Kaylev stay word-for-word the same. */
+/** DigiSol's public promises. Kept in one place so the site, checkout, FAQ and Sammy stay word-for-word the same. */
 export const DIGISOL_GUARANTEES = [
   {
     id: "revisions",

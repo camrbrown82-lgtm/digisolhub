@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     return await plan(body ?? {}, { supabase, clientId, companyName, brandPrompt, isDigisol, siteFacts });
   } catch (err) {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Kaylev couldn't finish that." },
+      { error: err instanceof Error ? err.message : "Sammy couldn't finish that." },
       { status: 502 },
     );
   }
@@ -113,7 +113,7 @@ async function plan(body: Record<string, unknown>, ctx: Ctx) {
   let landingUrl = typeof body.landingUrl === "string" ? body.landingUrl.trim() : "";
   if (issue && !landingUrl) landingUrl = dispatchUrl(issue.slug);
   if (!goal && !issue) {
-    return NextResponse.json({ error: "Tell Kaylev the goal, or pick a Dispatch issue." }, { status: 400 });
+    return NextResponse.json({ error: "Tell Sammy the goal, or pick a Dispatch issue." }, { status: 400 });
   }
 
   const [assetsRes, templatesRes] = await Promise.all([
@@ -145,7 +145,7 @@ async function plan(body: Record<string, unknown>, ctx: Ctx) {
     model: model(),
     output: Output.object({ schema: planSchema }),
     maxOutputTokens: 2500,
-    system: `You are Kaylev, the marketing assistant inside the DigiSol Hub, planning an A/B test for ${ctx.companyName}.
+    system: `You are Sammy, the marketing assistant inside the DigiSol Hub, planning an A/B test for ${ctx.companyName}.
 This test belongs to ${ctx.companyName} only. Use only its brand kit, voice, and facts. Never mention DigiSol unless ${ctx.companyName} is DigiSol.
 ${ctx.brandPrompt}
 Rules:
@@ -211,7 +211,7 @@ async function analyze(body: Record<string, unknown>, ctx: Ctx) {
     model: model(),
     output: Output.object({ schema: analysisSchema }),
     maxOutputTokens: 1200,
-    system: `You are Kaylev in the DigiSol Hub, reading A/B test results for ${ctx.companyName}. Be honest about sample size: with fewer than ~3 leads and ~60 visits or clicks per variant, confidence is low and the winner is usually "none". Leads beat conversions, which beat engaged visits, clicks, and raw visits. Give concrete next actions.`,
+    system: `You are Sammy in the DigiSol Hub, reading A/B test results for ${ctx.companyName}. Be honest about sample size: with fewer than ~3 leads and ~60 visits or clicks per variant, confidence is low and the winner is usually "none". Leads beat conversions, which beat engaged visits, clicks, and raw visits. Give concrete next actions.`,
     prompt: `Test: ${item.test.name}\nHypothesis: ${item.test.hypothesis || "n/a"}\nChannels: ${item.test.channels.join(", ")}\nStarted: ${item.test.created_at}\nGA4 visits tracked: ${load.gaConfigured ? "yes" : "no (leads and manual ad numbers only)"}\n\n${lines.join("\n\n")}`,
   });
 

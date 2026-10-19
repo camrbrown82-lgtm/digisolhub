@@ -379,6 +379,6 @@ export async function POST(request: Request) {
     });
   } catch (err) {
     console.error("Business card failed", err);
-    return NextResponse.json({ error: "Kaylev could not build the card. Try again." }, { status: 500 });
+    return NextResponse.json({ error: "Sammy could not build the card. Try again." }, { status: 500 });
   }
 }

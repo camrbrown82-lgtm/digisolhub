@@ -19,7 +19,7 @@ import {
   type VisitorAudience,
 } from "@/lib/visitorRegion";
 
-const KAYLEV_NAME = "Kaylev";
+const KAYLEV_NAME = "Sammy";
 
 function readCookie(name: string) {
   if (typeof document === "undefined") return "";
@@ -75,7 +75,7 @@ export function VisitorChat() {
   }, []);
 
   // The free-audit link still sets the audit greeting. On a phone or tablet the
-  // panel stays closed so the page is visible; the Kaylev button opens it.
+  // panel stays closed so the page is visible; the Sammy button opens it.
   // A desktop with a mouse starts with the panel open.
   useEffect(() => {
     const audit = new URLSearchParams(window.location.search).get("kaylev") === "audit";

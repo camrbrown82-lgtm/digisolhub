@@ -136,7 +136,7 @@ export const BLOG_POSTS: BlogPost[] = [
       {
         heading: "What the Hub compares",
         body: [
-          "In DigiSol Hub, competitive analysis belongs to the company you are working on. Kaylev can find the top local competitors, or you can paste the ones you already watch. It audits each website, checks Google reviews, listings, and social presence, then writes a prioritized plan. A run takes a few minutes.",
+          "In DigiSol Hub, competitive analysis belongs to the company you are working on. Sammy can find the top local competitors, or you can paste the ones you already watch. It audits each website, checks Google reviews, listings, and social presence, then writes a prioritized plan. A run takes a few minutes.",
           "The score is built from the same checks every time, so a later run shows exactly which points you gained or lost. The areas it scores are:",
         ],
         bullets: [

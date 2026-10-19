@@ -270,7 +270,7 @@ export const runWorkflowsOnLead = inngest.createFunction(
 );
 
 /**
- * Website form and Google Ads leads alert Cameron as they arrive. Kaylev chat leads
+ * Website form and Google Ads leads alert Cameron as they arrive. Sammy chat leads
  * and audited prospects who click are reported here, once per contact.
  */
 export const alertOwnerOnLead = inngest.createFunction(
@@ -304,7 +304,7 @@ export const alertOwnerOnLead = inngest.createFunction(
           ? "Free website audit"
           : audited
             ? "Audited prospect clicked"
-            : "Kaylev chat",
+            : "Sammy chat",
         name: contact.name,
         email: contact.email,
         phone: contact.phone,
@@ -316,7 +316,7 @@ export const alertOwnerOnLead = inngest.createFunction(
           ? "They asked for a free website audit and left an email so the results could be sent. They are in Contacts, on the lead pipeline, and on the audited-prospect follow-up."
           : audited
             ? "They clicked a link in the website audit DigiSol emailed them. Good moment to call."
-            : "They left their details with Kaylev on the website.",
+            : "They left their details with Sammy on the website.",
       });
       if (!result.ok) throw new Error(result.message || "Lead alert failed");
       return { sent: true };
@@ -511,7 +511,7 @@ export const runAwardFollowups = inngest.createFunction(
   },
 );
 
-/** Kaylev competitive analysis: research, audit, and write the report in durable steps. */
+/** Sammy competitive analysis: research, audit, and write the report in durable steps. */
 export const runCompetitiveAnalysis = inngest.createFunction(
   {
     id: "run-competitive-analysis",

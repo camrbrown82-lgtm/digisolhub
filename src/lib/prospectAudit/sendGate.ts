@@ -15,10 +15,10 @@ export async function prospectSendBlockReason(
     return "Address is not a usable email. Not sending.";
   }
   if (await previouslyBounced(db, normalized)) {
-    return "This address already bounced. Kaylev will not send to it again.";
+    return "This address already bounced. Sammy will not send to it again.";
   }
   if (!(await domainAcceptsMail(domain))) {
-    return "This domain has no mail server (MX). Sending would bounce, so Kaylev skipped it.";
+    return "This domain has no mail server (MX). Sending would bounce, so Sammy skipped it.";
   }
   return null;
 }

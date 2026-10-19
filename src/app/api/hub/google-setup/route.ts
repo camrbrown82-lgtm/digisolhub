@@ -232,7 +232,7 @@ export async function POST(request: Request) {
           const enabled = body.newCampaign.enabled === true;
           const ad = await writeSearchAd(company, picked.map((k) => k.text));
           const month = new Date().toLocaleString("en-CA", { month: "short", year: "numeric", timeZone: "America/Edmonton" });
-          const name = `Kaylev trending keywords · ${KEYWORD_AREAS[area].label} · ${month} · ${Date.now().toString(36)}`;
+          const name = `Sammy trending keywords · ${KEYWORD_AREAS[area].label} · ${month} · ${Date.now().toString(36)}`;
           const created = await ads.createSearchCampaign(cid, {
             name,
             dailyBudgetMicros: ads.toMicros(daily),

@@ -67,7 +67,7 @@ export async function POST(request: Request) {
   if (suppressed) {
     return NextResponse.json(
       {
-        error: `${email} unsubscribed, so Kaylev won't add them back. They're kept under Contacts → Show unsubscribed as a do-not-contact record.`,
+        error: `${email} unsubscribed, so Sammy won't add them back. They're kept under Contacts → Show unsubscribed as a do-not-contact record.`,
       },
       { status: 409 },
     );

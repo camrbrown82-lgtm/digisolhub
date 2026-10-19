@@ -13,7 +13,7 @@ const AUDIENCE_COPY: Record<AudiencePreset, string> = {
   trades:
     "Trades prospect audits only — HVAC, mechanical, and similar cold audits.",
   audits: "All prospect audits (trades and other audited companies).",
-  leads: "New leads — forms, Facebook, Kaylev chat, consult requests.",
+  leads: "New leads — forms, Facebook, Sammy chat, consult requests.",
   engaged:
     "Engaged contacts — opened or clicked an email, or tagged engaged / warm-lead.",
   me: "Me only — a self-test send to my own contact.",
@@ -97,7 +97,7 @@ export function AiWorkflowGenerator() {
         <div>
           <h2 className="text-lg font-semibold text-white">AI workflow generator</h2>
           <p className="mt-1 text-sm text-zinc-400">
-            Tell Kaylev the goal, who it is for, and how long to wait. It
+            Tell Sammy the goal, who it is for, and how long to wait. It
             builds the whole path — welcome (audit video or a poster you name),
             wait, follow-up, and tags — then loads that audience into Will run
             for. You review the steps and the people before anything sends.
@@ -167,7 +167,7 @@ export function AiWorkflowGenerator() {
           </select>
           <span className="mt-1 block text-xs text-zinc-500">
             {audiencePreset === "custom"
-              ? "Kaylev designs for exactly who you type in Audience detail."
+              ? "Sammy designs for exactly who you type in Audience detail."
               : AUDIENCE_COPY[audiencePreset]}
           </span>
         </label>

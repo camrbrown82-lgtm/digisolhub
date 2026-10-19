@@ -186,7 +186,7 @@ async function ownSearchPool(customerId: string, searchConsoleSite: string | nul
 }
 
 /**
- * Kaylev seeds Keyword Planner from this company's field, then keeps the rising, buyer-intent terms.
+ * Sammy seeds Keyword Planner from this company's field, then keeps the rising, buyer-intent terms.
  * Without Basic API access, falls back to this company's own Search Console and ad search data.
  */
 export async function findTrendingKeywords(
@@ -195,12 +195,12 @@ export async function findTrendingKeywords(
   area: KeywordArea,
   searchConsoleSite?: string | null,
 ) {
-  if (!getOpenAIApiKey()) throw new Error("Kaylev needs OPENAI_API_KEY to pick keywords.");
+  if (!getOpenAIApiKey()) throw new Error("Sammy needs OPENAI_API_KEY to pick keywords.");
   const brief = companyBrief(ctx);
   const where = KEYWORD_AREAS[area].label;
 
   const seeded = await askKaylev<{ field?: string; seeds?: unknown }>(
-    `You are Kaylev, picking Google Ads seed keywords for ${ctx.companyName} only. Return JSON {"field": "the industry in 2-4 words", "seeds": ["..."]}.
+    `You are Sammy, picking Google Ads seed keywords for ${ctx.companyName} only. Return JSON {"field": "the industry in 2-4 words", "seeds": ["..."]}.
 Give 8-12 short phrases (1-4 words) a ready-to-buy customer in ${where} types into Google to find what ${ctx.companyName} sells. Mix the core service, specific services, and "near me" or city versions where local. No company names, no competitor brands, no jobs, no DIY or free searches.`,
     brief,
     400,
@@ -208,7 +208,7 @@ Give 8-12 short phrases (1-4 words) a ready-to-buy customer in ${where} types in
   const seeds = Array.isArray(seeded.seeds)
     ? seeded.seeds.filter((s): s is string => typeof s === "string" && Boolean(s.trim())).slice(0, 20)
     : [];
-  if (!seeds.length && !ctx.siteUrl) throw new Error("Kaylev couldn't tell what this company sells. Fill in the brand kit or add a website.");
+  if (!seeds.length && !ctx.siteUrl) throw new Error("Sammy couldn't tell what this company sells. Fill in the brand kit or add a website.");
 
   const [planned, account] = await Promise.all([
     ads
@@ -263,17 +263,17 @@ Give 8-12 short phrases (1-4 words) a ready-to-buy customer in ${where} types in
     );
   }
   const notice = planned.locked
-    ? `Google's Keyword Planner is locked until the Hub's Google Ads API access goes from Explorer to Basic. Until then Kaylev ranks searches from ${ctx.companyName}'s own Google data (Search Console and ad search terms, last 4 weeks vs the 4 before) plus his own picks for the field. Numbers are impressions for this company, not all of Google.`
+    ? `Google's Keyword Planner is locked until the Hub's Google Ads API access goes from Explorer to Basic. Until then Sammy ranks searches from ${ctx.companyName}'s own Google data (Search Console and ad search terms, last 4 weeks vs the 4 before) plus his own picks for the field. Numbers are impressions for this company, not all of Google.`
     : "";
   if (!pool.length) {
     return { field: seeded.field || "", seeds, keywords: [] as TrendingKeyword[], adGroups: account.adGroups, source, notice };
   }
 
   const columns = planned.locked
-    ? "impressions for this company in the last 4 weeks (0 = Kaylev's idea, no data yet), trend vs the 4 weeks before"
+    ? "impressions for this company in the last 4 weeks (0 = Sammy's idea, no data yet), trend vs the 4 weeks before"
     : `monthly searches in ${where}, trend last 3 months vs 3 before, competition`;
   const picked = await askKaylev<{ picks?: { text?: unknown; why?: unknown }[] }>(
-    `You are Kaylev, choosing Google Ads keywords for ${ctx.companyName} only. From the list, keep up to 15 that a paying customer of this company would search. Prefer rising trend, then volume. Drop competitor or other brand names, job searches, DIY, free, definitions, and anything this company doesn't sell.
+    `You are Sammy, choosing Google Ads keywords for ${ctx.companyName} only. From the list, keep up to 15 that a paying customer of this company would search. Prefer rising trend, then volume. Drop competitor or other brand names, job searches, DIY, free, definitions, and anything this company doesn't sell.
 Return JSON {"picks": [{"text": "exact keyword from the list", "why": "one short sentence on why it's worth bidding"}]}, best first.`,
     `${brief}\n\nKeywords (${columns}):\n${pool
       .map((k) => `${k.text} | ${k.monthlySearches} | ${k.trend > 0 ? "+" : ""}${k.trend}%${k.competition ? ` | ${k.competition}` : ""}`)
@@ -306,7 +306,7 @@ const fit = (lines: unknown, max: number, count: number) =>
 /** Responsive search ad copy for a new campaign, in this company's voice. */
 export async function writeSearchAd(ctx: CompanyContext, keywords: string[]) {
   const written = await askKaylev<{ headlines?: unknown; descriptions?: unknown }>(
-    `You are Kaylev, writing one Google responsive search ad for ${ctx.companyName} only. Return JSON {"headlines": [...], "descriptions": [...]}.
+    `You are Sammy, writing one Google responsive search ad for ${ctx.companyName} only. Return JSON {"headlines": [...], "descriptions": [...]}.
 10-15 headlines, each 30 characters or fewer. 4 descriptions, each 90 characters or fewer. Use the keywords naturally, the brand voice, and only offers published on this company's site. No exclamation marks in headlines, no ALL CAPS, no phone numbers, no other company's name or offer.`,
     `${companyBrief(ctx)}\n\nKeywords: ${keywords.join(", ")}`,
     900,
@@ -318,7 +318,7 @@ export async function writeSearchAd(ctx: CompanyContext, keywords: string[]) {
     .filter((k) => k.length <= 30 && !headlines.some((h) => h.toLowerCase() === k.toLowerCase()));
   headlines.push(...spare.slice(0, Math.max(0, 3 - headlines.length)));
   if (headlines.length < 3 || descriptions.length < 2) {
-    throw new Error("Kaylev couldn't write a full ad. Try again, or add keywords to an existing ad group instead.");
+    throw new Error("Sammy couldn't write a full ad. Try again, or add keywords to an existing ad group instead.");
   }
   return { headlines, descriptions };
 }

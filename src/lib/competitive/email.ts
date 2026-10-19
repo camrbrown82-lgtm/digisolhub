@@ -30,7 +30,7 @@ const VERDICT_COLOR: Record<string, string> = {
   parity: "#475569",
 };
 
-const OWNER_COPY: Record<string, string> = { DigiSol: "DigiSol", Kaylev: "DigiSol", Client: "You" };
+const OWNER_COPY: Record<string, string> = { DigiSol: "DigiSol", Sammy: "DigiSol", Kaylev: "DigiSol", Client: "You" };
 
 /** How many actions get their full steps; the rest are listed by title. */
 const DETAILED_ACTIONS = 5;

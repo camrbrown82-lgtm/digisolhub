@@ -89,7 +89,7 @@ async function awardGrid(awards: Buffer[], area: { left: number; top: number; wi
 
 /**
  * Default front is two sections: an indigo header with the logo, then a body
- * with the lines, a large center badge, and the QR. Kaylev can move any of those.
+ * with the lines, a large center badge, and the QR. Sammy can move any of those.
  * Default back is the headline and up to four awards.
  */
 export async function renderBusinessCard(input: {

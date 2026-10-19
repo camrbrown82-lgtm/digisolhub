@@ -1,6 +1,6 @@
 import type { AuditEmailSource, ScoreTier } from "@/lib/i18n/types";
 
-/** Kaylev's audit breakdown and consultation emails. HTML helpers expect pre-escaped arguments. */
+/** Sammy's audit breakdown and consultation emails. HTML helpers expect pre-escaped arguments. */
 export const enEmails = {
   auditSubject: (score: number, source: AuditEmailSource, tier: ScoreTier) => {
     if (source === "visitor_chat") {
@@ -104,11 +104,11 @@ export const enEmails = {
   },
   consultSubject: "Your free DigiSol consultation",
   consultHi: (first: string) =>
-    `Hi${first ? ` ${first}` : ""} — thanks for chatting with Kaylev on DigiSol.`,
+    `Hi${first ? ` ${first}` : ""} — thanks for chatting with Sammy on DigiSol.`,
   consultBody: (requirements: string, founder: string, title: string) =>
     `You asked about next steps${requirements ? ` (${requirements})` : ""} — and you do not need to figure out every detail alone. ${founder} (${title}) offers a <strong>free consultation</strong>: a short, no-pressure call to clarify what would help your business grow online.`,
   consultCta: "Book your free consultation",
   consultDirect: "Or reach Cameron directly:",
   consultCasl:
-    "You are receiving this because you requested a DigiSol consultation via Kaylev. DigiSol · Alberta, Canada. Reply to unsubscribe anytime.",
+    "You are receiving this because you requested a DigiSol consultation via Sammy. DigiSol · Alberta, Canada. Reply to unsubscribe anytime.",
 };

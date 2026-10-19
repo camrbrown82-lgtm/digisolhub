@@ -3,7 +3,7 @@ import type { ElementType, ReactNode } from "react";
 export type BrandAccent = "blue" | "indigo" | "sky";
 
 /**
- * Shared card chrome for Services / DualThreat / Kaylev / Audience.
+ * Shared card chrome for Services / DualThreat / Sammy / Audience.
  * Shell = bright rim. Panel = tinted fill so the accent reads on dark pages.
  */
 export const brandAccent = {

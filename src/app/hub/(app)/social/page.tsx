@@ -105,7 +105,7 @@ export default async function SocialPage() {
         <h1 className="text-3xl font-semibold text-white">Social</h1>
         <WorkspaceScope companyName={active.name} noun="posts" />
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-          Kaylev writes both captions. Pick a saved poster and he writes the posts for that image, or ask him to
+          Sammy writes both captions. Pick a saved poster and he writes the posts for that image, or ask him to
           build a new one. Upload an MP4 or MOV, then post it to {active.name}&apos;s Facebook and Instagram.
           Nothing publishes until you approve it.
         </p>
